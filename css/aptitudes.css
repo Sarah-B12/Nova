@@ -1,0 +1,32 @@
+/* ===========================================================
+   APTITUDES — Arbre de progression par quêtes (écran du Profil).
+   =========================================================== */
+  #apt-bloc .apt-grille { display:grid; grid-template-columns:repeat(auto-fit, minmax(158px,1fr)); gap:10px; }
+  .apt-voie { border:1px solid var(--line); border-radius:var(--r-s); padding:8px; background:rgba(16,40,37,.4); display:flex; flex-direction:column; gap:8px; }
+  .apt-voie-tete { font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.10em; text-transform:uppercase; color:var(--orange-hi); text-align:center; padding-bottom:4px; border-bottom:1px solid var(--line); }
+
+  .apt-noeud { border:1px solid var(--line); border-left:2px solid var(--line); border-radius:8px 4px 8px 4px; padding:7px 9px; background:rgba(8,18,42,.4); }
+  .apt-noeud.acquis { border-left-color:var(--bleu); background:rgba(90,168,230,.08); }
+  .apt-noeud.dispo  { border-left-color:var(--orange); }
+  .apt-noeud.verrou { opacity:.5; }
+
+  .apt-n-tete { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+  .apt-n-tete b { font-size:13px; line-height:1.15; }
+  .apt-cout { font-family:"Space Mono",monospace; font-size:10px; color:var(--bleu); white-space:nowrap; }
+  .apt-n-effet { font-size:11.5px; color:var(--texte); margin:4px 0; line-height:1.3; }
+  .apt-n-type { font-family:"Space Mono",monospace; font-size:9px; letter-spacing:.10em; text-transform:uppercase; color:var(--orange-hi); }
+  .apt-n-bas { margin-top:6px; }
+  .apt-n-bas .mini { width:100%; }
+  .apt-tag { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  .apt-noeud.acquis .apt-tag { color:var(--bleu); }
+
+  .apt-boutons { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+
+  /* Sous-onglets Communes / Spéciales */
+  .apt-sous-menu { display:flex; gap:6px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  .apt-sous-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
+  .apt-sous-lien:hover { color:var(--texte); }
+  .apt-sous-lien.actif { color:var(--orange-hi); border-bottom-color:var(--orange); }
+  .apt-vue[hidden] { display:none; }
+  /* Branche de faction = une seule chaîne : on borne sa largeur pour ne pas l'étirer */
+  #apt-vue-speciales .apt-voie { max-width:280px; }

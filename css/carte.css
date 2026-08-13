@@ -1,0 +1,24 @@
+/* ===========================================================
+   CARTE — Modale de la carte plein écran et son menu.
+   =========================================================== */
+  /* Carte hexagonale (défilable) */
+  /* Carte en modale plein écran */
+  .modale-carte { position:fixed; inset:0; z-index:60; background:rgba(4,10,26,.92); display:none; padding:18px; }
+  .modale-carte.ouverte { display:grid; place-items:center; }
+  .cadre-carte { background:var(--surface); border:1px solid var(--edge); border-radius:var(--r); box-shadow:0 12px 40px rgba(0,0,0,.5); padding:14px 16px; width:100%; max-width:1100px; max-height:94vh; display:flex; flex-direction:column; }
+  .barre-carte { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .titre-carte { font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; color:var(--orange-hi); }
+  #carte-lieu { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); font-weight:400; }
+  .zone-carte { flex:1; min-height:0; display:flex; }
+  .corps-carte { display:flex; gap:14px; flex:1; min-height:0; }
+  .menu-carte { flex:0 0 148px; display:flex; flex-direction:column; gap:6px; }
+  .lien-carte { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; text-align:left; color:var(--sourdine); background:rgba(16,41,78,.5); border:1px solid var(--line); border-left:2px solid var(--line); border-radius:var(--r-s); padding:9px 12px; cursor:pointer; }
+  .lien-carte:hover { color:var(--texte); border-left-color:var(--edge); }
+  .lien-carte.actif { color:var(--orange-hi); border-left-color:var(--orange); background:rgba(255,158,84,.08); }
+  .vue-carte { flex:1; min-height:0; overflow:auto; }
+  .vue-carte h3 { color:var(--orange-hi); }
+  .vue[hidden] { display:none; }
+
+  /* Lisibilité des textes de la carte par-dessus l'image de fond */
+  #carte .vlabel { font-family:"Exo 2",sans-serif; font-weight:700; font-size:34px; paint-order:stroke; stroke:rgba(4,8,20,.8); stroke-width:6px; stroke-linejoin:round; }
+  #carte .lieu text { paint-order:stroke; stroke:rgba(4,8,20,.8); stroke-width:5px; stroke-linejoin:round; }

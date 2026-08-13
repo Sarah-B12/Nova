@@ -1,0 +1,159 @@
+/* ===========================================================
+   COMPOSANTS — Le Centre (formations), compétences, onglets, boutons, items, profil, paramètres, journal, dépliants, inscription.
+   =========================================================== */
+  /* Le Centre : cartes de formation + arbre de recettes */
+  .formation-carte { display:block; width:100%; text-align:left; background:rgba(16,41,78,.5); border:1px solid var(--line); border-left:2px solid var(--edge); border-radius:var(--r-s); padding:12px 14px; margin-bottom:10px; cursor:pointer; transition:border-color .12s, background .12s; }
+  .formation-carte:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
+  .formation-nom { font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; color:var(--orange-hi); }
+  .formation-desc { font-size:13px; color:var(--texte); margin:4px 0 6px; line-height:1.35; }
+  .formation-meta { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  .recette-liste { display:flex; flex-direction:column; gap:4px; margin-top:6px; }
+  .recette-ligne { display:flex; gap:10px; align-items:flex-start; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:rgba(8,18,42,.4); opacity:.55; }
+  .recette-ligne.ok { opacity:1; border-color:var(--edge); }
+  .recette-seuil { flex:0 0 42px; text-align:center; font-family:"Space Mono",monospace; font-size:12px; font-weight:700; color:var(--orange-hi); background:rgba(6,14,30,.6); border-radius:5px; padding:3px 0; }
+  .recette-corps { display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .recette-nom { font-family:"Exo 2",sans-serif; font-size:13px; color:var(--texte); }
+  .recette-ing { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); line-height:1.3; }
+  .form-progress { margin:4px 0 6px; }
+  .form-progress-tete { display:flex; justify-content:space-between; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); margin-bottom:3px; }
+  .form-barre { height:8px; background:rgba(8,18,42,.7); border:1px solid var(--line); border-radius:5px; overflow:hidden; }
+  .form-remplissage { height:100%; background:linear-gradient(90deg, var(--orange), var(--orange-hi)); }
+  /* Atelier : lignes de recette fabricables */
+  .atelier-liste { max-height:52vh; overflow:auto; }
+  .recette-ligne .mini { margin-left:auto; align-self:center; flex:0 0 auto; }
+  .recette-ing .ing-tag { display:inline-block; margin-right:4px; }
+  .recette-ing .ing-tag.ok { color:var(--bleu); }
+  .recette-ing .ing-tag.ko { color:var(--coral); }
+  .recette-ing .ing-tag small { color:var(--sourdine); }
+  .recette-note { display:block; font-family:"Space Mono",monospace; font-size:10px; color:var(--sourdine); margin-top:3px; }
+  .recette-gain { font-family:"Space Mono",monospace; font-size:10px; color:var(--bleu); }
+  @media (max-width:640px){ .corps-carte { flex-direction:column; } .menu-carte { flex:none; flex-direction:row; flex-wrap:wrap; } .lien-carte { flex:1 1 auto; text-align:center; } }
+  #carte { display:block; width:100%; height:auto; max-height:80vh; cursor:crosshair; }
+  .vlabel { font-family:"Exo 2",sans-serif; font-weight:700; font-size:30px; }
+  #avatar { pointer-events:none; }
+  .jauge.energie .jauge-tete { color:var(--orange-hi); }
+
+  /* Compétences + bulle d'aide */
+  .comp-ligne { display:flex; align-items:center; gap:10px; margin-bottom:11px; } .comp-ligne:last-child { margin-bottom:0; }
+  .comp-nom { position:relative; font-weight:600; font-size:15px; flex:1; cursor:help; }
+  .comp-nom .tip {
+    display:none; position:absolute; bottom:135%; left:0; width:210px; z-index:6;
+    background:var(--surface-2); border:1px solid var(--edge); border-radius:10px; padding:9px 11px;
+    font-family:"Space Mono",monospace; font-weight:400; font-size:11px; color:var(--texte); line-height:1.45;
+    box-shadow:0 8px 22px rgba(0,0,0,.5);
+  }
+  .comp-nom:hover .tip, .comp-nom:focus .tip { display:block; }
+  .comp-val { font-family:"Space Mono",monospace; font-weight:700; color:var(--bleu); min-width:32px; text-align:right; }
+  .comp-plus { font-family:"Space Mono",monospace; width:28px; height:28px; background:var(--surface-2); color:var(--texte); border:1px solid var(--edge); border-radius:10px 5px 10px 5px; cursor:pointer; font-size:15px; }
+  .comp-plus:hover:not(:disabled) { border-color:var(--orange); box-shadow:0 0 8px rgba(255,138,61,.3); }
+  .comp-plus:disabled { opacity:.3; cursor:not-allowed; }
+
+  /* Onglets */
+  .onglets { display:flex; gap:2px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .onglet { font-weight:600; font-size:14px; letter-spacing:.04em; color:var(--sourdine); background:transparent; border:none; padding:10px 13px; cursor:pointer; position:relative; }
+  .onglet:hover { color:var(--texte); }
+  .onglet.actif { color:var(--orange); text-shadow:0 0 10px rgba(255,138,61,.5); }
+  .onglet.actif::after { content:""; position:absolute; left:10px; right:10px; bottom:-1px; height:2px; border-radius:2px; background:var(--orange); box-shadow:0 0 8px var(--orange); }
+  .onglet:focus-visible { outline:2px solid var(--orange); outline-offset:2px; }
+  .panneau { display:none; } .panneau.actif { display:block; }
+
+  /* Boutons */
+  .actions { display:grid; gap:10px; }
+  button.action, button.achat {
+    font-family:"Exo 2",sans-serif; font-weight:600; font-size:15px; color:var(--texte);
+    background:rgba(16,40,37,.7); border:1px solid var(--edge); border-radius:var(--r-s);
+    padding:11px 15px; text-align:left; cursor:pointer; transition:border-color .15s, box-shadow .15s, transform .05s;
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    position:relative;
+  }
+  button.action.bloque { opacity:.45; cursor:help; }
+  button.action.bloque:hover { border-color:var(--edge); box-shadow:none; }
+  button.action .tip {
+    display:none; position:absolute; bottom:115%; left:12px; right:12px; z-index:7;
+    background:var(--surface-2); border:1px solid var(--edge); border-radius:10px; padding:9px 11px;
+    font-family:"Space Mono",monospace; font-weight:400; font-size:11px; color:var(--texte); line-height:1.45;
+    box-shadow:0 8px 22px rgba(0,0,0,.5); white-space:normal; text-align:left;
+  }
+  button.action.bloque:hover .tip { display:block; }
+  button.action:hover:not(:disabled), button.achat:hover:not(:disabled) { border-color:var(--orange); box-shadow:0 0 12px rgba(255,138,61,.25); }
+  button:active { transform:translateY(1px); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button:focus-visible { outline:2px solid var(--orange); outline-offset:2px; }
+  .cout { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); white-space:nowrap; }
+  .cout.ok { color:var(--bleu); }
+
+  .bascule { display:flex; gap:8px; margin-bottom:14px; }
+  .bascule button { flex:1; font-weight:600; font-size:14px; padding:9px; border-radius:var(--r-s); cursor:pointer; background:rgba(16,40,37,.6); color:var(--sourdine); border:1px solid var(--line); }
+  .bascule button.actif { color:var(--orange); border-color:var(--edge); box-shadow:0 0 10px rgba(255,138,61,.2); }
+  .verrou { color:var(--sourdine); font-family:"Space Mono",monospace; font-size:13px; text-align:center; padding:22px 10px; }
+  .vide { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); }
+  .banniere { border:1px solid var(--orange-hi); border-radius:var(--r-s); padding:10px 14px; margin-bottom:14px; color:var(--orange-hi); font-family:"Space Mono",monospace; font-size:12.5px; }
+  .banniere[hidden] { display:none; }
+
+  .sous-carte { border:1px solid var(--line); background:rgba(16,40,37,.4); border-radius:var(--r-s); padding:14px 16px; margin-top:16px; }
+  .rangee2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; } @media (max-width:520px){ .rangee2 { grid-template-columns:1fr; } }
+
+  /* Items sac/coffre */
+  .item-ligne { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); font-family:"Space Mono",monospace; font-size:13px; }
+  .item-ligne:last-child { border-bottom:none; }
+  .qte { color:var(--bleu); }
+  button.mini { font-family:"Exo 2",sans-serif; font-weight:600; font-size:12px; padding:5px 12px; border-radius:10px 4px 10px 4px; background:rgba(16,40,37,.7); color:var(--texte); border:1px solid var(--edge); cursor:pointer; }
+  button.mini:hover:not(:disabled) { border-color:var(--orange); } button.mini:disabled { opacity:.4; cursor:not-allowed; }
+
+  .ressources { display:flex; gap:14px; flex-wrap:wrap; font-family:"Space Mono",monospace; font-size:12.5px; margin-bottom:14px; }
+  .ressources b { color:var(--bleu); }
+
+  /* Équipement */
+  .slot { display:flex; justify-content:space-between; align-items:center; border:1px dashed var(--line); border-radius:var(--r-s); padding:12px 14px; margin-bottom:10px; font-family:"Space Mono",monospace; font-size:13px; color:var(--sourdine); }
+  .slot b { color:var(--texte); font-weight:700; }
+
+  /* Profil : description + mur */
+  #desc-vue { font-size:15px; margin-bottom:12px; }
+  .desc-img { max-width:100%; margin:8px 0; border-radius:var(--r-s); border:1px solid var(--edge); display:block; }
+  textarea { width:100%; min-height:120px; background:rgba(16,40,37,.6); color:var(--texte); border:1px solid var(--line); border-radius:var(--r-s); padding:12px; font-family:"Space Mono",monospace; font-size:13px; resize:vertical; }
+  input[type=text], select { background:rgba(16,40,37,.6); color:var(--texte); border:1px solid var(--line); border-radius:12px 5px 12px 5px; padding:9px 12px; font-family:"Exo 2",sans-serif; font-size:15px; }
+  input[type=text]:focus, textarea:focus, select:focus { outline:none; border-color:var(--orange); }
+  .mur-reglage { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); margin-bottom:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .mur-msg { padding:9px 0; border-bottom:1px solid var(--line); font-size:15px; }
+  .mur-auteur { color:var(--bleu); font-weight:700; margin-right:6px; }
+  .mur-saisie { display:flex; gap:8px; margin-top:12px; } .mur-saisie input { flex:1; }
+
+  /* Paramètres */
+  .reglage { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+  .reglage:last-child { border-bottom:none; }
+  .reglage b { font-weight:700; } .reglage p { margin:2px 0 0; font-size:12.5px; color:var(--sourdine); }
+  .reglage button { font-family:"Exo 2",sans-serif; font-weight:600; font-size:13px; padding:8px 14px; border-radius:var(--r-s); background:rgba(16,40,37,.7); color:var(--texte); border:1px solid var(--edge); cursor:pointer; white-space:nowrap; }
+  .reglage button:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* Journal */
+  .journal-carte { margin-top:16px; }
+  #journal { font-family:"Space Mono",monospace; font-size:12.5px; color:var(--sourdine); max-height:150px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap:6px; }
+  #journal .msg { padding-left:14px; position:relative; }
+  #journal .msg::before { content:"◈"; position:absolute; left:0; color:var(--orange); font-size:9px; top:3px; }
+  #journal .msg.alerte { color:var(--coral); } #journal .msg.alerte::before { color:var(--coral); }
+  #journal .msg.gain { color:var(--bleu); } #journal .msg.gain::before { color:var(--bleu); }
+
+  footer { margin-top:16px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  footer .boutons { display:flex; gap:10px; }
+  footer button { font-family:"Space Mono",monospace; font-size:11px; background:transparent; color:var(--sourdine); border:1px solid var(--line); border-radius:10px 4px 10px 4px; padding:7px 12px; cursor:pointer; }
+  footer button:hover { color:var(--texte); border-color:var(--sourdine); }
+
+  /* Dépliants */
+  details.depliant { border:1px solid var(--line); border-radius:var(--r-s); margin-bottom:10px; background:rgba(16,40,37,.4); }
+  summary { cursor:pointer; padding:11px 14px; font-weight:600; font-size:15px; list-style:none; display:flex; justify-content:space-between; }
+  summary::-webkit-details-marker { display:none; }
+  summary::after { content:"+"; color:var(--orange); font-family:"Space Mono",monospace; } details[open] summary::after { content:"−"; }
+  .depliant-corps { padding:2px 14px 14px; font-family:"Space Mono",monospace; font-size:12.5px; color:var(--sourdine); }
+  .annonce { border-left:2px solid var(--bleu); padding-left:10px; margin:9px 0; } .annonce b { color:var(--texte); }
+
+  /* Inscription */
+  .modale { position:fixed; inset:0; background:rgba(3,10,9,.9); display:grid; place-items:center; z-index:50; padding:16px; }
+  .modale[hidden] { display:none; }
+  .modale-boite { max-width:420px; width:100%; }
+  .modale p { font-size:14px; color:var(--sourdine); }
+  .modale input { width:100%; margin:12px 0; }
+  .modale .valider { width:100%; font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; letter-spacing:.04em; color:#06110f; background:linear-gradient(135deg,var(--orange),var(--bleu)); border:none; border-radius:var(--r-s); padding:12px; cursor:pointer; }
+
+  @keyframes respire { 0%,100%{opacity:.75; filter:brightness(1);} 50%{opacity:1; filter:brightness(1.25);} }
+  @keyframes pulse { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.5);} }
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after { animation:none!important; transition:none!important; } }

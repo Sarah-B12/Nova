@@ -1,0 +1,40 @@
+/* ===========================================================
+   FICHE — Fiche perso, navigation par hubs, statistiques et blocs d'identité.
+   =========================================================== */
+  /* ---- Fiche perso ---- */
+  .portrait { width:150px; aspect-ratio:1/1; margin:0; background:radial-gradient(circle at 50% 40%,#123152,#0a1730); border-radius:26px 26px 26px 8px; display:grid; place-items:center; position:relative; overflow:hidden; --tint:var(--orange); border:1px solid var(--edge); flex:0 0 auto; }
+  .fiche-perso { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; }
+  .fiche-corps { flex:1; min-width:240px; display:flex; flex-direction:column; gap:10px; }
+  .fiche-tete { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .fiche-tete .metier { margin:0; }
+  .xp-ligne { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  .xp-ligne b { color:var(--bleu); }
+  .vitaux { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media (max-width:560px){ .vitaux { grid-template-columns:1fr; } }
+  /* Hub Planète : navigation par onglets secondaires */
+  .hub-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
+  .hub-lien:hover { color:var(--texte); }
+  .hub-lien.actif { color:var(--orange-hi); border-bottom-color:var(--orange); }
+  .hub-vue[hidden] { display:none; }
+  .portrait::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.16) 3px 4px); }
+  .portrait svg { width:72%; }
+  .portrait .corps { fill:#0a1730; stroke:var(--tint); stroke-width:3; }
+  .portrait .visor { fill:var(--tint); filter:drop-shadow(0 0 7px var(--tint)); animation:respire 4s ease-in-out infinite; }
+
+  .nom-affiche { text-align:center; font-size:22px; font-weight:700; letter-spacing:.04em; }
+  .faction-box { text-align:center; margin:4px 0 8px; }
+  #faction-nom { font-weight:700; color:var(--bleu); font-size:15px; }
+  #faction-avantage { font-family:"Space Mono",monospace; font-size:10.5px; color:var(--sourdine); margin-top:2px; }
+  .metier { text-align:center; font-size:13px; color:var(--sourdine); margin-bottom:12px; }
+  .metier b { color:var(--texte); }
+
+  .bloc-stats { border:1px solid var(--line); border-radius:var(--r-s); padding:11px 12px; margin-bottom:12px; }
+  .quad { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); text-align:center; }
+  .quad b { color:var(--bleu); display:block; font-size:15px; } .quad b.or { color:var(--orange); }
+  .bloc-tag { font-family:"Space Mono",monospace; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--sourdine); margin-bottom:6px; display:block; }
+  .bloc-tag.prive { color:var(--orange-hi); }
+  .duo { display:flex; flex-wrap:wrap; gap:8px 10px; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  .duo > div { flex:1 1 40%; text-align:center; }
+  .duo b { color:var(--orange); display:block; font-size:15px; }
+  .bloc-stats.prive .duo b { color:var(--bleu); }
+

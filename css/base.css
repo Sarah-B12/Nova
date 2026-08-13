@@ -1,0 +1,65 @@
+/* ===========================================================
+   BASE — Thème (variables), reset, corps de page, en-tête et structure générale.
+   =========================================================== */
+  /* ===========================================================
+     STYLE — BIO-TECH LUMINESCENT
+     Les machines abandonnées ont été envahies par la flore
+     luminescente d'Ori 55. Membranes organiques à bord lumineux,
+     fond sarcelle profond, lueurs cyan (eau) et chartreuse (flore).
+     Boldness concentrée sur : membranes + jauges "bio-fioles" +
+     visard qui respire. Le reste reste calme.
+     =========================================================== */
+  :root {
+    /* Bleu nuit + accents orange (complémentaires). On garde les noms de
+       variables ; seules les valeurs changent. --cyan = accent orange principal. */
+    --bg:#071320; --surface:#0d1e30; --surface-2:#13273d; --line:#243a52; --edge:rgba(255,138,61,.28);
+    --cyan:#ff8a3d; --lime:#ffc061; --violet:#5aa8e6; --coral:#ff5257; --bleu:#5aa8e6;
+    --texte:#dfe8f2; --sourdine:#7f93a8;
+    --r:22px 10px 22px 10px;   /* rayon organique asymétrique */
+    --r-s:14px 6px 14px 6px;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; color:var(--texte);
+    font-family:"Exo 2",system-ui,sans-serif; line-height:1.5; font-size:15.5px;
+    padding:22px 16px 40px;
+    background:
+      radial-gradient(1000px 520px at 12% -8%, rgba(255,138,61,.12), transparent 58%),
+      radial-gradient(1000px 620px at 90% 112%, rgba(90,168,230,.08), transparent 58%),
+      var(--bg);
+  }
+  .app { max-width:980px; margin:0 auto; }
+
+  /* Membrane = carte organique luminescente */
+  .membrane {
+    position:relative;
+    background:
+      radial-gradient(130% 80% at 12% 0%, rgba(255,138,61,.10), transparent 55%),
+      radial-gradient(130% 90% at 100% 100%, rgba(90,168,230,.06), transparent 55%),
+      var(--surface);
+    border:1px solid var(--edge); border-radius:var(--r);
+    box-shadow:0 10px 34px rgba(0,0,0,.4), inset 0 0 34px rgba(255,138,61,.045);
+    padding:16px 18px;
+  }
+
+  header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+  .marque { text-align:left; }
+  .sous-titre { font-family:"Space Mono",monospace; color:var(--sourdine); font-size:11px; letter-spacing:.30em; text-transform:uppercase; }
+  .statut-haut { display:flex; align-items:center; gap:16px; flex:1; justify-content:flex-end; flex-wrap:wrap; }
+  .id-haut { display:flex; flex-direction:column; line-height:1.2; }
+  .id-haut b { font-size:16px; }
+  .id-haut .sous { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
+  .id-haut .sous b { color:var(--bleu); font-size:11px; }
+  .credits-haut { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); }
+  .credits-haut b.or { color:var(--orange); font-size:16px; }
+  .statut-haut .jauge.energie { width:200px; margin:0; }
+  @media (max-width:620px){ header { justify-content:center; } .marque { text-align:center; width:100%; } .statut-haut { justify-content:center; } }
+  .layout { display:block; }
+  h1 { font-weight:700; letter-spacing:.10em; font-size:clamp(26px,6vw,40px); margin:4px 0; color:var(--orange); text-shadow:0 0 14px rgba(255,138,61,.5); animation:respire 5s ease-in-out infinite; }
+
+  h2 { font-weight:700; font-size:14px; letter-spacing:.1em; text-transform:uppercase; color:var(--orange); margin:0 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:baseline; }
+  h2 .pts { color:var(--bleu); font-family:"Space Mono",monospace; font-size:12px; } h2 .pts:empty { display:none; }
+  h3 { font-weight:600; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--sourdine); margin:0 0 10px; }
+
+  @media (max-width:780px){ .layout { grid-template-columns:1fr; } }
+

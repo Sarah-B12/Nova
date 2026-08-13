@@ -1,0 +1,22 @@
+/* ===========================================================
+   JAUGES-SAC — Jauges vitales (bio-fioles) et grille d'inventaire (sac).
+   =========================================================== */
+  /* Jauges bio-fioles */
+  .jauge { margin-bottom:12px; } .jauge:last-child { margin-bottom:2px; }
+  .jauge-tete { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; font-family:"Space Mono",monospace; font-size:12px; }
+  .jauge-tete .val { font-weight:700; }
+  .piste { position:relative; height:15px; background:#04122a; border:1px solid var(--edge); border-radius:20px; overflow:hidden; }
+  .remplissage { height:100%; width:100%; background:linear-gradient(90deg,#3aa6e6,#6fe0ff); box-shadow:0 0 12px rgba(111,224,255,.6); border-radius:20px; transition:width .4s, background .4s, box-shadow .4s; }
+  .piste { background:#0a1c3c; }
+  .jauge.critique .remplissage { background:linear-gradient(90deg,rgba(255,82,87,.6),var(--coral)); box-shadow:0 0 16px rgba(255,82,87,.6); animation:pulse 1.1s infinite; }
+  .jauge.energie .remplissage { background:linear-gradient(90deg,#c26a1f,var(--orange)); box-shadow:0 0 14px rgba(255,154,68,.55); }
+  /* Sac : grille de tuiles carrées */
+  .sac-grille { display:grid; grid-template-columns:repeat(auto-fill,60px); gap:8px; margin-top:6px; }
+  .tuile { width:60px; height:60px; border:1px solid var(--edge); border-radius:12px 5px 12px 5px; background:rgba(16,41,78,.8); position:relative; display:grid; place-items:center; cursor:grab; }
+  .tuile.utilisable { cursor:pointer; }
+  .tuile:hover:not(.vide) { border-color:var(--orange); box-shadow:0 0 8px rgba(255,158,84,.25); }
+  .tuile.vide { border:1px dashed var(--line); background:rgba(16,41,78,.25); cursor:default; }
+  .tuile.drag { opacity:.35; }
+  .tuile .icone { width:46px; height:46px; display:grid; place-items:center; }
+  .tuile .icone svg, .tuile .icone img { width:100%; height:100%; object-fit:contain; }
+  .tuile .compte { position:absolute; bottom:2px; right:5px; font-family:"Space Mono",monospace; font-size:11px; font-weight:700; color:var(--orange-hi); text-shadow:0 0 4px #000; }

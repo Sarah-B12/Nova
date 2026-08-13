@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Epic — Silène</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/fiche.css">
+<link rel="stylesheet" href="css/jauges-sac.css">
+<link rel="stylesheet" href="css/carte.css">
+<link rel="stylesheet" href="css/terrain.css">
+<link rel="stylesheet" href="css/composants.css">
+<link rel="stylesheet" href="css/aptitudes.css">
+</head>
+
+<body>
+
+<!-- INSCRIPTION -->
+<div class="modale" id="modale-inscription" hidden>
+  <div class="membrane modale-boite">
+    <h2>Inscription</h2>
+    <p>Choisis ton nom d'opérateur. <b>Il sera définitif.</b> Ta faction te sera attribuée au hasard pour équilibrer les populations.</p>
+    <input type="text" id="inscription-nom" maxlength="18" placeholder="Nom du personnage">
+    <button class="valider" id="inscription-valider">Rejoindre Silène</button>
+  </div>
+</div>
+
+<div class="modale-carte" id="modale-carte" aria-hidden="true">
+  <div class="cadre-carte">
+    <div class="barre-carte">
+      <div class="titre-carte">Carte de Silène <span id="carte-lieu"></span></div>
+      <button class="mini" id="carte-fermer">Fermer ✕</button>
+    </div>
+    <div class="zone-carte"><svg id="carte" aria-label="Carte de Silène"></svg></div>
+    <p class="vide" style="text-align:center; margin:8px 0 0">Clique n'importe où sur la carte pour t'y déplacer (coût selon la distance).</p>
+  </div>
+</div>
+
+<div class="modale-carte" id="modale-struct" aria-hidden="true">
+  <div class="cadre-carte cadre-struct">
+    <div class="barre-carte">
+      <div class="titre-carte" id="struct-titre">Structure</div>
+      <button class="mini" id="struct-fermer">Fermer ✕</button>
+    </div>
+    <div id="struct-corps"></div>
+    <div class="actions" style="margin-top:14px; justify-content:flex-end">
+      <button class="mini danger" id="struct-demolir">Démolir</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <header>
+    <div class="marque">
+      <div class="sous-titre">Secteur Silène</div>
+      <h1>NOVA EPIC</h1>
+    </div>
+    <div class="statut-haut">
+      <div class="id-haut"><b id="nom-affiche">Opérateur</b><span class="sous">Niv <b id="stat-niveau">1</b> · <b id="stat-age">0 j</b></span></div>
+      <div class="credits-haut">Crédits <b class="or" id="stat-credits">0</b> ₡</div>
+      <div class="jauge energie" id="jauge-energie" title="Regagnée avec le temps (+10 %/h) et à chaque niveau (+100 %).">
+        <div class="jauge-tete"><span>Énergie</span><span class="val">100%</span></div>
+        <div class="piste"><div class="remplissage"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ONGLETS -->
+    <main>
+      <div class="onglets" role="tablist">
+        <button class="onglet actif" data-onglet="profil">Profil</button>
+        <button class="onglet" data-onglet="planete">Planète</button>
+        <button class="onglet" data-onglet="sac">Sac</button>
+        <button class="onglet" data-onglet="equipement">Équipement</button>
+        <button class="onglet" data-onglet="vaisseau">Vaisseau</button>
+        <button class="onglet" data-onglet="aptitudes">Aptitudes</button>
+        <button class="onglet" data-onglet="comm">Comm</button>
+        <button class="onglet" data-onglet="parametres">Paramètres</button>
+      </div>
+
+      <!-- PROFIL -->
+      <section class="panneau actif membrane" data-panneau="profil">
+        <div class="fiche-perso">
+          <div class="portrait" id="portrait">
+            <svg viewBox="0 0 120 130" aria-hidden="true">
+              <path class="corps" d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/>
+              <path class="corps" d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/>
+              <rect class="visor" x="38" y="46" width="44" height="13" rx="6"/>
+            </svg>
+          </div>
+          <div class="fiche-corps">
+            <div class="fiche-tete">
+              <div class="faction-box"><div id="faction-nom">Sans faction</div></div>
+              <div class="metier">Métier : <b id="stat-metier">Aucun (en formation)</b></div>
+              <div class="xp-ligne">XP <b id="stat-xp">0/20</b></div>
+            </div>
+            <div class="vitaux">
+              <div class="jauge" id="jauge-o2"><div class="jauge-tete"><span>Oxygène</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+              <div class="jauge" id="jauge-sante"><div class="jauge-tete"><span>Santé</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+              <div class="jauge" id="jauge-moral"><div class="jauge-tete"><span>Moral</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+            </div>
+          </div>
+        </div>
+        <h2 style="margin-top:16px">Compétences <span class="pts" id="pts-libres"></span></h2>
+        <div id="competences"></div>
+
+        <h2 style="margin-top:20px">Description RP</h2>
+        <div id="desc-vue"></div>
+        <button class="mini" id="desc-editer">Éditer la description</button>
+        <div id="desc-edition" hidden style="margin-top:12px">
+          <textarea id="desc-champ" placeholder="Présente ton personnage…"></textarea>
+          <div class="vide" style="margin:6px 0">Ajoute une image avec [img]https://adresse-de-l-image[/img]</div>
+          <button class="mini" id="desc-enregistrer">Enregistrer</button>
+        </div>
+        <h2 style="margin-top:20px">Mur</h2>
+        <div class="mur-reglage"><span>Ouvert à :</span>
+          <select id="mur-visibilite"><option value="amis">Mes amis</option><option value="tous">Tout le monde</option></select>
+        </div>
+        <div id="mur-liste"></div>
+        <div class="mur-saisie"><input type="text" id="mur-champ" maxlength="200" placeholder="Écrire un message…"><button class="mini" id="mur-publier">Publier</button></div>
+      </section>
+
+      <!-- PLANÈTE -->
+      <section class="panneau membrane" data-panneau="planete">
+        <div class="banniere" id="banniere-pause" hidden>⏸ Personnage en pause — reprends-le dans les Paramètres.</div>
+        <button class="action" id="ouvrir-carte" style="margin-bottom:8px"><span>Carte du monde</span><span class="cout">se déplacer</span></button>
+        <p id="region-info" style="margin:0 0 12px; font-size:14px"></p>
+
+        <div class="sous-menu" id="hub-nav">
+          <button class="hub-lien actif" data-hub="activites">Activités</button>
+          <button class="hub-lien" data-hub="terrain">Terrain</button>
+          <button class="hub-lien" data-hub="centre">Le Centre</button>
+          <button class="hub-lien" data-hub="poste">La Poste</button>
+          <button class="hub-lien" data-hub="marche">Le Marché</button>
+          <button class="hub-lien" data-hub="voler">Voler / Hacker</button>
+        </div>
+
+        <div class="hub-vue" id="hub-activites">
+          <p class="vide" style="margin:0 0 10px">Comptoir en zone de faction · minage, exploration et chasse en zone sauvage.</p>
+          <div class="actions">
+            <button class="action" data-action="miner"><span>Miner</span><span class="cout">+crédits +matière · −12 % én.</span></button>
+            <button class="action" data-action="reposer"><span>Se reposer</span><span class="cout">+20 santé/moral (≤70) · 1×/jour</span></button>
+            <button class="action" data-action="explorer"><span>Explorer</span><span class="cout">gain incertain · −10 % én.</span></button>
+            <button class="action" data-action="combattre"><span>Chasser une créature</span><span class="cout">combat auto · −8 % én.</span></button>
+          </div>
+          <div class="sous-carte"><h3>Boutique</h3><div id="comptoir-note" class="vide" style="margin-bottom:8px"></div><div class="actions" id="boutique"></div></div>
+        </div>
+
+        <div class="hub-vue" id="hub-terrain" hidden>
+          <div class="sous-menu">
+            <button class="sous-lien actif" data-sous="maison">Maison</button>
+            <button class="sous-lien" data-sous="recolte">Terrain de récolte</button>
+          </div>
+          <div class="sous-vue" id="sous-maison"></div>
+          <div class="sous-vue" id="sous-recolte" hidden>
+            <p class="vide">Clique une case pour y bâtir une structure, puis exploite-la. Terrain de même taille pour tous.</p>
+            <div class="terrain-grille" id="terrain-grille"></div>
+            <div class="plot-actions" id="plot-actions"></div>
+          </div>
+        </div>
+
+        <div class="hub-vue" id="hub-centre" hidden>
+          <div class="corps-carte">
+            <div class="menu-carte">
+              <button class="lien-carte actif" data-centre="formations">Formations</button>
+              <button class="lien-carte" data-centre="gouvernement">Gouvernement</button>
+              <button class="lien-carte" data-centre="votes">Votes</button>
+              <button class="lien-carte" data-centre="guerres">Guerres de faction</button>
+            </div>
+            <div class="vue-carte" id="centre-corps"></div>
+          </div>
+        </div>
+        <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><p class="vide">Envoyer des crédits ou des objets à d'autres joueurs… à venir (multijoueur).</p></div>
+        <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><p class="vide">Mettre en vente et acheter les objets des autres joueurs… à venir (multijoueur).</p></div>
+        <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><p class="vide">Cibler les joueurs présents ici (avec l'ordinateur de hacking pour ↑ tes chances)… à venir.</p></div>
+      </section>
+
+      <!-- SAC -->
+      <section class="panneau membrane" data-panneau="sac">
+        <h2>Sac <span class="pts" id="sac-cap"></span></h2>
+        <p class="vide">Glisse les objets pour les ranger. 50 places max ; les objets identiques s'empilent (une icône, un compteur). Clique un consommable pour l'utiliser.</p>
+        <div class="sac-grille" id="sac"></div>
+      </section>
+
+      <!-- MAISON -->
+      <!-- ÉQUIPEMENT -->
+      <section class="panneau membrane" data-panneau="equipement">
+        <h2>Équipement</h2>
+        <div class="slot"><span><b>Arme</b></span><span>aucune</span></div>
+        <div class="slot"><span><b>Armure</b></span><span>aucune</span></div>
+        <div class="slot"><span><b>Implant</b></span><span>aucun</span></div>
+        <p class="vide">L'équipement (fabriqué ou acheté) modifiera tes compétences. À venir avec les métiers.</p>
+      </section>
+
+      <!-- VAISSEAU -->
+      <section class="panneau membrane" data-panneau="vaisseau">
+        <h2>Vaisseau</h2>
+        <div class="verrou">Aucun vaisseau.</div>
+        <p class="vide">Construis un vaisseau (métier Constructeur) pour rejoindre l'espace : astéroïdes, lunes et satellites abandonnés recèlent des ressources introuvables sur Silène.</p>
+      </section>
+
+      <!-- APTITUDES (contenu injecté par js/aptitudes.js) -->
+      <section class="panneau membrane" data-panneau="aptitudes"></section>
+
+      <!-- COMM -->
+      <section class="panneau membrane" data-panneau="comm">
+        <h2>Communication</h2>
+        <details class="depliant"><summary>Liste d'amis</summary><div class="depliant-corps">Aucun contact. Amis et messagerie arriveront avec le multijoueur (tu verras les crédits de tes amis).</div></details>
+        <details class="depliant"><summary>Petites annonces</summary><div class="depliant-corps">
+          <div class="annonce"><b>[Ignis]</b> Vends lot de métaux volcaniques — prix à débattre.</div>
+          <div class="annonce"><b>[Le Rhizome]</b> Cherche kits médicaux contre rations fraîches.</div>
+          <div style="margin-top:8px">(Exemples — les vraies annonces viendront au multijoueur.)</div>
+        </div></details>
+        <details class="depliant"><summary>Messages</summary><div class="depliant-corps">Aucun message.</div></details>
+      </section>
+
+      <!-- PARAMÈTRES -->
+      <section class="panneau membrane" data-panneau="parametres">
+        <h2>Paramètres</h2>
+        <div class="reglage"><div><b>Personnage</b><p>Mets-le en pause quand tu t'absentes : les actions sont gelées.</p></div><button id="btn-pause">Mettre en pause</button></div>
+        <div class="reglage"><div><b>Changer de faction</b><p>Possible tous les 3 mois (déménagement inclus).</p></div><button disabled>Dans 3 mois</button></div>
+        <div class="reglage"><div><b>Physique du personnage</b><p>Modifier l'apparence coûtera des crédits.</p></div><button disabled>À venir</button></div>
+        <div class="reglage"><div><b>Mot de passe</b><p>Gestion du compte (page d'inscription/serveur).</p></div><button disabled>À venir</button></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="membrane journal-carte"><h2>Journal</h2><div id="journal"></div></div>
+
+  <footer>
+    <span>Sauvegarde automatique · v0.6 prototype</span>
+    <div class="boutons"><button id="btn-sauver">Sauvegarder</button><button id="btn-reset">Réinitialiser</button></div>
+  </footer>
+
+</div>
+
+<!-- Modules chargés dans l'ordre : données/config d'abord, amorçage en dernier -->
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/inventaire.js"></script>
+<script src="js/etat.js"></script>
+<script src="js/systeme.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/rendu.js"></script>
+<script src="js/maison.js"></script>
+<script src="js/carte.js"></script>
+<script src="js/formations.js"></script>
+<script src="js/aptitudes-data.js"></script>
+<script src="js/aptitudes.js"></script>
+<script src="js/aptitudes-effets.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="js/dev-console.js"></script>
+</body>
+</html>
