@@ -20,7 +20,10 @@ const SVG = {
   sporelle: `<svg viewBox="0 0 24 24"><path d="M12 21v-8" stroke="#7fe0a0" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="9" r="5" fill="rgba(127,224,160,.2)" stroke="#7fe0a0" stroke-width="1.4"/><circle cx="10" cy="8" r="1" fill="#7fe0a0"/><circle cx="14" cy="10" r="1" fill="#7fe0a0"/></svg>`,
   nectine:  `<svg viewBox="0 0 24 24"><path d="M12 21v-7" stroke="#9fd06f" stroke-width="1.6" stroke-linecap="round"/><path d="M12 14c-4 0-6-3-5-7 4 0 6 3 5 7zM12 14c2-2 5-2 7-1-1 3-4 4-7 1z" fill="rgba(159,208,111,.2)" stroke="#9fd06f" stroke-width="1.3"/></svg>`,
   ferragave:`<svg viewBox="0 0 24 24"><path d="M12 21l-5-4M12 21l5-4M12 21V6M12 8L6 5M12 10l6-4M12 12l-5-2M12 13l5-2" stroke="#e6c24f" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>`,
-  cuprin:   `<svg viewBox="0 0 24 24"><ellipse cx="11" cy="14" rx="7" ry="5" fill="rgba(224,168,111,.2)" stroke="#e0a86f" stroke-width="1.4"/><circle cx="18" cy="10" r="3" fill="rgba(224,168,111,.2)" stroke="#e0a86f" stroke-width="1.4"/><path d="M6 18l1 2M10 19l0 2M15 18l1 2M17 9l1-2M19 9l1-2" stroke="#e0a86f" stroke-width="1.3" stroke-linecap="round"/></svg>`
+  cuprin:   `<svg viewBox="0 0 24 24"><ellipse cx="11" cy="14" rx="7" ry="5" fill="rgba(224,168,111,.2)" stroke="#e0a86f" stroke-width="1.4"/><circle cx="18" cy="10" r="3" fill="rgba(224,168,111,.2)" stroke="#e0a86f" stroke-width="1.4"/><path d="M6 18l1 2M10 19l0 2M15 18l1 2M17 9l1-2M19 9l1-2" stroke="#e0a86f" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  cuirasson:`<svg viewBox="0 0 24 24"><path d="M4 16a8 5 0 0 1 16 0z" fill="rgba(200,138,90,.2)" stroke="#c88a5a" stroke-width="1.4"/><path d="M8 14v2M12 13v3M16 14v2" stroke="#c88a5a" stroke-width="1.2"/><path d="M5 16l1 3M19 16l-1 3" stroke="#c88a5a" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  toisard:  `<svg viewBox="0 0 24 24"><path d="M6 16a3.5 3.5 0 0 1 0-7 3.5 3.5 0 0 1 5-2 3.5 3.5 0 0 1 5 2 3.5 3.5 0 0 1 0 7z" fill="rgba(216,224,208,.25)" stroke="#cbd3c0" stroke-width="1.4"/><path d="M8 16v3M12 16v3M16 16v3" stroke="#cbd3c0" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+  nourrin:  `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="5" ry="6.5" fill="rgba(224,196,111,.25)" stroke="#e0c46f" stroke-width="1.4"/><path d="M9 11c1-1.6 5-1.6 6 0" stroke="#e0c46f" stroke-width="1.2" fill="none"/></svg>`
 };
 const CONSOMMABLES = [
   { id:"o2",     nom:"Recharge O₂",   prix:40, jauge:"o2",    soin:40, type:"conso" },
@@ -51,9 +54,10 @@ const PLANTES = [
 function plante(id){ return PLANTES.find(p=>p.id===id); }
 // Animaux élevés dans l'enclos.
 const ANIMAUX = [
-  { id:"cuprin",    nom:"Cuprin",    repasAdulte:4, produit:"filaine" },  // fibre fine
-  { id:"cuirassin", nom:"Cuirassin", repasAdulte:6, produit:"cuir" },     // grosse bête cuirassée : mue et perd sa peau dure (récolte non létale)
-  { id:"toisard",   nom:"Toisard",   repasAdulte:5, produit:"biofibre" }  // laine blanche rêche, pour les recettes (pas comestible)
+  { id:"cuprin",    nom:"Cuprin",    repasAdulte:4, produit:"filaine" },   // fibre fine
+  { id:"cuirasson", nom:"Cuirasson", repasAdulte:6, produit:"cuir" },      // grosse bête cuirassée : mue et perd sa peau dure (récolte non létale)
+  { id:"toisard",   nom:"Toisard",   repasAdulte:5, produit:"biofibre" },  // laine blanche rêche, pour les recettes (pas comestible)
+  { id:"nourrin",   nom:"Nourrin",   repasAdulte:5, produit:"proteines" }  // pond une substance riche en protéines (récolte non létale)
 ];
 function animal(id){ return ANIMAUX.find(a=>a.id===id); }
 const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES];
@@ -71,7 +75,18 @@ const IMG_ITEM = {
   fab_lingot_de_cendrite:"images/items/lingot_cendrite.png",
   fab_lingot_de_voltane: "images/items/lingot_voltane.png",
   fab_lingot_de_silite:  "images/items/lingot_silite.png",
-  fab_lingot_de_givrite: "images/items/lingot_givrite.png"
+  fab_lingot_de_givrite: "images/items/lingot_givrite.png",
+  fab_couteau_de_survie:   "images/items/couteau.png",
+  fab_munitions_cinetiques:"images/items/munitions_cinetiques.png",
+  fab_pistolet_cinetique:  "images/items/pistolet.png",
+  fab_munitions_a_plasma:  "images/items/munitions_plasma.png",
+  fab_lame_a_plasma:       "images/items/lame_plasma.png",
+  fab_pistolet_a_plasma:   "images/items/pistolet_plasma.png",
+  fab_munitions_a_ions:    "images/items/munitions_ions.png",
+  fab_fusil_a_ions:        "images/items/fusil_ions.png",
+  fab_tourelle_de_vaisseau:"images/items/tourelle.png",
+  fab_lame_a_singularite:  "images/items/lame_singularite.png",
+  fab_canon_a_singularite: "images/items/canon_singularite.png"
 };
 function iconeItem(id){ return IMG_ITEM[id] ? `<img src="${IMG_ITEM[id]}" alt="">` : (SVG[id]||""); }
 
@@ -87,6 +102,9 @@ const VILLES = {
   toundra:      { x:1920, y:355,  r:100 },   // glace (haut-droite)
   rouage:       { x:1895, y:1050, r:100 }     // ruines rouillées (bas-droite)
 };
+// Zone de l'antagoniste : entrée interdite ; on ne peut que toucher l'ANNEAU (pour hacker/espionner).
+const ZONE_PROTOCOLE = { x:450, y:1042, r:115 };
+const TOL_PROTOCOLE  = 70;   // tolérance (unités monde) pour être considéré « sur l'anneau »
 // Lieux spéciaux dans la nature (rayon d'effet plus petit).
 const LIEUX = [
   { type:"mine",   x:900,  y:520,  r:60 }, { type:"mine",   x:1720, y:1010, r:60 }, { type:"mine",   x:620,  y:980,  r:60 },
@@ -99,6 +117,8 @@ function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x,
 // Ville dont on est dans le rayon (ou null).
 function villeActuelle(){ for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; } return null; }
 function enZoneFaction(){ return villeActuelle(); }
+// Vrai si le joueur est sur l'anneau du Protocole (à TOL près) — servira au hack/espionnage.
+function surAnneauProtocole(){ if(!etat.pos) return false; return Math.abs(dist(etat.pos.x,etat.pos.y,ZONE_PROTOCOLE.x,ZONE_PROTOCOLE.y) - ZONE_PROTOCOLE.r) <= TOL_PROTOCOLE; }
 // Lieu spécial dont on est dans le rayon (ou null).
 function lieuActuel(){ for(const l of LIEUX){ if(dist(etat.pos.x,etat.pos.y,l.x,l.y)<=l.r) return l; } return null; }
 function materiauMaison(){ return "cendrite"; }

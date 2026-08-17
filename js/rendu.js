@@ -31,6 +31,8 @@ function afficher(){
 
   regenEnergie();
   regenPassif();
+  if(typeof majDrones==="function") majDrones();
+  if(typeof majUsure==="function") majUsure();
   const e = Math.floor(etat.energie);
   const je = document.querySelector("#jauge-energie");
   je.querySelector(".val").textContent = e + "%";
@@ -64,6 +66,7 @@ function afficher(){
   });
 
   majCarte(); majSac(); majTerrain(); majMur();
+  if(typeof majEquipement==="function") majEquipement();
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
   if(typeof majAptitudes==="function") majAptitudes();
@@ -77,24 +80,32 @@ function majSac(){
   const stacks = etat.sacOrdre.filter(id => (etat.sac[id]||0)>0);
   const cible = Math.max(12, Math.ceil((stacks.length+2)/6)*6);   // remplit une grille propre
   for (let i=0;i<cible;i++){
+    const cell=document.createElement("div"); cell.className="sac-case";
     const t=document.createElement("div");
     if (i < stacks.length){
       const id=stacks[i]; const it=item(id);
       t.className = "tuile" + (it.type==="conso" ? " utilisable" : "");
       t.draggable = true; t.dataset.id = id;
-      t.title = it.type==="conso" ? `${it.nom} — cliquer pour utiliser (+${it.soin})` : it.nom;
-      t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${etat.sac[id]}</span>`;
+      const jr = (typeof joursRestants==="function") ? joursRestants(id) : null;
+      const perissable = (typeof dureeVie==="function") && dureeVie(id) < 30;
+      t.title = (it.type==="conso" ? `${it.nom} — cliquer pour utiliser (+${it.soin})` : it.nom) + (jr!=null ? ` · ${Math.ceil(jr)} j restant(s)` : "");
+      const badgeUsure = (perissable && jr!=null) ? `<span class="usure ${jr<1?"critique":jr<dureeVie(id)/2?"faible":""}">${Math.ceil(jr)}j</span>` : "";
+      t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${etat.sac[id]}</span>${badgeUsure}`;
       t.addEventListener("dragstart", ()=>{ dragId=id; t.classList.add("drag"); });
       t.addEventListener("dragend",   ()=>{ dragId=null; t.classList.remove("drag"); });
       t.addEventListener("dragover",  e=>e.preventDefault());
       t.addEventListener("drop",      e=>{ e.preventDefault(); if(dragId && dragId!==id) reordonnerSac(dragId, id); });
       if (it.type==="conso" && !etat.enPause) t.addEventListener("click", ()=>utiliser(it));
+      cell.appendChild(t);
+      const nom=document.createElement("span"); nom.className="sac-nom"; nom.textContent=it.nom; cell.appendChild(nom);
     } else {
       t.className = "tuile vide";
       t.addEventListener("dragover", e=>e.preventDefault());
       t.addEventListener("drop",     e=>{ e.preventDefault(); if(dragId) reordonnerSac(dragId, null); });
+      cell.appendChild(t);
+      const nom=document.createElement("span"); nom.className="sac-nom"; nom.innerHTML="&nbsp;"; cell.appendChild(nom);
     }
-    z.appendChild(t);
+    z.appendChild(cell);
   }
 }
 

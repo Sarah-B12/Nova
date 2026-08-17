@@ -7,8 +7,9 @@ function nouvelEtat(){
     energie:100, energieMaj:Date.now(), reposLe:0, regenMaj:0,
     credits:1000, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:5, intelligence:5 },
+    equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null },
     jauges:{ o2:90, sante:100, moral:80 },
-    sac:{}, sacOrdre:[], coffre:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
+    sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
     description:"", mur:[], murOuvertA:"amis",
     formation:null,
     aptitudes:{ pa:0, pris:[] }
@@ -18,9 +19,14 @@ function nouvelEtat(){
 /* ---------- Utilitaires ---------- */
 function borne(v){ return Math.max(0, Math.min(MAX, v)); }
 function alea(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
-function reductionO2(){ return Math.floor(etat.competences.agilite/5); }
-function bonusCredits(){ return Math.floor(etat.competences.intelligence/5); }
-function coutO2(base){ return Math.max(1, base - reductionO2() - aptO2Bonus()); }
+function reductionO2(){ return Math.floor(etat.competences.agilite/5); }   // (déprécié — voir coutO2)
+function bonusCredits(){ return Math.floor(intelligenceEffective()/5); }
+// Compétences effectives = compétence de base + bonus d'équipement (helpers définis dans equipement.js).
+function forceEffective(){ return etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0); }
+function agiliteEffective(){ return etat.competences.agilite + (typeof equipAgi==="function" ? equipAgi() : 0); }
+function intelligenceEffective(){ return etat.competences.intelligence + (typeof equipInt==="function" ? equipInt() : 0); }
+// Coût O₂ : l'Agilité réduit jusqu'à −50 % à 200 ; Poumons d'acier −1 ; l'équipement lourd rajoute du coût.
+function coutO2(base){ const c = base * (1 - Math.min(0.5, agiliteEffective()/400)) + (typeof equipO2==="function"?equipO2():0); return Math.max(1, Math.round(c - aptO2Bonus())); }
 function echapper(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function ageJours(){ return Math.floor((Date.now() - etat.creeLe) / MS_JOUR); }
 /* ---------- Sauvegarde ---------- */

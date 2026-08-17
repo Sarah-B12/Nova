@@ -7,14 +7,17 @@ function placesLibres(){ return capaciteSac() - placesUtilisees(); }
 // Ajoute n unités au sac dans la limite de la capacité. Renvoie le nombre réellement ajouté.
 function ajouterAuSac(id, n){
   const place = Math.max(0, Math.min(n, placesLibres()));
-  if (place > 0) { etat.sac[id] = (etat.sac[id]||0) + place; if(!etat.sacOrdre.includes(id)) etat.sacOrdre.push(id); }
+  if (place > 0) {
+    if(!(etat.sac[id]>0)){ if(!etat.sacDate) etat.sacDate={}; etat.sacDate[id]=Date.now(); }  // nouvelle pile : date d'acquisition
+    etat.sac[id] = (etat.sac[id]||0) + place; if(!etat.sacOrdre.includes(id)) etat.sacOrdre.push(id);
+  }
   return place;
 }
 // Retire une unité et nettoie l'ordre si la pile est vide.
 function retirerDuSac(id, n=1){
   if(!etat.sac[id]) return;
   etat.sac[id]-=n;
-  if(etat.sac[id]<=0){ delete etat.sac[id]; etat.sacOrdre=etat.sacOrdre.filter(x=>x!==id); }
+  if(etat.sac[id]<=0){ delete etat.sac[id]; etat.sacOrdre=etat.sacOrdre.filter(x=>x!==id); if(etat.sacDate) delete etat.sacDate[id]; }
 }
 // Réordonne le sac (glisser-déposer) : place dragId à l'emplacement de cibleId.
 let dragId=null;

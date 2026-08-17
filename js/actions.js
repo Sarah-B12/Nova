@@ -33,9 +33,27 @@ function explorer(){
   else { journal("Une créature surgit d'une épave…","alerte"); resoudreCombat(false); }
 }
 function resoudreCombat(bonus){
-  const fc=Math.max(1, alea(6,14) - aptCombatFcReduc()); const chance=etat.competences.force/(etat.competences.force+fc);
-  if(Math.random()<chance){ const g=aptButinCombat(alea(12,28)+bonusCredits()+(bonus?alea(6,14):0)); etat.credits+=g; gagnerXp(bonus?12:9); journal(`Créature abattue : +${g} ₡${bonus?" (terrain de chasse)":""}.`,"gain"); }
-  else { let ps=Math.max(4,fc-Math.floor(etat.competences.force/2)); let pm=Math.max(2,Math.floor(ps/2)); ps=aptCombatDegats(ps); pm=aptCombatDegats(pm); etat.jauges.sante=borne(etat.jauges.sante-ps); etat.jauges.moral=borne(etat.jauges.moral-pm); gagnerXp(4); journal(`La créature a pris le dessus : −${ps} santé, −${pm} moral.`,"alerte"); }
+  const F = forceEffective();
+  // Dureté de la créature : faible pour une bestiole standard, plus élevée en terrain de chasse ; les aptitudes l'abaissent.
+  const cf = Math.max(0, (bonus ? alea(12,35) : alea(0,12)) - aptCombatFcReduc());
+  // Chance de gagner : ~1 % à Force 0, ~95 % à Force 200 (jamais 100 %).
+  const pWin = Math.min(0.95, Math.max(0.01, 0.01 + 0.0047*(F - cf)));
+  if(Math.random() < pWin){
+    const g=aptButinCombat(alea(12,28)+bonusCredits()+(bonus?alea(6,14):0)); etat.credits+=g; gagnerXp(bonus?12:9);
+    journal(`Créature abattue : +${g} ₡${bonus?" (terrain de chasse)":""}.`,"gain");
+  } else {
+    // Santé perdue : ~50 à Force 0, ~10 à Force 200 (+ créature costaude).
+    let ps = Math.max(10, Math.min(55, Math.round(50 - 0.20*F + cf*0.3)));
+    // Esquive (Agilité + jambières) : chance d'amortir le coup.
+    const esq = Math.min(0.6, agiliteEffective()/400 + (typeof equipEsquive==="function"?equipEsquive()/100:0));
+    const esquive = Math.random() < esq; if(esquive) ps = Math.round(ps*0.35);
+    // Armure (équipement) puis aptitudes ; plancher 3.
+    if(typeof equipDegatsMult==="function") ps = ps*equipDegatsMult();
+    ps = Math.max(3, aptCombatDegats(Math.round(ps)));
+    const pm = Math.max(2, Math.round(ps*0.5));
+    etat.jauges.sante=borne(etat.jauges.sante-ps); etat.jauges.moral=borne(etat.jauges.moral-pm); gagnerXp(4);
+    journal(`La créature a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}.`,"alerte");
+  }
   apresAction();
 }
 function combattre(){ if(enZoneFaction()){ journal("La chasse se fait en zone sauvage.","alerte"); return; } if(!depenserEnergie(aptEnergieAction(ACTION_COUT.combattre)))return; etat.jauges.o2=borne(etat.jauges.o2-coutO2(4)); const l=lieuActuel(); resoudreCombat(!!(l && l.type==="chasse")); }

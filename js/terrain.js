@@ -6,7 +6,8 @@ const STRUCTURES = {
   mine:    { nom:"Mine",     prix:150, desc:"minerais" },
   biodome: { nom:"Bio-dôme", prix:200, desc:"Sylve, Biofibre" },
   enclos:  { nom:"Enclos",   prix:250, desc:"Filaine, Cuir, Protéines" },
-  atelier: { nom:"Atelier",  prix:300, desc:"fabriquer les objets de ta formation" }
+  atelier: { nom:"Atelier",  prix:300, desc:"fabriquer les objets de ta formation" },
+  hangar:  { nom:"Hangar à drones", prix:350, desc:"automatise un bio-dôme ou un enclos" }
 };
 const MINE_MAX = 500;      // réserve d'une mine à sa construction
 const MINE_LOT = 6;        // minerais extraits par action « Miner »
@@ -34,6 +35,7 @@ function normaliserParcelles(t){
     else if(s.type==="enclos")  arr[i]={ type:"enclos",  cases:normCases(s.cases) };
     else if(s.type==="atelier") arr[i]={ type:"atelier" };
     else if(s.type==="maison")  arr[i]={ type:"maison" };
+    else if(s.type==="hangar")  arr[i]={ type:"hangar", drones:[ (s.drones&&s.drones[0])||null, (s.drones&&s.drones[1])||null ] };
     else arr[i]=null;
   }
   return arr;
@@ -49,6 +51,7 @@ function batirParcelle(type){
   else if(type==="biodome") p={ type:"biodome", cases:Array(N_CASES).fill(null) };
   else if(type==="enclos")  p={ type:"enclos",  cases:Array(N_CASES).fill(null) };
   else if(type==="atelier") p={ type:"atelier" };
+  else if(type==="hangar")  p={ type:"hangar", drones:[null,null] };
   else return;
   etat.terrain.parcelles[plotSel]=p;
   journal(`${s.nom} bâti (−${prix} ₡).`,"gain"); apresAction();
@@ -98,10 +101,9 @@ function nourrirCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas>=a.repasAdulte){ journal("Déjà adulte.","alerte"); return; }
-  const dispo=plantesDuSac();
-  if(dispo.length===0){ journal("Il faut une plante cultivée au bio-dôme dans ton sac.","alerte"); return; }
-  retirerDuSac(dispo[0],1); c.repas++;
-  journal(`Nourri (1 ${item(dispo[0]).nom}) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); majStruct();
+  if((etat.sac["ferragave"]||0)<=0){ journal("Il faut de la Ferragave (cultivée au bio-dôme) dans ton sac pour nourrir.","alerte"); return; }
+  retirerDuSac("ferragave",1); c.repas++;
+  journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); majStruct();
 }
 function tondreCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
@@ -126,6 +128,7 @@ function majStruct(){
   document.querySelector("#struct-titre").textContent = STRUCTURES[p.type].nom + foT;
   const corps=document.querySelector("#struct-corps"); corps.innerHTML="";
   if(p.type==="atelier"){ renderAtelier(corps); return; }
+  if(p.type==="hangar"){ renderHangar(corps); return; }
   if(p.type==="mine"){
     const stock=p.stock||0;
     const row=document.createElement("div"); row.className="actions";
@@ -178,7 +181,7 @@ function renderStructActions(p, el){
     }
     const a=animal(c.animal); const adulte=c.repas>=a.repasAdulte;
     el.innerHTML=`<p style="margin:0 0 8px"><b>${a.nom}</b> — ${adulte?`adulte · ${c.tontes}/${TONTES_MAX} tontes`:`jeune ${c.repas}/${a.repasAdulte} repas`}</p>`;
-    if(!adulte) btn("Nourrir (1 plante)",()=>nourrirCase(ci), plantesDuSac().length===0);
+    if(!adulte) btn("Nourrir (1 Ferragave)",()=>nourrirCase(ci), (etat.sac["ferragave"]||0)<=0);
     else btn(memeJour(c.tonte)?"Tondu aujourd'hui":"Tondre",()=>tondreCase(ci), memeJour(c.tonte));
     btn("Retirer",()=>{ if(confirm("Retirer cet animal ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
   }
@@ -198,7 +201,13 @@ function majRecolte(){
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {
-      cell.innerHTML = p ? `<img src="${IMG[p.type]}" alt="${STRUCTURES[p.type].nom}">` : `<span class="vide-plot">+</span>`;
+      if(p && p.type==="hangar" && !IMG.hangar){
+        cell.classList.add("plot-maison");
+        const nb = p.drones.filter(Boolean).length;
+        cell.innerHTML = `<span class="maison-glyphe">✦</span><span class="badge-plot">Hangar ${nb}/2</span>`;
+      } else {
+        cell.innerHTML = p ? `<img src="${IMG[p.type]}" alt="${STRUCTURES[p.type].nom}">` : `<span class="vide-plot">+</span>`;
+      }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); if(p) ouvrirStruct(i); });
     }
     g.appendChild(cell);
