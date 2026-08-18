@@ -4,7 +4,25 @@
 /* ---------- Carte continue ---------- */
 const DW = 1500;                       // largeur d'affichage (px) ; le reste défile
 const DH = Math.round(DW * MONDE.h / MONDE.w);
-const PAS = 130;                       // unités par 1 % d'énergie
+const PAS = 63;                        // unités par 1 % d'énergie (Toundra->Nomades ≈ 15 %)
+const PAS_O2 = 160;                     // unités par 1 O₂ (déplacement à découvert)
+// Cercle (ville ou lieu) contenant un point, ou null. Le Protocole n'est pas une zone d'abri.
+function cercleContenant(p){
+  for(const fid in VILLES){ const v=VILLES[fid]; if(dist(p.x,p.y,v.x,v.y) < v.r) return v; }
+  for(const l of LIEUX){ if(dist(p.x,p.y,l.x,l.y) < l.r) return l; }
+  return null;
+}
+function bordVers(c, vers){ const a=Math.atan2(vers.y-c.y, vers.x-c.x); return { x:c.x+Math.cos(a)*c.r, y:c.y+Math.sin(a)*c.r }; }
+// Longueur du trajet À DÉCOUVERT (hors cercles) : gratuit dans un cercle, mesuré depuis la peau au départ/arrivée.
+function distanceOuverte(a, b){
+  const ca=cercleContenant(a), cb=cercleContenant(b);
+  if(ca && ca===cb) return 0;                                   // même cercle : gratuit
+  const ea = ca ? bordVers(ca, b) : a;                          // départ effectif (peau du cercle)
+  const eb = cb ? bordVers(cb, a) : b;                          // arrivée effective
+  const dx=b.x-a.x, dy=b.y-a.y, sx=eb.x-ea.x, sy=eb.y-ea.y;
+  if(dx*sx + dy*sy <= 0) return 0;                              // cercles jointifs/recouvrants
+  return Math.min(dist(ea.x,ea.y,eb.x,eb.y), dist(a.x,a.y,b.x,b.y));
+}
 const COUL_LIEU = { mine:"var(--orange)", chasse:"var(--coral)", quete:"var(--bleu)" };
 const GLYPHE_LIEU = { mine:"◆", chasse:"◎", quete:"★" };
 
@@ -38,6 +56,8 @@ function construireCarte(){
 }
 function majCarte(){
   if(!etat.pos || etat.pos.x===undefined) etat.pos=posDefaut();
+  const ce=document.querySelector("#carte-energie"); if(ce){ const e=Math.floor(etat.energie); ce.textContent=e; document.querySelector("#cj-energie").classList.toggle("bas", e<20); }
+  const co=document.querySelector("#carte-o2"); if(co){ const o=Math.floor(etat.jauges.o2); co.textContent=o; document.querySelector("#cj-o2").classList.toggle("bas", o<20); }
   const av=document.querySelector("#avatar");
   if(av){ const col=(FACTIONS.find(f=>f.id===etat.faction)||{}).couleur||"#ff9a44";
     av.innerHTML=`<circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="6" fill="${col}"/>`; }
@@ -60,12 +80,17 @@ function voyager(x, y){
   // Protocole : impossible d'entrer dans le cercle -> on est projeté sur l'anneau (le trait)
   const z = ZONE_PROTOCOLE, dp = dist(x, y, z.x, z.y);
   if(dp < z.r){ const a = Math.atan2(y - z.y, x - z.x); x = z.x + Math.cos(a) * z.r; y = z.y + Math.sin(a) * z.r; }
-  const d=dist(etat.pos.x,etat.pos.y,x,y);
-  if(d<6) return;
-  const cout=aptEnergieDeplacement(Math.max(1, Math.round(d/PAS)));
-  if(!depenserEnergie(cout)) return;
+  const dFull=dist(etat.pos.x,etat.pos.y,x,y);
+  if(dFull<6) return;
+  const dOpen = distanceOuverte(etat.pos, {x,y});                 // portion à découvert (hors cercles)
+  const coutE = dOpen>0 ? aptEnergieDeplacement(Math.max(1, Math.round(dOpen/PAS)))   : 0;
+  const coutO = dOpen>0 ? coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))               : 0;
+  if(coutE>0 && !depenserEnergie(coutE)) return;
+  if(coutO>0) etat.jauges.o2 = borne(etat.jauges.o2 - coutO);
   etat.pos={ x:Math.round(x), y:Math.round(y) };
-  journal(`Déplacement (${Math.round(d)} u). −${cout} % énergie.`+(surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""));
+  journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
+                    : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)
+          + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""));
   apresAction();
 }
 

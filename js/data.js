@@ -25,18 +25,16 @@ const SVG = {
   toisard:  `<svg viewBox="0 0 24 24"><path d="M6 16a3.5 3.5 0 0 1 0-7 3.5 3.5 0 0 1 5-2 3.5 3.5 0 0 1 5 2 3.5 3.5 0 0 1 0 7z" fill="rgba(216,224,208,.25)" stroke="#cbd3c0" stroke-width="1.4"/><path d="M8 16v3M12 16v3M16 16v3" stroke="#cbd3c0" stroke-width="1.2" stroke-linecap="round"/></svg>`,
   nourrin:  `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="5" ry="6.5" fill="rgba(224,196,111,.25)" stroke="#e0c46f" stroke-width="1.4"/><path d="M9 11c1-1.6 5-1.6 6 0" stroke="#e0c46f" stroke-width="1.2" fill="none"/></svg>`
 };
-const CONSOMMABLES = [
-  { id:"o2",     nom:"Recharge O₂",   prix:40, jauge:"o2",    soin:40, type:"conso" },
-  { id:"kit",    nom:"Kit médical",   prix:80, jauge:"sante", soin:40, type:"conso" },
-  { id:"ration", nom:"Ration chaude", prix:60, jauge:"moral", soin:30, type:"conso" }
-];
+// Consommables : fusionnés dans les produits Biotech (Recharge d'oxygène, Kit de soin,
+// Ration chaude…). Un seul objet par type, fabriqué par les Biotech ou vendu (plus cher) en Boutique.
+const CONSOMMABLES = [];
 // Matières : les mêmes partout. Minerais (raretés), organiques et animales.
 const MATIERES = [
   { id:"cendrite", nom:"Cendrite", type:"matiere", cat:"minerai", poids:40 },
   { id:"voltane",  nom:"Voltane",  type:"matiere", cat:"minerai", poids:30 },
   { id:"silite",   nom:"Silite",   type:"matiere", cat:"minerai", poids:18 },
   { id:"givrite",  nom:"Givrite",  type:"matiere", cat:"minerai", poids:9  },
-  { id:"cristal",  nom:"Cristal de Nyx", type:"matiere", cat:"minerai", poids:3 },
+  { id:"cristal",  nom:"Cristal de Nyx", type:"matiere", cat:"minerai", poids:0.5 },
   { id:"biofibre", nom:"Biofibre", type:"matiere", cat:"organique" },
   { id:"filaine",  nom:"Filaine",  type:"matiere", cat:"animal" },
   { id:"cuir",     nom:"Cuir",     type:"matiere", cat:"animal" },
@@ -60,7 +58,46 @@ const ANIMAUX = [
   { id:"nourrin",   nom:"Nourrin",   repasAdulte:5, produit:"proteines" }  // pond une substance riche en protéines (récolte non létale)
 ];
 function animal(id){ return ANIMAUX.find(a=>a.id===id); }
-const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES];
+
+// --- Graines (petites plantes) et bébés animaux : prérequis pour planter / élever, vendus en Boutique ---
+const PRIX_GRAINE = { sporelle:6, nectine:7, ferragave:6, sylve:8 };
+const GRAINES = PLANTES.map(p => ({ id:"graine_"+p.id, nom:"Graine de "+p.nom, type:"graine", plante:p.id, prix:(PRIX_GRAINE[p.id]||6) }));
+const PRIX_BEBE = { cuprin:20, cuirasson:32, toisard:26, nourrin:28 };
+const BEBES = ANIMAUX.map(a => ({ id:"bebe_"+a.id, nom:"Petit "+a.nom, type:"bebe", animal:a.id, prix:(PRIX_BEBE[a.id]||24) }));
+function graineDe(plId){ return "graine_"+plId; }
+function bebeDe(anId){ return "bebe_"+anId; }
+
+// Consommables UTILISABLES (cliquer dans le sac pour regagner des jauges). Effets multi-jauges.
+// Les valeurs sont volontairement modestes : les gros soins (Tank à oxygène, Boîte de soin) restent supérieurs.
+const EFFET_CONSO = {
+  fab_recharge_d_oxygene: { o2:25 },                 // recharge O₂ (le Tank fait mieux)
+  fab_tank_a_oxygene:     { o2:60 },                 // grosse réserve d'O₂
+  fab_kit_de_soin:        { sante:20, moral:20 },
+  fab_boite_de_soin:      { sante:45, moral:30 },    // gros kit
+  fab_ration_chaude:      { moral:25, sante:5 },
+  fab_stimulant:          { moral:20, sante:10 },
+  fab_antidote:           { sante:20 }
+  // Biocarburant / Biocarburant raffiné = carburant de vaisseau (pas un soin joueur).
+};
+function labelJauge(g){ return { o2:"O₂", sante:"santé", moral:"moral", energie:"énergie" }[g] || g; }
+// Renvoie les effets d'un consommable { jauge:montant, ... } ou null.
+function effetConso(id){
+  if(EFFET_CONSO[id]) return EFFET_CONSO[id];
+  const it=item(id); if(it && it.type==="conso") return { [it.jauge]: it.soin };   // consommables de base (legacy)
+  return null;
+}
+
+// Catalogue de la Boutique (identique pour toutes les factions, stock illimité)
+const BOUTIQUE = [
+  ...GRAINES.map(g => ({ id:g.id, nom:g.nom, prix:g.prix, cat:"graines" })),
+  ...BEBES.map(b => ({ id:b.id, nom:b.nom, prix:b.prix, cat:"bebes" })),
+  { id:"fab_recharge_d_oxygene", nom:"Recharge d'oxygène", prix:340, cat:"conso" },
+  { id:"fab_kit_de_soin",        nom:"Kit de soin",        prix:200, cat:"conso" },
+  { id:"fab_biocarburant",       nom:"Biocarburant",       prix:460, cat:"conso" }
+];
+const CAT_BOUTIQUE = [ { id:"graines", nom:"Graines" }, { id:"bebes", nom:"Bébés animaux" }, { id:"conso", nom:"Consommables" } ];
+
+const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
@@ -88,7 +125,20 @@ const IMG_ITEM = {
   fab_lame_a_singularite:  "images/items/lame_singularite.png",
   fab_canon_a_singularite: "images/items/canon_singularite.png"
 };
-function iconeItem(id){ return IMG_ITEM[id] ? `<img src="${IMG_ITEM[id]}" alt="">` : (SVG[id]||""); }
+const ICONE_GRAINE = `<svg viewBox="0 0 24 24"><path d="M12 21c0-5 3-7 3-11 0-2-1-3-3-3s-3 1-3 3c0 4 3 6 3 11z" fill="rgba(127,224,160,.2)" stroke="#7fe0a0" stroke-width="1.4"/><path d="M12 14c-2 0-3-1-3-3 2 0 3 1 3 3z" fill="#7fe0a0"/></svg>`;
+const ICONE_BEBE = `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="6" ry="5" fill="rgba(224,168,111,.22)" stroke="#e0a86f" stroke-width="1.4"/><circle cx="10" cy="13" r="1" fill="#e0a86f"/><circle cx="14" cy="13" r="1" fill="#e0a86f"/><path d="M9 8l1.5 2M15 8l-1.5 2" stroke="#e0a86f" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+const ICONE_BIOCARB = `<svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z" fill="rgba(230,194,79,.2)" stroke="#e6c24f" stroke-width="1.4"/></svg>`;
+function iconeItem(id){
+  if(IMG_ITEM[id]) return `<img src="${IMG_ITEM[id]}" alt="">`;
+  if(SVG[id]) return SVG[id];
+  if(id.indexOf("graine_")===0) return ICONE_GRAINE;
+  if(id.indexOf("bebe_")===0)   return ICONE_BEBE;
+  if(id==="fab_recharge_d_oxygene") return SVG.o2;
+  if(id==="fab_kit_de_soin")        return SVG.kit;
+  if(id==="fab_ration_chaude")      return SVG.ration;
+  if(id==="fab_biocarburant")       return ICONE_BIOCARB;
+  return "";
+}
 
 // --- Carte continue (à la Kingdom Epic) : un vaste monde en coordonnées.
 // Chaque (x,y) est un endroit distinct ; entre les points marqués, le vide est
@@ -107,9 +157,9 @@ const ZONE_PROTOCOLE = { x:450, y:1042, r:115 };
 const TOL_PROTOCOLE  = 70;   // tolérance (unités monde) pour être considéré « sur l'anneau »
 // Lieux spéciaux dans la nature (rayon d'effet plus petit).
 const LIEUX = [
-  { type:"mine",   x:900,  y:520,  r:60 }, { type:"mine",   x:1720, y:1010, r:60 }, { type:"mine",   x:620,  y:980,  r:60 },
-  { type:"chasse", x:1460, y:360,  r:60 }, { type:"chasse", x:1920, y:720,  r:60 }, { type:"chasse", x:860,  y:1260, r:60 },
-  { type:"quete",  x:1360, y:1180, r:60 }, { type:"quete",  x:520,  y:660,  r:60 }
+  { type:"mine",   x:820,  y:500,  r:60 }, { type:"mine",   x:1660, y:700,  r:60 }, { type:"mine",   x:720,  y:1280, r:60 },
+  { type:"chasse", x:1560, y:470,  r:60 }, { type:"chasse", x:560,  y:640,  r:60 }, { type:"chasse", x:1520, y:1290, r:60 },
+  { type:"quete",  x:980,  y:1010, r:60 }, { type:"quete",  x:1640, y:930,  r:60 }
 ];
 
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }

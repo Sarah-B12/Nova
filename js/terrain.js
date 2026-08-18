@@ -19,6 +19,7 @@ const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"imag
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous
 const PLANT_MAX = 100;         // % de croissance pour récolter une plante
 const REPAS_ADULTE = 4;        // repas (plantes) pour qu'un animal devienne adulte
+const COUT_TERRAIN = { planter:2, elever:2, arroser:2, recolter:3, nourrir:2, tondre:3, batir:5, miner:8 };  // énergie par action (pas d'O₂ : on est dans un cercle)
 const TONTES_MAX = 7;          // au bout de 7 tontes l'animal prend sa retraite
 const N_CASES = 4;             // emplacements dans un bio-dôme / enclos
 let structSel = null, structCaseSel = null;   // structure ouverte en modale + case sélectionnée
@@ -45,6 +46,7 @@ function batirParcelle(type){
   const s=STRUCTURES[type];
   const prix=aptCoutStructure(s.prix);
   if(etat.credits<prix){ journal(`Il faut ${prix} ₡.`,"alerte"); return; }
+  if(!depenserEnergie(COUT_TERRAIN.batir)) return;
   etat.credits-=prix;
   let p;
   if(type==="mine"){ const rmax=aptMineReserve(MINE_MAX); p={ type:"mine", stock:rmax, max:rmax }; }
@@ -68,8 +70,9 @@ function demolir(i){
 
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
 function recolterMine(i){
+  if(!depenserEnergie(COUT_TERRAIN.miner)) return;
   const p=etat.terrain.parcelles[i]; const stock=p.stock||0; const rmax=p.max||MINE_MAX;
-  const lot=aptStructureLot(MINE_LOT);
+  const lot=aptStructureLot(alea(3,6));
   const n=Math.min(lot, stock, placesLibres());
   if(n<=0){ journal(stock<=0?"Mine épuisée — démolis-la puis reconstruis-en une.":"Sac plein.","alerte"); return; }
   let pr=0; for(let k=0;k<n;k++){ ajouterAuSac(tirerMatiere(aptBonusRare(0)),1); pr++; }
@@ -78,30 +81,48 @@ function recolterMine(i){
 }
 
 // --- BIO-DÔME : 4 cases · planter → arroser 1×/jour → récolter (5-9) ---
-function poserPlante(ci, plId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return; p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); majStruct(); }
+// Combien d'un objet possède-t-on (sac + coffre de la maison) ?
+function nbStock(id){ return (etat.sac[id]||0) + ((etat.coffre && etat.coffre[id]) || 0); }
+function possedeStock(id){ return nbStock(id) > 0; }
+// Consomme un objet depuis le sac, sinon le coffre de la maison (vaisseau à venir). Renvoie true si trouvé.
+function consommerStock(id){
+  if((etat.sac[id]||0)>0){ retirerDuSac(id,1); return true; }
+  if(etat.coffre && (etat.coffre[id]||0)>0){ etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } return true; }
+  return false;
+}
+function poserPlante(ci, plId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+  if(!depenserEnergie(COUT_TERRAIN.planter)) return;
+  if(!consommerStock(graineDe(plId))){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac ou ta maison.`,"alerte"); return; }
+  p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); majStruct(); }
 function arroserCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance>=PLANT_MAX){ journal("Déjà mûr — récolte-le.","alerte"); return; }
   if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — reviens demain.","alerte"); return; }
+  if(!depenserEnergie(COUT_TERRAIN.arroser)) return;
   c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now();
   journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); majStruct();
 }
 function recolterCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance<PLANT_MAX){ journal("Pas encore mûr.","alerte"); return; }
+  if(!depenserEnergie(COUT_TERRAIN.recolter)) return;
   const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0; for(let k=0;k<nb;k++){ if(placesLibres()<=0)break; ajouterAuSac(c.plante,1); pr++; }
   const nom=plante(c.plante).nom; p.cases[ci]=null;
   journal(`Récolte : +${pr} ${nom}.`+(pr<nb?" (sac plein)":""),"gain"); apresAction(); majStruct();
 }
 
 // --- ENCLOS : 4 cases · élever → nourrir (plante du sac) → tondre 1×/jour ×7 → retraite ---
-function poserAnimal(ci, anId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return; p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); majStruct(); }
+function poserAnimal(ci, anId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+  if(!depenserEnergie(COUT_TERRAIN.elever)) return;
+  if(!consommerStock(bebeDe(anId))){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac ou ta maison.`,"alerte"); return; }
+  p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); majStruct(); }
 function plantesDuSac(){ return etat.sacOrdre.filter(id=>{ const it=item(id); return it&&it.cat==="plante"&&(etat.sac[id]||0)>0; }); }
 function nourrirCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas>=a.repasAdulte){ journal("Déjà adulte.","alerte"); return; }
   if((etat.sac["ferragave"]||0)<=0){ journal("Il faut de la Ferragave (cultivée au bio-dôme) dans ton sac pour nourrir.","alerte"); return; }
+  if(!depenserEnergie(COUT_TERRAIN.nourrir)) return;
   retirerDuSac("ferragave",1); c.repas++;
   journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); majStruct();
 }
@@ -110,6 +131,7 @@ function tondreCase(ci){
   const a=animal(c.animal);
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
   if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — reviens demain.","alerte"); return; }
+  if(!depenserEnergie(COUT_TERRAIN.tondre)) return;
   const nb=aptStructureLot(alea(2,3)+aptTonteBonus()); let pr=0; for(let k=0;k<nb;k++){ if(placesLibres()<=0)break; ajouterAuSac(a.produit,1); pr++; }
   c.tontes++; c.tonte=Date.now();
   let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${c.tontes}/${TONTES_MAX}.`;
@@ -165,9 +187,12 @@ function renderStructActions(p, el){
   const btn=(label,fn,dis)=>{ const b=document.createElement("button"); b.className="mini"; b.textContent=label; b.disabled=!!dis; b.addEventListener("click",fn); row.appendChild(b); };
   if(p.type==="biodome"){
     if(!c){
+      const dispoP = PLANTES.filter(pl => possedeStock(graineDe(pl.id)));
       el.innerHTML=`<p style="margin:0 0 8px">Emplacement ${ci+1} — planter :</p>`;
-      PLANTES.forEach(pl=>{ const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>${pl.nom} <small>(+${pl.croissance}% / jour)</small></span>`; b.addEventListener("click",()=>poserPlante(ci,pl.id)); row.appendChild(b); });
-      el.appendChild(row); return;
+      if(!dispoP.length){ el.innerHTML += `<p class="vide">Aucune graine dans ton sac ou ta maison. Achète-en à la Boutique.</p>`; return; }
+      const listeP=document.createElement("div"); listeP.className="choix-liste";
+      dispoP.forEach(pl=>{ const n=nbStock(graineDe(pl.id)); const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>${pl.nom} <small>(+${pl.croissance}% / jour · ${n} graine${n>1?"s":""})</small></span>`; b.addEventListener("click",()=>poserPlante(ci,pl.id)); listeP.appendChild(b); });
+      el.appendChild(listeP); return;
     }
     el.innerHTML=`<p style="margin:0 0 8px"><b>${plante(c.plante).nom}</b> — croissance ${c.croissance}%</p>`;
     if(c.croissance>=PLANT_MAX) btn("Récolter (5-9)",()=>recolterCase(ci));
@@ -175,9 +200,12 @@ function renderStructActions(p, el){
     btn("Retirer",()=>{ if(confirm("Retirer cette plante ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
   } else {
     if(!c){
+      const dispoA = ANIMAUX.filter(a => possedeStock(bebeDe(a.id)));
       el.innerHTML=`<p style="margin:0 0 8px">Emplacement ${ci+1} — élever :</p>`;
-      ANIMAUX.forEach(a=>{ const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>${a.nom} <small>(→ ${item(a.produit).nom})</small></span>`; b.addEventListener("click",()=>poserAnimal(ci,a.id)); row.appendChild(b); });
-      el.appendChild(row); return;
+      if(!dispoA.length){ el.innerHTML += `<p class="vide">Aucun bébé animal dans ton sac ou ta maison. Achète-en à la Boutique.</p>`; return; }
+      const listeA=document.createElement("div"); listeA.className="choix-liste";
+      dispoA.forEach(a=>{ const n=nbStock(bebeDe(a.id)); const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>Petit ${a.nom} <small>(→ ${item(a.produit).nom} · ${n} dispo)</small></span>`; b.addEventListener("click",()=>poserAnimal(ci,a.id)); listeA.appendChild(b); });
+      el.appendChild(listeA); return;
     }
     const a=animal(c.animal); const adulte=c.repas>=a.repasAdulte;
     el.innerHTML=`<p style="margin:0 0 8px"><b>${a.nom}</b> — ${adulte?`adulte · ${c.tontes}/${TONTES_MAX} tontes`:`jeune ${c.repas}/${a.repasAdulte} repas`}</p>`;

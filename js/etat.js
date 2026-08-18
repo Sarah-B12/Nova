@@ -7,12 +7,12 @@ function nouvelEtat(){
     energie:100, energieMaj:Date.now(), reposLe:0, regenMaj:0,
     credits:1000, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:5, intelligence:5 },
-    equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null },
+    equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
     jauges:{ o2:90, sante:100, moral:80 },
-    sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
+    sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, coffreDate:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
     description:"", mur:[], murOuvertA:"amis",
     formation:null,
-    aptitudes:{ pa:0, pris:[] }
+    aptitudes:{ pa:0, pris:[] }, marches:{}, marchesSemes:false
   };
 }
 

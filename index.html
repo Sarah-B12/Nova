@@ -34,6 +34,10 @@
   <div class="cadre-carte">
     <div class="barre-carte">
       <div class="titre-carte">Carte de Silène <span id="carte-lieu"></span></div>
+      <div class="carte-jauges">
+        <span class="cj" id="cj-energie">Énergie <b id="carte-energie">100</b>%</span>
+        <span class="cj" id="cj-o2">O₂ <b id="carte-o2">100</b></span>
+      </div>
       <button class="mini" id="carte-fermer">Fermer ✕</button>
     </div>
     <div class="zone-carte"><svg id="carte" aria-label="Carte de Silène"></svg></div>
@@ -140,18 +144,17 @@
           <button class="hub-lien" data-hub="centre">Le Centre</button>
           <button class="hub-lien" data-hub="poste">La Poste</button>
           <button class="hub-lien" data-hub="marche">Le Marché</button>
+          <button class="hub-lien" data-hub="boutique">La Boutique</button>
           <button class="hub-lien" data-hub="voler">Voler / Hacker</button>
         </div>
 
         <div class="hub-vue" id="hub-activites">
-          <p class="vide" style="margin:0 0 10px">Comptoir en zone de faction · minage, exploration et chasse en zone sauvage.</p>
+          <p class="vide" style="margin:0 0 10px">Minage, exploration et chasse en zone sauvage · repos en ville. La Boutique et le Marché sont dans les onglets ci-dessus.</p>
           <div class="actions">
-            <button class="action" data-action="miner"><span>Miner</span><span class="cout">+crédits +matière · −12 % én.</span></button>
             <button class="action" data-action="reposer"><span>Se reposer</span><span class="cout">+20 santé/moral (≤70) · 1×/jour</span></button>
             <button class="action" data-action="explorer"><span>Explorer</span><span class="cout">gain incertain · −10 % én.</span></button>
             <button class="action" data-action="combattre"><span>Chasser une créature</span><span class="cout">combat auto · −8 % én.</span></button>
           </div>
-          <div class="sous-carte"><h3>Boutique</h3><div id="comptoir-note" class="vide" style="margin-bottom:8px"></div><div class="actions" id="boutique"></div></div>
         </div>
 
         <div class="hub-vue" id="hub-terrain" hidden>
@@ -179,7 +182,8 @@
           </div>
         </div>
         <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><p class="vide">Envoyer des crédits ou des objets à d'autres joueurs… à venir (multijoueur).</p></div>
-        <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><p class="vide">Mettre en vente et acheter les objets des autres joueurs… à venir (multijoueur).</p></div>
+        <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><div id="marche-vue"></div></div>
+        <div class="hub-vue" id="hub-boutique" hidden><h3>La Boutique</h3><div id="boutique-vue"></div></div>
         <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><p class="vide">Cibler les joueurs présents ici (avec l'ordinateur de hacking pour ↑ tes chances)… à venir.</p></div>
       </section>
 
@@ -252,7 +256,11 @@
 <script src="js/maison.js"></script>
 <script src="js/drones.js"></script>
 <script src="js/equipement.js"></script>
+<script src="js/prix.js"></script>
 <script src="js/usure.js"></script>
+<script src="js/marche.js"></script>
+<script src="js/menu-objet.js"></script>
+<script src="js/boutique.js"></script>
 <script src="js/carte.js"></script>
 <script src="js/formations.js"></script>
 <script src="js/aptitudes-data.js"></script>

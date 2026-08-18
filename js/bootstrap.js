@@ -11,7 +11,7 @@ document.querySelectorAll(".onglet").forEach(o => o.addEventListener("click", ()
 }));
 
 /* ---------- Câblage ---------- */
-const ACTIONS={ miner, reposer, explorer, combattre };
+const ACTIONS={ reposer, explorer, combattre };
 document.querySelectorAll("button.action[data-action]").forEach(b => b.addEventListener("click", ()=>{
   const r = raisonAction(b.dataset.action);
   if(r){ journal(r, "alerte"); return; }

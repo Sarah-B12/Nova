@@ -9,7 +9,7 @@
 const USURE_MAX = 30;   // jours
 
 // Durée de vie par défaut selon la catégorie / le type
-const DUREE_VIE_CAT = { plante:3, organique:6, minerai:30, animal:18, conso:8, fabrique:30 };
+const DUREE_VIE_CAT = { plante:3, organique:6, minerai:30, animal:18, conso:8, fabrique:30, graine:10, bebe:15 };
 // Exceptions par objet (denrées périssables, consommables, fabriqués « bio »)
 const DUREE_VIE_ITEM = {
   sporelle:3, nectine:4, ferragave:5, sylve:6, proteines:4,          // matières
@@ -41,21 +41,43 @@ function risqueVol(id){
   return VOL_CAT[it.cat] ?? VOL_CAT[it.type] ?? 0.35;                                                 // matières/consommables du sac
 }
 
-/* --- Péremption : les objets du SAC disparaissent au bout de leur durée de vie. --- */
+/* Reporte une date d'acquisition en gardant la plus ANCIENNE (empêche de « rafraîchir » un objet en le déplaçant). */
+function reporterDate(map, id, ts){ if(ts==null) return; map[id] = (map[id]!=null) ? Math.min(map[id], ts) : ts; }
+function _verbeUsure(it){ return (it && (it.cat==="plante" || it.cat==="organique" || it.type==="conso")) ? "a péri" : "s'est usé"; }
+
+/* --- Péremption : sac, coffre de la maison ET équipement porté (au temps). --- */
 function majUsure(){
   if(!etat.sac) return;
-  if(!etat.sacDate) etat.sacDate = {};
+  etat.sacDate = etat.sacDate||{}; etat.coffreDate = etat.coffreDate||{}; etat.equipementDate = etat.equipementDate||{};
   const now = Date.now(); let perte = false;
+  // Sac
   for(const id of Object.keys(etat.sac)){
     if((etat.sac[id]||0) <= 0) continue;
-    if(etat.sacDate[id] == null){ etat.sacDate[id] = now; continue; }   // sécurité (anciennes sauvegardes)
+    if(etat.sacDate[id] == null){ etat.sacDate[id] = now; continue; }
     if(now - etat.sacDate[id] > dureeVie(id)*JOUR_MS){
       const nb = etat.sac[id], it = item(id);
-      delete etat.sac[id]; delete etat.sacDate[id];
-      etat.sacOrdre = etat.sacOrdre.filter(x=>x!==id);
-      const verbe = (it && (it.cat==="plante" || it.cat==="organique" || it.type==="conso")) ? "a péri" : "s'est usé";
-      journal(`${nb}× ${it?it.nom:id} ${verbe} et a disparu du sac.`,"alerte");
-      perte = true;
+      delete etat.sac[id]; delete etat.sacDate[id]; etat.sacOrdre = etat.sacOrdre.filter(x=>x!==id);
+      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} et a disparu du sac.`,"alerte"); perte = true;
+    }
+  }
+  // Coffre de la maison (ne préserve pas)
+  if(etat.coffre) for(const id of Object.keys(etat.coffre)){
+    if((etat.coffre[id]||0) <= 0) continue;
+    if(etat.coffreDate[id] == null){ etat.coffreDate[id] = now; continue; }
+    if(now - etat.coffreDate[id] > dureeVie(id)*JOUR_MS){
+      const nb = etat.coffre[id], it = item(id);
+      delete etat.coffre[id]; delete etat.coffreDate[id];
+      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} (rangement de la maison).`,"alerte"); perte = true;
+    }
+  }
+  // Équipement porté (s'use au temps aussi)
+  if(etat.equipement) for(const slot of Object.keys(etat.equipement)){
+    const id = etat.equipement[slot]; if(!id) continue;
+    if(etat.equipementDate[slot] == null){ etat.equipementDate[slot] = now; continue; }
+    if(now - etat.equipementDate[slot] > dureeVie(id)*JOUR_MS){
+      const it = item(id);
+      etat.equipement[slot] = null; delete etat.equipementDate[slot];
+      journal(`${it?it.nom:id} s'est usé et a lâché.`,"alerte"); perte = true;
     }
   }
   if(perte && typeof sauvegarder==="function") sauvegarder();

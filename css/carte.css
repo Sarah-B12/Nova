@@ -22,3 +22,10 @@
   /* Lisibilité des textes de la carte par-dessus l'image de fond */
   #carte .vlabel { font-family:"Exo 2",sans-serif; font-weight:700; font-size:34px; paint-order:stroke; stroke:rgba(4,8,20,.8); stroke-width:6px; stroke-linejoin:round; }
   #carte .lieu text { paint-order:stroke; stroke:rgba(4,8,20,.8); stroke-width:5px; stroke-linejoin:round; }
+
+  /* Énergie / O₂ affichés dans la barre de la carte (visibles pendant les déplacements) */
+  .barre-carte { display:flex; align-items:center; gap:14px; }
+  .barre-carte .titre-carte { flex:1; }
+  .carte-jauges { display:flex; gap:16px; font-family:"Space Mono",monospace; font-size:13px; color:var(--sourdine); white-space:nowrap; }
+  .carte-jauges .cj b { color:#6fd08a; font-size:14px; }
+  .carte-jauges .cj.bas b { color:var(--coral,#ff6b6b); }

@@ -1,0 +1,55 @@
+/* ===========================================================
+   TERRAIN — Terrain (parcelles) et modale des structures (mine, bio-dôme, enclos).
+   =========================================================== */
+  /* Terrain : sous-menu + grille de parcelles */
+  .sous-menu { display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--line); }
+  .sous-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
+  .sous-lien:hover { color:var(--texte); }
+  .sous-lien.actif { color:var(--orange-hi); border-bottom-color:var(--orange); }
+  .sous-vue[hidden] { display:none; }
+  /* Terrain : fond clôturé (image) ; les parcelles se posent à l'intérieur des rails. */
+  .terrain-grille {
+    position:relative; aspect-ratio:3/2; margin:6px 0 10px;
+    background:url(../images/terrain.jpg) center/cover no-repeat;
+    border-radius:var(--r-s);
+    display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(4,1fr);
+    gap:0.5%; padding:3.4% 5%;   /* cases carrées, à l'intérieur de la clôture (haut/bas relatifs à la largeur) */
+  }
+  .plot { position:relative; border:1px dashed rgba(150,180,220,.28); border-radius:8px; display:grid; place-items:center; cursor:pointer; transition:border-color .12s, background .12s; }
+  .plot:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
+  .plot.occupe { border:1px solid transparent; background:none; }
+  .plot.occupe:hover { border-color:transparent; background:none; }
+  .plot.occupe:hover img { filter:brightness(1.08) drop-shadow(0 3px 6px rgba(0,0,0,.55)); }
+  .plot.sel:not(.occupe) { outline:2px solid var(--orange); outline-offset:-2px; }
+  .plot.sel.occupe img { filter:drop-shadow(0 0 7px var(--orange)) drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
+  .plot img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); pointer-events:none; }
+  .plot.plot-maison { flex-direction:column; background:rgba(90,168,230,.10); }
+  .plot-maison .maison-glyphe { font-size:34px; line-height:1; color:var(--orange-hi); text-shadow:0 0 10px rgba(255,158,84,.5); }
+  .maison-vis { display:flex; justify-content:center; margin:0 0 10px; }
+  .maison-vis img { max-height:150px; max-width:100%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+  .plot .vide-plot { color:rgba(180,200,230,.4); font-size:26px; font-weight:300; }
+  .badge-plot { position:absolute; bottom:2px; left:2px; right:2px; text-align:center; font-family:"Space Mono",monospace; font-size:9px; color:var(--orange-hi); background:rgba(6,14,30,.72); border-radius:4px; padding:1px 2px; }
+  .plot-actions { margin-top:4px; }
+  /* Modale d'une structure (mine / bio-dôme / enclos) */
+  .cadre-struct { max-width:540px; }
+  #struct-corps .actions { flex-wrap:wrap; gap:8px; }
+  .struct-grille { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .struct-case.plot { aspect-ratio:1/1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; border:1px solid var(--line); background:rgba(16,41,78,.5); border-radius:12px; padding:6px; }
+  .struct-case.plot:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
+  .struct-case.plot.occupe { border:1px solid var(--line); background:rgba(16,41,78,.5); }
+  .struct-case.plot.occupe:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
+  .struct-case.plot.sel { outline:2px solid var(--orange); outline-offset:-2px; border-color:var(--orange); }
+  .struct-ic { width:52px; height:52px; display:flex; align-items:center; justify-content:center; }
+  .struct-ic svg, .struct-ic img { width:100%; height:100%; object-fit:contain; }
+  .struct-nom { font-family:"Exo 2",sans-serif; font-weight:600; font-size:12px; color:var(--texte); text-align:center; line-height:1.1; }
+  .struct-badge { font-family:"Space Mono",monospace; font-size:10px; color:var(--orange-hi); background:rgba(6,14,30,.72); border:1px solid var(--line); border-radius:5px; padding:1px 6px; }
+  .mini.danger { border-color:var(--coral); color:var(--coral); }
+  .mini.danger:hover { background:rgba(255,92,92,.10); }
+
+  /* Hangar à drones */
+  .drone-slots { display:grid; gap:10px; }
+  .drone-slot { border:1px solid var(--edge); border-radius:10px; padding:11px 12px; background:rgba(90,168,230,.06); }
+  .drone-tete { font-size:13px; margin-bottom:8px; }
+
+  /* Liste de choix (planter / élever) : défilante pour ne pas déborder */
+  .choix-liste { display:flex; flex-direction:column; gap:8px; max-height:min(46vh,340px); overflow-y:auto; padding-right:4px; }

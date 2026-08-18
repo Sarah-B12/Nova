@@ -96,16 +96,19 @@ function equiper(id, slot){
     }
   }
   if(etat.equipement[slot]) desequiper(slot, true);          // libère l'emplacement d'abord
+  const ts = etat.sacDate && etat.sacDate[id];
   retirerDuSac(id, 1);
   etat.equipement[slot] = id;
+  if(typeof reporterDate==="function"){ etat.equipementDate=etat.equipementDate||{}; etat.equipementDate[slot]=ts||Date.now(); }
   journal(`${item(id).nom} équipé.`,"gain");
   apresAction(); majEquipement();
 }
 function desequiper(slot, silencieux){
   const id = etat.equipement[slot]; if(!id) return;
-  if(placesLibres()>0){ ajouterAuSac(id,1); if(!silencieux) journal(`${item(id).nom} retiré (rangé dans le sac).`); }
+  const ts = etat.equipementDate && etat.equipementDate[slot];
+  if(placesLibres()>0){ ajouterAuSac(id,1); if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); } if(!silencieux) journal(`${item(id).nom} retiré (rangé dans le sac).`); }
   else { if(!silencieux) journal("Sac plein — impossible de déséquiper.","alerte"); return; }
-  etat.equipement[slot] = null;
+  etat.equipement[slot] = null; if(etat.equipementDate) delete etat.equipementDate[slot];
   if(!silencieux){ apresAction(); majEquipement(); }
 }
 
@@ -146,17 +149,17 @@ function ouvrirPicker(slot){
   const dispo = TOUS_ITEMS.filter(a => (etat.sac[a.id]||0)>0 && slotEquip(a.id)===s.cat);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>${s.nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
   if(equipe){
-    html += `<div class="picker-ligne equipe"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
+    html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
   }
   if(dispo.length){
-    for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;
+    for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;
   } else if(!equipe){
     html += `<p class="vide" style="margin:6px 0 0">Aucun objet pour cet emplacement dans ton sac. Fabrique-en à l'atelier.</p>`;
   } else {
     html += `<p class="vide" style="margin:6px 0 0">Rien d'autre à équiper ici.</p>`;
   }
   html += `</div>`;
-  m.innerHTML = html; m.hidden = false;
+  m.innerHTML = html; m.hidden = false; if(typeof brancherTips==="function") brancherTips(m);
   m.querySelector("[data-fermer]").addEventListener("click", ()=>{ m.hidden=true; });
   const br = m.querySelector("[data-retirer]"); if(br) br.addEventListener("click", ()=>{ desequiper(slot); m.hidden=true; });
   m.querySelectorAll("[data-eq]").forEach(el=>el.addEventListener("click", ()=>{ equiper(el.dataset.eq, slot); m.hidden=true; }));

@@ -75,8 +75,8 @@ function demolirMaison(){
   etat.maison={ palier:0, plot:null, chantier:null };
   journal("Logement démoli.","alerte"); apresAction();
 }
-function deposerObjet(id){ if(!etat.sac[id])return; if(itemsCoffre()>=capaciteMaison()){journal("Rangement plein — agrandis ton logement.","alerte");return;} retirerDuSac(id,1); etat.coffre[id]=(etat.coffre[id]||0)+1; apresAction(); }
-function retirerObjet(id){ if(!etat.coffre[id])return; if(placesLibres()<=0){journal("Sac plein.","alerte");return;} etat.coffre[id]--; if(etat.coffre[id]<=0) delete etat.coffre[id]; ajouterAuSac(id,1); apresAction(); }
+function deposerObjet(id){ if(!etat.sac[id])return; if(itemsCoffre()>=capaciteMaison()){journal("Rangement plein — agrandis ton logement.","alerte");return;} const ts=etat.sacDate&&etat.sacDate[id]; retirerDuSac(id,1); etat.coffre[id]=(etat.coffre[id]||0)+1; if(typeof reporterDate==="function"){ etat.coffreDate=etat.coffreDate||{}; reporterDate(etat.coffreDate,id,ts||Date.now()); } apresAction(); }
+function retirerObjet(id){ if(!etat.coffre[id])return; if(placesLibres()<=0){journal("Sac plein.","alerte");return;} const ts=etat.coffreDate&&etat.coffreDate[id]; etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } ajouterAuSac(id,1); if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); } apresAction(); }
 
 /* ---------- Rendu de la vue Maison (#sous-maison) ---------- */
 function majMaison(){
@@ -127,9 +127,10 @@ function majMaison(){
     const stacks=TOUS_ITEMS.filter(a=>(etat.coffre[a.id]||0)>0);
     const cible=Math.max(6, Math.ceil((stacks.length+1)/6)*6);
     for(let i=0;i<cible;i++){ const t=document.createElement("div");
-      if(i<stacks.length){ const it=stacks[i]; t.className="tuile utilisable"; t.title=`${it.nom} — cliquer pour retirer 1`;
+      if(i<stacks.length){ const it=stacks[i]; t.className="tuile utilisable";
         t.innerHTML=`<span class="icone">${iconeItem(it.id)}</span><span class="compte">${etat.coffre[it.id]}</span>`;
-        t.addEventListener("click",()=>retirerObjet(it.id)); }
+        if(typeof montrerItemTip==="function"){ t.addEventListener("mouseenter",()=>montrerItemTip(t,it.id)); t.addEventListener("mouseleave",cacherItemTip); }
+        t.addEventListener("click",()=>{ if(typeof cacherItemTip==="function")cacherItemTip(); retirerObjet(it.id); }); }
       else t.className="tuile vide";
       g.appendChild(t);
     }
