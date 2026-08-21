@@ -33,7 +33,7 @@ const APT_TRONC = [
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
   ]},
   { id:"traqueur", nom:"Traqueur", noeuds:[
-    { id:"tr1", nom:"Instinct de chasse", effet:"+chance de victoire au combat." },
+    { id:"tr1", nom:"Instinct de combat", effet:"+chance de victoire au combat." },
     { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
     { id:"tr4", nom:"Fléau du Protocole", effet:"+dégâts et contribution contre le Protocole.", deblocage:true }
@@ -49,10 +49,10 @@ const APT_TRONC = [
 /* ---------- Branches de faction (une seule visible : la sienne) ---------- */
 const APT_FACTIONS = {
   ignis: { nom:"Ignis — Forge & Feu", noeuds:[
-    { id:"ig1", nom:"Sang de magma", effet:"Coûts énergie/O₂ −20 % en zones chaudes/volcaniques." },
-    { id:"ig2", nom:"Fournaise",     effet:"En zone chaude/volcanique, minage et chasse rapportent +25 %." },
+    { id:"ig1", nom:"Sang de magma", effet:"Coûts énergie/O₂ −15 % en zones chaudes/volcaniques." },
+    { id:"ig2", nom:"Fournaise",     effet:"En zone chaude/volcanique, minage et combat rapportent +25 %." },
     { id:"ig3", nom:"Combustion",    effet:"Attaques enflammées : +dégâts / +chance au combat.", deblocage:true },
-    { id:"ig4", nom:"Cœur de forge", effet:"Toute arme équipée gagne un bonus permanent ; +10 % butin de chasse en attendant.", deblocage:true }
+    { id:"ig4", nom:"Cœur de forge", effet:"Toute arme équipée gagne un bonus permanent ; +10 % butin de combat en attendant.", deblocage:true }
   ]},
   cultivateurs: { nom:"Le Rhizome — Symbiose & Bio", noeuds:[
     { id:"cu1", nom:"Autarcie",      effet:"Consommables et plantes soignent +30 %." },
@@ -61,7 +61,7 @@ const APT_FACTIONS = {
     { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60).", deblocage:true }
   ]},
   toundra: { nom:"La Toundra — Givre & Endurance", noeuds:[
-    { id:"to1", nom:"Isolation",       effet:"Coûts énergie/O₂ −20 % en zones froides ; +chance de Givrite." },
+    { id:"to1", nom:"Isolation",       effet:"Coûts énergie/O₂ −15 % en zones froides ; +chance de Givrite." },
     { id:"to2", nom:"Trempe",          effet:"Dégâts subis en défaite −10 %." },
     { id:"to3", nom:"Réserves d'hiver",effet:"+1 place de maison par niveau (stockage accru)." },
     { id:"to4", nom:"Veine de cristal",effet:"Faible chance (~5 %) de Cristal de Nyx en minant en zone froide.", deblocage:true }
@@ -76,7 +76,7 @@ const APT_FACTIONS = {
     { id:"no1", nom:"Boutique mobile",effet:"Achat à la boutique depuis n'importe où (+10 % de surcoût).", deblocage:true },
     { id:"no2", nom:"Marchand",       effet:"La commission de mise en vente au marché (10 % de la valeur) est réduite de moitié pour toi (5 %)." },
     { id:"no3", nom:"Négociant",      effet:"+15 % de crédits sur toutes les actions rémunératrices." },
-    { id:"no4", nom:"Voyageur",       effet:"Coût énergie de déplacement −40 %." }
+    { id:"no4", nom:"Voyageur",       effet:"Coût énergie de déplacement −20 %." }
   ]}
 };
 

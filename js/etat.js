@@ -21,6 +21,8 @@ function borne(v){ return Math.max(0, Math.min(MAX, v)); }
 function alea(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 function reductionO2(){ return Math.floor(etat.competences.agilite/5); }   // (déprécié — voir coutO2)
 function bonusCredits(){ return Math.floor(intelligenceEffective()/5); }
+// Chance de « doubler une trouvaille » = Intelligence (jusqu'à ~20 % à 200) + Drone récupérateur (+15 %). Plafond 40 %.
+function chanceDouble(){ return Math.min(0.40, intelligenceEffective()/1000 + (typeof equipDouble==="function" ? equipDouble() : 0)/100); }
 // Compétences effectives = compétence de base + bonus d'équipement (helpers définis dans equipement.js).
 function forceEffective(){ return etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0); }
 function agiliteEffective(){ return etat.competences.agilite + (typeof equipAgi==="function" ? equipAgi() : 0); }

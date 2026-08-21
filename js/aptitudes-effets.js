@@ -6,7 +6,7 @@
 
    Lot 2 (à venir) : structures & atelier — Filon profond, Réparateur, Chantier,
    Recyclage, Surrégime, Verger, Cultures vivaces, et les 4 nœuds Artisan.
-   Effets dormants (non branchés) : zones chaudes/froides (Ignis, Toundra),
+   Effets dormants (non branchés) : zones chaudes/froides (Ignis, Toundra ; −15 % énergie/O₂ prévu, cohérence Endurance),
    PvP (Intrusion), marché des joueurs (Marchand), équipement (Cœur de forge),
    Protocole (Fléau du Protocole).
    =========================================================== */

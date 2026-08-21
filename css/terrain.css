@@ -50,3 +50,6 @@
   .drone-slots { display:grid; gap:10px; }
   .drone-slot { border:1px solid var(--edge); border-radius:10px; padding:11px 12px; background:rgba(90,168,230,.06); }
   .drone-tete { font-size:13px; margin-bottom:8px; }
+
+  /* Liste de choix (planter / élever) : défilante pour ne pas déborder */
+  .choix-liste { display:flex; flex-direction:column; gap:8px; max-height:min(46vh,340px); overflow-y:auto; padding-right:4px; }
