@@ -39,10 +39,10 @@ const APT_TRONC = [
     { id:"tr4", nom:"Fléau du Protocole", effet:"+dégâts et contribution contre le Protocole.", deblocage:true }
   ]},
   { id:"ombre", nom:"Ombre", noeuds:[
-    { id:"om1", nom:"Discrétion", effet:"Moins de rencontres hostiles en explorant." },
+    { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
     { id:"om2", nom:"Repérage",   effet:"Exploration : −10 % énergie et −10 % O₂ ; gains de caches/ferraille +25 %." },
     { id:"om3", nom:"Pas léger",  effet:"Coût énergie de déplacement −20 %." },
-    { id:"om4", nom:"Intrusion",  effet:"Ouvre la posture vol/hack sur les joueurs présents (chances ↑ avec l'Ordinateur de hacking).", deblocage:true }
+    { id:"om4", nom:"Intrusion",  effet:"Améliore le piratage des patrouilles du Protocole ; ouvrira la posture vol/hack sur les joueurs (PvP à venir).", deblocage:true }
   ]}
 ];
 

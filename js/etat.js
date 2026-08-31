@@ -3,16 +3,18 @@
    =========================================================== */
 function nouvelEtat(){
   return {
-    inscrit:false, nom:"", faction:null, pos:null, metier:null, creeLe:Date.now(), enPause:false,
+    inscrit:false, nom:"", faction:null, pos:null, metier:null, creeLe:Date.now(), enPause:false, pauseLe:0, factionLe:0, factionChangeBloque:true, email:"", apparenceLe:0, avatar:null, bienvenueVue:false, protocoleActif:true,
     energie:100, energieMaj:Date.now(), reposLe:0, regenMaj:0,
     credits:1000, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:5, intelligence:5 },
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
+    vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
     jauges:{ o2:90, sante:100, moral:80 },
     sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, coffreDate:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
-    description:"", mur:[], murOuvertA:"amis",
-    formation:null,
-    aptitudes:{ pa:0, pris:[] }, marches:{}, marchesSemes:false
+    description:"", mur:[], murOuvertA:"amis", amis:[], bloques:[], msgRecus:[], msgEnvoyes:[], msgSemes:false, annonces:[],
+    formation:null, pas:{}, pasFini:false, pasPlie:false,
+    aptitudes:{ pa:0, pris:[] }, marches:{}, marchesSemes:false,
+    quetes:{ done:[], active:null }
   };
 }
 
@@ -24,9 +26,11 @@ function bonusCredits(){ return Math.floor(intelligenceEffective()/5); }
 // Chance de « doubler une trouvaille » = Intelligence (jusqu'à ~20 % à 200) + Drone récupérateur (+15 %). Plafond 40 %.
 function chanceDouble(){ return Math.min(0.40, intelligenceEffective()/1000 + (typeof equipDouble==="function" ? equipDouble() : 0)/100); }
 // Compétences effectives = compétence de base + bonus d'équipement (helpers définis dans equipement.js).
-function forceEffective(){ return etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0); }
-function agiliteEffective(){ return etat.competences.agilite + (typeof equipAgi==="function" ? equipAgi() : 0); }
-function intelligenceEffective(){ return etat.competences.intelligence + (typeof equipInt==="function" ? equipInt() : 0); }
+// Moral à 0 (ou moins) : très grosse pénalité (−70 %) sur Force/Agilité/Intelligence — sans « mort ».
+function penaliteMoral(){ return (etat.jauges && etat.jauges.moral <= 0) ? 0.30 : 1; }
+function forceEffective(){ return Math.round((etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0)) * penaliteMoral()); }
+function agiliteEffective(){ return Math.round((etat.competences.agilite + (typeof equipAgi==="function" ? equipAgi() : 0)) * penaliteMoral()); }
+function intelligenceEffective(){ return Math.round((etat.competences.intelligence + (typeof equipInt==="function" ? equipInt() : 0)) * penaliteMoral()); }
 // Coût O₂ : l'Agilité réduit jusqu'à −50 % à 200 ; Poumons d'acier −1 ; l'équipement lourd rajoute du coût.
 function coutO2(base){ const c = base * (1 - Math.min(0.5, agiliteEffective()/400)) + (typeof equipO2==="function"?equipO2():0); return Math.max(1, Math.round(c - aptO2Bonus())); }
 function echapper(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -45,8 +49,10 @@ function charger(){
         competences:{...base.competences,...(s.competences||{})},
         jauges:{...base.jauges,...(s.jauges||{})},
         sac, sacOrdre:ordre, coffre:{...(s.coffre||{})},
+        soute:{...(s.soute||{})}, souteDate:{...(s.souteDate||{})},
         maison:{ palier:0, plot:null, chantier:null, ...(s.maison&&typeof s.maison.palier==="number" ? s.maison : {}) }, mur:(s.mur||[]),
         aptitudes:{...base.aptitudes, ...(s.aptitudes||{})},
+        quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null },
         terrain:{ parcelles: normaliserParcelles(s.terrain) },
         creeLe: s.creeLe || Date.now(),
         energie: (typeof s.energie==="number" ? s.energie : 100),

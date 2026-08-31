@@ -14,6 +14,7 @@
        variables ; seules les valeurs changent. --cyan = accent orange principal. */
     --bg:#071320; --surface:#0d1e30; --surface-2:#13273d; --line:#243a52; --edge:rgba(255,138,61,.28);
     --cyan:#ff8a3d; --lime:#ffc061; --violet:#5aa8e6; --coral:#ff5257; --bleu:#5aa8e6;
+    --orange:#ff8a3d; --orange-hi:#ffb060; --vert:#8bd450;   /* accents utilisés par les modules/mini-jeux */
     --texte:#dfe8f2; --sourdine:#7f93a8;
     --r:22px 10px 22px 10px;   /* rayon organique asymétrique */
     --r-s:14px 6px 14px 6px;

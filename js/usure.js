@@ -13,7 +13,7 @@ const DUREE_VIE_CAT = { plante:3, organique:6, minerai:30, animal:18, conso:8, f
 // Exceptions par objet (denrées périssables, consommables, fabriqués « bio »)
 const DUREE_VIE_ITEM = {
   sporelle:3, nectine:4, ferragave:5, sylve:6, proteines:4,          // matières
-  o2:30, kit:18, ration:5,                                            // consommables boutique
+  // (o2 / kit / ration boutique retirés — remplacés par les fab_ Biotech)
   fab_biogel:8, fab_ration_chaude:5, fab_recharge_d_oxygene:20, fab_kit_de_soin:14, fab_boite_de_soin:10,
   fab_biocarburant:10, fab_biocarburant_raffine:12, fab_stimulant:8, fab_antidote:8,
   fab_tank_a_oxygene:22, fab_combinaison_pressurisee:22, fab_biofil_renforce:20
@@ -48,7 +48,7 @@ function _verbeUsure(it){ return (it && (it.cat==="plante" || it.cat==="organiqu
 /* --- Péremption : sac, coffre de la maison ET équipement porté (au temps). --- */
 function majUsure(){
   if(!etat.sac) return;
-  etat.sacDate = etat.sacDate||{}; etat.coffreDate = etat.coffreDate||{}; etat.equipementDate = etat.equipementDate||{};
+  etat.sacDate = etat.sacDate||{}; etat.coffreDate = etat.coffreDate||{}; etat.equipementDate = etat.equipementDate||{}; etat.souteDate = etat.souteDate||{};
   const now = Date.now(); let perte = false;
   // Sac
   for(const id of Object.keys(etat.sac)){
@@ -70,6 +70,16 @@ function majUsure(){
       journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} (rangement de la maison).`,"alerte"); perte = true;
     }
   }
+  // Soute du vaisseau (ne préserve pas non plus)
+  if(etat.soute) for(const id of Object.keys(etat.soute)){
+    if((etat.soute[id]||0) <= 0) continue;
+    if(etat.souteDate[id] == null){ etat.souteDate[id] = now; continue; }
+    if(now - etat.souteDate[id] > dureeVie(id)*JOUR_MS){
+      const nb = etat.soute[id], it = item(id);
+      delete etat.soute[id]; delete etat.souteDate[id];
+      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} (soute du vaisseau).`,"alerte"); perte = true;
+    }
+  }
   // Équipement porté (s'use au temps aussi)
   if(etat.equipement) for(const slot of Object.keys(etat.equipement)){
     const id = etat.equipement[slot]; if(!id) continue;
@@ -80,5 +90,16 @@ function majUsure(){
       journal(`${it?it.nom:id} s'est usé et a lâché.`,"alerte"); perte = true;
     }
   }
-  if(perte && typeof sauvegarder==="function") sauvegarder();
+  // Vaisseau équipé (la coque s'use aussi : sinon la formation Constructeur ne sert qu'une fois)
+  if(etat.vaisseau){
+    if(etat.vaisseauDate == null){ etat.vaisseauDate = now; }
+    else if(now - etat.vaisseauDate > dureeVie(etat.vaisseau)*JOUR_MS){
+      const it = item(etat.vaisseau);
+      if(etat.soute) for(const sid of Object.keys(etat.soute)){ let q=etat.soute[sid]||0; while(q>0 && placesLibres()>0){ ajouterAuSac(sid,1); q--; } }
+      etat.soute = {}; etat.souteDate = {};
+      etat.vaisseau = null; etat.vaisseauDate = null;
+      journal(`${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
+    }
+  }
+  if(perte && typeof sauvegarder=="function") sauvegarder();
 }

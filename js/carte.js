@@ -31,11 +31,7 @@ function construireCarte(){
   svg.setAttribute("viewBox",`0 0 ${MONDE.w} ${MONDE.h}`);
   svg.setAttribute("preserveAspectRatio","xMidYMid meet");
   let html = `<image href="images/carte.jpg" x="0" y="0" width="${MONDE.w}" height="${MONDE.h}" preserveAspectRatio="none"/>`;
-  // Lieux spéciaux
-  for(const l of LIEUX){
-    html += `<g class="lieu"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="none" stroke="${COUL_LIEU[l.type]}" stroke-opacity=".4" stroke-dasharray="6 8"/>
-      <text x="${l.x}" y="${l.y+13}" text-anchor="middle" style="fill:${COUL_LIEU[l.type]}" font-size="38">${GLYPHE_LIEU[l.type]}</text></g>`;
-  }
+  // (anciens lieux ◎/★ statiques retirés)
   // Villes de faction
   for(const fid in VILLES){ const v=VILLES[fid]; const f=FACTIONS.find(x=>x.id===fid);
     html += `<g class="ville"><circle cx="${v.x}" cy="${v.y}" r="${v.r}" fill="${f.couleur}22" stroke="${f.couleur}" stroke-width="2.5"/>
@@ -68,12 +64,14 @@ function majCarte(){
     if(lieu){ if(lieu.type==="mine") t+=` <span style="color:var(--orange)">Filon riche.</span>`; if(lieu.type==="chasse") t+=` <span style="color:var(--coral)">Terrain de chasse.</span>`; if(lieu.type==="quete") t+=` <span style="color:var(--bleu)">Étape de quête (bientôt).</span>`; }
     t+=` <span style="color:var(--sourdine)">Minage, exploration et chasse ici.</span>`; }
   document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">[${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}]</span>`;
+  if(typeof majMarqueursQuete==="function") majMarqueursQuete();
   const cl=document.querySelector("#carte-lieu"); if(cl) cl.innerHTML = t;
   majHub();
 }
 function voyager(x, y){
   if(!etat.pos || etat.pos.x===undefined) etat.pos=posDefaut();
   if(etat.enPause){ journal("Personnage en pause.","alerte"); return; }
+  if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   // Reste dans les limites de la carte (pas de hors-image)
   x = Math.max(0, Math.min(MONDE.w, x));
   y = Math.max(0, Math.min(MONDE.h, y));
@@ -88,10 +86,13 @@ function voyager(x, y){
   if(coutE>0 && !depenserEnergie(coutE)) return;
   if(coutO>0) etat.jauges.o2 = borne(etat.jauges.o2 - coutO);
   etat.pos={ x:Math.round(x), y:Math.round(y) };
+  if(etat.pas) etat.pas.deplace=true;
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
                     : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)
           + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""));
   apresAction();
+  if(typeof queteArrivee==="function") queteArrivee();
+  if(dOpen>0 && typeof tenterPatrouille==="function") tenterPatrouille();
 }
 
 /* ---------- Inscription ---------- */

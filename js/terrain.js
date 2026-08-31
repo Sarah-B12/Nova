@@ -15,7 +15,7 @@ const MINE_LOT = 6;        // minerais extraits par action « Miner »
 //    Réglé court pour les tests — mettre 24*3600*1000 en production.
 const JOUR_MS = 20*1000;
 function memeJour(ts){ return ts && (Date.now()-ts) < JOUR_MS; }   // action déjà faite « aujourd'hui »
-const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png" };
+const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png", hangar:"images/hangar.png" };
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous
 const PLANT_MAX = 100;         // % de croissance pour récolter une plante
 const REPAS_ADULTE = 4;        // repas (plantes) pour qu'un animal devienne adulte
@@ -168,8 +168,10 @@ function majStruct(){
       let badge;
       if(p.type==="biodome") badge = c.croissance>=PLANT_MAX ? "mûr ✓" : `${c.croissance}%`;
       else { const a=animal(id); badge = c.repas<a.repasAdulte ? `jeune ${c.repas}/${a.repasAdulte}` : `${c.tontes}/${TONTES_MAX} tontes`; }
-      const icon = (p.type==="biodome" && ["sporelle","nectine","ferragave"].includes(id) && c.croissance<PLANT_MAX)
-        ? `<img class="ic-img" src="images/plantes/${id}_jeune.png" alt="">` : iconeItem(id);
+      let vis;
+      if(p.type==="biodome"){ vis = c.croissance<PLANT_MAX ? imgPlanteJeune(id) : null; }
+      else { const a2=animal(id); vis = imgAnimal(id, c.repas>=a2.repasAdulte); }   // enclos : bébé vs adulte
+      const icon = vis ? `<img class="ic-img" src="${vis}" alt="">` : iconeItem(id);
       cell.innerHTML = `<div class="struct-ic">${icon}</div><span class="struct-nom">${nom}</span><span class="struct-badge">${badge}</span>`;
     } else cell.innerHTML = `<span class="vide-plot">+</span>`;
     cell.addEventListener("click", ()=>{ structCaseSel=ci; majStruct(); });
@@ -219,6 +221,7 @@ function renderStructActions(p, el){
 function majRecolte(){
   const g=document.querySelector("#terrain-grille"); if(!g) return;
   g.innerHTML="";
+  if(etat.terrain.parcelles.every(p=>!p || p.type==="maison")){ const msg=document.createElement("p"); msg.className="vide"; msg.style.cssText="grid-column:1/-1;margin:0 0 8px"; msg.textContent="Bâtis une mine, un bio-dôme… selon ta formation."; g.appendChild(msg); }
   etat.terrain.parcelles.forEach((p,i)=>{
     const cell=document.createElement("div");
     cell.className="plot"+(p?" occupe":"")+(plotSel===i?" sel":"");

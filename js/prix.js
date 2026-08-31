@@ -15,9 +15,6 @@ const PRIX_ITEM = {
   cuir: { min:8, moy:12, max:22 }, // Cuir
   biofibre: { min:7, moy:10, max:18 }, // Biofibre
   proteines: { min:8, moy:11, max:20 }, // Protéines
-  o2: { min:28, moy:40, max:72 }, // Recharge O₂
-  kit: { min:56, moy:80, max:144 }, // Kit médical
-  ration: { min:42, moy:60, max:108 }, // Ration chaude
   fab_lingot_de_cendrite: { min:17, moy:24, max:43 }, // Lingot de Cendrite
   fab_couteau_de_survie: { min:39, moy:56, max:101 }, // Couteau de survie
   fab_munitions_cinetiques: { min:31, moy:44, max:79 }, // Munitions cinétiques ×10
@@ -47,7 +44,7 @@ const PRIX_ITEM = {
   fab_reservoir: { min:116, moy:166, max:299 }, // Réservoir
   fab_cellule_d_energie: { min:64, moy:92, max:166 }, // Cellule d'énergie
   fab_propulseur_d_appoint: { min:175, moy:250, max:450 }, // Propulseur d'appoint
-  fab_cockpit_leger: { min:363, moy:519, max:934 }, // Cockpit léger
+  fab_cockpit_leger: { min:397, moy:567, max:1021 }, // Cockpit léger
   fab_casque_leger: { min:67, moy:95, max:171 }, // Casque léger
   fab_plastron_leger: { min:100, moy:143, max:257 }, // Plastron léger
   fab_jambieres_legeres: { min:67, moy:95, max:171 }, // Jambières légères
@@ -71,12 +68,12 @@ const PRIX_ITEM = {
   fab_tank_a_oxygene: { min:193, moy:276, max:497 }, // Tank à oxygène
   fab_combinaison_pressurisee: { min:357, moy:510, max:918 }, // Combinaison pressurisée
   fab_moteur_basique: { min:183, moy:261, max:470 }, // Moteur basique
-  fab_navette_legere: { min:967, moy:1382, max:2488 }, // Navette légère
+  fab_navette_legere: { min:1001, moy:1430, max:2574 }, // Navette légère
   fab_bloc_de_propulsion: { min:760, moy:1085, max:1953 }, // Bloc de propulsion
   fab_soute_cargo: { min:247, moy:353, max:635 }, // Soute cargo
-  fab_vaisseau_cargo: { min:1745, moy:2493, max:4487 }, // Vaisseau Cargo
+  fab_vaisseau_cargo: { min:1779, moy:2541, max:4574 }, // Vaisseau Cargo
   fab_coque_blindee: { min:330, moy:471, max:848 }, // Coque blindée
-  fab_cockpit_blinde: { min:7619, moy:10884, max:19591 }, // Cockpit blindé
+  fab_cockpit_blinde: { min:7652, moy:10932, max:19678 }, // Cockpit blindé
   fab_moteur_a_distorsion: { min:2043, moy:2919, max:5254 }, // Moteur à distorsion
   fab_pistolet_cinetique: { min:155, moy:221, max:398 }, // Pistolet cinétique
   fab_lame_a_plasma: { min:91, moy:130, max:234 }, // Lame à plasma
@@ -84,5 +81,5 @@ const PRIX_ITEM = {
   fab_plastron_lourd: { min:522, moy:746, max:1343 }, // Plastron lourd
   fab_lame_a_singularite: { min:2065, moy:2950, max:5310 }, // Lame à singularité
   fab_canon_a_singularite: { min:5831, moy:8330, max:14994 }, // Canon à singularité
-  fab_vaisseau_maitre: { min:16833, moy:24047, max:43285 }, // Vaisseau maitre
+  fab_vaisseau_maitre: { min:16867, moy:24095, max:43371 }, // Vaisseau maitre
 };

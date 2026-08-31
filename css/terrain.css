@@ -39,7 +39,7 @@
   .struct-case.plot.occupe { border:1px solid var(--line); background:rgba(16,41,78,.5); }
   .struct-case.plot.occupe:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
   .struct-case.plot.sel { outline:2px solid var(--orange); outline-offset:-2px; border-color:var(--orange); }
-  .struct-ic { width:52px; height:52px; display:flex; align-items:center; justify-content:center; }
+  .struct-ic { width:100%; max-width:140px; aspect-ratio:1/1; height:auto; margin:0 auto; display:flex; align-items:center; justify-content:center; }
   .struct-ic svg, .struct-ic img { width:100%; height:100%; object-fit:contain; }
   .struct-nom { font-family:"Exo 2",sans-serif; font-weight:600; font-size:12px; color:var(--texte); text-align:center; line-height:1.1; }
   .struct-badge { font-family:"Space Mono",monospace; font-size:10px; color:var(--orange-hi); background:rgba(6,14,30,.72); border:1px solid var(--line); border-radius:5px; padding:1px 6px; }

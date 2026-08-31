@@ -4,8 +4,6 @@
 // --- Objets du jeu : consommables (achetables) + matières (récoltées) ---
 // Chaque objet a une icône SVG. Tout va dans le sac (50 places, 1 par unité).
 const SVG = {
-  o2:      `<svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="4" fill="none" stroke="#4fd6e6" stroke-width="1.6"/><path d="M12 7v8M9 10l3-3 3 3" stroke="#4fd6e6" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`,
-  kit:     `<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3" fill="none" stroke="#4fd07a" stroke-width="1.6"/><path d="M12 9v7M8.5 12.5h7" stroke="#4fd07a" stroke-width="1.8" stroke-linecap="round"/></svg>`,
   ration:  `<svg viewBox="0 0 24 24"><path d="M5 10h14l-1.4 9H6.4z" fill="none" stroke="#ffb060" stroke-width="1.6"/><path d="M8 10c0-3 8-3 8 0" fill="none" stroke="#ffb060" stroke-width="1.6"/></svg>`,
   cendrite:`<svg viewBox="0 0 24 24"><path d="M6 14l3-7 6 1 3 6-5 4z" fill="rgba(255,138,61,.18)" stroke="#ff9a44" stroke-width="1.6" stroke-linejoin="round"/></svg>`,
   voltane: `<svg viewBox="0 0 24 24"><path d="M13 3L6 13h5l-1 8 8-11h-5z" fill="rgba(79,214,230,.18)" stroke="#4fd6e6" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
@@ -40,7 +38,7 @@ const MATIERES = [
   { id:"cuir",     nom:"Cuir",     type:"matiere", cat:"animal" },
   { id:"proteines",nom:"Protéines",type:"matiere", cat:"animal" }
 ];
-const MINERAIS = MATIERES.filter(m => m.cat === "minerai");
+const MINERAIS = MATIERES.filter(m => m.cat === "minerai" && m.id !== "cristal");   // Cristal de Nyx : PAS dans le pool de minage (butin de patrouille uniquement)
 // Plantes cultivées dans le bio-dôme (croissance = % gagné par arrosage quotidien).
 // Noms et images provisoires — à remplacer quand tu me donneras tes visuels.
 const PLANTES = [
@@ -103,12 +101,13 @@ function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
 // Chemins relatifs à la page (le rendu se fait via JS dans le document).
 const IMG_ITEM = {
-  o2:"images/items/o2.png", kit:"images/items/kit.png", ration:"images/items/ration.png",
   cendrite:"images/items/cendrite.png", voltane:"images/items/voltane.png",
   silite:"images/items/silite.png",     givrite:"images/items/givrite.png",
   cristal:"images/items/cristal.png",   biofibre:"images/items/biofibre.png",
   filaine:"images/items/filaine.png",   sylve:"images/items/sylve.png",
   sporelle:"images/items/sporelle.png", nectine:"images/items/nectine.png", ferragave:"images/items/ferragave.png",
+  proteines:"images/items/proteines.png",
+  fab_ration_chaude: "images/items/ration_chaude.png",
   fab_lingot_de_cendrite:"images/items/lingot_cendrite.png",
   fab_lingot_de_voltane: "images/items/lingot_voltane.png",
   fab_lingot_de_silite:  "images/items/lingot_silite.png",
@@ -123,18 +122,77 @@ const IMG_ITEM = {
   fab_fusil_a_ions:        "images/items/fusil_ions.png",
   fab_tourelle_de_vaisseau:"images/items/tourelle.png",
   fab_lame_a_singularite:  "images/items/lame_singularite.png",
-  fab_canon_a_singularite: "images/items/canon_singularite.png"
+  fab_canon_a_singularite: "images/items/canon_singularite.png",
+  fab_plaque_de_coque: "images/items/plaque_coque.png",
+  fab_coque_blindee: "images/items/coque_blindee.png",
+  fab_reservoir: "images/items/reservoir.png",
+  fab_cellule_d_energie: "images/items/cellule_energie.png",
+  fab_propulseur_d_appoint: "images/items/propulseur.png",
+  fab_bloc_de_propulsion: "images/items/bloc_propulsion.png",
+  fab_cockpit_leger: "images/items/cockpit_leger.png",
+  fab_cockpit_blinde: "images/items/cockpit_blinde.png",
+  fab_moteur_basique: "images/items/moteur_basique.png",
+  fab_moteur_a_distorsion: "images/items/moteur_distorsion.png",
+  fab_soute_cargo: "images/items/soute_cargo.png",
+  fab_navette_legere: "images/items/navette_legere.png",
+  fab_vaisseau_cargo: "images/items/vaisseau_cargo.png",
+  fab_vaisseau_maitre: "images/items/vaisseau_maitre.png",
+  fab_stimulant: "images/items/stimulant.png",
+  fab_antidote: "images/items/antidote.png",
+  fab_combinaison_pressurisee: "images/items/combinaison_pressurisee.png",
+  fab_implant_de_force: "images/items/implant_force.png",
+  fab_implant_d_agilite: "images/items/implant_agilite.png",
+  fab_implant_maitre: "images/items/implant_maitre.png",
+  fab_fil: "images/items/fil.png",
+  fab_biofil_renforce: "images/items/biofil_renforce.png",
+  fab_ia_d_assistance: "images/items/ia_assistance.png",
+  fab_drone_de_recolte: "images/items/drone_recolte.png",
+  fab_drone_d_elevage: "images/items/drone_elevage.png",
+  fab_drone_recuperateur: "images/items/drone_recuperateur.png",
+  fab_drone_de_combat: "images/items/drone_combat.png",
+  fab_panneau_de_sylve: "images/items/panneau_sylve.png",
+  fab_biogel: "images/items/biogel.png",
+  fab_biocarburant: "images/items/biocarburant.png",
+  fab_biocarburant_raffine: "images/items/biocarburant_raffine.png",
+  fab_tank_a_oxygene: "images/items/tank_oxygene.png",
+  fab_kit_de_soin: "images/items/kit_soin.png",
+  fab_boite_de_soin: "images/items/boite_soin.png",
+  fab_recharge_d_oxygene: "images/items/recharge_oxygene.png",
+  fab_casque_leger: "images/items/casque_leger.png",
+  fab_plastron_leger: "images/items/plastron_leger.png",
+  fab_jambieres_legeres: "images/items/jambieres_legeres.png",
+  fab_casque_lourd: "images/items/casque_lourd.png",
+  fab_plastron_lourd: "images/items/plastron_lourd.png",
+  fab_jambieres_lourdes: "images/items/jambieres_lourdes.png",
+  fab_composant_simple: "images/items/composant_simple.png",
+  fab_circuit_imprime: "images/items/circuit_imprime.png",
+  fab_cablage: "images/items/cablage.png",
+  fab_panneau_renforce: "images/items/panneau_renforce.png",
+  fab_servomoteur: "images/items/servomoteur.png",
+  fab_composant_avance: "images/items/composant_avance.png",
+  fab_panneau_composite: "images/items/panneau_composite.png",
+  fab_noyau_de_calcul: "images/items/noyau_calcul.png",
+  fab_ordinateur_de_hacking: "images/items/ordinateur_hacking.png",
+  fab_supraconducteur: "images/items/supraconducteur.png",
+
 };
+
 const ICONE_GRAINE = `<svg viewBox="0 0 24 24"><path d="M12 21c0-5 3-7 3-11 0-2-1-3-3-3s-3 1-3 3c0 4 3 6 3 11z" fill="rgba(127,224,160,.2)" stroke="#7fe0a0" stroke-width="1.4"/><path d="M12 14c-2 0-3-1-3-3 2 0 3 1 3 3z" fill="#7fe0a0"/></svg>`;
 const ICONE_BEBE = `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="6" ry="5" fill="rgba(224,168,111,.22)" stroke="#e0a86f" stroke-width="1.4"/><circle cx="10" cy="13" r="1" fill="#e0a86f"/><circle cx="14" cy="13" r="1" fill="#e0a86f"/><path d="M9 8l1.5 2M15 8l-1.5 2" stroke="#e0a86f" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 const ICONE_BIOCARB = `<svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z" fill="rgba(230,194,79,.2)" stroke="#e6c24f" stroke-width="1.4"/></svg>`;
+// Plantes disposant d'un sprite « jeune » (images/plantes/<id>_jeune.png).
+// Réutilisé par le bio-dôme (plante en croissance) ET par les graines (même visuel).
+const PLANTE_JEUNE = new Set(["sporelle","nectine","ferragave","sylve"]);
+function imgPlanteJeune(plId){ return PLANTE_JEUNE.has(plId) ? `images/plantes/${plId}_jeune.png` : null; }
+// Animaux avec images (images/animaux/<id>_bebe.png et <id>_adulte.png).
+// Réutilisé par l'enclos (bébé vs adulte) ET par les bébés animaux de la boutique (même visuel que le bébé).
+const ANIMAL_IMG = new Set(["cuprin","cuirasson","toisard","nourrin"]);
+function imgAnimal(anId, adulte){ return ANIMAL_IMG.has(anId) ? `images/animaux/${anId}_${adulte?"adulte":"bebe"}.png` : null; }
 function iconeItem(id){
   if(IMG_ITEM[id]) return `<img src="${IMG_ITEM[id]}" alt="">`;
   if(SVG[id]) return SVG[id];
-  if(id.indexOf("graine_")===0) return ICONE_GRAINE;
-  if(id.indexOf("bebe_")===0)   return ICONE_BEBE;
-  if(id==="fab_recharge_d_oxygene") return SVG.o2;
-  if(id==="fab_kit_de_soin")        return SVG.kit;
+  if(id.indexOf("graine_")===0){ const j=imgPlanteJeune(id.slice(7)); return j ? `<img src="${j}" alt="">` : ICONE_GRAINE; }
+  if(id.indexOf("bebe_")===0){ const j=imgAnimal(id.slice(5), false); return j ? `<img src="${j}" alt="">` : ICONE_BEBE; }
   if(id==="fab_ration_chaude")      return SVG.ration;
   if(id==="fab_biocarburant")       return ICONE_BIOCARB;
   return "";

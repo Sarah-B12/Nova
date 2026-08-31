@@ -30,6 +30,20 @@
   </div>
 </div>
 
+<div class="modale" id="modale-bienvenue" hidden>
+  <div class="membrane modale-boite">
+    <h2>Bienvenue sur Ori 55</h2>
+    <div style="text-align:left; line-height:1.6; margin:4px 0 8px">
+      <p>Ce monde ne te fera pas de cadeau. Silène est rude, le Protocole rôde, et rien ici ne se gagne vite. C'est voulu.</p>
+      <p><b>Ne te précipite pas.</b> Nova Epic n'est pas une course : les personnages qui durent sont ceux qui prennent le temps de bâtir, d'apprendre un métier, de comprendre le terrain. Vouloir tout finir en un jour, c'est le meilleur moyen de s'épuiser — ou de finir en prison.</p>
+      <p><b>Tu n'es pas seul·e.</b> Ici, la communication est ta meilleure ressource : parle aux autres, échange, forme des alliances. On survit mieux à plusieurs, et bien des portes ne s'ouvrent qu'à ceux qui savent s'entourer.</p>
+      <p><b>Et surtout : amuse-toi.</b> C'est un jeu. Prends le temps de flâner, de te tromper, de découvrir. Le reste suivra.</p>
+      <p style="font-style:italic; color:var(--orange-hi); margin-top:10px">Bonne route, survivant·e.</p>
+    </div>
+    <button class="valider" id="bienvenue-ok">Commencer</button>
+  </div>
+</div>
+
 <div class="modale-carte" id="modale-carte" aria-hidden="true">
   <div class="cadre-carte">
     <div class="barre-carte">
@@ -92,8 +106,9 @@
 
       <!-- PROFIL -->
       <section class="panneau actif membrane" data-panneau="profil">
+        <div id="prison-banniere" class="prison-banniere" hidden></div>
         <div class="fiche-perso">
-          <div class="portrait" id="portrait">
+          <div class="portrait" id="portrait" title="Personnaliser l'avatar" onclick="if(typeof ouvrirAvatar==='function') ouvrirAvatar()" style="cursor:pointer">
             <svg viewBox="0 0 120 130" aria-hidden="true">
               <path class="corps" d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/>
               <path class="corps" d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/>
@@ -106,15 +121,20 @@
               <div class="metier">Métier : <b id="stat-metier">Aucun (en formation)</b></div>
               <div class="xp-ligne">XP <b id="stat-xp">0/20</b></div>
             </div>
-            <div class="vitaux">
-              <div class="jauge" id="jauge-o2"><div class="jauge-tete"><span>Oxygène</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
-              <div class="jauge" id="jauge-sante"><div class="jauge-tete"><span>Santé</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
-              <div class="jauge" id="jauge-moral"><div class="jauge-tete"><span>Moral</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+            <div class="fiche-stats">
+              <div class="vitaux">
+                <div class="jauge" id="jauge-o2"><div class="jauge-tete"><span>Oxygène</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+                <div class="jauge" id="jauge-sante"><div class="jauge-tete"><span>Santé</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+                <div class="jauge" id="jauge-moral"><div class="jauge-tete"><span>Moral</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
+              </div>
+              <div class="fiche-comp">
+                <div class="comp-tete">Compétences <span class="pts" id="pts-libres"></span></div>
+                <div id="competences"></div>
+                <div class="comp-avert" id="comp-avert" hidden>⚠ Moral au plus bas — Force, Agilité et Intelligence fortement réduites.</div>
+              </div>
             </div>
           </div>
         </div>
-        <h2 style="margin-top:16px">Compétences <span class="pts" id="pts-libres"></span></h2>
-        <div id="competences"></div>
 
         <h2 style="margin-top:20px">Description RP</h2>
         <div id="desc-vue"></div>
@@ -135,26 +155,31 @@
       <!-- PLANÈTE -->
       <section class="panneau membrane" data-panneau="planete">
         <div class="banniere" id="banniere-pause" hidden>⏸ Personnage en pause — reprends-le dans les Paramètres.</div>
+        <div id="pas-encart" class="pas-encart" hidden></div>
         <button class="action" id="ouvrir-carte" style="margin-bottom:8px"><span>Carte du monde</span><span class="cout">se déplacer</span></button>
         <p id="region-info" style="margin:0 0 12px; font-size:14px"></p>
 
         <div class="sous-menu" id="hub-nav">
-          <button class="hub-lien actif" data-hub="activites">Activités</button>
           <button class="hub-lien" data-hub="terrain">Terrain</button>
+          <button class="hub-lien" data-hub="inn">Auberge</button>
           <button class="hub-lien" data-hub="centre">Le Centre</button>
           <button class="hub-lien" data-hub="poste">La Poste</button>
           <button class="hub-lien" data-hub="marche">Le Marché</button>
           <button class="hub-lien" data-hub="boutique">La Boutique</button>
+          <button class="hub-lien" data-hub="quete">Quêtes</button>
           <button class="hub-lien" data-hub="voler">Voler / Hacker</button>
         </div>
 
-        <div class="hub-vue" id="hub-activites">
-          <p class="vide" style="margin:0 0 10px">Minage, exploration et chasse en zone sauvage · repos en ville. La Boutique et le Marché sont dans les onglets ci-dessus.</p>
-          <div class="actions">
-            <button class="action" data-action="reposer"><span>Se reposer</span><span class="cout">+20 santé/moral (≤70) · 1×/jour</span></button>
-            <button class="action" data-action="explorer"><span>Explorer</span><span class="cout">gain incertain · −10 % én.</span></button>
-            <button class="action" data-action="combattre"><span>Chasser une créature</span><span class="cout">combat auto · −8 % én.</span></button>
-          </div>
+        <div class="hub-vue" id="hub-quete" hidden></div>
+
+        <div class="hub-vue" id="hub-inn" hidden>
+          <div class="inn-banniere"><img src="images/inn.png" alt="" onerror="this.remove()"><span>Auberge</span></div>
+          <p class="vide">Une auberge pour souffler, loin de chez toi.</p>
+          <div class="actions"><button class="action" onclick="reposer()"><span>Se reposer à l'auberge</span><span class="cout">+20 santé/moral (≤70) · 1×/jour</span></button></div>
+        </div>
+
+        <div class="hub-vue" id="hub-vide" hidden>
+          <p class="vide">Tu es en pleine nature. Ouvre la <b>carte du monde</b> pour te déplacer, ou rejoins une <b>ville de faction</b> pour agir.</p>
         </div>
 
         <div class="hub-vue" id="hub-terrain" hidden>
@@ -177,6 +202,7 @@
               <button class="lien-carte" data-centre="gouvernement">Gouvernement</button>
               <button class="lien-carte" data-centre="votes">Votes</button>
               <button class="lien-carte" data-centre="guerres">Guerres de faction</button>
+              <button class="lien-carte" data-centre="prison">Prison</button>
             </div>
             <div class="vue-carte" id="centre-corps"></div>
           </div>
@@ -184,7 +210,7 @@
         <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><p class="vide">Envoyer des crédits ou des objets à d'autres joueurs… à venir (multijoueur).</p></div>
         <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><div id="marche-vue"></div></div>
         <div class="hub-vue" id="hub-boutique" hidden><h3>La Boutique</h3><div id="boutique-vue"></div></div>
-        <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><p class="vide">Cibler les joueurs présents ici (avec l'ordinateur de hacking pour ↑ tes chances)… à venir.</p></div>
+        <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><div id="voler-vue"></div></div>
       </section>
 
       <!-- SAC -->
@@ -205,8 +231,7 @@
       <!-- VAISSEAU -->
       <section class="panneau membrane" data-panneau="vaisseau">
         <h2>Vaisseau</h2>
-        <div class="verrou">Aucun vaisseau.</div>
-        <p class="vide">Construis un vaisseau (métier Constructeur) pour rejoindre l'espace : astéroïdes, lunes et satellites abandonnés recèlent des ressources introuvables sur Silène.</p>
+        <div id="vaisseau-vue"></div>
       </section>
 
       <!-- APTITUDES (contenu injecté par js/aptitudes.js) -->
@@ -215,22 +240,18 @@
       <!-- COMM -->
       <section class="panneau membrane" data-panneau="comm">
         <h2>Communication</h2>
-        <details class="depliant"><summary>Liste d'amis</summary><div class="depliant-corps">Aucun contact. Amis et messagerie arriveront avec le multijoueur (tu verras les crédits de tes amis).</div></details>
-        <details class="depliant"><summary>Petites annonces</summary><div class="depliant-corps">
-          <div class="annonce"><b>[Ignis]</b> Vends lot de métaux volcaniques — prix à débattre.</div>
-          <div class="annonce"><b>[Le Rhizome]</b> Cherche kits médicaux contre rations fraîches.</div>
-          <div style="margin-top:8px">(Exemples — les vraies annonces viendront au multijoueur.)</div>
-        </div></details>
-        <details class="depliant"><summary>Messages</summary><div class="depliant-corps">Aucun message.</div></details>
+        <div class="sous-menu" id="comm-nav">
+          <button class="comm-lien actif" data-comm="amis">Amis</button>
+          <button class="comm-lien" data-comm="messages">Messages</button>
+          <button class="comm-lien" data-comm="annonces">Annonces</button>
+        </div>
+        <div id="comm-vue"></div>
       </section>
 
       <!-- PARAMÈTRES -->
       <section class="panneau membrane" data-panneau="parametres">
         <h2>Paramètres</h2>
-        <div class="reglage"><div><b>Personnage</b><p>Mets-le en pause quand tu t'absentes : les actions sont gelées.</p></div><button id="btn-pause">Mettre en pause</button></div>
-        <div class="reglage"><div><b>Changer de faction</b><p>Possible tous les 3 mois (déménagement inclus).</p></div><button disabled>Dans 3 mois</button></div>
-        <div class="reglage"><div><b>Physique du personnage</b><p>Modifier l'apparence coûtera des crédits.</p></div><button disabled>À venir</button></div>
-        <div class="reglage"><div><b>Mot de passe</b><p>Gestion du compte (page d'inscription/serveur).</p></div><button disabled>À venir</button></div>
+        <div id="parametres-vue"></div>
       </section>
     </main>
   </div>
@@ -256,6 +277,7 @@
 <script src="js/maison.js"></script>
 <script src="js/drones.js"></script>
 <script src="js/equipement.js"></script>
+<script src="js/vaisseau.js"></script>
 <script src="js/prix.js"></script>
 <script src="js/usure.js"></script>
 <script src="js/marche.js"></script>
@@ -266,6 +288,14 @@
 <script src="js/aptitudes-data.js"></script>
 <script src="js/aptitudes.js"></script>
 <script src="js/aptitudes-effets.js"></script>
+<script src="js/patrouille.js"></script>
+<script src="js/quetes-data.js"></script>
+<script src="js/quetes.js"></script>
+<script src="js/voler.js"></script>
+<script src="js/parametres.js"></script>
+<script src="js/comm.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/onboarding.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/bootstrap.js"></script>
 <script src="js/dev-console.js"></script>

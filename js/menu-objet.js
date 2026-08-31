@@ -26,13 +26,15 @@ function ouvrirMenuObjet(id){
   const it=item(id); if(!it || (etat.sac[id]||0)<=0) return;
   const conso = (typeof effetConso==="function") && effetConso(id);
   const equip = (typeof slotEquip==="function") && slotEquip(id);
+  const vais = (typeof estVaisseau==="function") && estVaisseau(id);
   const prixMarche = (typeof PRIX_ITEM!=="undefined") && PRIX_ITEM[id];
   const brade = valeurBrade(id);
-  if(!conso && !equip && !prixMarche && brade==null) return;   // rien à faire
+  if(!conso && !equip && !vais && !prixMarche && brade==null) return;   // rien à faire
 
   let html = `<div class="menu-cadre"><div class="menu-tete"><span class="menu-ic">${iconeItem(id)}</span><b>${it.nom}</b> <span class="qte">×${etat.sac[id]}</span><button class="mini" data-fermer="1">✕</button></div>`;
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
+  if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
   if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché…</button>`;
   if(brade!=null) html += `<button class="menu-act brader" data-act="brader">Brader — ${Math.max(1,Math.round(brade/2))} ₡</button>`;
   html += `</div>`;
@@ -46,6 +48,7 @@ function menuActionObjet(act, id){
   fermerMenuObjet();
   if(act==="consommer" && typeof utiliser==="function") utiliser(id);
   else if(act==="equiper" && typeof equiper==="function") equiper(id);
+  else if(act==="equiper-vaisseau" && typeof equiperVaisseau==="function") equiperVaisseau(id);
   else if(act==="brader") braderObjet(id);
   else if(act==="vendre") vendreDepuisMenu(id);
 }
@@ -54,6 +57,7 @@ function braderObjet(id){
   const v=valeurBrade(id); if(v==null || (etat.sac[id]||0)<=0) return;
   const gain=Math.max(1, Math.round(v/2));
   retirerDuSac(id,1); etat.credits += gain;
+  if(etat.pas) etat.pas.vendu=true;
   journal(`${item(id).nom} bradé — +${gain} ₡.`,"gain");
   apresAction();
 }

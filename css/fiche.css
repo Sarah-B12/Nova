@@ -2,15 +2,25 @@
    FICHE — Fiche perso, navigation par hubs, statistiques et blocs d'identité.
    =========================================================== */
   /* ---- Fiche perso ---- */
-  .portrait { width:150px; aspect-ratio:1/1; margin:0; background:radial-gradient(circle at 50% 40%,#123152,#0a1730); border-radius:26px 26px 26px 8px; display:grid; place-items:center; position:relative; overflow:hidden; --tint:var(--orange); border:1px solid var(--edge); flex:0 0 auto; }
-  .fiche-perso { display:flex; gap:16px; align-items:stretch; flex-wrap:wrap; }
+  .portrait { width:210px; aspect-ratio:3/4; margin:0; background:radial-gradient(circle at 50% 35%,#123152,#0a1730); border-radius:16px; display:grid; place-items:center; position:relative; overflow:hidden; --tint:var(--orange); border:1px solid var(--edge); flex:0 0 auto; -webkit-mask-image:linear-gradient(to bottom,#000 74%,transparent 100%); mask-image:linear-gradient(to bottom,#000 74%,transparent 100%); }
+  .fiche-perso { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
   .fiche-corps { flex:1; min-width:240px; display:flex; flex-direction:column; gap:10px; }
   .fiche-tete { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .fiche-tete .metier { margin:0; }
   .xp-ligne { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
   .xp-ligne b { color:var(--bleu); }
-  .vitaux { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-  @media (max-width:560px){ .vitaux { grid-template-columns:1fr; } }
+  .vitaux { display:flex; flex-direction:column; gap:8px; }
+  .fiche-stats { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+  .fiche-stats > .vitaux, .fiche-stats > .fiche-comp { flex:1 1 190px; min-width:170px; }
+  .fiche-comp { display:flex; flex-direction:column; gap:6px; }
+  .comp-tete { font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--sourdine); }
+  .comp-avert { font-size:12px; color:#ff5257; background:rgba(255,82,87,.10); border:1px solid rgba(255,82,87,.4); border-radius:8px; padding:6px 8px; }
+  .comp-brut { color:var(--sourdine); text-decoration:line-through; margin-right:4px; }
+  .comp-penal { color:#ff5257; font-weight:700; }
+  .portrait.enprison::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg, rgba(8,12,20,.9) 0 5px, transparent 5px 24px); pointer-events:none; z-index:2; }
+  .portrait.enprison::before{ content:"⛓️"; position:absolute; top:6px; right:8px; font-size:22px; z-index:3; }
+  .prison-banniere{ border:1px solid rgba(255,82,87,.5); background:rgba(255,82,87,.10); color:#ff8f92; border-radius:var(--r-s); padding:8px 12px; margin-bottom:10px; font-size:13px; }
+  @media (max-width:560px){ .portrait { width:150px; } .fiche-stats { flex-direction:column; } }
   /* Hub Planète : navigation par onglets secondaires */
   .hub-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
   .hub-lien:hover { color:var(--texte); }

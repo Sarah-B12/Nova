@@ -99,9 +99,12 @@ function aptCarte(chaine, idx){
   const b = div.querySelector(".apt-buy"); if(b) b.addEventListener("click", ()=>acheterApt(chaine, idx));
   return div;
 }
+const ICONE_VOIE = { sv:"🫁", pr:"⛏️", ar:"🔧", tr:"🎯", om:"🌑", ig:"🔥", cu:"🌿", to:"❄️", ro:"⚙️", no:"🐫" };
 function aptColonne(chaine){
   const col = document.createElement("div"); col.className = "apt-voie";
-  col.innerHTML = `<div class="apt-voie-tete">${chaine.nom}</div>`;
+  const cle = ((chaine.noeuds[0] && chaine.noeuds[0].id) || "").slice(0,2);
+  const ico = ICONE_VOIE[cle] || "◆";
+  col.innerHTML = `<div class="apt-voie-tete"><span class="apt-voie-ico">${ico}</span><span class="apt-voie-nom">${chaine.nom}</span></div>`;
   chaine.noeuds.forEach((n,i)=>col.appendChild(aptCarte(chaine, i)));
   return col;
 }

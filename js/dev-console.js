@@ -9,7 +9,7 @@
 
    Ouverture : Ctrl + Shift + D  →  mot de passe.
    =========================================================== */
-const DEV_PASS = "silene-admin";     // ← À CHANGER (et à déplacer côté serveur en prod).
+const DEV_PASS = "admin";     // ← À CHANGER (et à déplacer côté serveur en prod).
 let _devAuth = false, _devMonte = false;
 
 /* ---------- Accès ---------- */
@@ -32,6 +32,14 @@ function fermerDev(){ const m=document.querySelector("#dev-modale"); if(m) m.hid
 function devDonnerCredits(n){ n=parseInt(n,10)||0; if(!n) return; etat.credits += n; journal(`[DEV] ${n>0?"+":""}${n} ₡.`,"gain"); sauvegarder(); afficher(); majDev(); }
 function devDonnerObjet(id, qte){ qte=parseInt(qte,10)||0; if(!id||qte<=0) return; if(!etat.sac[id]) etat.sacOrdre.push(id); etat.sac[id]=(etat.sac[id]||0)+qte; journal(`[DEV] +${qte} ${item(id).nom} (donné, hors limite de sac).`,"gain"); sauvegarder(); afficher(); majDev(); }
 function devPause(){ etat.enPause = !etat.enPause; journal(`[DEV] personnage ${etat.enPause?"mis en pause":"réactivé"}.`,"alerte"); sauvegarder(); afficher(); majDev(); }
+function devEnergie(){ etat.energie=100; etat.energieMaj=Date.now(); journal("[DEV] énergie rechargée à 100 %.","gain"); sauvegarder(); afficher(); majDev(); }
+function devLibererPrison(){ etat.prisonJusqua=0; etat.prisonFaction=null; journal("[DEV] libéré de prison.","gain"); sauvegarder(); afficher(); majDev(); }
+function devProtocole(){ etat.protocoleActif = !(etat.protocoleActif!==false); journal("[DEV] Protocole "+((etat.protocoleActif!==false)?"activé":"désactivé (aucune patrouille)")+".","alerte"); sauvegarder(); afficher(); majDev(); }
+function devFactionBloc(){ const bloque=(etat.factionChangeBloque!==false); etat.factionChangeBloque=!bloque; journal("[DEV→admin] changement de faction "+((etat.factionChangeBloque!==false)?"BLOQUÉ":"DÉBLOQUÉ")+".","alerte"); sauvegarder(); if(typeof majParametres==="function") majParametres(); afficher(); majDev(); }
+function devPermis(){ etat.permisVaisseau = !etat.permisVaisseau; journal(`[DEV] permis de vaisseau ${etat.permisVaisseau?"accordé":"retiré"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
+function _devRafraichirQuetes(){ if(typeof rafraichirQuetes==="function") rafraichirQuetes(); else if(typeof afficher==="function") afficher(); }
+function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={done:[],active:null}); q.done=(q.done||[]).filter(x=>x!==id); if(q.active&&q.active.id===id) q.active=null; journal(`[DEV] quête ${id} réinitialisée.`,"gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
+function devResetQuetes(){ etat.quetes={done:[],active:null}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
 
 /* ---------- Rendu ---------- */
 function _devCartePerso(){
@@ -46,9 +54,19 @@ function _devCartePerso(){
       <span>IP</span><b class="dev-dim">— (backend requis)</b>
       <span>Compte créé</span><b>${cree}</b>
       <span>État</span><b>${etat.enPause?"⏸ EN PAUSE":"actif"}</b>
+      <span>Permis vaisseau</span><b>${etat.permisVaisseau?"✅ oui":"— non"}</b>
+    </div>
+    <div class="dev-bloc" style="margin-top:12px"><h4>Quêtes (debug)</h4>
+      <div class="dev-champ"><select id="dev-quete-sel">${(typeof QUETES!=="undefined"?QUETES:[]).map(q=>`<option value="${q.id}">${q.id} — ${q.nom}${(etat.quetes&&etat.quetes.done&&etat.quetes.done.includes(q.id))?" ✓ faite":((etat.quetes&&etat.quetes.active&&etat.quetes.active.id===q.id)?" ⏳ en cours":"")}</option>`).join("")}</select><button class="mini" id="dev-quete-reset">Réinitialiser</button></div>
+      <button class="mini" id="dev-quete-reset-all" style="margin-top:6px">Tout réinitialiser (quêtes)</button>
     </div>
     <div class="dev-actions">
       <button class="mini" id="dev-pause">${etat.enPause?"Réactiver":"Mettre en pause"}</button>
+      <button class="mini" id="dev-permis">${etat.permisVaisseau?"Retirer permis vaisseau":"Accorder permis vaisseau"}</button>
+      <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
+      <button class="mini" id="dev-prison">Libérer de prison</button>
+      <button class="mini" id="dev-facbloc">${(etat.factionChangeBloque!==false)?"Débloquer":"Bloquer"} changement de faction</button>
+      <button class="mini" id="dev-protocole">Protocole : ${(etat.protocoleActif!==false)?"ON":"OFF"}</button>
       <button class="mini" id="dev-imperso" disabled title="Nécessite le backend multijoueur">Entrer dans le compte</button>
     </div>
   </div>`;
@@ -65,6 +83,13 @@ function majDev(){
     r.querySelector("#dev-chercher").addEventListener("click", majDev);
     r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") majDev(); });
     const bp=r.querySelector("#dev-pause"); if(bp) bp.addEventListener("click", devPause);
+    const bpv=r.querySelector("#dev-permis"); if(bpv) bpv.addEventListener("click", devPermis);
+    const ben=r.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
+    const bpr=r.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);
+    const bfb=r.querySelector("#dev-facbloc"); if(bfb) bfb.addEventListener("click", devFactionBloc);
+    const bpro=r.querySelector("#dev-protocole"); if(bpro) bpro.addEventListener("click", devProtocole);
+    const bqr=r.querySelector("#dev-quete-reset"); if(bqr) bqr.addEventListener("click", ()=>{ const sel=r.querySelector("#dev-quete-sel"); if(sel) devResetQuete(sel.value); });
+    const bqa=r.querySelector("#dev-quete-reset-all"); if(bqa) bqa.addEventListener("click", devResetQuetes);
   }
   const c = document.querySelector("#dev-cadeaux");
   if(c){

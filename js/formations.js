@@ -85,14 +85,14 @@ const FORMATIONS = {
       [20,"Réservoir","2 Lingot de Silite, 1 Biocarburant"],
       [30,"Cellule d'énergie","2 Voltane, 1 Composant simple"],
       [40,"Propulseur d'appoint","2 Cellule d'énergie, 2 Lingot de Silite"],
-      [50,"Cockpit léger","3 Plaque de coque, 1 Cellule d'énergie, 1 Circuit imprimé"],
+      [50,"Cockpit léger","3 Plaque de coque, 1 Cellule d'énergie, 1 Circuit imprimé, 4 Cuir"],
       [60,"Moteur basique","2 Cellule d'énergie, 1 Câblage"],
       [70,"Navette légère","2 Plaque de coque, 1 Cockpit léger, 1 Moteur basique, 1 Propulseur d'appoint, 1 Réservoir"],
       [80,"Bloc de propulsion","2 Moteur basique, 1 Réservoir, 1 Composant avancé, 1 Lingot de Silite"],
       [90,"Soute cargo","3 Plaque de coque, 1 Panneau renforcé"],
       [100,"Vaisseau Cargo","3 Plaque de coque, 1 Cockpit léger, 1 Moteur basique, 1 Bloc de propulsion, 1 Soute cargo"],
       [110,"Coque blindée","3 Plaque de coque, 1 Panneau composite"],
-      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance"],
+      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir"],
       [130,"Moteur à distorsion","1 Moteur basique, 3 Lingot de Givrite, 1 Cristal de Nyx"],
       [140,"Vaisseau maitre","1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 3 Cristal de Nyx"]
     ]
@@ -111,8 +111,14 @@ function changerCentre(c){
 }
 function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
+  const chezSoi = (typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true;
+  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi };   // réservés à ta faction
+  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>{ b.style.display = masque[b.dataset.centre] ? "none" : ""; });
+  if(masque[centreVue]) centreVue = "gouvernement";
+  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
+  if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }
   const titres = { gouvernement:"Gouvernement", votes:"Votes", guerres:"Guerres de faction" };
   const notes = {
     gouvernement:"Régent, Maréchal et Intendant élus par la faction, avec leurs pouvoirs… à venir.",
@@ -292,6 +298,7 @@ function parseIngredients(txt){
 
 /* ---------- Fabrication ---------- */
 function fabriquer(seuil){
+  if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const f = etat.formation; if(!f) return;
   f.fait = f.fait || {};
   const fo = FORMATIONS[f.cle];
@@ -311,6 +318,7 @@ function fabriquer(seuil){
   for(let i=0;i<ings.length;i++){ if((etat.sac[ings[i].id]||0) < qtes[i]){ journal(`Il manque ${qtes[i]}× ${item(ings[i].id).nom}.`, "alerte"); return; } }
 
   const pid = PROD_PAR_NOM[normNom(nom)].id;
+  if(typeof estVaisseau==="function" && estVaisseau(pid) && !etat.permisVaisseau){ journal("Assemblage de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
   for(let i=0;i<ings.length;i++) retirerDuSac(ings[i].id, qtes[i]);      // consomme (libère de la place)
   const pris = ajouterAuSac(pid, 1);
   if(pris < 1){                                        // sécurité : sac saturé, on rend les ingrédients

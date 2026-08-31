@@ -81,9 +81,10 @@ function retirerObjet(id){ if(!etat.coffre[id])return; if(placesLibres()<=0){jou
 /* ---------- Rendu de la vue Maison (#sous-maison) ---------- */
 function majMaison(){
   const z=document.querySelector("#sous-maison"); if(!z) return;
+  const _RB = `<div class="actions" style="margin-bottom:12px"><button class="action" onclick="reposer()"><span>Se reposer (chez toi)</span><span class="cout">+25 santé/moral (≤80) · 1×/jour</span></button></div>`;
   const m=etat.maison;
   if(m.plot==null){
-    z.innerHTML=`<h3>Logement</h3><p class="vide">Aucun logement. Va sur ton <b>Terrain de récolte</b> et bâtis un <b>Logement</b> sur une case libre pour choisir son emplacement (tu ne peux en avoir qu'un).</p>`;
+    z.innerHTML=_RB+`<h3>Logement</h3><p class="vide">Aucun logement. Va sur ton <b>Terrain de récolte</b> et bâtis un <b>Logement</b> sur une case libre pour choisir son emplacement (tu ne peux en avoir qu'un).</p>`;
     return;
   }
   let html="";
@@ -115,7 +116,7 @@ function majMaison(){
       <div class="sous-carte" style="margin:0"><h3>À déposer (sac)</h3><div id="depot-liste"></div></div>
     </div>`;
   }
-  z.innerHTML=html;
+  z.innerHTML=_RB+html;
 
   z.querySelectorAll("[data-dep]").forEach(b=>b.addEventListener("click",()=>deposerMat(b.dataset.dep)));
   const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", travaillerMaison);

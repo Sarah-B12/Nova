@@ -12,13 +12,14 @@ function raisonAction(a){
     if(etat.jauges.sante>=70 && etat.jauges.moral>=70) return "Inutile : le repos plafonne à 70 % (achète un kit/ration pour monter plus haut).";
     return "";
   }
-  // miner / explorer / combattre : zone sauvage + énergie
+  // explorer : zone sauvage + énergie
   if(enFaction) return "Impossible en ville : va en zone sauvage (clique la carte pour t'y déplacer).";
   const cout = (a==="explorer") ? aptEnergieExplore(ACTION_COUT.explorer) : aptEnergieAction(ACTION_COUT[a]||0);
   if(etat.energie < cout) return `Pas assez d'énergie : il en faut ${cout} %, tu as ${Math.floor(etat.energie)} %. Elle remonte avec le temps (+10 %/h) et à chaque niveau.`;
   return "";
 }
 function afficher(){
+  if(typeof verifPauseAuto==="function") verifPauseAuto();
   document.querySelector("#nom-affiche").textContent = etat.nom || "Opérateur";
   const foAct = etat.formation && FORMATIONS[etat.formation.cle];
   document.querySelector("#stat-metier").textContent = foAct ? (foAct.nom + " · " + palierDe(etat.formation.points||0)) : (etat.metier || "Aucun (en formation)");
@@ -27,6 +28,7 @@ function afficher(){
   document.querySelector("#stat-credits").textContent = etat.credits;
   document.querySelector("#stat-xp").textContent = `${etat.xp}/${seuilXp(etat.niveau)}`;
 
+  if(typeof enZoneFaction==="function" && enZoneFaction()) etat.jauges.o2 = 100;   // ville de faction : air respirable, O₂ plein
   majJauge("o2", etat.jauges.o2); majJauge("sante", etat.jauges.sante); majJauge("moral", etat.jauges.moral);
 
   regenEnergie();
@@ -41,13 +43,23 @@ function afficher(){
   const f = FACTIONS.find(x => x.id === etat.faction);
   document.querySelector("#faction-nom").textContent = f ? f.nom : "Sans faction";
   document.querySelector("#portrait").style.setProperty("--tint", f ? f.couleur : "var(--orange)");
+  const _enPr = (typeof enPrison==="function") && enPrison();
+  const _port=document.querySelector("#portrait"); if(_port) _port.classList.toggle("enprison", _enPr);
+  if(typeof majAvatar==="function") majAvatar();
+  const _pb=document.querySelector("#prison-banniere");
+  if(_pb){ if(_enPr){ _pb.hidden=false; _pb.innerHTML=`⛓️ <b>En prison</b> — ${(typeof _factionNom==="function")?_factionNom(etat.prisonFaction):etat.prisonFaction}. Libération dans <b>${(typeof _vfmt==="function")?_vfmt((etat.prisonJusqua||0)-Date.now()):"…"}</b>. Aucune action possible.`; } else _pb.hidden=true; }
 
   const pts = etat.pointsCompetence;
   document.querySelector("#pts-libres").textContent = pts>0 ? `${pts} pts` : "";
+  const penal = (typeof penaliteMoral==="function") && penaliteMoral() < 1;
+  const eff = { force:(typeof forceEffective==="function"?forceEffective():null), agilite:(typeof agiliteEffective==="function"?agiliteEffective():null), intelligence:(typeof intelligenceEffective==="function"?intelligenceEffective():null) };
   for (const c of COMPETENCES) {
-    document.querySelector(`#comp-${c.id}`).textContent = etat.competences[c.id];
-    document.querySelector(`#plus-${c.id}`).disabled = pts<=0 || etat.competences[c.id] >= CAP_COMP;
+    const raw = etat.competences[c.id]; const el = document.querySelector(`#comp-${c.id}`);
+    if(penal && eff[c.id]!=null) el.innerHTML = `<span class="comp-brut">${raw}</span><span class="comp-penal">${eff[c.id]}</span>`;
+    else el.textContent = raw;
+    document.querySelector(`#plus-${c.id}`).disabled = pts<=0 || raw >= CAP_COMP;
   }
+  const av=document.querySelector("#comp-avert"); if(av) av.hidden = !penal;
   if(!etat.pos) etat.pos = posDefaut();
   const enFaction = !!enZoneFaction();
 
@@ -67,6 +79,9 @@ function afficher(){
 
   majCarte(); majSac(); majTerrain(); majMur();
   if(typeof majEquipement==="function") majEquipement();
+  if(typeof majVaisseau==="function") majVaisseau();
+  if(typeof majQueteHubSiPertinent==="function") majQueteHubSiPertinent();
+  if(typeof majPas==="function") majPas();
   if(typeof renderMarche==="function"){ const hm=document.querySelector("#hub-marche"); if(hm && !hm.hidden) renderMarche(); }
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
@@ -100,6 +115,7 @@ function majSac(){
   document.querySelector("#sac-cap").textContent = `${placesUtilisees()}/${capaciteSac()} places`;
   const z=document.querySelector("#sac"); z.innerHTML="";
   const stacks = etat.sacOrdre.filter(id => (etat.sac[id]||0)>0);
+  if(stacks.length===0){ z.innerHTML=`<p class="vide" style="grid-column:1/-1">Ton sac est vide. Va miner ou récolter sur ton Terrain.</p>`; return; }
   const cible = Math.max(12, Math.ceil((stacks.length+2)/6)*6);   // remplit une grille propre
   for (let i=0;i<cible;i++){
     const cell=document.createElement("div"); cell.className="sac-case";

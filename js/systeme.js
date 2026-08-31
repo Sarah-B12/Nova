@@ -13,6 +13,7 @@ function regenEnergie(){
 }
 // Dépense l'énergie d'une action ; refuse (et prévient) si insuffisant.
 function depenserEnergie(cout){
+  if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return false; }
   regenEnergie();
   if (etat.energie < cout) { journal("Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.", "alerte"); return false; }
   etat.energie -= cout; return true;

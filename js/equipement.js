@@ -18,7 +18,7 @@ const EQUIP_SLOTS = [
   { id:"jambes",  nom:"Jambières",cat:"jambes",  x:50, y:62 }
 ];
 // Armes à deux mains : occupent les deux emplacements (pas de double).
-const ARME_DEUX_MAINS = new Set(["fab_fusil_a_ions","fab_canon_a_singularite"]);
+const ARME_DEUX_MAINS = new Set(["fab_fusil_a_ions","fab_canon_a_singularite","fab_ordinateur_de_hacking"]);
 function estDeuxMains(id){ return ARME_DEUX_MAINS.has(id); }
 function autreArme(slotId){ return slotId==="arme" ? "arme2" : (slotId==="arme2" ? "arme" : null); }
 function armeSlotBloque(slotId){ const a=autreArme(slotId); return !!(a && etat.equipement[a] && estDeuxMains(etat.equipement[a])); }
@@ -32,6 +32,7 @@ function slotEquip(id){
   if(n.includes("jambi")) return "jambes";
   if(n.includes("implant")) return "implant";
   if(n.includes("drone de combat") || n.includes("drone récupérateur") || n.includes("drone recuperateur")) return "drone";
+  if(n.includes("ordinateur") || n.includes("hacking")) return "arme";   // l'ordi de hacking s'équipe en main
   if(/couteau|pistolet|lame|fusil|canon/.test(n)) return "arme";
   return null;
 }
@@ -63,6 +64,7 @@ const EQUIP_EFFETS = {
 function _equipEffets(){ return Object.values(etat.equipement||{}).filter(Boolean).map(id=>EQUIP_EFFETS[id]||{}); }
 // Texte lisible des effets d'un objet (pour l'infobulle / le sélecteur).
 function effetTexte(id){
+  if(id==="fab_ordinateur_de_hacking") return "Permet de hacker les patrouilles du Protocole";
   const e = EQUIP_EFFETS[id]; if(!e) return "";
   const p=[];
   if(e.force)   p.push(`+${e.force} Force`);

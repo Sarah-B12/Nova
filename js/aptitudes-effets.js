@@ -48,7 +48,7 @@ function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m 
 /* ---------- Combat ---------- */
 function aptCombatFcReduc(){ return (_apt("tr1") ? 2 : 0) + (_apt("ig3") ? 2 : 0); }                              // Instinct + Combustion (↑ chance)
 function aptCombatDegats(d){ let m = 1; if(_apt("tr2")) m *= 0.7; if(_apt("to2")) m *= 0.9; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Cuirasse + Trempe + Métabolisme
-function aptSeuilCreature(){ return _apt("om1") ? 0.90 : 0.80; }                                                  // Discrétion : moins de rencontres
+// (Discrétion agit désormais sur le taux de patrouille dans patrouille.js — voir chancePatrouille().)
 
 /* ---------- Minerai / rareté ---------- */
 function aptBonusRare(base){ return base + (_apt("pr3") ? 8 : 0); }                                               // Œil du mineur
