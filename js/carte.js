@@ -62,7 +62,9 @@ function majCarte(){
   else if(surAnneauProtocole()){ t=`<b style="color:#b9a0f0">Anneau du Protocole.</b> <span style="color:var(--sourdine)">L'Ombre de ta faction peut hacker le Protocole ici. On ne peut pas entrer dans la zone.</span>`; }
   else { t=`Zone sauvage.`;
     if(lieu){ if(lieu.type==="mine") t+=` <span style="color:var(--orange)">Filon riche.</span>`; if(lieu.type==="chasse") t+=` <span style="color:var(--coral)">Terrain de chasse.</span>`; if(lieu.type==="quete") t+=` <span style="color:var(--bleu)">Étape de quête (bientôt).</span>`; }
-    t+=` <span style="color:var(--sourdine)">Minage, exploration et chasse ici.</span>`; }
+    /* Mention retirée : le minage/la chasse ne se font plus n'importe où en
+       zone sauvage, seulement sur un `lieu` (filon, terrain de chasse), déjà
+       signalé juste au-dessus. */ }
   document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">[${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}]</span>`;
   if(surAnneauProtocole()){ const ri=document.querySelector("#region-info"); if(ri){ const hb=document.createElement("button"); hb.className="mini"; hb.textContent="Hacker le Protocole"; hb.style.marginLeft="8px"; hb.addEventListener("click",()=>{ if(typeof hackerProtocoleDepuisCarte==="function") hackerProtocoleDepuisCarte(); }); ri.appendChild(hb); } }
   if(typeof majMarqueursQuete==="function") majMarqueursQuete();

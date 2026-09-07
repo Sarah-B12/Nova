@@ -13,6 +13,10 @@
     .mur-x{ background:none!important; border:none!important; color:#ff5257; cursor:pointer; font-size:15px; float:right; padding:0 4px; line-height:1.2; }
     .mur-ecrire{ margin-top:16px; }
     .mur-outils{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+    .emo-panneau{ display:flex; flex-wrap:wrap; gap:3px; width:100%; margin-top:5px;
+                  background:#0f1830; border:1px solid var(--line); border-radius:8px; padding:6px; }
+    .emo-panneau .mur-emo{ font-size:19px; line-height:1; padding:5px; background:none; border:0; cursor:pointer; border-radius:6px; }
+    .emo-panneau .mur-emo:hover{ background:#1b2848; }
     .mur-b{ background:rgba(16,40,37,.7)!important; color:var(--texte,#dfe8f2)!important; border:1px solid var(--edge,#3a5a52)!important; border-radius:8px 3px 8px 3px; padding:4px 11px!important; cursor:pointer; font-size:14px; min-width:30px; }
     .mur-b:hover{ border-color:var(--orange,#ff8a3d)!important; }
   `;
@@ -52,6 +56,29 @@ function _ppStyle(){
   document.head.appendChild(st);
 }
 const MUR_EMOS = ["😀","😂","😍","😎","😢","😠","😅","🙂","❤️","🔥","🎉","😏"];
+
+/* Palette dépliable, pour les champs SANS mise en forme (messages privés).
+   ⚠ Ne pas y remettre les boutons B/I/U : les MP sont rendus bruts
+   (comm.js ~328, simple échappement), les balises [b] s'y afficheraient
+   littéralement. Seul le mur passe par _formatMur(). */
+const EMOJIS_PALETTE = [
+  "🙂","😀","😂","🤣","😅","😉","😍","😘","😎","🤔",
+  "😐","😴","😢","😭","😡","😱","🤗","🙏","👍","👎",
+  "👋","💪","🎉","🔥","❤️","💔","⭐","✅","❌","⚠️",
+  "💰","⚙️","🌿","🍖","🔧","🚀"
+];
+function _paletteEmoji(outilsSel, champSel){
+  const z=document.querySelector(outilsSel); if(!z) return;
+  z.innerHTML = `<button type="button" class="mur-b emo-toggle" title="Emoji">😊</button>`
+    + `<div class="emo-panneau" hidden>${EMOJIS_PALETTE.map(e=>`<button type="button" class="mur-emo" data-emo="${e}">${e}</button>`).join("")}</div>`;
+  const champ=document.querySelector(champSel); if(!champ) return;
+  const bt=z.querySelector(".emo-toggle"), pan=z.querySelector(".emo-panneau");
+  bt.addEventListener("click", ()=>{ pan.hidden = !pan.hidden; if(!pan.hidden) champ.focus(); });
+  pan.querySelectorAll("[data-emo]").forEach(b=>b.addEventListener("click",()=>{
+    _insertAtCursor(champ, b.dataset.emo);
+    champ.dispatchEvent(new Event("input"));   // prévient le brouillon et les compteurs
+  }));
+}
 function _remplirBarreMur(sel){
   const z=document.querySelector(sel); if(!z) return;
   z.innerHTML = `<button type="button" class="mur-b" data-wrap="b"><b>B</b></button>`

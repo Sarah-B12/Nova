@@ -154,6 +154,32 @@ function _devCartePerso(){
     </div>
   </div>`;
 }
+/* Mode tranquillité — onglet Recherche, donc accessible aux DEUX consoles
+   (dev et admin), comme la fiche joueur. L'état vit dans profils.tranquillite,
+   colonne protégée par le trigger : un joueur ne peut pas se l'accorder. */
+let _tranqActif = null;
+async function _majBoutonTranquillite(){
+  const b = document.querySelector("#dev-tranq"); if(!b) return;
+  if(_tranqActif === null){
+    const { data, error } = await sb.rpc("tranquillite_etat");
+    if(error || !data || !data.ok){ b.textContent = "Mode tranquillité (indisponible)"; b.disabled = true; return; }
+    _tranqActif = !!data.actif;
+  }
+  b.disabled = false;
+  b.textContent = _tranqActif ? "Mode tranquillité : ON — désactiver" : "Mode tranquillité : OFF — activer";
+}
+async function devTranquillite(){
+  const b = document.querySelector("#dev-tranq"); if(b) b.disabled = true;
+  const { data, error } = await sb.rpc("admin_tranquillite", { p_actif: !_tranqActif });
+  if(error){ alert("Échec : "+error.message); if(b) b.disabled=false; return; }
+  if(!data || !data.ok){ alert("Refusé : réservé au staff."); if(b) b.disabled=false; return; }
+  _tranqActif = !!data.actif;
+  journal("[STAFF] mode tranquillité "+(_tranqActif?"ACTIVÉ — jauges restaurées":"DÉSACTIVÉ")+".","alerte");
+  if(_tranqActif && typeof chargerJaugesServeur==="function") await chargerJaugesServeur();   // relit o2/sante/moral remis à 100
+  await _majBoutonTranquillite();
+  afficher();
+}
+
 function majDev(){
   // ⚠ `dev` était lu ici alors qu'il n'est déclaré que dans ouvrirDev() :
   // ReferenceError ligne ~190, qui interrompait majDev() et empêchait la
@@ -169,8 +195,13 @@ function majDev(){
     r.innerHTML =
       `<p class="dev-note">Recherche parmi <b>tous les comptes</b>. Chaque action est journalisée et annoncée au joueur.</p>
        <div class="dev-champ"><input id="dev-q" placeholder="Rechercher un pseudo…"><button class="mini" id="dev-chercher">Chercher</button></div>
-       <div id="dev-res"><p class="dev-note">Tape un pseudo (une partie suffit) puis Entrée.</p></div>`;
+       <div id="dev-res"><p class="dev-note">Tape un pseudo (une partie suffit) puis Entrée.</p></div>
+       <div class="dev-bloc"><h4>Mode tranquillité</h4>
+         <p class="dev-note">Sur <b>ton</b> personnage : plus de déclin quotidien, et santé / moral / O₂ remis à 100 chaque nuit. Les dégâts de combat sont réparés le lendemain — tu n'es pas invulnérable.</p>
+         <div class="dev-actions"><button class="mini" id="dev-tranq">Mode tranquillité …</button></div></div>`;
     r.querySelector("#dev-chercher").addEventListener("click", devChercherJoueur);
+    r.querySelector("#dev-tranq").addEventListener("click", devTranquillite);
+    _majBoutonTranquillite();
     r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") devChercherJoueur(); });
   }
   const av = document.querySelector("#dev-activ");

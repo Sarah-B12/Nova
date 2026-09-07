@@ -4,8 +4,10 @@
 // --- Terrain : structures de récolte qui produisent au fil du temps. ---
 const STRUCTURES = {
   mine:    { nom:"Mine",     prix:150, desc:"minerais" },
-  biodome: { nom:"Bio-dôme", prix:200, desc:"Sylve, Biofibre" },
-  enclos:  { nom:"Enclos",   prix:250, desc:"Filaine, Cuir, Protéines" },
+  // ⚠ `desc` = ce que le bâtiment PRODUIT (affiché sous le nom, ligne ~277),
+  //    pas son coût. À tenir aligné sur PLANTES et ANIMAUX dans data.js.
+  biodome: { nom:"Bio-dôme", prix:200, desc:"Sylve, Sporelle, Nectine, Ferragave" },
+  enclos:  { nom:"Enclos",   prix:250, desc:"Filaine, Cuir, Biofibre, Protéines" },
   atelier: { nom:"Atelier",  prix:300, desc:"fabriquer les objets de ta formation" },
   hangar:  { nom:"Hangar à drones", prix:350, desc:"automatise un bio-dôme ou un enclos" }
 };

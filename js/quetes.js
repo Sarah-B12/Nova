@@ -119,14 +119,17 @@ function _htmlEnigme(d){
   return `<div class="quete-etape">${_par(d.texte)}
     <p class="quete-indice">${d.question}</p>
     <div class="quete-rep"><input id="q-enig-champ" placeholder="Ta réponse…" autocomplete="off"><button class="mini" id="q-enig-btn">Valider</button></div>
-    ${d.indice?`<button class="mini" id="q-enig-indice" style="margin-top:8px">Indice</button><p class="vide" id="q-enig-txt" hidden style="margin:6px 0 0">💡 ${d.indice}</p>`:""}
   </div>`;
+  /* Bouton « Indice » retiré : les énigmes se résolvent sans aide.
+     ⚠ Les champs `indice:` des ÉNIGMES restent dans quetes-data.js — ils ne
+     sont simplement plus rendus, pour que le retour arrière soit trivial.
+     À ne pas confondre avec `e.indice`, l'indice d'OBJECTIF (~ligne 532),
+     qui indique où aller sur la carte et reste indispensable. */
 }
 function _wireEnigme(z,d){
   const b=z.querySelector("#q-enig-btn"), c=z.querySelector("#q-enig-champ");
-  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne réponse !","gain"); reussirDefi(); } else journal("Mauvaise réponse. Réessaie — ou demande un indice.","alerte"); };
+  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne réponse !","gain"); reussirDefi(); } else journal("Mauvaise réponse. Réessaie.","alerte"); };
   if(b&&c){ b.addEventListener("click",go); c.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); }
-  const ib=z.querySelector("#q-enig-indice"); if(ib) ib.addEventListener("click",()=>{ const t=z.querySelector("#q-enig-txt"); if(t) t.hidden=false; });
 }
 
 /* livraison (non ratable) */

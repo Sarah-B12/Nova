@@ -5,7 +5,12 @@ function nouvelEtat(){
   return {
     inscrit:false, nom:"", faction:null, pos:null, metier:null, creeLe:Date.now(), enPause:false, pauseLe:0, factionLe:0, factionChangeBloque:true, email:"", apparenceLe:0, avatar:null, bienvenueVue:false, protocoleActif:true,
     energie:100, energieMaj:Date.now(), reposLe:0, regenMaj:0,
-    credits:1000, niveau:1, xp:0, pointsCompetence:0, retours:0,
+    /* ⚠ `credits` appartient au SERVEUR (colonne protégée, jamais poussée).
+       Ce défaut n'est qu'un point de départ local : il était à 1000, si bien
+       qu'un nouveau joueur voyait 1 000 ₡ juste après l'inscription puis 0 au
+       rechargement, quand chargerDepuisServeur() écrasait la valeur. Le vrai
+       montant de départ est le DEFAULT de la colonne profils.credits. */
+    credits:0, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
     vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,

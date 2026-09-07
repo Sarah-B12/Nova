@@ -257,6 +257,7 @@ function vueMessages(recus, envoyes){
     return h+`<div class="msg-ecrire">
       <input id="msg-dest" placeholder="Destinataire (pseudo)" maxlength="24">
       <input id="msg-obj" placeholder="Objet" maxlength="60">
+      <div class="mur-outils" id="msg-outils"></div>
       <textarea id="msg-texte" placeholder="Ton message…" maxlength="1000" rows="6"></textarea>
       <button class="mini" id="msg-envoyer">Envoyer</button></div>`;
   }
@@ -292,6 +293,7 @@ function brancherMessages(z){
   _commBrouillon(z, "#msg-dest", "dest", _msgForm);
   _commBrouillon(z, "#msg-obj",  "obj",  _msgForm);
   _commBrouillon(z, "#msg-texte","txt",  _msgForm);
+  if(typeof _paletteEmoji==="function") _paletteEmoji("#msg-outils", "#msg-texte");
   // Le préremplissage (« Écrire à ce joueur ») a priorité sur le brouillon.
   if(_msgPrefill){ const d=z.querySelector("#msg-dest"), o=z.querySelector("#msg-obj");
     if(d){ d.value=_msgPrefill.dest||""; _msgForm.dest=d.value; }

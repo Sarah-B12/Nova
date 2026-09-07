@@ -9,7 +9,7 @@ ever cancelled.
 Built solo, in **vanilla JavaScript with no framework and no build step**,
 backed by **Supabase** (PostgreSQL, Auth, Row Level Security).
 
-> 🎮 **Play:** *(link coming soon)*
+> 🎮 **Play:** https://nova-epic.pages.dev/
 
 ---
 
