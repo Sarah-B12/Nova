@@ -36,7 +36,7 @@ function coutO2(base){ const c = base * (1 - Math.min(0.5, agiliteEffective()/40
 function echapper(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function ageJours(){ return Math.floor((Date.now() - etat.creeLe) / MS_JOUR); }
 /* ---------- Sauvegarde ---------- */
-function sauvegarder(){ try{ localStorage.setItem(CLE, JSON.stringify(etat)); }catch(e){} if(typeof planifierSauveServeur==="function") planifierSauveServeur(); }
+function sauvegarder(){ try{ localStorage.setItem(CLE, JSON.stringify(etat)); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "etat.js#1"); } if(typeof planifierSauveServeur==="function") planifierSauveServeur(); }
 // Normalise un objet d'état (localStorage OU serveur) vers un état complet et cohérent.
 function hydraterEtat(s){
   const base=nouvelEtat();
@@ -58,8 +58,8 @@ function hydraterEtat(s){
     energieMaj: s.energieMaj || Date.now() };
 }
 function charger(){
-  try{ const brut=localStorage.getItem(CLE); if(brut) return hydraterEtat(JSON.parse(brut)); }catch(e){}
+  try{ const brut=localStorage.getItem(CLE); if(brut) return hydraterEtat(JSON.parse(brut)); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "etat.js#2"); }
   return nouvelEtat();
 }
-function reinitialiser(){ if(!confirm("Effacer la partie locale et te déconnecter ?"))return; try{localStorage.removeItem(CLE);}catch(e){} if(typeof seDeconnecter==="function"){ seDeconnecter().finally(()=>location.reload()); } else { etat=nouvelEtat(); document.querySelector("#journal").innerHTML=""; afficher(); (typeof ouvrirAuth==="function"?ouvrirAuth:ouvrirInscription)(); } }
+function reinitialiser(){ if(!confirm("Effacer la partie locale et te déconnecter ?"))return; try{localStorage.removeItem(CLE);}catch(e){ if(typeof _catchLog==="function") _catchLog(e, "etat.js#3"); } if(typeof seDeconnecter==="function"){ seDeconnecter().finally(()=>location.reload()); } else { etat=nouvelEtat(); document.querySelector("#journal").innerHTML=""; afficher(); (typeof ouvrirAuth==="function"?ouvrirAuth:ouvrirInscription)(); } }
 

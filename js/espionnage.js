@@ -46,8 +46,8 @@ async function majBureauOmbre(el, fac){
   const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
   const estOmbre=roles.includes("espion");
   let rapports=[];
-  try{ await sb.rpc("espionnage_purge"); const { data } = await sb.from("espionnage").select("*").order("cree_le",{ascending:false}).limit(30); rapports=data||[]; }catch(e){}
-  let hacks=[]; try{ await sb.rpc("hack_protocole_purge"); const { data } = await sb.from("hack_protocole").select("*").order("cree_le",{ascending:false}).limit(20); hacks=data||[]; }catch(e){}
+  try{ await sb.rpc("espionnage_purge"); const { data } = await sb.from("espionnage").select("*").order("cree_le",{ascending:false}).limit(30); rapports=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#1"); }
+  let hacks=[]; try{ await sb.rpc("hack_protocole_purge"); const { data } = await sb.from("hack_protocole").select("*").order("cree_le",{ascending:false}).limit(20); hacks=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#2"); }
   let h=`<h3>Bureau de l'Ombre</h3>`;
   if(estOmbre){
     const cibles=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
@@ -93,7 +93,7 @@ async function majBureauOmbre(el, fac){
 async function hackerProtocoleDepuisCarte(){
   if(typeof surAnneauProtocole==="function" && !surAnneauProtocole()){ journal("Approche-toi du mur du Protocole pour le hacker.","alerte"); return; }
   if(typeof enPrison==="function" && enPrison()){ journal("Impossible : tu es en prison.","alerte"); return; }
-  let d; try{ const r=await sb.rpc("hack_protocole_dispo"); d=r.data; }catch(e){}
+  let d; try{ const r=await sb.rpc("hack_protocole_dispo"); d=r.data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#3"); }
   if(!d || !d.ombre){ journal("Seule l'Ombre de ta faction peut hacker le Protocole.","alerte"); return; }
   if(d.restant<=0){ journal("Ta faction a déjà tenté de hacker le Protocole aujourd'hui.","alerte"); return; }
   const reussi=await _lancerHackProto();

@@ -20,89 +20,52 @@ function ouvrirDev(){
   monterDev();
   const m = document.querySelector("#dev-modale");
   const dev = (typeof estDev==="function" && estDev());
-  m.querySelector('[data-dev="recherche"]').style.display = dev ? "" : "none";
+  // L'onglet Recherche (fiche joueur) sert AUSSI aux admin : c'est leur outil
+  // principal de modération. Seuls Activations, Journal et Cadeaux restent dev.
+  m.querySelector('[data-dev="recherche"]').style.display = "";
   m.querySelector('[data-dev="activ"]').style.display = dev ? "" : "none";
-  m.querySelector('[data-dev="cadeaux"]').style.display = dev ? "" : "none";
+  m.querySelector('[data-dev="journal"]').style.display = dev ? "" : "none";
   m.querySelector(".dev-tete b").textContent = dev ? "CONSOLE DEV" : "CONSOLE ADMIN";
-  const premier = dev ? "recherche" : "gouv";
+  const premier = "recherche";   // la fiche joueur pour tout le staff
   m.querySelectorAll(".dev-onglet").forEach(x=>x.classList.toggle("actif", x.dataset.dev===premier));
-  ["recherche","activ","cadeaux","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(v!==premier); });
+  ["recherche","activ","journal","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(v!==premier); });
   m.hidden = false;
   majDev();
 }
 function fermerDev(){ const m=document.querySelector("#dev-modale"); if(m) m.hidden = true; }
 
 /* ---------- Actions dev ---------- */
-async function devDonnerCredits(n){
-  n = parseInt(n,10)||0; if(!n) return;
-  if(_devCible){
-    const { data, error } = await sb.rpc("admin_offrir_credits",
-      { p_profil:_devCible.id, p_montant:n, p_motif:"don console dev" });
-    if(error || !data || !data.ok){
-      alert("Échec : " + ((data && data.err) || (error && error.message) || "?")); return;
-    }
-    journal(`[DEV] ${n>0?"+":""}${n} ₡ à ${data.nom} (solde : ${data.solde} ₡).`,"gain");
-    return;
-  }
-  // Pour soi : on passe par la RPC admin aussi, pour que le don soit journalisé
-  // et pour ne pas dépendre du plafond de crediter().
-  try{
-    const { data:me } = await sb.auth.getUser();
-    const { data, error } = await sb.rpc("admin_offrir_credits",
-      { p_profil: me.user.id, p_montant: n, p_motif: "don console dev (soi)" });
-    if(error || !data || !data.ok){ alert("Échec du don."); return; }
-    if(typeof rechargerCredits === "function") await rechargerCredits();
-    journal(`[DEV] ${n>0?"+":""}${n} ₡.`,"gain");
-  }catch(e){ alert("Échec du don."); return; }
-  sauvegarder(); afficher(); majDev();
-}
-function devDonnerPA(n){ n=parseInt(n,10)||0; if(!n) return; if(!etat.aptitudes) etat.aptitudes={pa:0,pris:[]}; etat.aptitudes.pa=Math.max(0,(etat.aptitudes.pa||0)+n); journal(`[DEV] ${n>0?"+":""}${n} PA.`,"gain"); sauvegarder(); afficher(); majDev(); }
 // ⚠ PHASE 4 : le sac appartient au serveur. Écrire dans etat.sac ne créait que
 // des objets FANTÔMES — visibles à l'écran, inexistants pour le serveur, d'où
 // des « il te manque de quoi faire ça » à la fabrication ou au marché.
 /* Cible des dons : null = moi. Renseignée par la recherche ci-dessous. */
-let _devCible = null;   // { id, nom }
 
-async function devChercherCible(){
-  const q = (document.querySelector("#dev-dest-nom").value||"").trim();
-  const z = document.querySelector("#dev-dest-res"); if(!z) return;
-  if(!q){ _devCible = null; _devMajCible(); z.innerHTML = ""; return; }
-  const { data, error } = await sb.rpc("admin_chercher_profil", { p_nom: q });
-  if(error || !data || !data.ok){ z.textContent = "Recherche impossible."; return; }
-  const l = data.profils || [];
-  if(!l.length){ z.textContent = "Aucun joueur trouvé."; return; }
-  z.innerHTML = l.map(p=>`<button class="mini" data-cible="${p.id}" data-nom="${p.nom}" style="margin:2px">
-      ${p.nom} <span class="itip-gris">(${p.faction||"—"}, ${p.credits} ₡${p.mort?", MORT":""}${p.pause?", en pause":""})</span></button>`).join("");
-  z.querySelectorAll("[data-cible]").forEach(b=>b.addEventListener("click",()=>{
-    _devCible = { id:b.dataset.cible, nom:b.dataset.nom }; _devMajCible();
-  }));
-}
-function _devMajCible(){
-  const e = document.querySelector("#dev-dest-actuel");
-  if(e) e.textContent = _devCible ? _devCible.nom : "Moi";
-}
 
-async function devDonnerObjet(id, qte){
-  qte = parseInt(qte,10)||0; if(!id || qte<=0) return;
-  if(_devCible){
-    const { data, error } = await sb.rpc("admin_offrir_objet",
-      { p_profil:_devCible.id, p_item:id, p_qte:qte, p_motif:"don console dev" });
-    if(error || !data || !data.ok){
-      alert("Échec : " + ((data && data.err) || (error && error.message) || "?"));
-      return;
-    }
-    journal(`[DEV] ${data.donne}× ${item(id).nom} remis à ${data.nom}${data.partiel?" (sac plein, don partiel)":""}.`,"gain");
-    return;
+// ⚠ La pause appartient au SERVEUR (profils.pause_depuis). Basculer etat.enPause
+// en local affichait l'écran sans mettre le personnage en pause : il déclinait
+// quand même et restait attaquable. On passe par les RPC.
+async function devPause(){
+  const rpc = etat.enPause ? "pause_sortir" : "pause_entrer";
+  const { data, error } = await sb.rpc(rpc);
+  if(error){ alert("Échec : "+error.message); return; }
+  if(data && data.ok === false && data.err === "trop_tot"){
+    if(!confirm("Pause minimale non écoulée. Forcer la sortie ?")) return;
+    const { error:e2 } = await sb.rpc("admin_pause_forcer_sortie");
+    if(e2){ alert("Échec : "+e2.message); return; }
   }
-  const r = await agirServeur({ ajouter:{ [id]: qte }, motif:"dev_cadeau" });
-  if(!r) return;
-  const recu = (r.ajoutes||{})[id] || 0;
-  if(recu < qte) journal(`[DEV] +${recu} ${item(id).nom} — le reste n'entrait pas (sac plein).`,"alerte");
-  else journal(`[DEV] +${recu} ${item(id).nom} (donné).`,"gain");
+  if(typeof _syncPause==="function") await _syncPause();
+  if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
+  journal(`[DEV] personnage ${etat.enPause?"mis en pause":"réactivé"}.`,"alerte");
+  if(typeof majEcranPause==="function") majEcranPause();
   sauvegarder(); afficher(); majDev();
 }
-function devPause(){ etat.enPause = !etat.enPause; journal(`[DEV] personnage ${etat.enPause?"mis en pause":"réactivé"}.`,"alerte"); sauvegarder(); afficher(); majDev(); }
-function devEnergie(){ etat.energie=100; etat.energieMaj=Date.now(); journal("[DEV] énergie rechargée à 100 %.","gain"); sauvegarder(); afficher(); majDev(); }
+async function devEnergie(){
+  // L'énergie appartient au serveur : un etat.energie = 100 local serait
+  // écrasé au premier appel suivant. On passe par la RPC dédiée.
+  const { data, error } = await sb.rpc("admin_recharger_energie", { p_profil: null });
+  if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+  if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
+  etat.energie=100; etat.energieMaj=Date.now(); journal("[DEV] énergie rechargée à 100 %.","gain"); sauvegarder(); afficher(); majDev(); }
 function devLibererPrison(){ etat.prisonJusqua=0; etat.prisonFaction=null; journal("[DEV] libéré de prison.","gain"); sauvegarder(); afficher(); majDev(); }
 function devRecalerCompetences(){
   if(!confirm("Remettre les compétences à 10/10/10 + les points de niveau non dépensés ?\n(Les points déjà gagnés sont recrédités.)")) return;
@@ -133,6 +96,8 @@ async function devQuotidien(){
   if(typeof majEcranPause==="function") majEcranPause();
   afficher(); majDev();
 }
+// (devDonnerCredits / devDonnerObjet / devDonnerPA / devChercherCible retirées :
+//  remplacées par la fiche joueur, qui cible n'importe quel compte et journalise.)
 function devViderJournal(){
   if(!confirm("Effacer tout le journal de ce personnage ?")) return;
   const n = (etat.journal||[]).length;
@@ -177,17 +142,18 @@ function _devCartePerso(){
 }
 function majDev(){
   const r = document.querySelector("#dev-recherche");
-  if(r){
-    const q = (document.querySelector("#dev-q")?.value || "").trim().toLowerCase();
-    const match = !q || (etat.nom||"").toLowerCase().includes(q);
+  if(r && !r.dataset.pret){
+    // ⚠ L'ancienne recherche cherchait dans l'état LOCAL : elle ne pouvait
+    // trouver que soi-même. Elle interroge désormais le serveur, et la fiche
+    // porte ses propres actions de dépannage — un modérateur n'a jamais besoin
+    // de se connecter sur le compte de quelqu'un.
+    r.dataset.pret = "1";
     r.innerHTML =
-      `<p class="dev-note">En solo, un seul compte existe (le tien). La recherche multi-comptes, les IP et l'entrée dans un compte tiers nécessiteront le <b>backend multijoueur</b>.</p>
-       <div class="dev-champ"><input id="dev-q" placeholder="Rechercher un pseudo…" value="${q}"><button class="mini" id="dev-chercher">Chercher</button></div>
-       <div id="dev-res">${match ? _devCartePerso() : `<p class="vide">Aucun compte pour « ${q} ».</p>`}</div>`;
-    r.querySelector("#dev-chercher").addEventListener("click", majDev);
-    r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") majDev(); });
-    const bqr=r.querySelector("#dev-quete-reset"); if(bqr) bqr.addEventListener("click", ()=>{ const sel=r.querySelector("#dev-quete-sel"); if(sel) devResetQuete(sel.value); });
-    const bqa=r.querySelector("#dev-quete-reset-all"); if(bqa) bqa.addEventListener("click", devResetQuetes);
+      `<p class="dev-note">Recherche parmi <b>tous les comptes</b>. Chaque action est journalisée et annoncée au joueur.</p>
+       <div class="dev-champ"><input id="dev-q" placeholder="Rechercher un pseudo…"><button class="mini" id="dev-chercher">Chercher</button></div>
+       <div id="dev-res"><p class="dev-note">Tape un pseudo (une partie suffit) puis Entrée.</p></div>`;
+    r.querySelector("#dev-chercher").addEventListener("click", devChercherJoueur);
+    r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") devChercherJoueur(); });
   }
   const av = document.querySelector("#dev-activ");
   if(av){
@@ -216,26 +182,17 @@ function majDev(){
     const bfb=av.querySelector("#dev-facbloc"); if(bfb) bfb.addEventListener("click", devFactionBloc);
     const bpro=av.querySelector("#dev-protocole"); if(bpro) bpro.addEventListener("click", devProtocole);
   }
-  const c = document.querySelector("#dev-cadeaux");
-  if(c){
-    const opts = TOUS_ITEMS.slice().sort((a,b)=>a.nom.localeCompare(b.nom)).map(it=>`<option value="${it.id}">${it.nom}</option>`).join("");
-    c.innerHTML =
-      `<div class="dev-bloc"><h4>Destinataire</h4>
-         <p class="dev-note">Laisse vide pour t'attribuer le don à toi-même. Sinon tape un pseudo et choisis dans la liste.<br>
-           <b>Chaque don est journalisé</b> dans admin_log et annoncé au joueur.</p>
-         <div class="dev-champ"><input id="dev-dest-nom" type="text" placeholder="Pseudo du joueur…"><button class="mini" id="dev-dest-chercher">Chercher</button></div>
-         <div id="dev-dest-res" class="dev-note"></div>
-         <p class="dev-note">Cible actuelle : <b id="dev-dest-actuel">Moi</b></p>
-       </div>
-       <div class="dev-bloc"><h4>Crédits</h4><div class="dev-champ"><input id="dev-cred" type="number" value="1000"><button class="mini" id="dev-don-cred">Créditer</button></div></div>
-       <div class="dev-bloc"><h4>Points d'aptitude (PA)</h4><div class="dev-champ"><input id="dev-pa" type="number" value="1"><button class="mini" id="dev-don-pa">Donner PA</button></div></div>
-       <div class="dev-bloc"><h4>Objet (tout item du jeu)</h4><div class="dev-champ"><select id="dev-item">${opts}</select><input id="dev-qte" type="number" value="1" min="1" style="max-width:64px"><button class="mini" id="dev-don-item">Donner</button></div><p class="dev-note" style="margin:6px 0 0">Le don ignore la limite du sac (pratique pour tester : Sylve, Biofibre, etc.).</p></div>`;
-    c.querySelector("#dev-dest-chercher").addEventListener("click", devChercherCible);
-    c.querySelector("#dev-dest-nom").addEventListener("keydown", e=>{ if(e.key==="Enter") devChercherCible(); });
-    _devMajCible();
-    c.querySelector("#dev-don-cred").addEventListener("click", ()=>devDonnerCredits(c.querySelector("#dev-cred").value));
-    c.querySelector("#dev-don-pa").addEventListener("click", ()=>devDonnerPA(c.querySelector("#dev-pa").value));
-    c.querySelector("#dev-don-item").addEventListener("click", ()=>devDonnerObjet(c.querySelector("#dev-item").value, c.querySelector("#dev-qte").value));
+  // (Onglet Cadeaux supprimé : la fiche joueur de l'onglet Recherche fait mieux —
+  //  elle cible n'importe quel joueur, journalise et le prévient.)
+  const jl = document.querySelector("#dev-journal");
+  if(jl && dev){
+    jl.innerHTML = `<div class="dev-bloc"><h4>Journal admin
+        <button class="mini" id="dev-log-vider" style="float:right;padding:2px 8px">Tout effacer</button></h4>
+      <p class="dev-note">Toutes les actions du staff : nominations, dons, suppressions, consultations de journaux, refus de crédit suspects (<b>crediter_refuse</b>).</p>
+      <div id="dev-log"><p class="dev-note">Chargement…</p></div></div>`;
+    const bv = jl.querySelector("#dev-log-vider");
+    if(bv) bv.addEventListener("click", devViderLog);
+    _devChargerLog();
   }
   const g = document.querySelector("#dev-gouv");
   if(g){
@@ -251,12 +208,12 @@ function majDev(){
       h += `<div class="dev-bloc"><h4>Protocole (debug)</h4><div id="dev-proto"><p class="dev-note">Chargement…</p></div></div>`;
       h += `<div class="dev-bloc"><h4>Staff actuel</h4><div id="dev-staff"><p class="dev-note">Chargement…</p></div></div>`;
       h += `<div class="dev-bloc"><h4>Expédition (test)</h4><p class="dev-note">Avance l'échéance de l'expédition de ta faction à <b>maintenant</b>. Le cron la résoudra à la minute suivante, exactement comme en vrai.</p><div class="dev-champ"><button class="mini" id="dev-exp-avancer">Avancer l'échéance à maintenant</button></div></div>`;
-      h += `<div class="dev-bloc"><h4>Journal admin <button class="mini" id="dev-log-vider" style="float:right;padding:2px 8px">Tout effacer</button></h4><div id="dev-log"><p class="dev-note">Chargement…</p></div></div>`;
+      // (Le journal admin a son propre onglet — l'onglet Gouvernement était trop long.)
     }
     g.innerHTML = h;
     g.querySelector("#dev-nom-btn").addEventListener("click", devNommer);
     const ab=g.querySelector("#dev-adm-btn"); if(ab) ab.addEventListener("click", devDefinirRole);
-    if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); _devChargerLog(); const bv=g.querySelector("#dev-log-vider"); if(bv) bv.addEventListener("click", devViderLog); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
+    if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
   }
 }
 async function devNommer(){
@@ -290,15 +247,18 @@ async function devForcerPhase(p){
 async function devViderLog(){
   if(!confirm("Effacer TOUT le journal admin ? (irréversible)")) return;
   const { data:res, error } = await sb.rpc("admin_vider_log");
-  if(error || !res || !res.ok){ alert("Échec : "+((res&&res.err)||"?")); return; }
-  journal("[DEV] journal admin vidé.","alerte"); _devChargerLog();
+  if(error || !res || !res.ok){
+    alert("Échec : " + ((res && res.err) || (error && error.message) || "réponse inattendue"));
+    return;
+  }
+  journal(`[DEV] journal admin vidé (${res.supprimes} entrée(s)).`,"alerte"); _devChargerLog();
 }
 async function _devChargerProto(){
   const z=document.querySelector("#dev-proto"); if(!z) return;
   let def="?", actif=false, menace=null;
-  try{ const { data } = await sb.rpc("protocole_defense"); def=data; }catch(e){}
-  try{ const { data } = await sb.rpc("protocole_est_actif"); actif=(data===true); }catch(e){}
-  try{ const { data } = await sb.rpc("protocole_menace"); menace=data; }catch(e){}
+  try{ const { data } = await sb.rpc("protocole_defense"); def=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "dev-console.js#1"); }
+  try{ const { data } = await sb.rpc("protocole_est_actif"); actif=(data===true); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "dev-console.js#2"); }
+  try{ const { data } = await sb.rpc("protocole_menace"); menace=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "dev-console.js#3"); }
   const etatTxt = actif
     ? `<b style="color:#ff5257">ATTAQUES ACTIVES</b>`
     : `<b style="color:#8b95a8">attaques désactivées</b>`;
@@ -382,10 +342,10 @@ function monterDev(){
   const m = document.createElement("div"); m.id="dev-modale"; m.hidden=true;
   m.innerHTML = `<div class="dev-cadre">
     <div class="dev-tete"><b>CONSOLE DEV</b><span class="dev-warn">accès restreint · non sécurisé côté client</span><button class="mini" id="dev-fermer">Fermer</button></div>
-    <div class="dev-onglets"><button class="dev-onglet actif" data-dev="recherche">Recherche</button><button class="dev-onglet" data-dev="activ">Activations</button><button class="dev-onglet" data-dev="cadeaux">Cadeaux</button><button class="dev-onglet" data-dev="gouv">Gouvernement</button></div>
+    <div class="dev-onglets"><button class="dev-onglet actif" data-dev="recherche">Recherche</button><button class="dev-onglet" data-dev="activ">Activations</button><button class="dev-onglet" data-dev="journal">Journal</button><button class="dev-onglet" data-dev="gouv">Gouvernement</button></div>
     <div class="dev-vue" id="dev-recherche"></div>
     <div class="dev-vue" id="dev-activ" hidden></div>
-    <div class="dev-vue" id="dev-cadeaux" hidden></div>
+    <div class="dev-vue" id="dev-journal" hidden></div>
     <div class="dev-vue" id="dev-gouv" hidden></div>
   </div>`;
   document.body.appendChild(m);
@@ -393,7 +353,150 @@ function monterDev(){
   m.addEventListener("click", e=>{ if(e.target.id==="dev-modale") fermerDev(); });
   m.querySelectorAll(".dev-onglet").forEach(b=>b.addEventListener("click",()=>{
     m.querySelectorAll(".dev-onglet").forEach(x=>x.classList.toggle("actif",x===b));
-    ["recherche","activ","cadeaux","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(b.dataset.dev!==v); });
+    ["recherche","activ","journal","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(b.dataset.dev!==v); });
   }));
   _devMonte = true;
+}
+
+
+/* ===========================================================
+   FICHE JOUEUR (staff) — recherche serveur + actions de dépannage.
+   Remplace l'ancienne recherche locale, qui ne trouvait que soi-même.
+   =========================================================== */
+let _ficheJoueur = null;   // dernier joueur sélectionné
+
+async function devChercherJoueur(){
+  const z = document.querySelector("#dev-res"); if(!z) return;
+  const q = (document.querySelector("#dev-q")?.value || "").trim();
+  if(!q){ z.innerHTML = `<p class="dev-note">Tape un pseudo (une partie suffit).</p>`; return; }
+  z.innerHTML = `<p class="dev-note">Recherche…</p>`;
+  const { data, error } = await sb.rpc("admin_fiche_joueur", { p_nom: q });
+  if(error || !data || !data.ok){
+    z.innerHTML = `<p class="vide">Recherche impossible — ${(data&&data.err)||(error&&error.message)||"?"}</p>`;
+    return;
+  }
+  const l = data.profils || [];
+  if(!l.length){ z.innerHTML = `<p class="vide">Aucun compte pour « ${q.replace(/</g,"&lt;")} ».</p>`; return; }
+  if(l.length === 1){ _devAfficherFiche(l[0]); return; }
+  z.innerHTML = `<p class="dev-note">${l.length} résultats :</p>` +
+    l.map((p,i)=>`<button class="mini" data-fiche="${i}" style="margin:2px">${p.nom} <span class="dev-note">(${p.faction||"—"})</span></button>`).join("");
+  z.querySelectorAll("[data-fiche]").forEach(b=>b.addEventListener("click",()=>_devAfficherFiche(l[+b.dataset.fiche])));
+}
+
+function _devAfficherFiche(p){
+  _ficheJoueur = p;
+  const z = document.querySelector("#dev-res"); if(!z) return;
+  const oui = v => v ? "✅ oui" : "— non";
+  const dh  = v => v ? new Date(v).toLocaleString("fr-FR") : "—";
+  const etatTxt = p.mort ? `<b style="color:#ff5257">MORT</b> (depuis ${dh(p.mort_le)})`
+                : p.en_pause ? `<b style="color:#ff8a3d">EN PAUSE</b> (depuis ${dh(p.pause_depuis)})`
+                : p.en_prison ? `<b style="color:#ff8a3d">EN PRISON</b>` : "actif";
+  const opts = (typeof TOUS_ITEMS!=="undefined")
+    ? TOUS_ITEMS.slice().sort((a,b)=>a.nom.localeCompare(b.nom)).map(it=>`<option value="${it.id}">${it.nom}</option>`).join("")
+    : "";
+
+  z.innerHTML = `
+    <div class="dev-bloc">
+      <h4>${p.nom} <span class="dev-note" style="float:right">${p.faction||"—"} · Niv ${p.niveau} · ${p.role_admin||"joueur"}</span></h4>
+      <table class="dev-fiche">
+        <tr><td>Crédits</td><td><b>${p.credits} ₡</b></td><td>Énergie</td><td><b>${p.energie} %</b></td></tr>
+        <tr><td>Santé</td><td><b>${p.sante} %</b></td><td>Moral</td><td><b>${p.moral} %</b></td></tr>
+        <tr><td>O₂</td><td><b>${p.o2} %</b></td><td>Sac</td><td><b>${p.sac}/${p.sac_max}</b></td></tr>
+        <tr><td>Position</td><td><b>${p.pos_x ?? "—"}, ${p.pos_y ?? "—"}</b> ${p.chez_soi?"(chez lui)":""}</td>
+            <td>Force combat</td><td><b>${p.force_combat}</b></td></tr>
+        <tr><td>Réputation</td><td><b>${p.reputation}</b></td><td>Gouvernement</td><td><b>${p.role_gouv||"—"}</b></td></tr>
+        <tr><td>Permis vaisseau</td><td>${oui(p.permis_vaisseau)}</td><td>Vaisseau</td><td>${p.vaisseau||"—"}</td></tr>
+        <tr><td>Compte créé</td><td colspan="3">${dh(p.cree_le)} · dernière activité ${dh(p.derniere_activite)}</td></tr>
+        <tr><td>E-mail</td><td colspan="3" class="dev-note">${p.email||"—"}</td></tr>
+        <tr><td>État</td><td colspan="3">${etatTxt}</td></tr>
+      </table>
+    </div>
+
+    <div class="dev-bloc"><h4>Dépannage</h4>
+      <div class="dev-actions">
+        <button class="mini" id="f-soigner" title="Santé, moral, O₂ et énergie à 100 — et ressuscite si besoin">Tout remettre à 100 %</button>
+        <button class="mini" id="f-pause">${p.en_pause ? "Réveiller" : "Mettre en pause"}</button>
+      </div>
+    </div>
+
+    <div class="dev-bloc"><h4>Crédits</h4>
+      <div class="dev-champ"><input id="f-cred" type="number" value="1000">
+        <button class="mini" id="f-cred-btn">Créditer</button></div>
+    </div>
+
+    <div class="dev-bloc"><h4>Objet</h4>
+      <div class="dev-champ"><select id="f-item">${opts}</select>
+        <input id="f-qte" type="number" value="1" min="1" style="max-width:64px">
+        <button class="mini" id="f-item-btn">Donner</button></div>
+    </div>
+
+    <div class="dev-bloc"><h4>Journal du joueur</h4>
+      <div class="dev-champ"><button class="mini" id="f-journal">Afficher les 200 dernières entrées</button></div>
+      <div id="f-journal-zone"></div>
+    </div>`;
+
+  if(!document.querySelector("#dev-fiche-style")){
+    const st=document.createElement("style"); st.id="dev-fiche-style";
+    st.textContent = `.dev-fiche{ width:100%; border-collapse:collapse; font-size:12px; }
+      .dev-fiche td{ padding:3px 6px; border-bottom:1px solid rgba(255,255,255,.06); }
+      .dev-fiche td:nth-child(odd){ color:var(--texte-2,#9fb3c8); width:22%; }`;
+    document.head.appendChild(st);
+  }
+
+  const rafraichir = async () => {
+    const { data } = await sb.rpc("admin_fiche_joueur", { p_nom: p.nom });
+    const maj = (data && data.ok && (data.profils||[]).find(x=>x.id===p.id));
+    if(maj) _devAfficherFiche(maj);
+  };
+
+  z.querySelector("#f-soigner").addEventListener("click", async ()=>{
+    if(!confirm(`Remettre santé, moral, O₂ et énergie de ${p.nom} à 100 % ?`)) return;
+    const { data, error } = await sb.rpc("admin_soigner", { p_profil: p.id });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${p.nom} remis à 100 %.`,"gain"); rafraichir();
+  });
+
+  z.querySelector("#f-pause").addEventListener("click", async ()=>{
+    const vers = !p.en_pause;
+    if(!confirm(`${vers?"Mettre en pause":"Réveiller"} ${p.nom} ?`)) return;
+    const { data, error } = await sb.rpc("admin_pause_joueur", { p_profil: p.id, p_en_pause: vers });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${p.nom} ${vers?"mis en pause":"réveillé"}.`,"alerte"); rafraichir();
+  });
+
+  z.querySelector("#f-cred-btn").addEventListener("click", async ()=>{
+    const n = parseInt(z.querySelector("#f-cred").value,10)||0; if(!n) return;
+    const { data, error } = await sb.rpc("admin_offrir_credits",
+      { p_profil: p.id, p_montant: n, p_motif: "console staff" });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${n>0?"+":""}${n} ₡ à ${p.nom} (solde ${data.solde} ₡).`,"gain"); rafraichir();
+  });
+
+  z.querySelector("#f-item-btn").addEventListener("click", async ()=>{
+    const id = z.querySelector("#f-item").value;
+    const q  = parseInt(z.querySelector("#f-qte").value,10)||0; if(!id||q<=0) return;
+    const { data, error } = await sb.rpc("admin_offrir_objet",
+      { p_profil: p.id, p_item: id, p_qte: q, p_motif: "console staff" });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${data.donne}× ${item(id).nom} à ${p.nom}${data.partiel?" (sac plein)":""}.`,"gain"); rafraichir();
+  });
+
+  z.querySelector("#f-journal").addEventListener("click", async ()=>{
+    const zj = z.querySelector("#f-journal-zone");
+    zj.innerHTML = `<p class="dev-note">Chargement…</p>`;
+    const { data, error } = await sb.rpc("admin_journal_joueur", { p_profil: p.id, p_limite: 200 });
+    if(error || !data || !data.ok){
+      zj.innerHTML = `<p class="dev-note">Impossible — ${(data&&data.err)||(error&&error.message)||"?"}</p>`; return;
+    }
+    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff" };
+    const lignes = (data.journal||[]).slice().sort((a,b)=>(b&&b.d||0)-(a&&a.d||0)).map(e=>{
+      if(typeof e === "string") return `<div>${e.replace(/</g,"&lt;")}</div>`;
+      const q = e && e.d ? new Date(e.d).toLocaleString("fr-FR") : "—";
+      const t = (e && (e.t || e.txt)) || JSON.stringify(e);
+      const c = cls[e && e.type] || "";
+      return `<div><span class="dev-note">${q}${e.cat?" ["+e.cat+"]":""}</span> <span${c?` style="color:${c}"`:""}>${String(t).replace(/</g,"&lt;")}</span></div>`;
+    }).join("");
+    zj.innerHTML = `<div style="max-height:300px;overflow:auto;font-size:11px;line-height:1.6">${lignes||'<p class="dev-note">Journal vide.</p>'}</div>
+      <p class="dev-note">${data.total} entrées au total.</p>`;
+  });
 }

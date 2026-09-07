@@ -19,8 +19,8 @@ document.querySelectorAll("button.action[data-action]").forEach(b => b.addEventL
   if(r){ journal(r, "alerte"); return; }
   ACTIONS[b.dataset.action]();
 }));
-document.querySelector("#btn-sauver").addEventListener("click", ()=>{ sauvegarder(); if(typeof sauverSurServeur==="function") sauverSurServeur(); journal("Partie sauvegardée."); });
-document.querySelector("#btn-reset").addEventListener("click", reinitialiser);
+// Les boutons « Sauvegarder » et « Réinitialiser » ont été retirés :
+// la sauvegarde est automatique, et la réinitialisation effaçait la partie.
 document.querySelector("#ouvrir-carte").addEventListener("click", ouvrirCarte);
 const _bOrb=document.querySelector("#ouvrir-orbite");
 if(_bOrb) _bOrb.addEventListener("click", ouvrirOrbite);

@@ -136,7 +136,13 @@ async function connecter(){
   journal(`Bon retour, ${etat.nom}.`,"gain");
 }
 async function deconnexion(){
-  if(!confirm("Se déconnecter ? Ta partie est sauvegardée sur le serveur.")) return;
+  if(typeof _pauseConfirm === "function"){
+    const ok = await _pauseConfirm("Se déconnecter ?", [
+      "Ta partie est <b>sauvegardée sur le serveur</b>.",
+      "Tu retrouveras ton personnage exactement où tu le laisses."
+    ], "Se déconnecter");
+    if(!ok) return;
+  } else if(!confirm("Se déconnecter ? Ta partie est sauvegardée sur le serveur.")) return;
   await sauverSurServeur(); await seDeconnecter(); location.reload();
 }
 

@@ -271,3 +271,8 @@
   /* Icône du drone dans le hangar (même esprit que l'enclos et le bio-dôme). */
   .drone-tete .drone-ic { display:inline-block; vertical-align:middle; margin-right:8px; }
   .drone-tete .drone-ic img { width:34px; height:34px; object-fit:contain; display:block; }
+
+
+  /* Mention de crédits, tout en bas du site. */
+  .credits-bas{ width:100%; text-align:center; margin:10px 0 0; font-size:10px;
+    color:var(--texte-2,#9fb3c8); opacity:.6; letter-spacing:.3px; }

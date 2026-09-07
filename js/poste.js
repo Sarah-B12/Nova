@@ -51,7 +51,7 @@ function _posteBanniere(){ return `<img src="images/poste.png" alt="La Poste" cl
 async function _chargerPoste(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return [];
   const s=await sessionActuelle(); if(!s) return []; _posteMonId=s.user.id;
-  try{ await sb.rpc("poste_purge"); }catch(e){}
+  try{ await sb.rpc("poste_purge"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#1"); }
   const { data, error } = await sb.from("poste").select("*").order("cree_le",{ascending:false});
   if(error){ console.warn("[poste]", error.message); return []; }
   const rows=data||[]; const ids=new Set(); rows.forEach(r=>{ ids.add(r.de_id); ids.add(r.a_id); });
@@ -209,7 +209,7 @@ async function posteRefuser(id){
 async function compterPoste(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   const s=await sessionActuelle(); if(!s) return;
-  try{ await sb.rpc("poste_purge"); }catch(e){}
+  try{ await sb.rpc("poste_purge"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#2"); }
   const { count } = await sb.from("poste").select("id",{count:"exact",head:true})
     .or(`and(a_id.eq.${s.user.id},statut.eq.attente),and(de_id.eq.${s.user.id},statut.eq.retour)`);
   const n=count||0;

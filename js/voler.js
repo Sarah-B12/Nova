@@ -100,7 +100,7 @@ async function tenterHacker(){
 /* ---------- Mini-jeux de hack (1 au hasard) ---------- */
 function _hackModal(){ let m=document.querySelector("#hack-modale"); if(!m){ m=document.createElement("div"); m.id="hack-modale"; m.hidden=true; document.body.appendChild(m); } return m; }
 function _hackClear(){ if(_hackTimer){ clearInterval(_hackTimer); _hackTimer=null; } }
-function _hackFin(ok){ if(_hackCleanup){ try{_hackCleanup();}catch(e){} _hackCleanup=null; } _hackClear(); const m=_hackModal(); m.hidden=true; m.innerHTML=""; const cb=ok?_hackWin:_hackLose; _hackWin=_hackLose=null; if(cb) cb(); }
+function _hackFin(ok){ if(_hackCleanup){ try{_hackCleanup();}catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#1"); } _hackCleanup=null; } _hackClear(); const m=_hackModal(); m.hidden=true; m.innerHTML=""; const cb=ok?_hackWin:_hackLose; _hackWin=_hackLose=null; if(cb) cb(); }
 // Chaque entrée : { t:titre, c:consigne (lue avant de lancer), f:fonction du jeu }
 const POOL_HACK = [
   { t:"🖥 Labyrinthe d'accès", c:"Incline le plateau (flèches du clavier ou pavé tactile) pour amener la bille dans la sortie orange.", f:_miniLabyrinthe },
@@ -483,10 +483,12 @@ function majVoler(){
 function _factionNom(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction"); }
 function _avatarMini(){ return `<span class="prison-av"><svg viewBox="0 0 120 130"><path d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/><path d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/><rect x="38" y="46" width="44" height="13" rx="6"/></svg></span>`; }
 function _allerProfil(){ document.querySelectorAll(".panneau").forEach(p=>p.classList.toggle("actif", p.dataset.panneau==="profil")); document.querySelectorAll("[data-onglet]").forEach(o=>o.classList.toggle("actif", o.dataset.onglet==="profil")); }
-function tenterEvasion(){
+async function tenterEvasion(){
   if(!enPrison()) return;
   if((etat.energie||0) < 10){ journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte"); return; }
-  etat.energie = Math.max(0, (etat.energie||0) - 10);
+  // agir() refuse normalement d'agir en prison : l'évasion est la seule
+  // exception, d'où enPrison:true.
+  if(!await agirServeur({ cout:10, motif:"evasion", enPrison:true })) return;
   const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
   const intel=(typeof intelligenceEffective==="function")?intelligenceEffective():5;
   const p=Math.min(0.6, 0.12 + (agi+intel)*0.01);
@@ -507,7 +509,7 @@ async function syncPrison(){
   try{ const { data } = await sb.rpc("mon_etat_prison");
     if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
     else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
 }
 async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
@@ -519,7 +521,7 @@ async function majPrison(el){
     const rows=data||[]; const ids=rows.map(r=>r.profil_id);
     const noms={}; if(ids.length){ const { data:pubs } = await sb.from("profils_publics").select("id,nom").in("id",ids); for(const p of (pubs||[])) noms[p.id]=p.nom; }
     prisonniers=rows.map(r=>({ id:r.profil_id, nom:noms[r.profil_id]||"(?)", reste:new Date(r.jusqua)-Date.now() }));
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#3"); }
   const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
   const estRegent = roles.includes("regent") && fid===etat.faction;
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;

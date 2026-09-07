@@ -82,7 +82,7 @@ async function majGouvernement(el){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Serveur indisponible.</p>`; return; }
   let solde = 0, dejaJour = 0;
   try{ const { data } = await sb.from("caisses").select("solde").eq("faction", fac).maybeSingle(); if(data && typeof data.solde==="number") solde = data.solde; }catch(e){ console.warn("[gouv] caisse:", e.message); }
-  try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){}
+  try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
   const reste = Math.max(0, 500 - dejaJour);
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
     <div class="gouv-caisse"><span>Caisse de la faction</span><b class="or">${solde.toLocaleString("fr-FR")} ₡</b></div>
@@ -100,7 +100,7 @@ async function majGouvernement(el){
       if(etat.annonceFactionVue !== ann.cree_le){ etat.annonceFactionVue = ann.cree_le; if(typeof sauvegarder==="function") sauvegarder(); }
       const t=document.querySelector('#hub-centre [data-centre="gouvernement"]'); if(t) t.innerHTML="Gouvernement";
     }
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#2"); }
   const gouv = await _chargerGouvernement(fac);
   const s2 = await sessionActuelle(); const moiId = s2?s2.user.id:null;
   const jeSuisRegent = gouv.parRole["regent"] && gouv.parRole["regent"]===moiId;
@@ -131,7 +131,7 @@ async function majGouvernement(el){
     if(mine.length) fh+=`<p class="itip-gris" style="font-size:12px">`+mine.map(f=>`<b>${f.nom}</b> : ${f.effet}`).join("<br>")+`</p>`;
     if(tous.length) fh+=`<p class="itip-gris" style="margin-top:6px;font-size:12px">Localisation : `+tous.map(f=>`${f.nom.replace(/Fragment (de l'|d'|de |du )/,"")} → <b>${f.detenteur==="protocole"?"Protocole":_gouvFacNom(f.detenteur)}</b>`).join(" · ")+`</p>`;
     const b2=document.createElement("div"); b2.innerHTML=fh; el.appendChild(b2);
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#3"); }
 }
 let _bureauVue = null;
 function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre"}[b]||b; }
@@ -142,7 +142,7 @@ async function compterAnnonce(){
     const b=document.querySelector('#hub-centre [data-centre="gouvernement"]'); if(!b) return;
     const nouvelle = data && data.texte && data.texte.trim() && data.cree_le && (!etat.annonceFactionVue || new Date(data.cree_le)>new Date(etat.annonceFactionVue));
     b.innerHTML = "Gouvernement" + (nouvelle?` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700">1</span>`:"");
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#4"); }
 }
 async function _chargerMesRolesGouv(){
   try{ const s=await sessionActuelle(); if(!s) return [];
@@ -175,15 +175,15 @@ async function _chargerExpedition(fac){
   let exp=null, enroles=[], moiEnrole=false, moiParticipe=false, nbParticipants=0;
   try{ const { data } = await sb.from("expeditions").select("*").eq("faction",fac).eq("resolue",false)
         .order("date_prevue",{ascending:true}).limit(1);
-    exp=(data&&data[0])||null; }catch(e){}
+    exp=(data&&data[0])||null; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#5"); }
   if(exp){ try{
     const { data } = await sb.from("expedition_enroles").select("profil_id").eq("expedition_id",exp.id);
     const ids=(data||[]).map(r=>r.profil_id);
     const s=await sessionActuelle(); const moiId=s?s.user.id:null; moiEnrole=ids.includes(moiId);
     const noms={}; if(ids.length){ const { data:pubs } = await sb.from("profils_publics").select("id,nom").in("id",ids); for(const p of (pubs||[])) noms[p.id]=p.nom; }
     enroles=ids.map(id=>noms[id]||"(?)");
-    try{ const { data:pp } = await sb.from("expedition_participants").select("profil_id").eq("expedition_id",exp.id); const pids=(pp||[]).map(r=>r.profil_id); nbParticipants=pids.length; moiParticipe=pids.includes(moiId); }catch(e){}
-  }catch(e){} }
+    try{ const { data:pp } = await sb.from("expedition_participants").select("profil_id").eq("expedition_id",exp.id); const pids=(pp||[]).map(r=>r.profil_id); nbParticipants=pids.length; moiParticipe=pids.includes(moiId); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#6"); }
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#7"); } }
   const enResolution = !!(exp && !exp.resolue && exp.date_prevue && new Date(exp.date_prevue)<=Date.now());
   return { exp, enroles, moiEnrole, moiParticipe, nbParticipants, enResolution };
 }
@@ -200,7 +200,7 @@ async function _htmlDefenseConsult(fac){
   try{
     const { data } = await sb.from("reserve").select("*").eq("faction",fac).eq("en_defense",true);
     const objs=data||[]; let defAll={};
-    try{ const { data:d } = await sb.from("defense_objets").select("*"); (d||[]).forEach(x=>defAll[x.id]=x); }catch(e){}
+    try{ const { data:d } = await sb.from("defense_objets").select("*"); (d||[]).forEach(x=>defAll[x.id]=x); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#8"); }
     let sd=0,sr=0,se=0; const noms=[];
     objs.forEach(o=>{ const d=defAll[o.item_id]; if(d){ sd+=d.def; sr+=d.riposte; se+=d.detection; noms.push(d.nom); } });
     return `<p>Total : 🛡️ <b>${sd}</b> · ⚔️ <b>${sr}</b> · 👁️ <b>${se}</b> <span class="itip-gris">(${objs.length}/4 cases)</span></p>${noms.length?`<p class="itip-gris">${noms.join(", ")}</p>`:'<p class="vide">Aucun objet en défense.</p>'}`;
@@ -258,7 +258,7 @@ async function _rendreBureauStratege(el, fac){
   if(estStrat){
     h+=`<h4 class="gsec">Mercenaires</h4>`;
     h+=`<p class="itip-gris" style="font-size:12px">Dès <b>50</b> de réputation dans un Cercle, engage ses mercenaires (payés par la <b>caisse</b>). Ils renforcent l'attaque ET la défense de la faction (+10 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
-    let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){}
+    let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
     const cc=etat.cercles||{}; let any=false;
     (typeof CERCLES!=="undefined"?CERCLES:[]).forEach(c=>{ const rp=cc[c.id]||0; if(rp>=50){ any=true;
       const mx=rp>=90?3:rp>=70?2:1, cur=mercs[c.id]||0, prix=1500*(cur+1);
@@ -270,7 +270,7 @@ async function _rendreBureauStratege(el, fac){
     const { data:hist } = await sb.from("expeditions").select("cible,objectif,date_prevue,rapport")
       .eq("faction",fac).not("rapport","is",null).order("date_prevue",{ascending:false}).limit(1);
     if(hist && hist[0] && hist[0].rapport) h+=`<h4 class="gsec">Dernier compte rendu</h4>`+_expRapportHtml(hist[0]);
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#10"); }
   el.innerHTML=h;
   const br=el.querySelector("#exp-resoudre"); if(br) br.addEventListener("click", _expResoudre);
   const bs=el.querySelector("#exp-suppr"); if(bs) bs.addEventListener("click", _expSupprimer);
@@ -323,7 +323,7 @@ async function _expCreer(el){
   journal("Expédition créée.","gain"); if(typeof majCentre==="function") majCentre();
 }
 async function _expParticiper(){
-  let cout=15; try{ const { data } = await sb.rpc("a_fragment",{ p_faction:etat.faction, p_id:"frag_elan" }); if(data===true) cout=12; }catch(e){}
+  let cout=15; try{ const { data } = await sb.rpc("a_fragment",{ p_faction:etat.faction, p_id:"frag_elan" }); if(data===true) cout=12; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#11"); }
   if((etat.energie||0) < cout){ journal(`Il te faut ≥${cout}% d'énergie pour participer.`,"alerte"); return; }
   const force=((typeof forceEffective==="function")?forceEffective():0)+((typeof agiliteEffective==="function")?agiliteEffective():0);
   const { data:res, error } = await sb.rpc("participer_expedition",{ p_force:force });
@@ -332,8 +332,8 @@ async function _expParticiper(){
     else if(e==="pas_enrole") journal("Tu n'es pas enrôlé.","alerte");
     else if(e==="deja_participe") journal("Tu participes déjà.","alerte");
     else journal("Participation impossible.","alerte"); return; }
-  etat.energie=Math.max(0,(etat.energie||0)-cout);
-  if(typeof sauvegarder==="function") sauvegarder();
+  // ⚠ Code mort : la participation est automatique depuis la refonte des
+  // expéditions (le serveur recrute les enrôlés présents et débite l'énergie).
   journal(`Tu rejoins l'assaut (−${cout}% énergie).`,"gain");
   if(typeof afficher==="function") afficher();
   if(typeof majCentre==="function") majCentre();
@@ -387,8 +387,9 @@ async function syncEffetsCombat(){
       journal(`Expérience de campagne : +${data.xp} XP.`,"gain");
     }
     if(data && data.energie){
-      etat.energie=Math.max(0,Math.min(100,(etat.energie||0)+data.energie));
-      etat.energieMaj=Date.now();
+      // data.energie est NÉGATIF (coût). L'appliquer en local ne servait à rien :
+      // le serveur détient l'énergie et écrasait au premier appel suivant.
+      if(data.energie < 0) await agirServeur({ cout: -data.energie, motif:"campagne" });
       journal(`Effort de campagne : ${data.energie} % d'énergie.`,"alerte");
       if(typeof sauvegarder==="function") sauvegarder();
     }
@@ -409,14 +410,14 @@ async function syncEffetsCombat(){
       if(ok>0){ journal(`Butin du Protocole : +${ok} Cristal de Nyx !`,"gain"); if(typeof afficher==="function") afficher(); }
       if(ok<data.cristaux) journal(`${data.cristaux-ok} Cristal de Nyx perdu (sac plein).`,"alerte");
     }
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
   // Comptes rendus déposés par le serveur (expéditions résolues hors ligne).
   try{ const { data:evs } = await sb.rpc("consommer_evenements");
     if(Array.isArray(evs) && evs.length){
       evs.forEach(ev=>{ if(ev && ev.texte) journal(ev.texte, "alerte", ev.cat||"combat"); });
       if(typeof sauvegarder==="function") sauvegarder();
     }
-  }catch(e){}
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }
 async function _expSupprimer(){
   if(!confirm("Annuler l'expédition en cours ?")) return;
@@ -427,8 +428,8 @@ async function _expSupprimer(){
 
 async function _rendreBureauRegent(el, fac){
   el.innerHTML = `<p class="vide">Chargement…</p>`;
-  let annonce=""; try{ const { data } = await sb.from("annonce_faction").select("texte").eq("faction",fac).maybeSingle(); if(data) annonce=data.texte||""; }catch(e){}
-  let msgs=[]; try{ await sb.rpc("regent_purge"); const { data } = await sb.from("regent_messages").select("*").order("cree_le",{ascending:false}).limit(50); msgs=data||[]; }catch(e){}
+  let annonce=""; try{ const { data } = await sb.from("annonce_faction").select("texte").eq("faction",fac).maybeSingle(); if(data) annonce=data.texte||""; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#14"); }
+  let msgs=[]; try{ await sb.rpc("regent_purge"); const { data } = await sb.from("regent_messages").select("*").order("cree_le",{ascending:false}).limit(50); msgs=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#15"); }
   const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
   const facNom=id=>((typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id)||{}).nom||id;
   let h=`<h3>Bureau du Régent</h3>`;
@@ -506,10 +507,10 @@ function _actionDefense(o,d,enDefense){
 }
 async function _rendreAtelier(el, fac){
   let objs=[];
-  try{ const { data } = await sb.from("reserve").select("*").eq("faction",fac).order("cree_le",{ascending:false}); objs=data||[]; }catch(e){}
+  try{ const { data } = await sb.from("reserve").select("*").eq("faction",fac).order("cree_le",{ascending:false}); objs=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#16"); }
   let defAll={}, defObj=[], defRec={};
-  try{ const { data } = await sb.from("defense_objets").select("*"); (data||[]).forEach(d=>{ defAll[d.id]=d; }); defObj=(data||[]).filter(d=>!d.faction || d.faction===fac); }catch(e){}
-  try{ const { data } = await sb.from("defense_recettes").select("*"); (data||[]).forEach(r=>{ (defRec[r.objet_id]=defRec[r.objet_id]||[]).push(r); }); }catch(e){}
+  try{ const { data } = await sb.from("defense_objets").select("*"); (data||[]).forEach(d=>{ defAll[d.id]=d; }); defObj=(data||[]).filter(d=>!d.faction || d.faction===fac); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#17"); }
+  try{ const { data } = await sb.from("defense_recettes").select("*"); (data||[]).forEach(r=>{ (defRec[r.objet_id]=defRec[r.objet_id]||[]).push(r); }); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#18"); }
   const nomItem=id=>(defAll[id]&&defAll[id].nom)||((typeof item==="function"&&item(id))?item(id).nom:id);
   const ic=id=>(typeof iconeItem==="function")?iconeItem(id):"▪";
 
@@ -617,7 +618,7 @@ async function faireDon(){
 /* ---------- Élection du Régent (5.2.b : candidatures & programmes) ---------- */
 function _cycleActuel(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
 function _phaseElection(){ const j=new Date().getDate(); if(j<3) return "depot"; if(j<5) return "vote"; return "resultat"; }
-async function _chargerPhase(){ try{ const { data } = await sb.rpc("phase_election"); if(data) return data; }catch(e){} return _phaseElection(); }
+async function _chargerPhase(){ try{ const { data } = await sb.rpc("phase_election"); if(data) return data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#19"); } return _phaseElection(); }
 async function _chargerCandidatures(fac){
   try{
     const { data } = await sb.from("candidatures").select("*").eq("faction",fac).eq("cycle",_cycleActuel());
@@ -641,7 +642,7 @@ async function majElections(el){
   el.innerHTML = `<h3>Élections — ${_gouvFacNom(fac)}</h3><p class="vide">Chargement…</p>`;
   const phase = await _chargerPhase();
   let resultat = null;
-  if(phase==="resultat"){ try{ const { data } = await sb.rpc("depouiller"); if(data && data.ok) resultat=data; }catch(e){} }
+  if(phase==="resultat"){ try{ const { data } = await sb.rpc("depouiller"); if(data && data.ok) resultat=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#20"); } }
   const cands = await _chargerCandidatures(fac);
   const s = await sessionActuelle(); const moiId = s?s.user.id:null;
   const moiCand = cands.find(c=>c.profil_id===moiId);
@@ -656,7 +657,7 @@ async function majElections(el){
 
   if(phase==="resultat"){
     if(resultat && resultat.gagnant){
-      let nomG="?"; try{ const { data:pub } = await sb.from("profils_publics").select("nom").eq("id",resultat.gagnant).maybeSingle(); if(pub) nomG=pub.nom; }catch(e){}
+      let nomG="?"; try{ const { data:pub } = await sb.from("profils_publics").select("nom").eq("id",resultat.gagnant).maybeSingle(); if(pub) nomG=pub.nom; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#21"); }
       h += `<div class="gouv-caisse"><span>Régent élu</span><b class="or">${nomG}${resultat.egalite?" (départage au hasard)":""}</b></div>`;
     } else {
       h += `<p class="vide">Aucun candidat ou aucune voix : pas de Régent ce mois-ci.</p>`;
@@ -683,7 +684,7 @@ async function majElections(el){
   el.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   el.querySelectorAll("[data-prog]").forEach(x=>x.addEventListener("click",()=>{ const c=cands.find(k=>k.profil_id===x.dataset.prog); if(c) _voirProgramme(c.nom, c.programme); }));
   el.querySelectorAll("[data-voter]").forEach(x=>x.addEventListener("click",()=>_voter(x.dataset.voter)));
-  el.querySelectorAll("[data-admcand]").forEach(x=>x.addEventListener("click",async()=>{ if(!confirm("Supprimer cette candidature ?"))return; try{ await sb.rpc("admin_suppr_candidature",{p_profil:x.dataset.admcand,p_faction:fac,p_cycle:_cycleActuel()}); journal("Candidature supprimée (modération).","alerte"); }catch(e){} if(typeof majCentre==="function") majCentre(); }));
+  el.querySelectorAll("[data-admcand]").forEach(x=>x.addEventListener("click",async()=>{ if(!confirm("Supprimer cette candidature ?"))return; try{ await sb.rpc("admin_suppr_candidature",{p_profil:x.dataset.admcand,p_faction:fac,p_cycle:_cycleActuel()}); journal("Candidature supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#22"); } if(typeof majCentre==="function") majCentre(); }));
   const bp=el.querySelector("#cand-presenter"); if(bp) bp.addEventListener("click",()=>_ouvrirCandidature(""));
   const bm=el.querySelector("#cand-modif"); if(bm) bm.addEventListener("click",()=>_ouvrirCandidature(moiCand?moiCand.programme:""));
   const br=el.querySelector("#cand-retirer"); if(br) br.addEventListener("click", _retirerCandidature);

@@ -43,7 +43,8 @@ async function agirServeur(o){
       p_ajouter: o.ajouter || {},
       p_motif:   o.motif   || null,
       p_tout_ou_rien: !!o.toutOuRien,
-      p_jauges:  o.jauges || {}
+      p_jauges:  o.jauges || {},
+      p_en_prison: !!o.enPrison        // réservé à l'évasion
     });
     if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
     if(!data || !data.ok){
@@ -73,7 +74,7 @@ async function agirServeur(o){
     // rechargement dans cet intervalle perdait l'effet en gardant le coût.
     const irreversible = (o.cout > 0) || (o.retirer && Object.keys(o.retirer).length > 0);
     if(irreversible && typeof sauverSurServeur === "function"){
-      try{ sauverSurServeur(); }catch(e){}
+      try{ sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "inventaire.js#1"); }
     }
     return data;
   }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); return null; }
@@ -95,7 +96,7 @@ async function rangerServeur(id, n, vers, depuis){
       return null;
     }
     _appliquerEtatStocks(data.etat);
-    if(typeof sauverSurServeur === "function"){ try{ sauverSurServeur(); }catch(e){} }
+    if(typeof sauverSurServeur === "function"){ try{ sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "inventaire.js#2"); } }
     return data;
   }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); return null; }
 }
@@ -168,7 +169,13 @@ function lotsDe(id, lieu){
   return (etat.lots||[]).filter(l => l.item===id && l.lieu===(lieu||"sac"));
 }
 function joursRestantsLot(id, lieu){
-  const l = lotsDe(id, lieu).sort((a,b)=>a.acquis-b.acquis)[0];
+  // On cherche d'abord dans le lieu demandé ; à défaut, PARTOUT. Sans ce repli,
+  // l'infobulle d'un objet rangé dans le coffre ou la soute n'affichait aucun
+  // temps restant (la fonction ne regardait que le sac).
+  let l = lotsDe(id, lieu || "sac").sort((a,b)=>a.acquis-b.acquis)[0];
+  if(!l){
+    l = (etat.lots||[]).filter(x=>x.item===id && x.qte>0).sort((a,b)=>a.acquis-b.acquis)[0];
+  }
   if(!l || typeof dureeVie!=="function") return null;
   const reste = (l.acquis + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS;
   return Math.max(0, reste);

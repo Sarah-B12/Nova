@@ -108,7 +108,7 @@ async function ouvrirPageProfil(nom){
   if(s) _monId=s.user.id;
 
   let credits = moi ? etat.credits : null;
-  if(!moi && p.id){ try{ const {data}=await sb.rpc("credits_ami",{cible:p.id}); credits=data; }catch(e){} }
+  if(!moi && p.id){ try{ const {data}=await sb.rpc("credits_ami",{cible:p.id}); credits=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#1"); } }
   const estAmi = !moi && credits!=null;
   const estBloque = etat.bloques.includes(nom);
   const enLigne = (typeof _presenceEnLigne==="function") ? _presenceEnLigne(p.derniere_activite) : false;
@@ -130,10 +130,12 @@ async function ouvrirPageProfil(nom){
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>
         ${credLigne}
-        <div class="pp-actions">${actions}</div>
+        <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button>` : ""}</div>
       </div>
     </div>
     <div class="rep-badges" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}):""}</div>
+    <div id="pp-terrain" hidden></div>
+    <div id="pp-journal-staff" hidden></div>
     <h2 style="margin-top:20px">Description RP</h2>
     <div class="pp-desc">${desc}</div>
     <div class="pp-bas">
@@ -154,6 +156,18 @@ async function ouvrirPageProfil(nom){
   act("[data-retire]",  async v=>{ await retirerAmi(v); ouvrirPageProfil(nom); });
   act("[data-debloq]",  v=>{ debloquerJoueur(v); ouvrirPageProfil(nom); });
   act("[data-bloq]",    v=>{ bloquerJoueur(v); fermerPageProfil(); });
+  // Modération : consultation du journal, réservée au staff (le bouton n'existe
+  // que pour eux, et la RPC revérifie de toute façon).
+  const bjs = m.querySelector("[data-jrnstaff]");
+  if(bjs) bjs.addEventListener("click", ()=>_ppJournalStaff(bjs.dataset.jrnstaff));
+  const bte = m.querySelector("[data-terrain]");
+  if(bte) bte.addEventListener("click", ()=>{
+    const z = document.querySelector("#pp-terrain");
+    // Bascule : un second clic referme, pour ne pas encombrer la page.
+    if(z && !z.hidden){ z.hidden = true; bte.textContent = "Voir son terrain"; return; }
+    bte.textContent = "Masquer le terrain";
+    _ppTerrain(bte.dataset.terrain);
+  });
   const bmsg=m.querySelector("[data-message]"); if(bmsg) bmsg.addEventListener("click",()=>{ fermerPageProfil(); _msgPrefill={dest:nom,obj:""}; msgVue="ecrire"; const c=document.querySelector('[data-onglet="comm"]'); if(c) c.click(); if(typeof changerComm==="function") changerComm("messages"); });
   const ch0=m.querySelector("#pp-mur-champ");
   if(ch0){ // brouillon par profil visité : on ne mélange pas les murs
@@ -173,7 +187,7 @@ async function _ppChargerMur(profilId, sel){
   try{
     const lim = new Date(Date.now()-48*3600*1000).toISOString();          // les messages du mur expirent à 48 h
     const s=await sessionActuelle(); const moiId=s?s.user.id:null;
-    if(moiId===profilId){ try{ await sb.from("mur").delete().eq("profil_id",profilId).lt("cree_le",lim); }catch(e){} }   // purge réelle sur mon propre mur
+    if(moiId===profilId){ try{ await sb.from("mur").delete().eq("profil_id",profilId).lt("cree_le",lim); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#2"); } }   // purge réelle sur mon propre mur
     const { data:msgs } = await sb.from("mur").select("*").eq("profil_id",profilId).gte("cree_le",lim).order("cree_le",{ascending:false}).limit(50);
     const rows=msgs||[]; const ids=[...new Set(rows.map(r=>r.auteur_id))];
     const noms={}; if(ids.length){ const {data:pubs}=await sb.from("profils_publics").select("id,nom").in("id",ids); for(const pp of (pubs||[])) noms[pp.id]=pp.nom; }
@@ -185,7 +199,7 @@ async function _ppChargerMur(profilId, sel){
       return `<div class="mur-msg">${peutSuppr?`<button class="mur-x" data-murx="${r.id}" data-mien="${monMur?1:0}">×</button>`:""}<span class="mur-date itip-gris">${_dateHeure(r.cree_le)}</span> <button class="comm-nom" data-profil="${auteur}">${auteur}</button> <span class="mur-txt">${_formatMur(r.texte)}</span></div>`;
     }).join("");
     z.querySelectorAll("[data-profil]").forEach(b=>b.addEventListener("click",()=>ouvrirPageProfil(b.dataset.profil)));
-    z.querySelectorAll("[data-murx]").forEach(b=>b.addEventListener("click",async()=>{ try{ if(b.dataset.mien==="1"){ await sb.from("mur").delete().eq("id",b.dataset.murx); } else { await sb.rpc("admin_suppr_mur",{p_id:Number(b.dataset.murx)}); } }catch(e){} _ppChargerMur(profilId, sel); }));
+    z.querySelectorAll("[data-murx]").forEach(b=>b.addEventListener("click",async()=>{ try{ if(b.dataset.mien==="1"){ await sb.from("mur").delete().eq("id",b.dataset.murx); } else { await sb.rpc("admin_suppr_mur",{p_id:Number(b.dataset.murx)}); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#3"); } _ppChargerMur(profilId, sel); }));
   }catch(e){ console.warn("[profil] mur:",e.message); z.innerHTML=`<p class="vide">Mur indisponible.</p>`; }
 }
 async function _ppPublierMur(profilId){
@@ -207,4 +221,149 @@ async function _ppChargerAmis(profilId){
     z.innerHTML = noms.map(n=>`<button class="comm-nom" data-profil="${n}">${n}</button>`).join(" · ");
     z.querySelectorAll("[data-profil]").forEach(b=>b.addEventListener("click",()=>ouvrirPageProfil(b.dataset.profil)));
   }catch(e){ z.innerHTML=`<p class="vide">—</p>`; }
+}
+
+
+/* ===========================================================
+   MODÉRATION — journal d'un joueur, visible par le staff.
+   Le journal vit dans donnees.journal ; la RLS interdit (à raison) de lire le
+   profil d'un autre, d'où la RPC admin_journal_joueur. Chaque consultation est
+   journalisée dans admin_log : un outil de surveillance doit lui-même laisser
+   une trace.
+   =========================================================== */
+function _ppStyleJournalStaff(){
+  if(document.querySelector("#pp-jrnstaff-style")) return;
+  const st=document.createElement("style"); st.id="pp-jrnstaff-style";
+  st.textContent = `
+    #pp-journal-staff{ margin-top:16px; border:1px solid var(--edge,#24344d);
+      border-radius:10px; background:rgba(255,255,255,.03); padding:12px; }
+    #pp-journal-staff[hidden]{ display:none !important; }
+    #pp-journal-staff h3{ margin:0 0 8px; font-size:14px; color:var(--orange-hi,#ffb06a); }
+    #pp-journal-staff .jl{ font-family:"Space Mono",monospace; font-size:11px;
+      line-height:1.6; max-height:320px; overflow:auto; }
+    #pp-journal-staff .jl div{ padding:2px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+    #pp-journal-staff .jd{ color:var(--texte-2,#9fb3c8); margin-right:6px; }
+  `;
+  document.head.appendChild(st);
+}
+
+async function _ppJournalStaff(profilId){
+  const z = document.querySelector("#pp-journal-staff"); if(!z) return;
+  _ppStyleJournalStaff();
+  z.hidden = false;
+  z.innerHTML = `<h3>Journal du joueur</h3><p class="itip-gris">Chargement…</p>`;
+  try{
+    const { data, error } = await sb.rpc("admin_journal_joueur", { p_profil: profilId, p_limite: 200 });
+    if(error || !data || !data.ok){
+      // On affiche la VRAIE cause : « consultation impossible » sans motif
+      // oblige à deviner, et c'est exactement ce qu'on veut éviter.
+      const motif = (data && data.err) || (error && error.message) || "réponse inattendue";
+      console.error("[admin_journal_joueur]", motif, error || data);
+      z.innerHTML = `<h3>Journal du joueur</h3><p class="itip-gris">Consultation impossible — ${String(motif).replace(/</g,"&lt;")}</p>`;
+      return;
+    }
+    // Format réel d'une entrée : { d: horodatage, t: texte, cat: catégorie, type: gain|alerte|… }
+    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff" };
+    const lignes = (data.journal||[])
+      .slice()
+      .sort((a,b)=>(b&&b.d||0)-(a&&a.d||0))          // plus récentes d'abord
+      .map(e=>{
+        if(typeof e === "string") return `<div>${e.replace(/</g,"&lt;")}</div>`;
+        const q = e && e.d ? new Date(e.d).toLocaleString("fr-FR") : "—";
+        const txt = (e && (e.t || e.txt || e.texte)) || JSON.stringify(e);
+        const c = cls[e && e.type] || "";
+        const cat = (e && e.cat) ? ` <span class="jd">[${e.cat}]</span>` : "";
+        return `<div><span class="jd">${q}</span>${cat} <span${c?` style="color:${c}"`:""}>${String(txt).replace(/</g,"&lt;")}</span></div>`;
+      }).join("");
+    z.innerHTML = `<h3>Journal de ${data.nom} <span class="itip-gris">(${(data.journal||[]).length} entrées, plus récentes d'abord)</span></h3>
+      <div class="jl">${lignes || '<p class="itip-gris">Journal vide.</p>'}</div>`;
+    if(data.total > (data.journal||[]).length){
+      z.insertAdjacentHTML("beforeend",
+        `<p class="itip-gris" style="margin:6px 0 0">${data.total} entrées au total, ${(data.journal||[]).length} affichées.</p>`);
+    }
+  }catch(e){
+    if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#journalStaff");
+    z.innerHTML = `<h3>Journal du joueur</h3><p class="itip-gris">Erreur de chargement.</p>`;
+  }
+}
+
+
+/* ===========================================================
+   TERRAIN D'UN AUTRE JOUEUR — vitrine en lecture seule.
+   Le terrain vit dans donnees.terrain, illisible pour un autre joueur (RLS) :
+   la RPC profil_terrain n'expose que la DISPOSITION (type de structure, cases
+   occupées, drones) et la faction, pour le fond. Aucun stock, aucun crédit.
+   =========================================================== */
+function _ppStyleTerrain(){
+  if(document.querySelector("#pp-terrain-style")) return;
+  const st=document.createElement("style"); st.id="pp-terrain-style";
+  st.textContent = `
+    #pp-terrain{ margin-top:16px; }
+    #pp-terrain[hidden]{ display:none !important; }
+    #pp-terrain h3{ margin:0 0 8px; font-size:14px; color:var(--orange-hi,#ffb06a); }
+    /* ⚠ Aucun background ici : le fond vient de .terrain-grille (terrain.css),
+       dont les chemins sont relatifs au dossier css/. Déclaré ici, « ../images »
+       se résoudrait depuis la PAGE et ne trouverait rien. */
+    #pp-terrain .ppt-grille{ position:relative; aspect-ratio:3/2; border-radius:var(--r-s,10px);
+      display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(4,1fr);
+      gap:0.5%; padding:3.4% 5%; }
+    #pp-terrain .ppt-case{ position:relative; border:1px dashed rgba(150,180,220,.22);
+      border-radius:8px; display:grid; place-items:center; }
+    #pp-terrain .ppt-case.plein{ border:1px solid transparent; }
+    #pp-terrain .ppt-case img{ width:100%; height:100%; object-fit:contain; display:block; }
+    #pp-terrain .ppt-glyphe{ font-size:18px; }
+  `;
+  document.head.appendChild(st);
+}
+
+async function _ppTerrain(profilId){
+  const z = document.querySelector("#pp-terrain"); if(!z) return;
+  _ppStyleTerrain();
+  z.hidden = false;
+  z.innerHTML = `<h3>Terrain</h3><p class="itip-gris">Chargement…</p>`;
+  try{
+    const { data, error } = await sb.rpc("profil_terrain", { p_profil: profilId });
+    if(error || !data || !data.ok){
+      const motif = (data && data.err) || (error && error.message) || "réponse inattendue";
+      z.innerHTML = `<h3>Terrain</h3><p class="itip-gris">Consultation impossible — ${String(motif).replace(/</g,"&lt;")}</p>`;
+      return;
+    }
+    const IMGT = (typeof IMG !== "undefined") ? IMG : {};
+    const NOMS = (typeof STRUCTURES !== "undefined") ? STRUCTURES : {};
+    const parc = data.parcelles || [];
+    const cases = [];
+    for(let i=0;i<24;i++){
+      const p = parc[i];
+      if(!p || !p.type){ cases.push(`<div class="ppt-case"></div>`); continue; }
+      const nom = (NOMS[p.type] && NOMS[p.type].nom) || p.type;
+      let dedans = "";
+      if(p.type === "maison"){
+        // imgMaison() choisit tentes ou maisons selon estNomade(), qui lit NOTRE
+        // faction : on reconstruit le chemin avec celle du joueur consulté.
+        const std = ["cabane","petite_maison","maison","villa","palace"];
+        const nom5 = ["tente1","tente2","tente3","tente4","tente5"];
+        const pal = data.palier || 0;
+        dedans = (pal >= 1 && pal <= 5)
+          ? `<img src="images/maisons/${(data.faction==="nomades"?nom5:std)[pal-1]}.png" alt="Maison" onerror="this.replaceWith(document.createTextNode('🏠'))">`
+          : `<span class="ppt-glyphe">🏠</span>`;
+      } else if(IMGT[p.type]){
+        dedans = `<img src="${IMGT[p.type]}" alt="${nom}">`;
+      } else {
+        dedans = `<span class="ppt-glyphe">⬢</span>`;
+      }
+      // Pas de badge de remplissage : la vitrine montre ce qui est BÂTI, le
+      // détail du contenu ne regarde que le propriétaire. L'infobulle du
+      // survol donne déjà le nom de la structure.
+      cases.push(`<div class="ppt-case plein" title="${nom}">${dedans}</div>`);
+    }
+    const batis = parc.filter(x=>x && x.type).length;
+    z.innerHTML = `<h3>Terrain de ${data.nom} <span class="itip-gris">(${batis}/24 parcelles bâties)</span></h3>
+      <div class="ppt-grille" data-faction="${data.faction||""}">${cases.join("")}</div>`;
+    // Le fond de faction est géré par terrain.css, via l'attribut data-faction.
+    const g = z.querySelector(".ppt-grille");
+    if(g && data.faction) g.classList.add("terrain-grille");
+  }catch(e){
+    if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#terrain");
+    z.innerHTML = `<h3>Terrain</h3><p class="itip-gris">Erreur de chargement.</p>`;
+  }
 }

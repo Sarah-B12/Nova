@@ -113,9 +113,23 @@ function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
   const chezSoi = (typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true;
   const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi };   // réservés à ta faction
-  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>{ b.style.display = masque[b.dataset.centre] ? "none" : ""; });
-  // Bureau : visible seulement si on a un rôle au gouvernement (async)
-  if(!masque.bureau && typeof _chargerMesRolesGouv==="function"){ _chargerMesRolesGouv().then(roles=>{ const b=document.querySelector('#hub-centre [data-centre="bureau"]'); if(b) b.style.display = roles.length ? "" : "none"; }); }
+  // ⚠ Bureau : la vérification des rôles est ASYNCHRONE. Sans le souvenir du
+  // dernier résultat, l'onglet s'affichait puis disparaissait — un clignotement
+  // à chaque changement d'onglet du Centre. On applique donc d'abord ce qu'on
+  // sait déjà, et la requête ne fait plus que confirmer ou corriger.
+  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>{
+    const c = b.dataset.centre;
+    let cache = masque[c];
+    if(c === "bureau" && !cache) cache = (etat._aRoleGouv === false);   // undefined = on ne sait pas encore
+    b.style.display = cache ? "none" : "";
+  });
+  if(!masque.bureau && typeof _chargerMesRolesGouv==="function"){
+    _chargerMesRolesGouv().then(roles=>{
+      etat._aRoleGouv = roles.length > 0;
+      const b=document.querySelector('#hub-centre [data-centre="bureau"]');
+      if(b) b.style.display = etat._aRoleGouv ? "" : "none";
+    });
+  }
   if(masque[centreVue]) centreVue = "gouvernement";
   document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";

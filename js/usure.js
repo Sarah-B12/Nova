@@ -103,16 +103,33 @@ async function majUsure(){
     if(now - l.acquis > dv * JOUR_MS){
       const it = (typeof item==="function") ? item(l.item) : null;
       const ou = l.lieu==="coffre" ? " (rangement de la maison)" : (l.lieu==="soute" ? " (soute du vaisseau)" : " et a disparu du sac");
-      journal(`${l.qte}× ${it?it.nom:l.item} ${_verbeUsure(it)}${ou}.`,"alerte");
-      expires.push({ item:l.item, lieu:l.lieu, acquis:l.acquis });
-      perte = true;
+      // ⚠ Le message n'est PAS écrit ici : on l'écrira seulement si le serveur
+      // confirme la suppression. Sinon le joueur lisait un deuil qui n'avait
+      // pas eu lieu — et le relisait à CHAQUE connexion, en doublons.
+      expires.push({ item:l.item, lieu:l.lieu, acquis:l.acquis,
+                     _msg:`${l.qte}× ${it?it.nom:l.item} ${_verbeUsure(it)}${ou}.` });
     }
   }
   if(expires.length && typeof sb !== "undefined"){
+    // On envoie sans le champ d'affichage : le serveur n'en a que faire.
+    const lots = expires.map(x=>({ item:x.item, lieu:x.lieu, acquis:x.acquis }));
     try{
-      const { data } = await sb.rpc("perimer", { p_lots: expires });
-      if(data && data.ok && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
-    }catch(e){ /* réessayé au prochain passage */ }
+      const { data, error } = await sb.rpc("perimer", { p_lots: lots });
+      if(error){
+        // Ne PAS avaler l'erreur : une conversion de date ratée avait fait
+        // échouer TOUTE péremption en silence pendant des heures de test.
+        console.error("[perimer] échec :", error.message, lots);
+      } else if(data && data.ok){
+        if(data.gele){
+          console.warn("[perimer] stock gelé (pause) — rien supprimé.");
+        } else if((data.lots || 0) > 0){
+          // Confirmé par le serveur : maintenant seulement, on informe.
+          expires.forEach(x => journal(x._msg, "alerte"));
+          perte = true;
+        }
+        if(typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
+      }
+    }catch(e){ console.error("[perimer] exception :", e); }
   }
 
   // Drones installés dans un hangar : ils ont quitté le sac, donc rien ne les
@@ -159,7 +176,7 @@ async function majUsure(){
         .map(l => ({ item:l.item, lieu:"soute", acquis:l.acquis }));
       if(restants.length && typeof sb !== "undefined"){
         try{ const { data } = await sb.rpc("perimer", { p_lots: restants });
-             if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){}
+             if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#1"); }
       }
       etat.vaisseau = null; etat.vaisseauDate = null;
       journal(`${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;

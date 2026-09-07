@@ -1,4 +1,19 @@
 /* ===========================================================
+   _catchLog — trace les erreurs qu'on choisit d'ignorer.
+
+   Trois bugs de la Phase 4 ont été masqués des heures durant par des
+   `catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#1"); }` vides : la conversion de date qui faisait échouer TOUTE
+   péremption, les gains de Cercle refusés par le trigger de sécurité, et les
+   cadeaux dev qui n'atteignaient pas le serveur. Le comportement ne change
+   pas — on continue de poursuivre —, mais plus rien ne disparaît en silence.
+
+   Pour tout voir dans la console : filtre sur « [ignoré] ».
+   =========================================================== */
+function _catchLog(e, ou){
+  try{ console.warn("[ignoré]", ou || "?", "→", (e && (e.message || e.error_description)) || e); }catch(_){ if(typeof _catchLog==="function") _catchLog(_, "serveur.js#2"); }
+}
+
+/* ===========================================================
    SERVEUR — Connexion Supabase (Phase 1 : comptes + sauvegarde serveur).
    La clé « anon » est PUBLIQUE (prévue pour le navigateur) — c'est la RLS qui protège.
    Repli automatique en mode local si la librairie/le serveur est indisponible.
@@ -21,7 +36,7 @@ async function sInscrire(email, mdp, pseudo){
 async function seConnecter(email, mdp){
   return await sb.auth.signInWithPassword({ email, password: mdp });
 }
-async function seDeconnecter(){ if(SERVEUR_DISPO) try{ await sb.auth.signOut(); }catch(e){} }
+async function seDeconnecter(){ if(SERVEUR_DISPO) try{ await sb.auth.signOut(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#3"); } }
 async function sessionActuelle(){ if(!SERVEUR_DISPO) return null; const { data } = await sb.auth.getSession(); return data ? data.session : null; }
 
 /* Nom lisible de la formation (l'état stocke un objet {cle, points, ...}). */

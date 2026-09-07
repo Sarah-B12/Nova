@@ -151,7 +151,7 @@ function _brancherActionsAmis(z){
 async function _majListesAmis(){
   const zc=document.querySelector("#amis-listes"); if(!zc) return;
   const { amis, envoyees, recues } = await _chargerRelations();
-  for(const a of amis){ try{ const { data } = await sb.rpc("credits_ami",{ cible:a.id }); if(data!=null) a.credits=data; }catch(e){} }
+  for(const a of amis){ try{ const { data } = await sb.rpc("credits_ami",{ cible:a.id }); if(data!=null) a.credits=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#1"); } }
   let h="";
   if(recues.length){
     h+=`<h4 class="comm-titre">Demandes reçues (${recues.length})</h4>`;
@@ -318,7 +318,7 @@ async function envoyerMessage(){
 function _msgModal(){ let m=document.querySelector("#comm-msg"); if(!m){ m=document.createElement("div"); m.id="comm-msg"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m){ m.hidden=true; majComm(); } }); } return m; }
 async function ouvrirMessage(type, i){
   const arr=(type==="recus"?_msgRecusCache:_msgEnvoyesCache); const m=arr[i]; if(!m) return;
-  if(type==="recus" && !m.lu){ m.lu=true; try{ await sb.from("messages").update({lu:true}).eq("id",m.id); }catch(e){} if(typeof compterNotifs==="function") compterNotifs(); }
+  if(type==="recus" && !m.lu){ m.lu=true; try{ await sb.from("messages").update({lu:true}).eq("id",m.id); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#2"); } if(typeof compterNotifs==="function") compterNotifs(); }
   const modal=_msgModal();
   const qui = type==="recus"?("De <b>"+m.de+"</b>"):("À <b>"+m.a+"</b>");
   const statut = (type==="envoyes") ? (m.lu?" · lu":" · non lu") : "";
@@ -391,7 +391,7 @@ function brancherAnnonces(z){
   const b=z.querySelector("#ann-publier"); if(b) b.addEventListener("click", publierAnnonce);
   z.querySelectorAll("[data-suppr]").forEach(x=>x.addEventListener("click",()=>supprimerAnnonce(x.dataset.suppr)));
   z.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>voirProfilJoueur(x.dataset.profil)));
-  z.querySelectorAll("[data-admann]").forEach(x=>x.addEventListener("click",async()=>{ try{ await sb.rpc("admin_suppr_annonce",{p_id:Number(x.dataset.admann)}); journal("Annonce supprimée (modération).","alerte"); }catch(e){} majComm(); }));
+  z.querySelectorAll("[data-admann]").forEach(x=>x.addEventListener("click",async()=>{ try{ await sb.rpc("admin_suppr_annonce",{p_id:Number(x.dataset.admann)}); journal("Annonce supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#3"); } majComm(); }));
 }
 async function publierAnnonce(){
   const obj=(document.querySelector("#ann-obj").value||"").trim(); _annForm={ obj:"", txt:"" };

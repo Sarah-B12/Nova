@@ -18,14 +18,17 @@ function _pauseStyle(){
     #ecran-pause{ position:fixed; inset:0; z-index:900; display:grid; place-items:center;
       background:radial-gradient(circle at 50% 30%, #0e1c30, #060b14 70%); padding:20px; }
     #ecran-pause[hidden]{ display:none !important; }
-    #ecran-pause .pause-carte{ width:min(560px,94vw); background:var(--surface-2,#101d31);
+    /* ⚠ Styles GLOBAUX (pas préfixés par #ecran-pause) : _pauseConfirm réutilise
+       ces classes en dehors de l'écran de pause. Préfixés, la modale de
+       confirmation se retrouvait sans fond ni bordure — texte illisible. */
+    .pause-carte{ width:min(560px,94vw); background:var(--surface-2,#101d31);
       border:1px solid var(--edge,#24344d); border-radius:16px; overflow:hidden;
       box-shadow:0 20px 60px rgba(0,0,0,.6); }
     #ecran-pause .pause-banniere{ width:100%; aspect-ratio:16/6; background:#0a1424;
       display:block; object-fit:cover; }
-    #ecran-pause .pause-corps{ padding:20px 22px 22px; text-align:center; }
-    #ecran-pause h2{ margin:0 0 6px; color:var(--orange-hi,#ffb06a); font-size:20px; letter-spacing:.5px; }
-    #ecran-pause .pause-sous{ color:var(--texte-2,#9fb3c8); font-size:13px; line-height:1.6; margin:0 0 16px; }
+    .pause-corps{ padding:20px 22px 22px; text-align:center; }
+    .pause-carte h2{ margin:0 0 6px; color:var(--orange-hi,#ffb06a); font-size:20px; letter-spacing:.5px; }
+    .pause-sous{ color:var(--texte-2,#9fb3c8); font-size:13px; line-height:1.6; margin:0 0 16px; }
     #ecran-pause .pause-compteurs{ display:grid; gap:10px; margin:0 0 18px; }
     #ecran-pause .pause-bloc{ background:rgba(255,255,255,.04); border:1px solid var(--edge,#24344d);
       border-radius:10px; padding:10px 12px; }
@@ -42,7 +45,7 @@ function _pauseStyle(){
 /* Confirmation maison, à la place du confirm() du navigateur. */
 function _pauseConfirm(titre, lignes, libelleOk){
   return new Promise(resolve=>{
-    _pauseStyle();
+    _pauseStyle();   // indispensable : la déconnexion peut l'appeler en premier
     const fond = document.createElement("div");
     fond.style.cssText = "position:fixed;inset:0;z-index:950;display:grid;place-items:center;background:rgba(4,8,16,.72);padding:20px";
     fond.innerHTML = `<div class="pause-carte" style="width:min(460px,94vw)">
@@ -126,10 +129,22 @@ function majEcranPause(){
 
   // Décompte local entre deux synchros serveur.
   if(!_pauseTimer){
-    _pauseTimer = setInterval(()=>{
+    _pauseTimer = setInterval(async ()=>{
       if(!etat.enPause){ majEcranPause(); return; }
       etat._pauseResteMin = Math.max(0, (etat._pauseResteMin||0) - 1000);
-      etat._pauseResteMax = Math.max(0, (etat._pauseResteMax||0) - 1000);
+      const avant = etat._pauseResteMax || 0;
+      etat._pauseResteMax = Math.max(0, avant - 1000);
+      // Le maximum vient d'être atteint : on demande au serveur de constater
+      // l'expiration au lieu de laisser le joueur devant un compteur figé.
+      if(avant > 0 && etat._pauseResteMax <= 0){
+        if(typeof _syncPause === "function") await _syncPause();
+        if(!etat.enPause){
+          if(typeof chargerStocksServeur === "function") await chargerStocksServeur();
+          if(typeof chargerJaugesServeur === "function") await chargerJaugesServeur();
+          journal("Pause maximale atteinte — ton personnage reprend du service.","alerte");
+          if(typeof afficher === "function") afficher();
+        }
+      }
       majEcranPause();
     }, 1000);
   }

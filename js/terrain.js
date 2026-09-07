@@ -250,7 +250,9 @@ function majRecolte(){
     if(p && p.type==="maison"){
       const img = (typeof imgMaison==="function") ? imgMaison(etat.maison.palier) : null;
       const lbl = etat.maison.chantier ? "Chantier" : nomPalier(etat.maison.palier);
-      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}"><span class="badge-plot">${lbl}</span>`; }
+      // Le nom du palier est déjà lisible dans l'infobulle et dans la maison :
+      // l'étiquette par-dessus l'image alourdissait le terrain pour rien.
+      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}">`; }
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {

@@ -193,7 +193,15 @@ function _cerclesTexteQ(cercles){ if(!cercles) return ""; const p=[];
 async function _appliquerCerclesQ(cercles){ if(!cercles) return;
   if(!etat.cercles) etat.cercles={};
   for(const k in cercles){ etat.cercles[k]=Math.max(0,Math.min(100,(etat.cercles[k]||0)+cercles[k])); }
-  try{ const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; if(s && typeof sb!=="undefined" && sb) await sb.from("profils").update({ cercles: etat.cercles }).eq("id", s.user.id); }catch(e){}
+  // ⚠ profils.cercles est une COLONNE PROTÉGÉE : l'écriture directe est refusée
+  // par le trigger de sécurité (et l'erreur était avalée ici, donc les gains de
+  // Cercle échouaient en silence). On passe par la RPC dédiée.
+  try{
+    if(typeof sb !== "undefined" && sb){
+      const { data } = await sb.rpc("cercles_ajouter", { p_deltas: cercles });
+      if(data && data.ok) etat.cercles = data.cercles;
+    }
+  }catch(e){ journal("Gain de Cercle non enregistré — réessaie plus tard.","alerte"); }
 }
 function _htmlChoix(d){
   const opts=(d.options||[]).map((o,i)=>{
