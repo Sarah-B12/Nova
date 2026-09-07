@@ -12,7 +12,11 @@
    Récompense = { credits, pa, objets:{id:qte}, flags:{clef:valeur} }.
 
    IMAGES (à déposer par toi) :
-     images/quetes/sorn.png            → bannière fixe du Vieux Sorn (comptoir).
+     images/quetes/<donneur>.png       → bannière du donneur au comptoir. ⚠ Le nom
+         de fichier est DÉRIVÉ du champ `donneur` par quetes.js (~ligne 486) :
+         minuscules, accents retirés, tout caractère non alphanumérique en «_».
+         « Vieux Sorn » → vieux_sorn.png · « Kessa » → kessa.png
+         Pour imposer un autre chemin, ajouter `donneurImg` sur la quête.
      images/quetes/<questid>/<n>.png   → ambiance de l'étape n (ex. images/quetes/q1/1.png).
    Monde : 2400 × 1600. Coordonnées approximatives, à ajuster.
    =========================================================== */

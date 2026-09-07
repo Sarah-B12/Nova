@@ -12,8 +12,12 @@ const STRUCTURES = {
 const MINE_MAX = 500;      // réserve d'une mine à sa construction
 const MINE_LOT = 6;        // minerais extraits par action « Miner »
 // ⚠ JOUR_MS = 1 « jour » de jeu pour arroser/nourrir/tondre (1×/jour).
-//    Réglé court pour les tests — mettre 24*3600*1000 en production.
-const JOUR_MS = 60*1000;
+//    PRODUCTION : 24 h. Doit rester ÉGAL à `config.jour_ms` côté serveur
+//    (lu par apparence_etat / changer_apparence). Les deux se désynchronisent
+//    sans lever d'erreur : le client afficherait un décompte faux pendant que
+//    le serveur en applique un autre. Pour retester en accéléré, changer les
+//    DEUX (ici et `update public.config set valeur='60000' where cle='jour_ms'`).
+const JOUR_MS = 24*3600*1000;
 function memeJour(ts){ return ts && (Date.now()-ts) < JOUR_MS; }   // action déjà faite « aujourd'hui »
 const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png", hangar:"images/hangar.png" };
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous

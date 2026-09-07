@@ -116,9 +116,16 @@ async function inscrire(){
   const f=await _attribuerFaction();
   etat.nom=pseudo; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut();
   for(let i=0;i<6;i++){ if(await sessionActuelle()) break; await new Promise(r=>setTimeout(r,200)); }   // attendre que la session soit prête
+  // ⚠ `faction` ne part plus dans sauverSurServeur() : le trigger la protège dès
+  // qu'elle a une valeur. L'attribution initiale passe par cet update ciblé, seul
+  // cas autorisé (old.faction IS NULL). Sans lui, le compte resterait sans faction.
+  if(typeof _premiereFaction==="function") await _premiereFaction(f.id);
   await sauverSurServeur();
   fermerAuth(); fermerEntree(); afficher();
   journal(`Bienvenue, ${pseudo}. Faction attribuée : ${f.nom}.`,"gain");
+  // Étape OBLIGATOIRE : le genre est figé à vie, il doit être choisi sciemment
+  // et non hérité d'un défaut. L'éditeur ne se ferme que sur validation serveur.
+  if(typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});
   montrerBienvenue();
 }
 async function connecter(){
@@ -131,9 +138,13 @@ async function connecter(){
   if(error){ authErreur(_authMsg(error)); return; }
   const prof = await chargerDepuisServeur();
   if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); if(typeof prof.credits==="number"){ etat.credits=prof.credits; if(typeof initCredits==="function") initCredits(prof.credits); } if(typeof prof.reputation==="number") etat.reputation=prof.reputation; etat.roleAdmin=prof.role_admin||null; etat.cercles=prof.cercles||{}; }
-  else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); await sauverSurServeur(); }
+  else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); if(typeof _premiereFaction==="function") await _premiereFaction(f.id); await sauverSurServeur(); }
+  if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();
   journal(`Bon retour, ${etat.nom}.`,"gain");
+  // Rattrapage : compte créé avant cette règle, ou inscription interrompue
+  // avant la validation de l'avatar (rechargement de page, onglet fermé).
+  if(!etat.avatar && typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});
 }
 async function deconnexion(){
   if(typeof _pauseConfirm === "function"){

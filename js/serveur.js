@@ -74,13 +74,38 @@ async function rechargerCredits(){
   const { data } = await sb.from("profils").select("credits").eq("id", s.user.id).maybeSingle();
   if(data && typeof data.credits==="number"){ etat.credits=data.credits; _creditsServeur=data.credits; if(typeof afficher==="function") afficher(); }
 }
-// Copie de l'état SANS les stocks : ils vivent dans la table `inventaire`.
+/* RÈGLE D'OR — une donnée qui appartient au SERVEUR ne doit avoir AUCUNE copie
+   persistante côté client, ni dans `profils.donnees`, ni dans localStorage.
+   Cette liste est la source unique : `_etatSansStocks()` (push serveur) ET
+   `sauvegarder()` (localStorage, etat.js) s'en servent tous les deux.
+   ⚠ Ne jamais ajouter une clé ici sans vérifier qu'elle est bien réécrite par
+   une réponse serveur (sinon elle serait perdue au rechargement). */
+const CLES_SERVEUR = [
+  "sac", "coffre", "soute",          // stocks : table `inventaire`
+  "lots",                            // lots datés : renvoyés par sac_lire()
+  "sacDate", "coffreDate", "souteDate",  // vestiges : les dates sont serveur
+  "_lotsSynchro",                    // garde-fou de majUsure : DOIT repartir à faux au démarrage
+  "equipeServeur", "forceCombatServeur", // reflets de sac_lire() : recalculés à chaque appel
+  "avatar",                          // colonne profils.avatar, écrite par changer_apparence()
+  "apparenceLe"                      // vestige : le verrou est calculé par apparence_etat()
+];
+
+// Copie de l'état SANS les données serveur : elles vivent dans `inventaire`.
 function _etatSansStocks(){
   const c = Object.assign({}, etat);
-  delete c.sac; delete c.coffre; delete c.soute;
-  delete c.lots;                                  // liste des lots : donnée serveur, jamais persistée
-  delete c.sacDate; delete c.coffreDate; delete c.souteDate;   // vestiges : les dates sont serveur
+  for(const k of CLES_SERVEUR) delete c[k];
   return c;
+}
+
+/* Attribution initiale de la faction, juste après l'inscription.
+   Le trigger l'autorise UNIQUEMENT tant que profils.faction vaut NULL ; ensuite
+   il faut passer par changer_faction(). On pose aussi faction_le à NULL
+   volontairement : le premier changement ne doit pas être bloqué 30 jours. */
+async function _premiereFaction(fid){
+  if(!SERVEUR_DISPO || !fid) return;
+  const s = await sessionActuelle(); if(!s) return;
+  const { error } = await sb.from("profils").update({ faction: fid }).eq("id", s.user.id).is("faction", null);
+  if(error) console.warn("[serveur] attribution faction ÉCHEC:", error.message);
 }
 
 async function sauverSurServeur(){
@@ -90,7 +115,11 @@ async function sauverSurServeur(){
   if(!s){ console.warn("[serveur] sauvegarde ignorée : pas de session active"); return; }
   const maj = {
     nom: etat.nom || null,
-    faction: etat.faction || null,
+    // ⚠ `faction` N'EST PLUS POUSSÉE : la colonne appartient au serveur
+    // (RPC changer_faction) et le trigger profils_protection la refuse dès
+    // qu'elle a une valeur. La repousser ferait échouer TOUTE la sauvegarde.
+    // Seule exception laissée par le trigger : old.faction IS NULL, c'est-à-dire
+    // l'attribution initiale — traitée par _premiereFaction() ci-dessous.
     formation: _nomFormation(),
     mur_public: (etat.murOuvertA==='tous'),
     niveau: (etat.niveau|0),
@@ -108,7 +137,7 @@ async function sauverSurServeur(){
   };
   const { error } = await sb.from("profils").update(maj).eq("id", s.user.id);
   if(error) console.warn("[serveur] sauvegarde ÉCHEC:", error.message);
-  else console.log("[serveur] sauvegarde OK — credits=" + (etat.credits|0) + ", faction=" + maj.faction);
+  else console.log("[serveur] sauvegarde OK — credits=" + (etat.credits|0) + ", faction=" + (etat.faction||"—"));
 }
 
 /* Sauvegarde serveur « débounce » : appelée par sauvegarder(), max 1 écriture toutes ~2,5 s. */

@@ -76,8 +76,9 @@ function devRecalerCompetences(){
   sauvegarder(); afficher(); majDev();
 }
 async function devDeclin(){
-  const { data, error } = await sb.rpc("nova_declin");
+  const { data, error } = await sb.rpc("admin_nova_declin");   // enveloppe : vérifie est_dev() côté serveur
   if(error){ alert("Échec : "+error.message); return; }
+  if(data && data.ok === false){ alert("Refusé : réservé aux développeurs."); return; }
   journal(`[DEV] déclin appliqué : ${data.touches} profil(s), ${data.morts} mort(s).`,"alerte");
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
   afficher(); majDev();
@@ -86,8 +87,9 @@ async function devDeclin(){
 // morts, planification du Protocole, ménage. Sinon il faut attendre 0 h 05 UTC.
 async function devQuotidien(){
   if(!confirm("Lancer les tâches quotidiennes ?\n\nDéclin, sorties de pause, DESTRUCTION des personnages morts depuis trop longtemps, planification du Protocole.")) return;
-  const { data, error } = await sb.rpc("nova_quotidien");
+  const { data, error } = await sb.rpc("admin_nova_quotidien");   // enveloppe : vérifie est_dev() côté serveur
   if(error){ alert("Échec : "+error.message); return; }
+  if(data && data.ok === false){ alert("Refusé : réservé aux développeurs."); return; }
   journal(`[DEV] tâches quotidiennes exécutées : ${JSON.stringify(data)}`,"alerte");
   if(typeof _syncPause==="function") await _syncPause();
   if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
@@ -113,7 +115,19 @@ async function devAvancerExpedition(){
   if(typeof majCentre==="function") majCentre();
 }
 function devProtocole(){ etat.protocoleActif = !(etat.protocoleActif!==false); journal("[DEV] patrouilles du Protocole "+((etat.protocoleActif!==false)?"activées":"désactivées")+" (ce personnage uniquement).","alerte"); sauvegarder(); afficher(); majDev(); }
-function devFactionBloc(){ const bloque=(etat.factionChangeBloque!==false); etat.factionChangeBloque=!bloque; journal("[DEV→admin] changement de faction "+((etat.factionChangeBloque!==false)?"BLOQUÉ":"DÉBLOQUÉ")+".","alerte"); sauvegarder(); if(typeof majParametres==="function") majParametres(); afficher(); majDev(); }
+/* Le blocage n'est plus un drapeau local (il ne valait que pour ce personnage
+   et se contournait) : c'est `config.faction_bloquee`, lu par changer_faction. */
+async function devFactionBloc(){
+  const { data:etatFac } = await sb.rpc("faction_etat");
+  const bloque = !!(etatFac && etatFac.bloque);
+  const { data, error } = await sb.rpc("admin_faction_switch", { p_bloque: !bloque });
+  if(error){ alert("Échec : "+error.message); return; }
+  if(!data || !data.ok){ alert("Refusé : réservé aux développeurs."); return; }
+  etat.factionChangeBloque = data.bloque;   // reflet d'affichage seulement
+  journal("[DEV→admin] changement de faction "+(data.bloque?"BLOQUÉ":"DÉBLOQUÉ")+" (pour TOUS les joueurs).","alerte");
+  if(typeof chargerFactionEtat==="function") await chargerFactionEtat(1);
+  if(typeof majParametres==="function") majParametres(); afficher(); majDev();
+}
 function devPermis(){ etat.permisVaisseau = !etat.permisVaisseau; journal(`[DEV] permis de vaisseau ${etat.permisVaisseau?"accordé":"retiré"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
 function _devRafraichirQuetes(){ if(typeof rafraichirQuetes==="function") rafraichirQuetes(); else if(typeof afficher==="function") afficher(); }
 function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={done:[],active:null}); q.done=(q.done||[]).filter(x=>x!==id); if(q.active&&q.active.id===id) q.active=null; journal(`[DEV] quête ${id} réinitialisée.`,"gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
@@ -141,6 +155,10 @@ function _devCartePerso(){
   </div>`;
 }
 function majDev(){
+  // ⚠ `dev` était lu ici alors qu'il n'est déclaré que dans ouvrirDev() :
+  // ReferenceError ligne ~190, qui interrompait majDev() et empêchait la
+  // construction des onglets Journal et Gouvernement. Déclaré localement.
+  const dev = (typeof estDev==="function" && estDev());
   const r = document.querySelector("#dev-recherche");
   if(r && !r.dataset.pret){
     // ⚠ L'ancienne recherche cherchait dans l'état LOCAL : elle ne pouvait
