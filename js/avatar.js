@@ -9,7 +9,7 @@
    augmenter à mesure que tu ajoutes des images (les rangées apparaissent seules).
    =========================================================== */
 const AV_VISAGE     = { h:20, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
-const AV_CHEVEUX    = { h:0,  f:4 };   // coiffures : f_1..f_4 (aucune pour les hommes pour l'instant)
+const AV_CHEVEUX    = { h:0,  f:9 };   // coiffures : f_1..f_4 (aucune pour les hommes pour l'instant)
 const AV_PILOSITE   = 0;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
 const AV_ACCESSOIRE = { h:0, f:0 };    // accessoires par genre (morphologies différentes)
 
