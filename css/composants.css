@@ -59,6 +59,11 @@
 
   /* Boutons */
   .actions { display:grid; gap:10px; }
+  /* L'attribut hidden ne pose display:none qu'au niveau de la feuille du navigateur :
+     toute règle explicite (ex. button.action { display:flex }) le neutralise.
+     Cette règle rétablit le comportement attendu partout. */
+  [hidden] { display:none !important; }
+
   button.action, button.achat {
     font-family:"Exo 2",sans-serif; font-weight:600; font-size:15px; color:var(--texte);
     background:rgba(16,40,37,.7); border:1px solid var(--edge); border-radius:var(--r-s);
@@ -151,7 +156,21 @@
   .modale[hidden] { display:none; }
   .modale-boite { max-width:420px; width:100%; }
   .modale p { font-size:14px; color:var(--sourdine); }
-  .modale input { width:100%; margin:12px 0; }
+  .modale input:not([type=checkbox]) { width:100%; margin:12px 0; background:#0f1830; border:1px solid var(--line); border-radius:var(--r-s); color:var(--texte); padding:11px 12px; font-family:inherit; font-size:15px; box-sizing:border-box; }
+  .modale input:not([type=checkbox]):focus { outline:none; border-color:var(--orange,#ff8a3d); }
+  .modale input:-webkit-autofill, .modale input:-webkit-autofill:focus { -webkit-box-shadow:0 0 0 40px #0f1830 inset !important; -webkit-text-fill-color:var(--texte) !important; caret-color:var(--texte); }
+  .modale label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--sourdine); cursor:pointer; margin:8px 0 0; }
+  .modale input[type=checkbox] { width:17px; height:17px; margin:0; accent-color:var(--orange,#ff8a3d); flex:0 0 auto; }
+  .mur-compteur{ font-size:12px; color:var(--sourdine); text-align:right; margin-top:3px; }
+  .mur-compteur.trop{ color:#ff5257; font-weight:700; }
+  .mur-outils{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-bottom:5px; }
+  .mur-outils .mur-b{ min-width:26px; padding:2px 8px; cursor:pointer; }
+  .mur-emos{ display:inline-flex; gap:1px; flex-wrap:wrap; }
+  .mur-emo{ background:none; border:none; cursor:pointer; font-size:18px; padding:1px 3px; line-height:1; }
+  .mur-emo:hover{ transform:scale(1.25); }
+  .mur-ecrire textarea{ width:100%; box-sizing:border-box; resize:vertical; min-height:72px; font-family:inherit; }
+  .mur-bas{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:5px; }
+  .comm-nom{ background:none; border:none; color:var(--bleu); cursor:pointer; font:inherit; text-decoration:underline; padding:0; font-weight:700; }
   .modale .valider { width:100%; font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; letter-spacing:.04em; color:#06110f; background:linear-gradient(135deg,var(--orange),var(--bleu)); border:none; border-radius:var(--r-s); padding:12px; cursor:pointer; }
 
   @keyframes respire { 0%,100%{opacity:.75; filter:brightness(1);} 50%{opacity:1; filter:brightness(1.25);} }
@@ -248,3 +267,7 @@
   .menu-act:hover { border-color:var(--bleu); color:#fff; }
   .menu-act.brader { color:var(--orange-hi,#ff9e54); }
   .menu-act.brader:hover { border-color:var(--orange); }
+
+  /* Icône du drone dans le hangar (même esprit que l'enclos et le bio-dôme). */
+  .drone-tete .drone-ic { display:inline-block; vertical-align:middle; margin-right:8px; }
+  .drone-tete .drone-ic img { width:34px; height:34px; object-fit:contain; display:block; }

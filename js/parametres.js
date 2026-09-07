@@ -6,7 +6,7 @@
    =========================================================== */
 const FACTION_COOLDOWN_J   = 30;    // jours entre deux changements de faction
 const PAUSE_MIN_J          = 3;     // pause minimale (anti-abus anti-vol)
-const PAUSE_MAX_J          = 60;    // pause maximale (sortie auto ensuite)
+const PAUSE_MAX_J          = 90;    // pause maximale (sortie auto ensuite, par le cron)
 const APPARENCE_COOLDOWN_J = 180;   // 6 mois
 const APPARENCE_COUT       = 500;   // crédits (placeholder, ajustable)
 
@@ -15,22 +15,76 @@ function _pfmtJours(ms){ ms=Math.max(0,ms); const j=ms/_pjm(); if(j>=1) return `
 function _factionBloquee(){ return etat.factionChangeBloque !== false; }   // bloqué par défaut (vieilles saves incluses)
 
 /* ---------- Pause ---------- */
+/* ⚠ PHASE avant-lancement : la pause est détenue par le SERVEUR
+   (profils.pause_depuis). Elle protège du déclin quotidien : la laisser côté
+   client permettrait de se déclarer en pause à vie pour ne jamais décliner.
+   etat.enPause n'est plus qu'un reflet, rafraîchi par _syncPause(). */
 function enPauseDepuis(){ return etat.enPause ? Date.now()-(etat.pauseLe||0) : 0; }
-function verifPauseAuto(){
-  if(etat.enPause && enPauseDepuis() >= PAUSE_MAX_J*_pjm()){
-    etat.enPause=false; etat.pauseLe=0;
-    journal(`Pause maximale (${PAUSE_MAX_J} j) atteinte — ton personnage sort de pause de lui-même. Sans soins, sa santé et son moral vont décliner.`,"alerte");
-    if(typeof sauvegarder==="function") sauvegarder();
-  }
+
+async function _syncPause(){
+  if(typeof sb === "undefined") return null;
+  try{
+    const { data } = await sb.rpc("pause_etat");
+    if(data && data.ok){
+      if(data.jour_reel_ms) etat._jourReelMs = data.jour_reel_ms;   // durée d'un jour RÉEL
+      etat.enPause = !!data.en_pause;
+      etat.pauseLe = data.en_pause ? (Date.now() - (data.depuis_ms||0)) : 0;
+      etat._pauseResteMin = data.reste_min_ms || 0;
+      etat._pauseResteMax = data.reste_max_ms || 0;
+      // La pause gèle l'usure : le serveur a décalé les dates des lots et des
+      // offres. Les dates que le CLIENT détient encore (vaisseau, équipement
+      // porté) doivent suivre le même décalage — y compris si la sortie de
+      // pause a eu lieu hors ligne, d'où ce cumul comparé à ce qu'on a déjà appliqué.
+      const cumul = data.cumul_ms || 0;
+      const applique = etat._pauseCumulApplique || 0;
+      if(cumul > applique){
+        const d = cumul - applique;
+        if(etat.vaisseauDate) etat.vaisseauDate += d;
+        if(etat.equipementDate) for(const k in etat.equipementDate){
+          if(etat.equipementDate[k]) etat.equipementDate[k] += d;
+        }
+        etat._pauseCumulApplique = cumul;
+        if(typeof sauvegarder==="function") sauvegarder();
+      }
+    }
+    return data;
+  }catch(e){ return null; }
 }
-function basculerPause(){
+// La sortie automatique passé le maximum est faite par le cron (nova-pause-auto) :
+// un joueur absent ne se connecte pas pour la déclencher lui-même.
+function verifPauseAuto(){ /* serveur */ }
+async function basculerPause(){
   if(!etat.enPause){
-    if(!confirm(`Mettre en pause ?\n\n• Minimum ${PAUSE_MIN_J} jours (impossible de reprendre avant).\n• Maximum ${PAUSE_MAX_J} jours (sortie automatique ensuite).\n• Aucune action possible pendant la pause.`)) return;
-    etat.enPause=true; etat.pauseLe=Date.now(); journal("Personnage mis en pause.","alerte");
+    const ok = await _pauseConfirm("Mettre en pause ?", [
+      `Minimum <b>${PAUSE_MIN_J} jours</b> — impossible de reprendre avant.`,
+      `Maximum <b>${PAUSE_MAX_J} jours</b> — sortie automatique ensuite.`,
+      "Aucune action possible pendant la pause.",
+      "Ton personnage ne décline pas et ne peut être ni volé ni attaqué."
+    ], "Mettre en pause");
+    if(!ok) return;
+    const { data } = await sb.rpc("pause_entrer");
+    if(!data || !data.ok){
+      journal(data && data.err==="mort" ? "Impossible : ton personnage est mort." : "Mise en pause impossible.","alerte");
+      return;
+    }
+    await _syncPause(); journal("Personnage mis en pause.","alerte");
+    if(typeof majEcranPause==="function") majEcranPause();
   } else {
-    const reste = PAUSE_MIN_J*_pjm() - enPauseDepuis();
-    if(reste>0){ journal(`Reprise impossible avant ${_pfmtJours(reste)} (pause minimale ${PAUSE_MIN_J} j).`,"alerte"); return; }
-    etat.enPause=false; etat.pauseLe=0; journal("Personnage réactivé.","gain");
+    const { data } = await sb.rpc("pause_sortir");
+    if(!data || !data.ok){
+      const r = (data && data.reste_min_ms) || 0;
+      journal(`Reprise impossible avant ${_pfmtJours(r)} (pause minimale ${PAUSE_MIN_J} j).`,"alerte");
+      return;
+    }
+    await _syncPause();
+    // Le serveur vient de décaler les dates des lots et des offres (dégel).
+    // Sans cette resynchro immédiate, majUsure travaillerait sur des dates
+    // périmées et annoncerait des pertes fantômes jusqu'au prochain rechargement.
+    if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
+    if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
+    journal("Personnage réactivé.","gain");
+    if(typeof majEcranPause==="function") majEcranPause();
+    if(typeof afficher==="function") afficher();
   }
   if(typeof sauvegarder==="function") sauvegarder(); if(typeof afficher==="function") afficher(); majParametres();
 }

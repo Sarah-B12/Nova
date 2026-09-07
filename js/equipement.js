@@ -85,33 +85,44 @@ function equipEsquive(){ return _equipEffets().reduce((s,e)=>s+(e.esquive||0),0)
 function equipDouble(){ return _equipEffets().reduce((s,e)=>s+(e.double||0),0); }
 
 /* ---------- Équiper / déséquiper ---------- */
-function equiper(id, slot){
+async function equiper(id, slot){
   const cat = slotEquip(id); if(!cat) return;
+  // Armes à une main : sans emplacement précisé, on cherche une main LIBRE.
+  // (Auparavant on visait toujours "arme", donc la seconde lame remplaçait la première.)
+  if(!slot && cat === "arme" && !estDeuxMains(id)){
+    if(!etat.equipement["arme"])       slot = "arme";
+    else if(!etat.equipement["arme2"]) slot = "arme2";
+  }
   slot = slot || cat;                                        // par défaut : emplacement = catégorie (case unique)
   const sdef = EQUIP_SLOTS.find(s=>s.id===slot); if(!sdef || sdef.cat!==cat) return;
   if((etat.sac[id]||0)<=0) return;
   if(cat==="arme"){
     if(estDeuxMains(id)){                                    // deux mains : occupe cette main, libère l'autre
-      const autre = autreArme(slot); if(autre && etat.equipement[autre]) desequiper(autre, true);
+      const autre = autreArme(slot); if(autre && etat.equipement[autre]){ if(!await desequiper(autre, true)) return; }
     } else if(armeSlotBloque(slot)){                         // l'autre main tient déjà une arme à deux mains
       journal("Une arme à deux mains occupe déjà les deux mains.","alerte"); return;
     }
   }
-  if(etat.equipement[slot]) desequiper(slot, true);          // libère l'emplacement d'abord
-  const ts = etat.sacDate && etat.sacDate[id];
-  retirerDuSac(id, 1);
+  if(etat.equipement[slot]){ if(!await desequiper(slot, true)) return; }   // libère l'emplacement d'abord
+  // L'objet passe dans le lieu « equipe » : le serveur connaît l'arsenal porté
+  // et peut calculer force_combat sans croire le client sur parole.
+  if(!await rangerServeur(id, 1, "equipe", "sac")) return;
+  const ts = Date.now();
   etat.equipement[slot] = id;
   if(typeof reporterDate==="function"){ etat.equipementDate=etat.equipementDate||{}; etat.equipementDate[slot]=ts||Date.now(); }
   journal(`${item(id).nom} équipé.`,"gain");
   apresAction(); majEquipement();
 }
-function desequiper(slot, silencieux){
-  const id = etat.equipement[slot]; if(!id) return;
+async function desequiper(slot, silencieux){
+  const id = etat.equipement[slot]; if(!id) return false;
   const ts = etat.equipementDate && etat.equipementDate[slot];
-  if(placesLibres()>0){ ajouterAuSac(id,1); if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); } if(!silencieux) journal(`${item(id).nom} retiré (rangé dans le sac).`); }
-  else { if(!silencieux) journal("Sac plein — impossible de déséquiper.","alerte"); return; }
+  const r = await rangerServeur(id, 1, "sac", "equipe");
+  if(!r){ return false; }
+  if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); }
+  if(!silencieux) journal(`${item(id).nom} rangé dans le sac.`,"gain");
   etat.equipement[slot] = null; if(etat.equipementDate) delete etat.equipementDate[slot];
   if(!silencieux){ apresAction(); majEquipement(); }
+  return true;
 }
 
 /* ---------- Rendu : corps centré + sélecteur au clic ---------- */

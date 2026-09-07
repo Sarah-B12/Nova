@@ -34,6 +34,10 @@ function acheterApt(chaine, idx){
   e.pa -= cout; e.pris.push(n.id);
   journal(`Aptitude acquise : ${n.nom}.`,"gain");
   sauvegarder(); majAptitudes();
+  // Beaucoup d'écrans dépendent des aptitudes (vol/hack, capacité du sac,
+  // coûts du terrain) : sans redessin, ils restaient sur l'état d'avant.
+  if(typeof afficher==="function") afficher();
+  if(typeof majVoler==="function") majVoler();
 }
 function respecApt(){
   const e = aptEtat();
@@ -71,10 +75,8 @@ function monterAptitudes(){
      <div class="apt-vue" id="apt-vue-speciales" hidden></div>
      <div class="apt-boutons">
        <button class="mini" id="apt-respec">Réattribuer (${APT_RESPEC.toLocaleString("fr-FR")} ₡)</button>
-       <button class="mini" id="apt-debug">+1 PA (debug)</button>
      </div>`;
   panneau.querySelector("#apt-respec").addEventListener("click", respecApt);
-  panneau.querySelector("#apt-debug").addEventListener("click", ()=>gagnerPA(1));
   panneau.querySelectorAll(".apt-sous-lien").forEach(b => b.addEventListener("click", ()=>{
     panneau.querySelectorAll(".apt-sous-lien").forEach(x=>x.classList.toggle("actif", x===b));
     panneau.querySelector("#apt-vue-communes").hidden = b.dataset.apt !== "communes";

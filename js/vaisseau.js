@@ -22,65 +22,57 @@ function capaciteSoute(){ const v=vaisseauActif(); return v ? v.soute : 0; }
 function itemsSoute(){ return Object.values(etat.soute||{}).reduce((a,b)=>a+b,0); }
 
 /* ---------- Équiper / déséquiper ---------- */
-function equiperVaisseau(id){
+async function equiperVaisseau(id){
   if(!estVaisseau(id) || (etat.sac[id]||0)<=0) return;
   if(!etat.permisVaisseau){ journal("Il te faut un permis de vaisseau pour piloter (quête à venir).","alerte"); return; }
   if(id===etat.vaisseau) return;
   if(etat.vaisseau){                                   // remplacer : il faut d'abord ranger l'actuel (soute vide)
     if(itemsSoute()>0){ journal("Vide la soute de ton vaisseau actuel avant d'en équiper un autre.","alerte"); return; }
     if(placesLibres()<=0){ journal("Sac plein — impossible de ranger le vaisseau actuel.","alerte"); return; }
-    const ancien=etat.vaisseau, tsA=etat.vaisseauDate;
-    ajouterAuSac(ancien,1);
-    if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,ancien,tsA||Date.now()); }
+    const ancien=etat.vaisseau;
+    const rA = await agirServeur({ ajouter:{ [ancien]:1 }, motif:"vaisseau_ranger" });
+    if(!rA || !(rA.ajoutes||{})[ancien]){ journal("Sac plein — impossible de ranger le vaisseau actuel.","alerte"); return; }
   }
-  const ts=etat.sacDate&&etat.sacDate[id];
-  retirerDuSac(id,1);
-  etat.vaisseau=id; etat.vaisseauDate=ts||Date.now();
+  // Le vaisseau quitte le sac et devient équipé : un seul appel, tout ou rien.
+  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"vaisseau_equiper" })) return;
+  etat.vaisseau=id; etat.vaisseauDate=Date.now();
   etat.carburant = Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);   // le réservoir peut être plus petit
   journal(`${VAISSEAUX[id].nom} équipé. Soute : ${VAISSEAUX[id].soute} places.`,"gain");
   apresAction(); majVaisseau();
 }
-function desequiperVaisseau(){
+async function desequiperVaisseau(){
   if(!etat.vaisseau) return;
   if(itemsSoute()>0){ journal("Impossible : vide d'abord la soute.","alerte"); return; }
-  if(placesLibres()<=0){ journal("Sac plein.","alerte"); return; }
-  const id=etat.vaisseau, ts=etat.vaisseauDate;
-  ajouterAuSac(id,1);
-  if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); }
+  const id=etat.vaisseau;
+  const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"vaisseau_desequiper" });
+  if(!r || !(r.ajoutes||{})[id]){ journal("Sac plein.","alerte"); return; }
   etat.vaisseau=null; etat.vaisseauDate=null;
   journal(`${VAISSEAUX[id].nom} rangé dans le sac.`);
   apresAction(); majVaisseau();
 }
 
 /* ---------- Soute (charger / décharger) ---------- */
-function deposerSoute(id){
+async function deposerSoute(id){
   if(!etat.vaisseau){ journal("Équipe un vaisseau d'abord.","alerte"); return; }
   if(estVaisseau(id)){ journal("On ne range pas un vaisseau dans une soute.","alerte"); return; }
   if(!etat.sac[id]) return;
-  if(itemsSoute()>=capaciteSoute()){ journal("Soute pleine.","alerte"); return; }
-  const ts=etat.sacDate&&etat.sacDate[id];
-  retirerDuSac(id,1);
-  etat.soute=etat.soute||{}; etat.soute[id]=(etat.soute[id]||0)+1;
-  if(typeof reporterDate==="function"){ etat.souteDate=etat.souteDate||{}; reporterDate(etat.souteDate,id,ts||Date.now()); }
+  // Mouvement serveur : le lot conserve sa date d'acquisition.
+  if(!await rangerServeur(id, 1, "soute", "sac")) return;
   apresAction(); majVaisseau();
 }
-function retirerSoute(id){
+async function retirerSoute(id){
   if(!etat.soute||!etat.soute[id]) return;
-  if(placesLibres()<=0){ journal("Sac plein.","alerte"); return; }
-  const ts=etat.souteDate&&etat.souteDate[id];
-  etat.soute[id]--; if(etat.soute[id]<=0){ delete etat.soute[id]; if(etat.souteDate) delete etat.souteDate[id]; }
-  ajouterAuSac(id,1);
-  if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); }
+  if(!await rangerServeur(id, 1, "sac", "soute")) return;
   apresAction(); majVaisseau();
 }
 
 /* ---------- Ravitaillement ---------- */
-function ravitailler(){
+async function ravitailler(){
   const v=vaisseauActif(); if(!v) return;
   if((etat.carburant||0) >= v.reservoir){ journal("Réservoir plein.","alerte"); return; }
   if((etat.sac[v.carb]||0) <= 0){ journal(`Il te faut du ${item(v.carb).nom} dans ton sac.`,"alerte"); return; }
   const litres = CARBURANT_LITRES[v.carb]||0;
-  retirerDuSac(v.carb,1);
+  if(!await agirServeur({ retirer:{ [v.carb]:1 }, motif:"ravitailler" })) return;
   etat.carburant = Math.min(v.reservoir, (etat.carburant||0) + litres);
   journal(`Plein : +${litres} L de ${item(v.carb).nom}. Réservoir ${Math.round(etat.carburant)}/${v.reservoir} L.`,"gain");
   apresAction(); majVaisseau();
@@ -152,13 +144,15 @@ function majVaisseau(){
 
   // Grille de la soute (clic = décharger vers le sac)
   const g=z.querySelector("#soute-grille");
-  const stacks=TOUS_ITEMS.filter(a=>(etat.soute[a.id]||0)>0);
+  // Une tuile par LOT, comme dans le sac et le coffre.
+  const stacks = (typeof lotsAffichage==="function") ? lotsAffichage("soute") : [];
   const cible=Math.max(6, Math.ceil((stacks.length+1)/6)*6);
   for(let i=0;i<cible;i++){ const t=document.createElement("div");
-    if(i<stacks.length){ const it=stacks[i]; t.className="tuile utilisable";
-      t.innerHTML=`<span class="icone">${iconeItem(it.id)}</span><span class="compte">${etat.soute[it.id]}</span>`;
-      if(typeof montrerItemTip==="function"){ t.addEventListener("mouseenter",()=>montrerItemTip(t,it.id)); t.addEventListener("mouseleave",cacherItemTip); }
-      t.addEventListener("click",()=>{ if(typeof cacherItemTip==="function")cacherItemTip(); retirerSoute(it.id); });
+    if(i<stacks.length){ const lot=stacks[i]; const iid=lot.item; t.className="tuile utilisable";
+      t.dataset.item = iid;
+      t.innerHTML=`<span class="icone">${iconeItem(iid)}</span><span class="compte">${lot.qte}</span>${(typeof badgeLot==="function")?badgeLot(lot):""}`;
+      if(typeof montrerItemTip==="function"){ t.addEventListener("mouseenter",()=>montrerItemTip(t,iid)); t.addEventListener("mouseleave",cacherItemTip); }
+      t.addEventListener("click",()=>{ if(typeof cacherItemTip==="function")cacherItemTip(); retirerSoute(iid); });
     } else t.className="tuile vide";
     g.appendChild(t);
   }

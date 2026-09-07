@@ -1,9 +1,12 @@
 /* ===========================================================
-   MARCHÉ — un marché distinct PAR FACTION (mise en vente locale à la ville).
-   Affiche, par type d'objet, la MEILLEURE offre des AUTRES (on ne s'achète pas
-   à soi-même : ses propres offres sont masquées à l'achat, mais retirables via
-   « Mes ventes »). Prix coloré selon le prix moyen.
+   MARCHÉ — marché réel PAR FACTION (serveur, dépôt-vente).
+   On ne voit/achète que les offres de la faction où l'on se trouve.
+   Dépôt : taxe 10 % (serveur), objet retiré du sac. Achat : atomique serveur.
+   Les crédits sont autoritatifs côté serveur (colonne profils.credits).
    =========================================================== */
+(function(){ if(document.querySelector("#marche-style-inj")) return; const st=document.createElement("style"); st.id="marche-style-inj";
+  st.textContent=`.vente-ligne input, .vente-qte, .vente-prix{ background:#0f1830!important; border:1px solid var(--line)!important; border-radius:8px!important; color:var(--texte,#dfe8f2)!important; padding:6px 8px!important; font-family:inherit; }`;
+  document.head.appendChild(st); })();
 const CAT_MARCHE = [
   { id:"minerais",   nom:"Minerais & lingots" },
   { id:"bio",        nom:"Matières bio" },
@@ -15,6 +18,9 @@ const CAT_MARCHE = [
   { id:"conso",      nom:"Consommables" }
 ];
 let marcheTab = "minerais";
+let _offresCache = [];
+let _marcheMonId = null;
+let _estArchitecte = false;
 
 function categorieMarche(id){
   const it = item(id); if(!it) return "composants";
@@ -28,120 +34,133 @@ function categorieMarche(id){
   if(it.cat==="plante" || it.cat==="organique" || it.cat==="animal" || /sylve|biofibre|biocarburant|\bfil\b|prot[eé]ine|nectine|sporelle|ferragave|filaine|cuir/.test(n)) return "bio";
   return "composants";
 }
-
 function marcheFaction(){ return (typeof villeActuelle==="function") ? villeActuelle() : null; }
-function commissionTaux(){ return (etat.aptitudes && Array.isArray(etat.aptitudes.pris) && etat.aptitudes.pris.includes("no2")) ? 0.05 : 0.10; }
-function _moi(){ return etat.nom || "Toi"; }
 
-/* --- Offres --- */
-function offresItem(faction, id){ return (etat.marches[faction]||[]).filter(o=>o.id===id).sort((a,b)=> a.prix-b.prix || a.date-b.date); }
-// Achetables = celles des AUTRES uniquement.
-function offresAchat(faction, id){ return offresItem(faction, id).filter(o=>o.vendeur!==_moi()); }
-function meilleureOffre(faction, id){ return offresAchat(faction, id)[0] || null; }
-function mesOffres(faction){ return (etat.marches[faction]||[]).filter(o=>o.vendeur===_moi()).sort((a,b)=> a.prix-b.prix || a.date-b.date); }
-
-/* --- Semis PNJ (démo) --- */
-function semerMarches(){
-  if(!etat.marches) etat.marches = {};
-  if(etat.marchesSemes) return;
-  if(typeof PRIX_ITEM==="undefined"){ return; }
-  const noms = ["Kael","Vira","Toz","Nyx-7","Brann","Sela","Orin","Dax","Lume","Ferro","Cass","Yara"];
-  const ids = Object.keys(PRIX_ITEM);
-  for(const f of FACTIONS){
-    etat.marches[f.id] = etat.marches[f.id] || [];
-    const pool = ids.slice().sort(()=>Math.random()-0.5).slice(0, 24);
-    for(const id of pool){
-      const p = PRIX_ITEM[id]; const n = 1 + Math.floor(Math.random()*3);
-      for(let k=0;k<n;k++){
-        etat.marches[f.id].push({ id, prix: Math.round(p.min + Math.random()*(p.max-p.min)), date: Date.now()-Math.floor(Math.random()*1e7), vendeur: noms[Math.floor(Math.random()*noms.length)] });
-      }
-    }
-  }
-  etat.marchesSemes = true;
-  if(typeof sauvegarder==="function") sauvegarder();
+/* --- Crédits autoritatifs serveur --- */
+async function _syncCredits(){
+  if(typeof pousserCredits==="function"){ const av=etat.credits; await pousserCredits(); if(etat.credits!==av && typeof afficher==="function") afficher(); }
+}
+async function _chargerOffres(faction){
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return [];
+  const { data, error } = await sb.from("offres").select("*").eq("faction", faction).order("prix",{ascending:true}).limit(300);
+  if(error){ console.warn("[marche]", error.message); return []; }
+  const rows=data||[]; const ids=[...new Set(rows.map(o=>o.vendeur_id))];
+  const noms={}; if(ids.length){ const {data:pubs}=await sb.from("profils_publics").select("id,nom").in("id",ids); for(const p of (pubs||[])) noms[p.id]=p.nom; }
+  return rows.map(o=>({ ...o, vendeurNom: noms[o.vendeur_id]||"(inconnu)" }));
 }
 
-/* --- Acheter (jamais sa propre offre) --- */
-function acheterOffre(faction, id){
-  const o = meilleureOffre(faction, id); if(!o) return;
-  if(typeof estVaisseau==="function" && estVaisseau(id) && !etat.permisVaisseau){ journal("Achat de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
-  if(etat.credits < o.prix){ journal("Crédits insuffisants.","alerte"); return; }
-  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
-  etat.credits -= o.prix;
-  ajouterAuSac(id, 1);
-  const arr = etat.marches[faction]; const i = arr.indexOf(o); if(i>=0) arr.splice(i,1);
-  journal(`Acheté : ${item(id).nom} — ${o.prix} ₡.`,"gain");
-  apresAction(); renderMarche();
-}
-
-/* --- Retirer ses propres offres (rend l'objet ; commission non remboursée) --- */
-function retirerGroupe(faction, id, prix, qte){
-  const arr = etat.marches[faction]; if(!arr) return;
-  let done = 0;
-  for(let k=0;k<qte;k++){
-    if(placesLibres() <= 0) break;
-    const idx = arr.findIndex(o=>o.id===id && o.prix===prix && o.vendeur===_moi());
-    if(idx < 0) break;
-    arr.splice(idx,1); ajouterAuSac(id,1); done++;
-  }
-  if(done>0) journal(`Retiré du marché : ${done}× ${item(id).nom}.`,"alerte");
-  if(done<qte) journal("Sac plein — retrait partiel.","alerte");
-  apresAction(); renderMarche(); ouvrirMesVentes();
-}
-
-/* --- Mettre en vente (quantité au choix) --- */
-function mettreEnVente(id, prix, qte){
-  const faction = marcheFaction(); if(!faction){ journal("Va dans une ville de faction pour vendre.","alerte"); return; }
-  const dispo = etat.sac[id]||0; if(dispo <= 0) return;
-  const p = PRIX_ITEM[id]; if(!p){ journal("Cet objet n'a pas de valeur de marché.","alerte"); return; }
-  qte  = Math.max(1, Math.min(dispo, Math.floor(qte||1)));
-  prix = Math.max(p.min, Math.min(p.max, Math.round(prix||p.moy)));
-  const comU = Math.max(1, Math.round(p.min * commissionTaux()));   // commission PAR objet
-  const com  = comU * qte;
-  if(etat.credits < com){ journal(`Commission de ${com} ₡ (${qte} × ${comU}) — crédits insuffisants.`,"alerte"); return; }
-  etat.credits -= com;
-  etat.marches[faction] = etat.marches[faction] || [];
-  for(let k=0;k<qte;k++){ retirerDuSac(id,1); etat.marches[faction].push({ id, prix, date: Date.now()+k, vendeur: _moi() }); }
-  if(etat.pas) etat.pas.vendu=true;
-  journal(`Mis en vente à ${FACTIONS.find(f=>f.id===faction).nom} : ${qte}× ${item(id).nom} à ${prix} ₡ (commission ${com} ₡).`,"gain");
-  apresAction(); renderMarche(); ouvrirVente();
-}
-
-/* --- Rendu du marché --- */
-function renderMarche(){
+/* --- Rendu --- */
+async function renderMarche(){
+  if(typeof cacherItemTip==="function") cacherItemTip();
   const z = document.querySelector("#marche-vue"); if(!z) return;
   const faction = marcheFaction();
   if(!faction){ z.innerHTML = `<p class="vide">Rends-toi dans une <b>ville de faction</b> (onglet Planète) pour accéder à son marché. Chaque faction a le sien.</p>`; return; }
-  semerMarches();
+  z.innerHTML = `<p class="vide">Chargement du marché…</p>`;
+  const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; _marcheMonId=s?s.user.id:null;
+  try{ const {data}=await sb.from("gouvernement").select("profil_id").eq("faction",etat.faction).eq("role","architecte").maybeSingle(); _estArchitecte=!!(data && data.profil_id===_marcheMonId); }catch(e){ _estArchitecte=false; }
+  await _syncCredits();
+  _offresCache = await _chargerOffres(faction);
   const fc = FACTIONS.find(f=>f.id===faction);
-  const nMes = mesOffres(faction).length;
+  const mesN = _offresCache.filter(o=>o.vendeur_id===_marcheMonId).length;
   let html = `<div class="marche-tete"><h3 style="color:${fc.couleur};margin:0">Marché — ${fc.nom}</h3>`
-    + `<span class="actions" style="gap:6px"><button class="mini" id="marche-mesventes-btn">Mes ventes${nMes?` (${nMes})`:""}</button><button class="mini" id="marche-vendre-btn">Mettre en vente</button></span></div>`;
+    + `<span class="actions" style="gap:6px"><button class="mini" id="marche-mesventes-btn">Mes ventes${mesN?` (${mesN})`:""}</button><button class="mini" id="marche-vendre-btn">Mettre en vente</button></span></div>`;
   html += `<div class="marche-tabs">` + CAT_MARCHE.map(c=>`<button class="marche-tab${c.id===marcheTab?" actif":""}" data-cat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
-  // Achat : uniquement les offres des AUTRES.
-  const arr = (etat.marches[faction] || []).filter(o=>o.vendeur!==_moi());
-  const ids = [...new Set(arr.filter(o=>categorieMarche(o.id)===marcheTab).map(o=>o.id))]
-    .sort((a,b)=> meilleureOffre(faction,a).prix - meilleureOffre(faction,b).prix);
+  const achat = _offresCache.filter(o=>o.vendeur_id!==_marcheMonId && categorieMarche(o.item_id)===marcheTab);
   html += `<div class="marche-liste">`;
-  if(!ids.length) html += `<p class="vide">Aucun objet en vente dans cette catégorie.</p>`;
-  for(const id of ids){
-    const offres = offresAchat(faction, id); const o = offres[0]; const p = PRIX_ITEM[id] || {};
-    const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
-    html += `<div class="marche-ligne" data-item="${id}"><span class="marche-ic">${iconeItem(id)}</span>`
-      + `<span class="marche-nom">${item(id).nom}<span class="qte">${offres.length} en vente · moy ${p.moy} ₡</span></span>`
+  if(!achat.length) html += `<p class="vide">Aucun objet en vente dans cette catégorie.</p>`;
+  for(const o of achat){
+    const p = PRIX_ITEM[o.item_id] || {}; const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
+    html += `<div class="marche-ligne" data-item="${o.item_id}"><span class="marche-ic">${iconeItem(o.item_id)}</span>`
+      + `<span class="marche-nom">${item(o.item_id).nom}<span class="qte">${o.quantite} en vente · ${o.vendeurNom} · moy ${p.moy||"?"} ₡</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
-      + `<button class="mini" data-acheter="${id}">Acheter</button></div>`;
+      + `<button class="mini" data-acheter="${o.id}">Acheter</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
   html += `</div>`;
   z.innerHTML = html;
   if(typeof brancherTips==="function") brancherTips(z);
   z.querySelectorAll("[data-cat]").forEach(b=>b.addEventListener("click",()=>{ marcheTab=b.dataset.cat; renderMarche(); }));
-  z.querySelectorAll("[data-acheter]").forEach(b=>b.addEventListener("click",()=>acheterOffre(faction, b.dataset.acheter)));
+  z.querySelectorAll("[data-acheter]").forEach(b=>b.addEventListener("click",()=>acheterOffre(b.dataset.acheter)));
+  z.querySelectorAll("[data-acheterfac]").forEach(b=>b.addEventListener("click",()=>acheterOffreFaction(b.dataset.acheterfac)));
   const vb = z.querySelector("#marche-vendre-btn"); if(vb) vb.addEventListener("click", ouvrirVente);
   const mb = z.querySelector("#marche-mesventes-btn"); if(mb) mb.addEventListener("click", ouvrirMesVentes);
 }
 
-/* --- Modale : mise en vente (avec quantité) --- */
+/* --- Acheter (atomique serveur) --- */
+async function acheterOffre(offreId){
+  const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
+  if(typeof estVaisseau==="function" && estVaisseau(o.item_id) && !etat.permisVaisseau){ journal("Achat de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
+  if(placesLibres() < 1){ journal("Sac plein.","alerte"); return; }
+  const { data:res, error } = await sb.rpc("acheter_offre", { offre: Number(offreId) });
+  if(error || !res || !res.ok){
+    const err=res&&res.err;
+    if(err==="fonds") journal("Crédits insuffisants.","alerte");
+    else if(err==="introuvable") journal("Cette offre n'est plus disponible.","alerte");
+    else if(err==="soi") journal("C'est ta propre offre.","alerte");
+    else if(err==="sac_plein") journal("Sac plein — fais de la place avant d'acheter.","alerte");
+    else journal("Achat impossible.","alerte");
+    renderMarche(); return;
+  }
+  // L'objet est livré DANS la transaction serveur : on ne fait qu'appliquer l'état renvoyé.
+  if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
+  etat.credits = res.solde; if(typeof marquerCredits==="function") marquerCredits(res.solde);
+  journal(`Acheté : ${res.quantite}× ${item(res.item).nom} — ${res.cout} ₡.`,"gain");
+  apresAction(); renderMarche();
+}
+
+async function acheterOffreFaction(offreId){
+  const { data:res, error } = await sb.rpc("acheter_offre_faction", { offre: Number(offreId) });
+  if(error || !res || !res.ok){
+    const e=res&&res.err;
+    if(e==="caisse") journal(`Caisse insuffisante (${res.cout} ₡).`,"alerte");
+    else if(e==="reserve_pleine") journal("Réserve de faction pleine (50).","alerte");
+    else if(e==="pas_architecte") journal("Réservé à l'Architecte.","alerte");
+    else if(e==="introuvable") journal("Offre indisponible.","alerte");
+    else journal("Achat faction impossible.","alerte");
+    renderMarche(); return;
+  }
+  journal(`Acheté pour la faction : ${item(res.item)?item(res.item).nom:res.item} — ${res.cout} ₡ (caisse).`,"gain");
+  renderMarche();
+}
+
+/* --- Mettre en vente (dépôt-vente, taxe serveur) --- */
+async function mettreEnVente(id, prix, qte){
+  const faction = marcheFaction(); if(!faction){ journal("Va dans une ville de faction pour vendre.","alerte"); return; }
+  const dispo = etat.sac[id]||0; if(dispo <= 0) return;
+  const p = PRIX_ITEM[id]; if(!p){ journal("Cet objet n'a pas de valeur de marché.","alerte"); return; }
+  qte  = Math.max(1, Math.min(dispo, Math.floor(qte||1)));
+  prix = Math.max(p.min, Math.min(p.max, Math.round(prix||p.moy)));
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
+  const { data:res, error } = await sb.rpc("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix });
+  if(error || !res || !res.ok){
+    if(res && res.err==="taxe") journal(`Taxe de ${res.taxe} ₡ (10 %) — crédits insuffisants.`,"alerte");
+    else if(res && res.err==="manque") journal(`Tu ne possèdes que ${res.possede}× cet objet.`,"alerte");
+    else journal("Mise en vente impossible.","alerte");
+    return;
+  }
+  if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
+  etat.credits = res.solde; if(typeof marquerCredits==="function") marquerCredits(res.solde); if(etat.pas) etat.pas.vendu=true;
+  journal(`Mis en vente à ${FACTIONS.find(f=>f.id===faction).nom} : ${qte}× ${item(id).nom} à ${prix} ₡ (taxe ${res.taxe} ₡).`,"gain");
+  apresAction(); renderMarche(); ouvrirVente();
+}
+
+/* --- Retirer une de ses offres (rend le lot ; taxe non remboursée) --- */
+async function retirerOffre(offreId){
+  const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
+  const { data:res, error } = await sb.rpc("retirer_offre", { offre: Number(offreId) });
+  if(error || !res || !res.ok){
+    if(res && res.err==="sac_plein") journal("Sac plein — libère de la place pour récupérer ce lot.","alerte");
+    else journal("Retrait impossible.","alerte");
+    renderMarche(); return;
+  }
+  if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
+  journal(`Retiré du marché : ${res.quantite}× ${item(res.item).nom}`
+    + (res.partiel ? " (le reste attend : sac plein)" : "") + " — taxe non remboursée.","alerte");
+  // ⚠ renderMarche() recharge les offres depuis le serveur : sans await, la
+  // modale « Mes ventes » se redessinait sur le cache d'avant le retrait.
+  apresAction(); await renderMarche(); ouvrirMesVentes();
+}
+
+/* --- Modale : mise en vente --- */
 let _venteMonte = false;
 function monterVenteModal(){ if(_venteMonte) return; const m=document.createElement("div"); m.id="marche-vente"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) m.hidden=true; }); _venteMonte=true; }
 function ouvrirVente(){
@@ -150,7 +169,7 @@ function ouvrirVente(){
   const m = document.querySelector("#marche-vente");
   const vendables = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && PRIX_ITEM[a.id]);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>Mettre en vente — ${FACTIONS.find(f=>f.id===faction).nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
-  html += `<p class="vide" style="margin:0 0 8px">Commission : <b>${Math.round(commissionTaux()*100)} % du prix min</b>, par objet, prélevée à la mise en vente.</p>`;
+  html += `<p class="vide" style="margin:0 0 8px"><b>Taxe : 10 % du prix total</b>, prélevée à la mise en vente (non remboursée). L'objet quitte ton sac.</p>`;
   if(!vendables.length) html += `<p class="vide">Aucun objet vendable dans ton sac.</p>`;
   for(const it of vendables){ const pr=PRIX_ITEM[it.id]; const dispo=etat.sac[it.id];
     html += `<div class="vente-ligne" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span>`
@@ -177,23 +196,18 @@ function ouvrirMesVentes(){
   const faction = marcheFaction(); if(!faction) return;
   monterMesVentesModal();
   const m = document.querySelector("#marche-mesventes");
-  const mes = mesOffres(faction);
-  const groupes = {};
-  for(const o of mes){ const k=o.id+"@"+o.prix; (groupes[k]=groupes[k]||{id:o.id, prix:o.prix, qte:0}).qte++; }
-  const list = Object.values(groupes).sort((a,b)=> item(a.id).nom.localeCompare(item(b.id).nom) || a.prix-b.prix);
+  const mes = _offresCache.filter(o=>o.vendeur_id===_marcheMonId).sort((a,b)=> item(a.item_id).nom.localeCompare(item(b.item_id).nom) || a.prix-b.prix);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>Mes ventes — ${FACTIONS.find(f=>f.id===faction).nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
-  html += `<p class="vide" style="margin:0 0 8px">Retirer une offre te rend l'objet. La commission déjà payée n'est pas remboursée.</p>`;
-  if(!list.length) html += `<p class="vide">Tu n'as rien en vente ici.</p>`;
-  for(const g of list){
-    html += `<div class="vente-ligne" data-item="${g.id}"><span class="picker-ic">${iconeItem(g.id)}</span>`
-      + `<span class="picker-nom"><b>${item(g.id).nom}</b> <span class="qte">×${g.qte} à ${g.prix} ₡</span></span>`
-      + `<button class="mini danger" data-retirer="${g.id}@${g.prix}@${g.qte}">Retirer tout</button></div>`;
+  html += `<p class="vide" style="margin:0 0 8px">Retirer une offre te rend l'objet. La taxe déjà payée n'est pas remboursée.</p>`;
+  if(!mes.length) html += `<p class="vide">Tu n'as rien en vente ici.</p>`;
+  for(const o of mes){
+    html += `<div class="vente-ligne" data-item="${o.item_id}"><span class="picker-ic">${iconeItem(o.item_id)}</span>`
+      + `<span class="picker-nom"><b>${item(o.item_id).nom}</b> <span class="qte">×${o.quantite} à ${o.prix} ₡</span></span>`
+      + `<button class="mini danger" data-retirer="${o.id}">Retirer</button></div>`;
   }
   html += `</div>`;
   m.innerHTML = html; m.hidden = false;
   if(typeof brancherTips==="function") brancherTips(m);
   m.querySelector("[data-fermer]").addEventListener("click",()=>{ m.hidden=true; });
-  m.querySelectorAll("[data-retirer]").forEach(b=>b.addEventListener("click",()=>{
-    const [id,prix,qte]=b.dataset.retirer.split("@"); retirerGroupe(faction, id, parseInt(prix,10), parseInt(qte,10));
-  }));
+  m.querySelectorAll("[data-retirer]").forEach(b=>b.addEventListener("click",()=>retirerOffre(b.dataset.retirer)));
 }

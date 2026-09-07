@@ -6,7 +6,8 @@
    de transition (defi.reussite) + Continuer.
 
    Types de défi (defi.type) — un module = _html<Type> + _wire<Type> :
-     enigme (illimité) · livraison · paiement · attente · piratage · glyphes · ordre
+     enigme (illimité) · choix · livraison · paiement · attente · piratage · glyphes
+     ordre · cadenas · sequence · memoire · combat (contrôle de niveau)
    MINI-JEUX RATABLES (DEFIS_UNTRY) : UN essai par jour. Sur échec (validation ratée),
    l'étape se verrouille jusqu'au lendemain (JOUR_MS). L'énigme reste illimitée ;
    livraison/paiement/attente ne sont pas « ratables » (on complète ou pas).
@@ -28,7 +29,7 @@ function _jourMs(){ return (typeof JOUR_MS!=="undefined")?JOUR_MS:86400000; }
 function _fmtDuree(ms){ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); if(s<60) return s+" s"; const m=Math.floor(s/60); return m+" min "+(s%60)+" s"; }
 
 // Mini-jeux ratables : un essai par jour.
-const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire"]);
+const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat"]);
 function queteVerrou(){ const a=queteActive(); const e=etapeActive();
   if(!a || !e || !e.defi || !DEFIS_UNTRY.has(e.defi.type) || !a._echecLe) return 0;
   const r=_jourMs()-(Date.now()-a._echecLe); return r>0?r:0; }
@@ -50,21 +51,22 @@ function abandonnerQuete(){
   queteEtat().active=null; journal("Quête abandonnée.","alerte");
   sauvegarder(); rafraichirQuetes();
 }
-function avancerQuete(){
+async function avancerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id);
   a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false;
-  if(a.etape >= q.etapes.length){ terminerQuete(); }
+  if(a.etape >= q.etapes.length){ await terminerQuete(); }
   else { const e=etapeActive(); journal("Étape suivante"+(e&&e.indice?` : « ${e.indice} »`:"")+".","gain"); sauvegarder(); }
   rafraichirQuetes();
 }
-function terminerQuete(){
+async function terminerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id); const r=q.recompense||{};
   if(r.credits) etat.credits += r.credits;
-  if(r.objets) for(const id in r.objets){ let k=r.objets[id]; while(k-->0){ if(placesLibres()>0) ajouterAuSac(id,1); } }
+  if(r.objets && Object.keys(r.objets).length) await agirServeur({ ajouter:r.objets, motif:"quete_recompense" });
   if(r.pa && typeof gagnerPA==="function") gagnerPA(r.pa);
+  if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
   queteEtat().done.push(a.id); queteEtat().active=null;
-  const parts=[]; if(r.credits) parts.push(`+${r.credits} ₡`); if(r.pa) parts.push(`+${r.pa} PA`);
+  const parts=[]; if(r.credits) parts.push(`+${r.credits} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(r.pa) parts.push(`+${r.pa} PA`);
   if(r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
   if(r.flags && r.flags.permisVaisseau) parts.push("🚀 Permis de vaisseau obtenu !");
   journal(`Quête « ${q.nom} » accomplie ! ${parts.join(", ")}`.trim(),"gain");
@@ -79,6 +81,8 @@ function echouerDefi(msg){ const a=queteActive(); if(!a) return; a._echecLe=Date
 function _defiHTML(d){
   if(!d) return "";
   switch(d.type){
+    case "choix":     return _htmlChoix(d);
+    case "combat":    return _htmlCombat(d);
     case "enigme":    return _htmlEnigme(d);
     case "livraison": return _htmlLivraison(d);
     case "paiement":  return _htmlPaiement(d);
@@ -95,6 +99,8 @@ function _defiHTML(d){
 function _defiWire(z, d){
   if(!d || !z) return;
   switch(d.type){
+    case "choix":     _wireChoix(z,d); break;
+    case "combat":    _wireCombat(z,d); break;
     case "enigme":    _wireEnigme(z,d); break;
     case "livraison": _wireLivraison(z,d); break;
     case "paiement":  _wirePaiement(z,d); break;
@@ -134,9 +140,10 @@ function _htmlLivraison(d){
 }
 function _wireLivraison(z,d){
   const b=z.querySelector("#q-liv-btn"); if(!b) return;
-  b.addEventListener("click",()=>{ const objs=d.objets||{};
+  b.addEventListener("click", async ()=>{ const objs=d.objets||{};
     if(!Object.keys(objs).every(id=>(etat.sac[id]||0)>=objs[id])){ journal("Il te manque des objets.","alerte"); return; }
-    for(const id in objs){ let k=objs[id]; while(k-->0) retirerDuSac(id,1); }
+    // Un seul appel : tous les objets vérifiés côté serveur avant qu'un seul ne parte.
+    if(!await agirServeur({ retirer:objs, motif:"quete_livraison" })) return;
     journal("Livraison effectuée.","gain"); reussirDefi(); });
 }
 
@@ -148,6 +155,121 @@ function _htmlPaiement(d){ const cout=d.cout||0, ok=etat.credits>=cout;
 }
 function _wirePaiement(z,d){ const b=z.querySelector("#q-pay-btn"); if(!b) return;
   b.addEventListener("click",()=>{ const cout=d.cout||0; if(etat.credits<cout){ journal("Crédits insuffisants.","alerte"); return; } etat.credits-=cout; journal(`Payé ${cout} ₡.`,"gain"); reussirDefi(); }); }
+
+/* choix (embranchement de Cercle) : options avec coût + deltas de réputation de Cercle. Définitif. */
+function _coutQ_ok(cout){ if(!cout) return true;
+  for(const k in cout){ const q=cout[k];
+    if(k==="credits"){ if((etat.credits||0)<q) return false; }
+    else if(k==="energie"){ if((etat.energie||0)<q) return false; }
+    else if(k==="sante"){ if(((etat.jauges&&etat.jauges.sante)||0)<q) return false; }
+    else { if((etat.sac[k]||0)<q) return false; }
+  } return true;
+}
+async function _payerCoutQ(cout){ if(!cout) return true;
+  const objets = {}; let energie = 0; const jauges = {};
+  for(const k in cout){ const q=cout[k];
+    if(k==="credits") etat.credits-=q;
+    else if(k==="energie") energie += q;                 // débitée par le serveur
+    else if(k==="sante") jauges.sante = (jauges.sante||0) - q;      // appliquée par le serveur
+    else objets[k] = (objets[k]||0) + q;                 // objets : retirés côté serveur
+  }
+  if(energie > 0 || Object.keys(objets).length || Object.keys(jauges).length){
+    return !!await agirServeur({ cout:energie, retirer:objets, jauges, motif:"quete_choix" });
+  }
+  return true;
+}
+function _coutTexteQ(cout){ if(!cout) return ""; const p=[];
+  for(const k in cout){ const q=cout[k];
+    if(k==="credits") p.push(`${q} ₡`);
+    else if(k==="energie") p.push(`${q}% énergie`);
+    else if(k==="sante") p.push(`${q} santé`);
+    else p.push(`${q}× ${(typeof item==="function"&&item(k))?item(k).nom:k}`);
+  } return p.join(", ");
+}
+function _cerclesTexteQ(cercles){ if(!cercles) return ""; const p=[];
+  for(const k in cercles){ const c=(typeof CERCLES!=="undefined")?CERCLES.find(x=>x.id===k):null; const v=cercles[k]; p.push(`${v>0?"+":""}${v} ${c?c.nom:k}`); }
+  return p.length?("→ "+p.join(", ")):"";
+}
+async function _appliquerCerclesQ(cercles){ if(!cercles) return;
+  if(!etat.cercles) etat.cercles={};
+  for(const k in cercles){ etat.cercles[k]=Math.max(0,Math.min(100,(etat.cercles[k]||0)+cercles[k])); }
+  try{ const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; if(s && typeof sb!=="undefined" && sb) await sb.from("profils").update({ cercles: etat.cercles }).eq("id", s.user.id); }catch(e){}
+}
+function _htmlChoix(d){
+  const opts=(d.options||[]).map((o,i)=>{
+    const ok=_coutQ_ok(o.cout); const ct=_coutTexteQ(o.cout); const ef=_cerclesTexteQ(o.cercles);
+    return `<div style="border:1px solid var(--line);border-radius:8px;padding:8px 10px">
+      <button class="mini" data-choix="${i}" ${ok?"":"disabled"}>${o.texte}</button>
+      <div class="quete-indice" style="margin-top:4px">${ct?`Coût : <b>${ct}</b>. `:""}${ef}${ok?"":' <span style="color:#ff5257">— ressources manquantes</span>'}</div>
+    </div>`;
+  }).join("");
+  return `<div class="quete-etape">${_par(d.texte)}<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">${opts}</div></div>`;
+}
+function _wireChoix(z,d){
+  z.querySelectorAll("[data-choix]").forEach(b=>b.addEventListener("click", async ()=>{
+    const o=(d.options||[])[parseInt(b.dataset.choix,10)]; if(!o) return;
+    if(!_coutQ_ok(o.cout)){ journal("Ressources insuffisantes pour ce choix.","alerte"); return; }
+    if(!await _payerCoutQ(o.cout)) return;
+    await _appliquerCerclesQ(o.cercles);
+    // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
+    if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
+    journal(o.journal || "Ton choix est scellé.","gain");
+    if(typeof afficher==="function") afficher();
+    reussirDefi();
+  }));
+}
+
+
+/* ---------- combat (ratable : un essai par jour) ----------
+   Contrôle de niveau : on compare la MEILLEURE compétence effective à d.puissance.
+     ≥ puissance            → victoire nette
+     ≥ puissance × 0,7      → victoire arrachée, coût en santé proportionnel à l'écart
+     en dessous             → échec, l'étape se verrouille jusqu'au lendemain
+   La compétence qui l'emporte choisit le récit ET le Cercle qui gagne des points. */
+const COMBAT_CERCLES = { force:"racines", agilite:"langues", intelligence:"assembleurs" };
+function _combatStats(){
+  const f = (typeof forceEffective==="function") ? forceEffective() : (etat.competences.force||0);
+  const a = (typeof agiliteEffective==="function") ? agiliteEffective() : (etat.competences.agilite||0);
+  const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : (etat.competences.intelligence||0);
+  const best = (f>=a && f>=i) ? "force" : (a>=i ? "agilite" : "intelligence");
+  return { force:f, agilite:a, intelligence:i, best, val:Math.max(f,a,i) };
+}
+function _htmlCombat(d){
+  const st=_combatStats(); const p=d.puissance||30;
+  const noms={force:"Force",agilite:"Agilité",intelligence:"Intelligence"};
+  const jauge=Math.max(0,Math.min(100,Math.round(st.val/p*100)));
+  const teinte = st.val>=p ? "#8bd450" : (st.val>=p*0.7 ? "#ff8a3d" : "#ff5257");
+  return `<div class="quete-etape">${_par(d.texte)}
+    <p class="quete-indice">${d.nom||"Adversaire"} — puissance estimée : <b>${p}</b></p>
+    <p class="vide" style="margin:6px 0">Ton meilleur atout : <b>${noms[st.best]}</b> ${st.val}
+      <span style="color:${teinte}"> (${jauge} %)</span></p>
+    <div class="quete-rep"><button class="mini" id="q-cbt-btn">Engager le combat</button></div>
+  </div>`;
+}
+function _wireCombat(z,d){
+  const b=z.querySelector("#q-cbt-btn"); if(!b) return;
+  b.addEventListener("click", async ()=>{
+    const st=_combatStats(); const p=d.puissance||30;
+    if(st.val < p*0.7){
+      const perte=Math.round(8+Math.random()*10);
+      await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
+      if(typeof afficher==="function") afficher();
+      echouerDefi(`${d.nom||"L'adversaire"} te domine (−${perte} santé). Entraîne-toi et reviens demain.`);
+      return;
+    }
+    let perte=0;
+    if(st.val < p){
+      perte=Math.round((p-st.val)/p*40)+5;
+      await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
+    }
+    const cercle=(d.cercles&&d.cercles[st.best])||COMBAT_CERCLES[st.best];
+    if(cercle && typeof _appliquerCerclesQ==="function") await _appliquerCerclesQ({ [cercle]: (d.gain||2) });
+    if(typeof gagnerXp==="function") gagnerXp(d.xp||8);
+    journal(perte>0 ? `Victoire arrachée (−${perte} santé).` : "Victoire nette.", perte>0?"alerte":"gain");
+    if(typeof afficher==="function") afficher();
+    reussirDefi();
+  });
+}
 
 /* attente (non ratable ; survit au rechargement via a._attenteLe) */
 function _htmlAttente(d){
@@ -349,11 +471,18 @@ function majQueteHub(){
   _queteStyle();
   _clearQ();
   const enFac=_enFaction();
-  const banniere = enFac ? `<div class="quete-banniere"><img src="images/quetes/sorn.png" alt="" onerror="this.remove()"><span>Vieux Sorn — Comptoir</span></div>` : "";
+  // Donneur : lu sur la quête active (défaut = Vieux Sorn). L'image se déduit du
+  // champ donneurImg, sinon d'un nom de fichier dérivé du donneur.
+  const _qa0=queteActive(); const _qd0=_qa0?queteData(_qa0.id):null;
+  const _dNom=(_qd0&&_qd0.donneur)||"Vieux Sorn";
+  const _dImg=(_qd0&&_qd0.donneurImg)||("images/quetes/"+_dNom.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")+".png");
+  const _dLieu=(_qd0&&_qd0.donneurLieu)||"Comptoir";
+  const banniere = enFac ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
   const a=queteActive();
 
   if(!a){
-    if(!enFac){ z.innerHTML=`<p class="vide">Les quêtes se prennent au <b>comptoir de ta ville de faction</b>. Rejoins-la pour voir ce que le Vieux Sorn te réserve.</p>`; return; }
+    if(!enFac){ z.innerHTML=`<p class="vide">Les quêtes se prennent au <b>comptoir de ta ville de faction</b>. Rejoins-la pour voir ce qu'on te réserve.</p>`; return; }
     const q=queteProchaine(); let html=banniere;
     if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
     else html+=`<p class="vide">Toutes les quêtes disponibles sont accomplies. Le Vieux Sorn n'a rien de plus pour l'instant.</p>`;

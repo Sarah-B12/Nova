@@ -13,7 +13,7 @@ const MINE_MAX = 500;      // réserve d'une mine à sa construction
 const MINE_LOT = 6;        // minerais extraits par action « Miner »
 // ⚠ JOUR_MS = 1 « jour » de jeu pour arroser/nourrir/tondre (1×/jour).
 //    Réglé court pour les tests — mettre 24*3600*1000 en production.
-const JOUR_MS = 20*1000;
+const JOUR_MS = 60*1000;
 function memeJour(ts){ return ts && (Date.now()-ts) < JOUR_MS; }   // action déjà faite « aujourd'hui »
 const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png", hangar:"images/hangar.png" };
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous
@@ -41,12 +41,12 @@ function normaliserParcelles(t){
   }
   return arr;
 }
-function batirParcelle(type){
+async function batirParcelle(type){
   if(plotSel==null || etat.terrain.parcelles[plotSel]) return;
   const s=STRUCTURES[type];
   const prix=aptCoutStructure(s.prix);
   if(etat.credits<prix){ journal(`Il faut ${prix} ₡.`,"alerte"); return; }
-  if(!depenserEnergie(COUT_TERRAIN.batir)) return;
+  if(!await agirServeur({ cout:COUT_TERRAIN.batir, motif:"batir" })) return;
   etat.credits-=prix;
   let p;
   if(type==="mine"){ const rmax=aptMineReserve(MINE_MAX); p={ type:"mine", stock:rmax, max:rmax }; }
@@ -69,15 +69,19 @@ function demolir(i){
 }
 
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
-function recolterMine(i){
-  if(!depenserEnergie(COUT_TERRAIN.miner)) return;
+async function recolterMine(i){
   const p=etat.terrain.parcelles[i]; const stock=p.stock||0; const rmax=p.max||MINE_MAX;
   const lot=aptStructureLot(alea(3,6));
   const n=Math.min(lot, stock, placesLibres());
   if(n<=0){ journal(stock<=0?"Mine épuisée — démolis-la puis reconstruis-en une.":"Sac plein.","alerte"); return; }
-  let pr=0; for(let k=0;k<n;k++){ ajouterAuSac(tirerMatiere(aptBonusRare(0)),1); pr++; }
+  const gains={}; for(let k=0;k<n;k++){ const m=tirerMatiere(aptBonusRare(0)); gains[m]=(gains[m]||0)+1; }
+  const r=await agirServeur({ cout:COUT_TERRAIN.miner, ajouter:gains, motif:"mine" });
+  if(!r) return;
+  const pr=Object.values(r.ajoutes||{}).reduce((a,b)=>a+b,0);
   p.stock=Math.max(0,stock-pr);
-  journal(`Mine : +${pr} minerai(s). Réserve : ${p.stock}/${rmax}.`,"gain"); apresAction(); majStruct();
+  gagnerXp(3);
+  journal(`Mine : +${pr} minerai(s). Réserve : ${p.stock}/${rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
+  apresAction(); majStruct();
 }
 
 // --- BIO-DÔME : 4 cases · planter → arroser 1×/jour → récolter (5-9) ---
@@ -85,57 +89,71 @@ function recolterMine(i){
 function nbStock(id){ return (etat.sac[id]||0) + ((etat.coffre && etat.coffre[id]) || 0); }
 function possedeStock(id){ return nbStock(id) > 0; }
 // Consomme un objet depuis le sac, sinon le coffre de la maison (vaisseau à venir). Renvoie true si trouvé.
+// ⚠ VESTIGE Phase 3 : piochait directement dans etat.coffre côté client.
+// Remplacé par assurerDansSac() (inventaire.js), qui passe par le serveur.
+// Conservé le temps que les fichiers non encore migrés cessent de l'appeler.
 function consommerStock(id){
   if((etat.sac[id]||0)>0){ retirerDuSac(id,1); return true; }
   if(etat.coffre && (etat.coffre[id]||0)>0){ etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } return true; }
   return false;
 }
-function poserPlante(ci, plId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
-  if(!depenserEnergie(COUT_TERRAIN.planter)) return;
-  if(!consommerStock(graineDe(plId))){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac ou ta maison.`,"alerte"); return; }
+async function poserPlante(ci, plId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+  const gr=graineDe(plId);
+  if(!await assurerDansSac(gr,1)){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
+  const res=await agirServeur({ cout:COUT_TERRAIN.planter, retirer:{ [gr]:1 }, motif:"planter" });
+  if(!res) return;
   p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); majStruct(); }
-function arroserCase(ci){
+async function arroserCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance>=PLANT_MAX){ journal("Déjà mûr — récolte-le.","alerte"); return; }
   if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — reviens demain.","alerte"); return; }
-  if(!depenserEnergie(COUT_TERRAIN.arroser)) return;
+  if(!await agirServeur({ cout:COUT_TERRAIN.arroser, motif:"arroser" })) return;
   c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now();
   journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); majStruct();
 }
-function recolterCase(ci){
+async function recolterCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance<PLANT_MAX){ journal("Pas encore mûr.","alerte"); return; }
-  if(!depenserEnergie(COUT_TERRAIN.recolter)) return;
-  const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0; for(let k=0;k<nb;k++){ if(placesLibres()<=0)break; ajouterAuSac(c.plante,1); pr++; }
+  const rr=aptBiodomeRecolte(); const nb=aptStructureLot(alea(rr.min,rr.max));
+  const res=await agirServeur({ cout:COUT_TERRAIN.recolter, ajouter:{ [c.plante]:nb }, motif:"recolte" });
+  if(!res) return;
+  const pr=(res.ajoutes||{})[c.plante]||0;
   const nom=plante(c.plante).nom; p.cases[ci]=null;
+  gagnerXp(2);
   journal(`Récolte : +${pr} ${nom}.`+(pr<nb?" (sac plein)":""),"gain"); apresAction(); majStruct();
 }
 
 // --- ENCLOS : 4 cases · élever → nourrir (plante du sac) → tondre 1×/jour ×7 → retraite ---
-function poserAnimal(ci, anId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
-  if(!depenserEnergie(COUT_TERRAIN.elever)) return;
-  if(!consommerStock(bebeDe(anId))){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac ou ta maison.`,"alerte"); return; }
+async function poserAnimal(ci, anId){ const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+  const bb=bebeDe(anId);
+  if(!await assurerDansSac(bb,1)){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
+  const res=await agirServeur({ cout:COUT_TERRAIN.elever, retirer:{ [bb]:1 }, motif:"elever" });
+  if(!res) return;
   p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); majStruct(); }
 function plantesDuSac(){ return etat.sacOrdre.filter(id=>{ const it=item(id); return it&&it.cat==="plante"&&(etat.sac[id]||0)>0; }); }
-function nourrirCase(ci){
+async function nourrirCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas>=a.repasAdulte){ journal("Déjà adulte.","alerte"); return; }
-  if((etat.sac["ferragave"]||0)<=0){ journal("Il faut de la Ferragave (cultivée au bio-dôme) dans ton sac pour nourrir.","alerte"); return; }
-  if(!depenserEnergie(COUT_TERRAIN.nourrir)) return;
-  retirerDuSac("ferragave",1); c.repas++;
+  if(!await assurerDansSac("ferragave",1)){ journal("Il faut de la Ferragave (cultivée au bio-dôme) pour nourrir.","alerte"); return; }
+  const res=await agirServeur({ cout:COUT_TERRAIN.nourrir, retirer:{ ferragave:1 }, motif:"nourrir" });
+  if(!res) return;
+  c.repas++;
   journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); majStruct();
 }
-function tondreCase(ci){
+async function tondreCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
   if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — reviens demain.","alerte"); return; }
-  if(!depenserEnergie(COUT_TERRAIN.tondre)) return;
-  const nb=aptStructureLot(alea(2,3)+aptTonteBonus()); let pr=0; for(let k=0;k<nb;k++){ if(placesLibres()<=0)break; ajouterAuSac(a.produit,1); pr++; }
+  const nb=aptStructureLot(alea(2,3)+aptTonteBonus());
+  const res=await agirServeur({ cout:COUT_TERRAIN.tondre, ajouter:{ [a.produit]:nb }, motif:"tonte" });
+  if(!res) return;
+  const pr=(res.ajoutes||{})[a.produit]||0;
   c.tontes++; c.tonte=Date.now();
   let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${c.tontes}/${TONTES_MAX}.`;
   if(c.tontes>=TONTES_MAX){ p.cases[ci]=null; msg+=` Le ${a.nom} a pris sa retraite.`; }
+  gagnerXp(2);
   journal(msg,"gain"); apresAction(); majStruct();
 }
 
@@ -220,8 +238,12 @@ function renderStructActions(p, el){
 
 function majRecolte(){
   const g=document.querySelector("#terrain-grille"); if(!g) return;
+  // Fond de terrain selon la faction (le CSS fait le reste, avec repli).
+  if(etat.faction) g.dataset.faction = etat.faction; else delete g.dataset.faction;
   g.innerHTML="";
-  if(etat.terrain.parcelles.every(p=>!p || p.type==="maison")){ const msg=document.createElement("p"); msg.className="vide"; msg.style.cssText="grid-column:1/-1;margin:0 0 8px"; msg.textContent="Bâtis une mine, un bio-dôme… selon ta formation."; g.appendChild(msg); }
+  // Astuce de départ : affichée AU-DESSUS de la grille, pas par-dessus l'image du terrain.
+  const astuce = document.querySelector("#terrain-astuce");
+  if(astuce) astuce.hidden = !etat.terrain.parcelles.every(p=>!p || p.type==="maison");
   etat.terrain.parcelles.forEach((p,i)=>{
     const cell=document.createElement("div");
     cell.className="plot"+(p?" occupe":"")+(plotSel===i?" sel":"");

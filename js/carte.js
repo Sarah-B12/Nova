@@ -1,5 +1,5 @@
 /* ===========================================================
-   CARTE — Carte continue d'Ori 55 : construction, mise à jour, voyage, ouverture/fermeture.
+   CARTE — Carte continue d'Maar : construction, mise à jour, voyage, ouverture/fermeture.
    =========================================================== */
 /* ---------- Carte continue ---------- */
 const DW = 1500;                       // largeur d'affichage (px) ; le reste défile
@@ -59,16 +59,17 @@ function majCarte(){
     av.innerHTML=`<circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="6" fill="${col}"/>`; }
   const ville=villeActuelle(); const lieu=lieuActuel(); let t;
   if(ville){ const fc=FACTIONS.find(f=>f.id===ville); t=`Tu es à <b style="color:${fc.couleur}">${fc.nom}</b>. <span style="color:var(--bleu)">Repos et comptoir disponibles.</span>`; }
-  else if(surAnneauProtocole()){ t=`<b style="color:#b9a0f0">Anneau du Protocole.</b> <span style="color:var(--sourdine)">Hack / espionnage possible ici (à venir). On ne peut pas entrer dans la zone.</span>`; }
+  else if(surAnneauProtocole()){ t=`<b style="color:#b9a0f0">Anneau du Protocole.</b> <span style="color:var(--sourdine)">L'Ombre de ta faction peut hacker le Protocole ici. On ne peut pas entrer dans la zone.</span>`; }
   else { t=`Zone sauvage.`;
     if(lieu){ if(lieu.type==="mine") t+=` <span style="color:var(--orange)">Filon riche.</span>`; if(lieu.type==="chasse") t+=` <span style="color:var(--coral)">Terrain de chasse.</span>`; if(lieu.type==="quete") t+=` <span style="color:var(--bleu)">Étape de quête (bientôt).</span>`; }
     t+=` <span style="color:var(--sourdine)">Minage, exploration et chasse ici.</span>`; }
   document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">[${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}]</span>`;
+  if(surAnneauProtocole()){ const ri=document.querySelector("#region-info"); if(ri){ const hb=document.createElement("button"); hb.className="mini"; hb.textContent="Hacker le Protocole"; hb.style.marginLeft="8px"; hb.addEventListener("click",()=>{ if(typeof hackerProtocoleDepuisCarte==="function") hackerProtocoleDepuisCarte(); }); ri.appendChild(hb); } }
   if(typeof majMarqueursQuete==="function") majMarqueursQuete();
   const cl=document.querySelector("#carte-lieu"); if(cl) cl.innerHTML = t;
   majHub();
 }
-function voyager(x, y){
+async function voyager(x, y){
   if(!etat.pos || etat.pos.x===undefined) etat.pos=posDefaut();
   if(etat.enPause){ journal("Personnage en pause.","alerte"); return; }
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
@@ -83,9 +84,11 @@ function voyager(x, y){
   const dOpen = distanceOuverte(etat.pos, {x,y});                 // portion à découvert (hors cercles)
   const coutE = dOpen>0 ? aptEnergieDeplacement(Math.max(1, Math.round(dOpen/PAS)))   : 0;
   const coutO = dOpen>0 ? coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))               : 0;
-  if(coutE>0 && !depenserEnergie(coutE)) return;
-  if(coutO>0) etat.jauges.o2 = borne(etat.jauges.o2 - coutO);
+  if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
+  // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.
   etat.pos={ x:Math.round(x), y:Math.round(y) };
+  // La position part au serveur : elle décide de la présence au combat.
+  if(typeof sauvegarder==="function") sauvegarder();
   if(etat.pas) etat.pas.deplace=true;
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
                     : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)

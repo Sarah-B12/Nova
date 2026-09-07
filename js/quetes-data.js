@@ -21,423 +21,487 @@ const QUETES = [
     id:"q1",
     nom:"Le relais de Braise",
     donneur:"Vieux Sorn",
+    // ⚠ Coordonnées approximatives (monde 2400×1600) — à ajuster en jouant.
+    // Fil rouge : les quatre balises rediffusent un même vieil ordre, en morceaux.
+    //   « …toutes unités… maintenir le périmètre… jusqu'au retour… de la mère. »
+    // Sorn l'explique trop vite à la balise 2, et se tait à la balise 4.
+    // AUCUN défi ratable ici : première quête, on ne verrouille jamais un débutant.
     intro:[
       "Un vieux bonhomme voûté te jauge de son unique œil valide — l'autre disparaît sous un bandeau d'implants qui grésille par intermittence. « Encore un bleu qui croit qu'on survit ici avec du courage et un joli sac. »",
       "Il crache par terre, puis désigne du menton un boîtier fumant sur son établi. « J'ai réveillé un vieux relais du Protocole. Il recrache d'anciennes coordonnées — quatre balises. Moi, mes genoux rendent l'âme avant la première. »",
-      "« Toi, tu vas les suivre et me rapporter ce qu'elles disent. Je te paie, et personne ne pleure. Enfin… si tu reviens. » Un rictus fend sa barbe grise. « Ce que je ne garantis pas, gamin. »"
+      "« Toi, tu vas les suivre et me rapporter ce qu'elles disent. Je te paie, et personne ne pleure. Enfin… si tu reviens. » Un rictus fend sa barbe grise. « Ce que je ne garantis pas, gamin. »",
+      "Il te tend une oreillette cabossée. « Je te guide d'ici. Préviens-toi tout de suite : mon décodeur crache des zones, pas des points. Je te dirai où chercher, à toi de fouiller le coin. »"
     ],
     etapes:[
-      { indice:"Cherche près d'un point chaud mais à portée de l'écume : là où la roche de la Forge plonge vers l'océan, au nord.",
+
+      /* ---- 1. La Braise et l'écume — ÉNIGME (essais illimités) ---- */
+      { indice:"Nord. Là où la roche de la Forge plonge dans l'eau — un point chaud à portée de l'écume. Fouille ce coin-là, j'ai pas mieux.",
         cible:{ x:1050, y:140, r:80 }, leurres:[ {x:1850,y:170,r:80}, {x:300,y:780,r:80}, {x:1500,y:1420,r:80} ],
         image:"images/quetes/q1/1.png",
         arrivee:[
-          "La roche tiède fume doucement sous tes bottes. Un relais à demi enfoui clignote dans la caillasse ; une voix synthétique en jaillit, distordue.",
+          "La roche tiède fume doucement sous tes bottes. Un relais à demi enfoui clignote dans la caillasse ; une voix synthétique en jaillit, distordue, puis se stabilise sur une phrase qu'elle répète en boucle : « …toutes unités… toutes unités… »",
           "Ta radio crachote. « T'es arrivé ? Étonnant. Le relais va te poser une devinette débile — le Protocole adore ça, il teste avant de parler. Débrouille-toi, j'ai pas que ça à faire. »"
         ],
         defi:{ type:"enigme",
-          texte:"Le relais module sa question dans un français d'un autre âge :",
+          texte:"Le relais interrompt sa litanie et module sa question dans un français d'un autre âge :",
           question:"« Je grandis en dévorant, je meurs en buvant. Que suis-je ? »",
           reponses:["le feu","feu","la flamme","flamme"],
           indice:"Il danse en permanence sur les pentes d'Ignis.",
           reussite:[
             "À peine ta réponse prononcée, le relais s'affaisse et se met à fondre — pourtant, sous tes doigts, le métal reste étrangement froid. De la coulée figée émerge un carré de papier, intact, couvert de coordonnées tracées à la main.",
-            "Tu essuies la bouillasse tiède sur ta combinaison et déplies doucement le feuillet. La radio grésille. « Fais voir… ouais. Ça pointe vers le froid, ça. Là où même l'eau renonce à geler. » Sorn marque une pause. « On se rapproche, gamin. »"
+            "Tu essuies la bouillasse tiède sur ta combinaison et déplies le feuillet. La radio grésille. « Fais voir… ouais. Ça pointe vers le froid. Là où même l'eau renonce à geler. » Une pause. « On se rapproche, gamin. »"
           ] } },
 
-      { indice:"Descends là où l'eau refuse de geler malgré le froid : à la lisière sud de la cité de glace.",
+      /* ---- 2. La borne givrée — ATTENTE (non ratable) ---- */
+      { indice:"Le froid, maintenant. Lisière sud de la cité de glace, là où l'eau refuse encore de prendre. Cherche dans ce secteur.",
         cible:{ x:1960, y:600, r:80 }, leurres:[ {x:700,y:300,r:80}, {x:1150,y:1050,r:80}, {x:2000,y:1300,r:80} ],
         image:"images/quetes/q1/2.png",
         arrivee:[
-          "Une borne givrée émerge de la neige, l'écran encore vivant malgré les décennies d'abandon.",
-          "Sorn, dans la radio, plus bas : « La Toundra… j'y ai laissé des choses, autrefois. Des gens, surtout. » Un silence de givre. « …Bref. Fais parler cette borne et arrête de m'écouter divaguer. »"
+          "Une borne émerge de la neige, prise dans une gangue de glace épaisse comme un poing. L'écran vit encore dessous, vert pâle, mais aucune commande ne répond.",
+          "« Elle est gelée jusqu'aux entrailles », grogne Sorn. « Force pas, tu la casseras. Ces trucs-là se réchauffent tout seuls quand on les sollicite — mets la main dessus et attends. Va faire un tour si t'as la bougeotte, elle t'attendra. »",
+          "Sa voix baisse d'un cran. « La Toundra… j'y ai laissé des choses, autrefois. Des gens, surtout. » Un silence de givre. « …Bref. »"
         ],
-        defi:{ type:"enigme",
-          texte:"La borne réclame un code de passage :",
-          question:"« Combien de factions se partagent Silène ? (en chiffres) »",
-          reponses:["5","cinq"],
-          indice:"Ignis, le Rhizome, la Toundra, le Rouage, les Nomades.",
+        defi:{ type:"attente", duree:45000,
+          texte:["Tu poses la paume sur la gangue. Sous la glace, quelque chose se remet lentement à tourner.",
+                 "Lance le réchauffage, puis laisse-la travailler — tu peux t'éloigner et revenir."],
           reussite:[
-            "La borne givrée avale ta réponse dans un cliquetis mécanique, puis dégèle d'un coup : une plaque de glace glisse et révèle un renfoncement où pulse une graine luminescente, gravée de nouvelles coordonnées.",
-            "« Une graine ? » La voix de Sorn se fait songeuse. « Elles nous envoient au vert, maintenant. Là où l'air se cultive tout seul. » Un reniflement. « Prends soin de ce truc — il vaut sûrement plus cher que toi. »"
+            "La borne dégèle d'un coup dans un cliquetis mécanique. L'écran s'anime et débite une bribe d'un vieux message, la même voix que la première balise, deux mots plus loin : « …maintenir le périmètre… »",
+            "Une plaque de glace glisse et révèle un renfoncement où pulse une graine luminescente, gravée de nouvelles coordonnées.",
+            "« Maintenir le périmètre, maintenir le périmètre… » Sorn souffle par le nez. « Quarante ans qu'ils montent la garde devant une porte que plus personne ne franchira. Voilà ce que c'est, le Protocole : des chiens qui attendent un maître mort. »"
           ] } },
 
-      { indice:"Enfonce-toi au cœur vert du monde, là où l'air lui-même se cultive.",
-        cible:{ x:1250, y:900, r:80 }, leurres:[ {x:400,y:400,r:80}, {x:1900,y:900,r:80}, {x:800,y:1300,r:80} ],
+      /* ---- 3. Le relais éventré — LIVRAISON (non ratable) ---- */
+      { indice:"Sud-ouest, vers les vieilles galeries. Et remue-toi : à ce compte-là, un autre charognard sera passé avant toi.",
+        cible:{ x:760, y:1320, r:80 }, leurres:[ {x:1400,y:400,r:80}, {x:1750,y:900,r:80}, {x:980,y:640,r:80} ],
         image:"images/quetes/q1/3.png",
         arrivee:[
-          "Sous la canopée luminescente, une console de sève palpite au rythme lent d'un cœur endormi.",
-          "La voix de Sorn se fait presque douce. « Le Rhizome. Les seuls, sur ce caillou, à recycler l'air sans te le facturer. Si un jour tu manques d'O₂, souviens-toi d'eux — pas de moi. »"
+          "Celle-ci a été ouverte au pied-de-biche, il y a longtemps. Les entrailles pendent, le boîtier est vide de tout ce qui avait de la valeur. Un voyant s'obstine pourtant à clignoter, patient.",
+          "« Ah. » Sorn a un petit rire sans joie. « Y a plus vieux charognard que moi sur cette caillasse, on dirait. Elle veut parler, mais il lui manque de quoi. Trouve-lui de quoi refermer son circuit — de la Voltane, de la Silite. Ça se mine, ou ça s'achète au marché si t'es fainéant. »"
         ],
-        defi:{ type:"enigme",
-          texte:"La console de sève murmure une énigme :",
-          question:"« Dans le bio-dôme, qu'est-ce qui recycle l'air que tu respires ? »",
-          reponses:["les plantes","la flore","photosynthese","la photosynthese","les plantes du bio-dome"],
-          indice:"Elles font ce que fait l'aptitude Photosynthèse.",
+        defi:{ type:"livraison",
+          objets:{ voltane:2, silite:1 },
+          texte:"Le logement de la carte est béant. Deux fragments de Voltane et un peu de Silite refermeraient le circuit.",
+          // (la livraison n'est pas ratable : on complète ou on revient plus tard)
           reussite:[
-            "La console de sève frémit ; une sève dorée sourd de ses jointures et dessine lentement, sur l'écorce, une carte qui palpite comme une veine vivante. Un dernier point y bat, loin vers l'est.",
-            "« Ah. » Sorn n'a pas l'air ravi. « Le dernier point, c'est chez les charognards. La ferraille, la rouille, les carcasses. » Il soupire dans la radio. « Termine ça et rentre. J'ai… des choses à te dire. »"
+            "Tu cales les composants dans le logement. Le relais avale le courant d'un coup et parle, la même voix, deux mots plus loin encore : « …jusqu'au retour… »",
+            "Puis il recrache une dernière série de coordonnées — vers l'ouest, vers l'anneau. La radio reste muette une seconde de trop.",
+            "« Vers l'ouest ? » La voix de Sorn a changé de texture. « Bon. Vas-y. Mais tu t'approches pas de l'anneau, t'entends ? Tu restes au seuil. »"
           ] } },
 
-      { indice:"Termine là où tout se démonte et se répare : parmi les carcasses dressées à l'est.",
-        cible:{ x:2050, y:1050, r:80 }, leurres:[ {x:600,y:600,r:80}, {x:1300,y:200,r:80}, {x:1000,y:1400,r:80} ],
+      /* ---- 4. Le seuil — ÉNIGME retournée (essais illimités) ---- */
+      { indice:"Ouest. Jusqu'à voir l'anneau — et pas un pas de plus. Tu t'arrêtes au seuil, c'est pas négociable.",
+        cible:{ x:620, y:1000, r:80 }, leurres:[ {x:1300,y:1250,r:80}, {x:900,y:220,r:80}, {x:1700,y:1150,r:80} ],
         image:"images/quetes/q1/4.png",
         arrivee:[
-          "Au pied d'une tour de ferraille grinçante, un terminal du Rouage s'éveille dans une gerbe d'étincelles.",
-          "Sorn : « Les charognards du Rouage. Ils rendent la moitié de ce qu'on démonte. Le Protocole, lui, ne rend jamais rien. » Sa voix se durcit d'un coup. « Jamais. »"
+          "L'anneau du Protocole occupe tout l'horizon, violet et silencieux. La dernière balise est plantée là, face à lui, comme une sentinelle qui aurait oublié de mourir.",
+          "Elle ne pose pas de devinette. Elle demande une identification, et l'écran attend, curseur clignotant, le nom de la station où tu te trouves."
         ],
         defi:{ type:"enigme",
-          texte:"Le terminal grince sa dernière question :",
-          question:"« Démolir une structure en récupère la moitié. Comment nomme-t-on le fait de tout réutiliser ainsi ? »",
-          reponses:["recyclage","le recyclage","recycler"],
-          indice:"C'est aussi le nom d'un nœud d'aptitude du Rouage.",
+          texte:"IDENTIFICATION REQUISE. NOMMEZ LA STATION.",
+          question:"« Quel est le nom de ce secteur ? »",
+          reponses:["silene","silène","secteur silene","secteur silène"],
+          indice:"C'est écrit en haut de ton écran depuis le premier jour.",
           reussite:[
-            "Le terminal du Rouage crache une dernière ligne de données puis s'éteint dans un grésillement. Les quatre balises ont parlé. Dans ta main, le papier, la graine et un éclat de circuit s'assemblent presque comme les morceaux d'une même phrase.",
-            "Long silence sur la radio. Puis, plus bas que d'habitude : « …C'est bon. Tu as tout. Rentre au comptoir, gamin. On parlera. Pour de vrai, cette fois. »"
+            "Tu tapes le seul nom que tu connaisses. L'écran le digère une seconde de trop, puis répond :",
+            "SILÈNE — TERME NON RÉPERTORIÉ. STATION : MAAR-3. DERNIER ORDRE : MAINTENIR JUSQU'AU RETOUR DE LA MÈRE.",
+            "« La mère, la base-mère », lâche Sorn sans que tu aies rien demandé. « Le vaisseau de la corpo. Ils appelaient tous ça comme ça, à l'époque. Rien de mystique, gamin, arrête de faire cette tête. »",
+            "Il enchaîne aussitôt, un ton plus haut : « Et Silène non répertorié, forcément. Les machines connaissent que les matricules. MAAR-3, MAAR-12, va savoir. C'est des machines. »",
+            "« Bon. T'as ce que je voulais. Rentre. »"
           ] } }
     ],
-    recompense:{ credits:600, pa:1, objets:{ fab_kit_de_soin:1 }, flags:{} }
+    recompense:{ credits:120, xp:25, flags:{} }
   },
 
   {
     id:"q2",
     nom:"L'écho du Protocole",
     donneur:"Vieux Sorn",
+    // Q2 = la quête où Sorn est OBLIGÉ de parler. Révélations en escalier :
+    //   1. il connaît les codes · 2. il est sur un registre d'équipe
+    //   3. il y est barré (« déserteur ») · 4. il a obéi, et des gens sont restés dehors.
+    // ⚠ Le signataire de l'ordre reste ILLISIBLE : le lien Maar/Mère ne se dévoile pas ici.
     intro:[
-      "Sorn t'attend, adossé à son établi, plus sombre que d'habitude. « Assieds-toi. Non — reste debout, tu me fatigues rien qu'à te regarder. »",
-      "« Ton relais n'a pas fait que cracher des chiffres. Il a prévenu quelqu'un. Le Protocole s'agite. » Il tapote le bandeau qui grésille sur son œil. « Je le sens. Là-dedans. Ne me demande pas comment. »",
-      "« Trois endroits à vérifier. Tu approches l'anneau sans entrer — j'insiste là-dessus — et tu me rapportes ce que tu trouves. Cette fois, ce n'est pas pour l'argent, gamin. C'est pour tout le monde. »"
+      "Sorn ne lève pas les yeux de son établi quand tu pousses la porte. Il démonte le même connecteur depuis un moment, et le remonte, et le redémonte.",
+      "« Le truc, à l'anneau. Ce qu'il t'a sorti. » Il repose son tournevis, très lentement. « Un ordre qui tourne encore. Ça veut dire que quelqu'un l'a signé, et que personne ne l'a jamais annulé. »",
+      "« Je veux savoir qui. » Il te regarde enfin, et pour une fois il n'y a aucune moquerie dedans. « Trois endroits. Tu me rapportes ce que tu trouves, et tu poses pas de questions. Marché ? »"
     ],
     etapes:[
-      { indice:"Approche l'anneau violet sans jamais entrer : reste sur le fil, au sud-ouest.",
-        cible:{ x:650, y:1000, r:80 }, leurres:[ {x:1400,y:300,r:80}, {x:1900,y:700,r:80}, {x:1000,y:1450,r:80} ],
+
+      /* ---- 1. L'atelier enseveli — CADENAS (ratable, mais rendu facile par Sorn) ---- */
+      { indice:"Toundra, à l'écart de la cité. Sous la neige, un poste de maintenance. Personne l'a rouvert depuis. Personne.",
+        cible:{ x:2050, y:250, r:80 }, leurres:[ {x:1200,y:900,r:80}, {x:600,y:1300,r:80}, {x:1650,y:520,r:80} ],
         image:"images/quetes/q2/1.png",
         arrivee:[
-          "L'air crépite d'électricité statique ; tes poils se hérissent. Une balise clandestine attend, à un souffle de l'anneau violet interdit.",
-          "La voix de Sorn est tendue comme jamais. « N'entre pas. Quoi qu'elle te montre, quoi qu'elle te promette — n'entre pas dans cet anneau. J'ai vu ce que ça fait aux gens. J'ai vu. »"
+          "Une trappe affleure sous la poudreuse, marquée d'un sigle du Protocole à demi effacé. Le sas est verrouillé par un cadenas à glyphes, de ceux qu'on ouvrait au chalumeau faute de mieux.",
+          "« Perds pas ton temps à le forcer. » Sorn s'est manifesté avant même que tu ne demandes. Un silence. « Ils utilisaient jamais plus de trois glyphes. Et toujours dans le même petit jeu. Essaie, tu verras. »",
+          "Tu ne lui demandes pas comment il le sait. Il ne te le dirait pas."
         ],
-        defi:{ type:"enigme",
-          texte:"La balise pose sa question d'une voix glaçante :",
-          question:"« Quel est le nom de l'ennemi commun à toutes les factions ? »",
-          reponses:["le protocole","protocole"],
-          indice:"Tu ne peux même pas entrer dans sa zone sur la carte.",
+        defi:{ type:"cadenas", longueur:3, symboles:["●","■","▲","◆"], essais:8,
+          texte:["Trois logements, quatre glyphes possibles. Le sas te dira, à chaque tentative, combien sont bien placés."],
           reussite:[
-            "La balise s'éteint net dès ta réponse, comme si le simple mot l'avait blessée. Un ultime spasme lumineux crache une série de coordonnées vers le nord-ouest lointain.",
-            "« Bien. Maintenant éloigne-toi de cet anneau. Doucement. » Sorn respire fort dans la radio. « Le prochain point… je le connais. Trop bien. Vas-y. Tu comprendras. »"
+            "Le sas cède avec un soupir d'air comprimé vieux de quarante ans. À l'intérieur : un établi, des outils rangés au carré, une combinaison pliée sur un tabouret. Quelqu'un est parti d'ici en pensant revenir.",
+            "Tu ramasses un carnet de maintenance. Des relevés, des dates, des signatures abrégées.",
+            "« Alors ? » La voix de Sorn est trop neutre. « …Bon. Y a un registre d'équipe quelque part au nord-ouest. Va le chercher. »"
           ] } },
 
-      { indice:"File à l'opposé, dans l'angle le plus reculé du nord-ouest, loin de tout.",
+      /* ---- 2. Le registre d'équipe — ORDRE (ratable) ---- */
+      { indice:"À l'opposé, maintenant. L'angle le plus reculé du nord-ouest, loin de tout. Y avait de l'administratif là-bas.",
         cible:{ x:430, y:380, r:80 }, leurres:[ {x:1600,y:1200,r:80}, {x:1150,y:700,r:80}, {x:2100,y:500,r:80} ],
         image:"images/quetes/q2/2.png",
         arrivee:[
-          "Un vieux poste d'observation, oublié depuis des années, tient encore debout contre le vent, ses antennes ployées.",
-          "Sorn, presque un murmure : « Ce poste… c'est moi qui l'ai monté. Avant. Quand je croyais encore qu'on pouvait les surveiller sans finir comme eux. » Un rire amer racle la radio. « Regarde le message et ne me pose pas de questions. »"
+          "Un bloc administratif écrasé sous son propre toit. Dans ce qui fut un bureau, une console de registre tient encore debout, alimentée par on ne sait quoi.",
+          "L'écran demande la reconstitution de l'ordre d'affectation de l'équipe de maintenance — une vérification de routine, pour un personnel qui n'existe plus depuis quarante ans."
         ],
-        defi:{ type:"enigme",
-          texte:"Un message enregistré tourne en boucle sur un écran fissuré :",
-          question:"« Face au Protocole, les factions oublient leurs querelles et forment une… ? »",
-          reponses:["coalition","une coalition","alliance","une alliance"],
-          indice:"On la monte au Centre, dans les Guerres de faction… sauf contre lui.",
+        defi:{ type:"ordre",
+          texte:["Sept noms flottent à l'écran, dans le désordre. La console attend leur ordre d'affectation."],
+          consigne:"Du premier affecté au dernier arrivé.",
+          elements:["Vareck, D. — chef d'équipe","Sorn, E. — technicien relais","Adaya, P. — technicienne","Loew, M. — logistique","Trebbe, S. — logistique","Nyandu, K. — apprenti","Ivar, R. — apprenti"],
           reussite:[
-            "L'écran fissuré du vieux poste s'illumine une dernière fois, puis rend l'âme dans une gerbe d'étincelles. À côté, sur le mur, une inscription à demi effacée : deux initiales, gravées au couteau. Tu n'oses pas demander.",
-            "La radio reste muette un long moment. Puis : « …Rejoins le campement du sud. Je t'y attends. En personne. Il est temps qu'on se regarde en face, toi et moi. »"
+            "La console valide et affiche la fiche complète de l'équipe. Ton regard s'arrête à la deuxième ligne.",
+            "SORN, E. — TECHNICIEN RELAIS — STATUT : DÉSERTION. RADIÉ. NE PAS RÉINTÉGRER.",
+            "Tu appelles. Pas de réponse. Tu appelles encore. La radio reste muette pendant tout le trajet du retour, et quand elle se rallume enfin, c'est pour dire, très vite : « Y a un péage mort dans les vieilles galeries du sud-ouest. Il lui faut de la monnaie. Vas-y. »",
+            "Et rien d'autre."
           ] } },
 
-      { indice:"Rejoins le grand campement du sud pour transmettre tout ce que tu as appris.",
-        cible:{ x:1250, y:1400, r:80 }, leurres:[ {x:500,y:700,r:80}, {x:1800,y:300,r:80}, {x:2000,y:1100,r:80} ],
+      /* ---- 3. Le péage mort — PAIEMENT (non ratable) ---- */
+      { indice:"Vieilles galeries du sud-ouest. Un portique qui réclame encore son dû. Prends de la monnaie.",
+        cible:{ x:820, y:500, r:80 }, leurres:[ {x:1450,y:1100,r:80}, {x:1900,y:250,r:80}, {x:1000,y:1350,r:80} ],
         image:"images/quetes/q2/3.png",
         arrivee:[
-          "Sous les tentes des Nomades, une carte de Silène est étalée, criblée d'épingles rouges. Et pour la première fois, Sorn est là — en personne, plus petit et plus vieux que sa voix ne le laissait croire.",
-          "« Alors te voilà. Vivant. » Il te dévisage un long moment de son œil valide. « Tu commences à comprendre pourquoi je reste planqué ici à filer des courses aux bleus, hein ? Une dernière question. Prouve-moi que tu sais disparaître quand il le faut. »"
+          "Le portique se dresse au milieu de nulle part, barrant une galerie qui ne mène plus à rien. Un lecteur de crédits clignote, patient, impeccablement entretenu par ses propres automatismes.",
+          "REDEVANCE D'ACCÈS — PERSONNEL AUTORISÉ UNIQUEMENT. Quarante ans que la machine facture le passage à des ouvriers qui ne viendront pas.",
+          "« Paie », lâche Sorn. « Discute pas avec une caisse enregistreuse. Elle a pas d'avis, elle a une consigne. C'est pire. »"
+        ],
+        defi:{ type:"paiement", cout:80,
+          texte:["Le lecteur attend. La somme est dérisoire ; c'est l'obstination qui glace."],
+          reussite:[
+            "Le portique s'ouvre sur un couloir de service, et derrière, une antenne relais toujours en fonction — celle qui rediffuse l'ordre à tout le secteur depuis le début.",
+            "« Voilà. » Sorn a repris sa voix normale, ou presque. « C'est de là que ça part. Va au bout, gamin. Autant que ce soit toi. »"
+          ] } },
+
+      /* ---- 4. L'émetteur — ÉNIGME (essais illimités : on ne bloque jamais un final) ---- */
+      { indice:"Le seuil de l'anneau. Un peu au nord de la balise que tu connais. …Vas-y. Autant que ce soit toi.",
+        cible:{ x:560, y:900, r:80 }, leurres:[ {x:1750,y:700,r:80}, {x:1100,y:1300,r:80}, {x:2050,y:1000,r:80} ],
+        image:"images/quetes/q2/4.png",
+        arrivee:[
+          "L'émetteur est une colonne noire plantée face à l'anneau. Aucune arme, aucune défense : juste une voix qui répète un ordre depuis quarante ans, dans le vide.",
+          "Un terminal de service s'allume à ton approche. VÉRIFICATION D'IDENTITÉ REQUISE POUR CONSULTATION DE L'ORDRE PERMANENT.",
+          "Il demande le nom du technicien de garde le jour de la fermeture du périmètre. Tu as lu le registre. Tu sais."
         ],
         defi:{ type:"enigme",
-          texte:"Il croise les bras, attendant :",
-          question:"« Voler et pirater relèvent de quelle voie d'aptitude commune à tous ? »",
-          reponses:["ombre","la voie ombre","voie ombre","l'ombre"],
-          indice:"C'est la voie où vivent Discrétion et Intrusion.",
+          texte:"NOM DU TECHNICIEN DE GARDE — FERMETURE DU PÉRIMÈTRE.",
+          question:"« Qui était de garde ce jour-là ? »",
+          reponses:["sorn","e. sorn","sorn, e.","vieux sorn","e sorn"],
+          indice:"Deuxième ligne du registre d'équipe.",
           reussite:[
-            "Sorn t'écoute donner ta réponse, hoche lentement la tête, et pour la première fois quelque chose comme un sourire passe sur son visage buriné. Il replie sa carte criblée d'épingles d'un geste sec.",
-            "« L'Ombre. Oui. Garde ça précieusement — un jour, ça te sauvera la peau. » Il te fourre une fiole et une poignée de crédits dans la main sans te regarder. « Va. Tu es prêt pour la suite. Presque. Reviens me voir quand tu te sentiras… plus léger. »"
+            "IDENTITÉ CONFIRMÉE. ORDRE PERMANENT — SCELLEMENT DU PÉRIMÈTRE. EXÉCUTANT : SORN, E. SIGNATAIRE : [DONNÉE CORROMPUE]. STATUT : JAMAIS ANNULÉ.",
+            "« C'est moi qui ai coupé le relais de la Toundra. » La voix arrive sans prévenir, très calme. « On m'a dit de fermer la boucle, j'ai fermé la boucle. C'est mon travail. C'était mon travail. »",
+            "« Y avait quatre-vingts personnes dehors. Elles avaient jusqu'au soir pour rentrer. Après ma coupure, elles avaient plus rien pour se faire rappeler. »",
+            "Un long silence, puis un rire bref, pas drôle du tout. « J'ai déserté trois jours plus tard. Trois jours. Tu vois le courage. »",
+            "« Voilà. T'es content ? » Un cliquetis : il te vire ta paie avant que tu répondes. « Rentre. Et va pas t'imaginer qu'on est amis. »"
           ] } }
     ],
-    recompense:{ credits:800, pa:1, objets:{ fab_stimulant:1 }, flags:{} }
+    recompense:{ credits:250, xp:40, pa:1, flags:{} }
   },
 
   {
     id:"q3",
-    nom:"Les relais muets",
-    donneur:"Vieux Sorn",
+    nom:"La fleur qui n'aurait pas dû",
+    donneur:"Adaya",
+    donneurLieu:"Serre des Cultivateurs",
+    // Première quête sans Sorn : Adaya, 3e ligne du registre d'équipe de Q2.
+    // Elle était DEHORS le jour de la fermeture. Elle est rentrée à pied.
+    // Premier défi « choix » de la campagne (site 3) : savoir / vivant / profit.
+    // Gains SEULEMENT (pas de malus tant que les joueurs n'ont rien accumulé).
+    // Le moteur gère pourtant les valeurs négatives : à envisager plus tard.
     intro:[
-      "Sorn t'attend, une carte gribouillée déroulée sur l'établi. « J'ai décidé un truc, gamin : je vais te sortir de ce caillou. Mais pas les mains vides. »",
-      "Il pose un doigt calleux sur un chapelet de points. « Le Protocole a fait taire tout un réseau de vieux relais. Si on les rallume, on entend ce qu'il trame — et ça, ça vaut un aller simple pour les étoiles. Cinq points. Cinq emmerdes. »",
-      "« Et cette fois, pas de deuxième chance sur les mécanismes : tu foires, tu reviens le lendemain. Le Protocole ne pardonne pas deux fois. Compris ? »"
+      "La vieille femme t'attend sous la verrière, les mains dans un bac de terreau noir. Elle ne se retourne pas tout de suite.",
+      "« Adaya. » Elle s'essuie enfin les paumes. « On m'a dit qu'un bleu était allé fouiller un registre d'équipe au nord-ouest. Un registre où j'ai un nom, figure-toi. Troisième ligne. »",
+      "Elle te laisse encaisser, puis désigne du menton un bocal posé sur l'établi : une tige pâle, luminescente, qui pulse doucement dans son bouillon.",
+      "« Ça, ça pousse le long de l'ancien périmètre. Exactement le long. Sur une terre où rien ne prend depuis quarante ans. » Elle te regarde. « J'aimerais comprendre avant de mourir. Tu m'aides ? »",
+      "Elle t'accroche une oreillette au col — la même camelote que celle de Sorn, en mieux entretenue. « Je te guide. Je serai précise sur le pourquoi, approximative sur le où. La carte date d'avant. »"
     ],
     etapes:[
-      { indice:"Premier relais, à l'est de la Forge : il est mort faute de pièces. Apporte-lui de quoi respirer.",
-        cible:{ x:1600, y:500, r:80 }, leurres:[ {x:500,y:300,r:80}, {x:1100,y:1200,r:80}, {x:2050,y:1300,r:80} ],
+
+      /* ---- 1. La serre obstinée — LIVRAISON (non ratable) ---- */
+      { indice:"Reste au vert, chez nous, dans les cultures : il me manque de quoi monter un bain d'analyse. Fouille les serres du secteur.",
+        cible:{ x:1250, y:770, r:90 }, leurres:[ {x:1900,y:400,r:80}, {x:700,y:1250,r:80}, {x:1500,y:150,r:80} ],
         image:"images/quetes/q3/1.png",
         arrivee:[
-          "Le relais gît, éventré, un bac de maintenance ouvert à côté. Rien ne clignote.",
-          "Radio : « Colle-lui les composants et le câblage que je t'ai dit. Sans ça, il reste aussi muet qu'une pierre. »"
+          "Les serres des Cultivateurs bourdonnent d'insectes pollinisateurs relâchés là depuis des générations. Adaya a monté sa paillasse entre deux rangs de ferragave, comme si de rien n'était.",
+          "« Avant de courir dehors, on prépare le bain. Sans milieu de culture, ton échantillon sera bon à jeter en deux heures. »"
         ],
         defi:{ type:"livraison",
-          texte:"Le bac attend les pièces manquantes.",
-          objets:{ fab_composant_simple:2, fab_cablage:1 },
+          objets:{ sylve:3, sporelle:2 },
+          texte:["Il lui faut de la Sylve pour le substrat et de la Sporelle pour la culture. Ça pousse dans le coin, ou ça s'achète."],
           reussite:[
-            "Tu enfonces les pièces, refermes le bac d'un coup de paume. Le relais crachote, une diode s'allume, verte et hésitante.",
-            "« Ha ! Il vit. » Sorn semble presque surpris. « Le suivant est brouillé, dans la plaine à l'ouest. Faudra le forcer, celui-là. »"
+            "Elle broie, filtre, verse. Ses gestes ont la précision d'un métier qu'on n'oublie pas.",
+            "« J'étais dehors, ce jour-là. Relevé de sondes, secteur nord. » Elle ne lève pas les yeux de sa pipette. « J'ai vu le périmètre se fermer d'un coup, comme une paupière. Et plus de radio. »",
+            "« Je suis rentrée à pied. Onze jours. » Un temps. « On était douze à partir ce matin-là. »",
+            "Elle bouche le flacon d'un coup sec. « Bon. Le tracé, maintenant. »"
           ] } },
 
-      { indice:"Deuxième relais, dans la plaine à l'ouest : sa sécurité est encore vivante. Il faudra la forcer.",
-        cible:{ x:700, y:600, r:80 }, leurres:[ {x:1500,y:200,r:80}, {x:1900,y:900,r:80}, {x:1100,y:1400,r:80} ],
+      /* ---- 2. Le tracé — SEQUENCE (ratable) ---- */
+      { indice:"Entre nos champs et l'anneau, à mi-chemin. Cherche la ligne de floraison — tu la rateras pas, elle est trop droite pour être honnête.",
+        cible:{ x:900, y:880, r:80 }, leurres:[ {x:1600,y:1250,r:80}, {x:2000,y:700,r:80}, {x:1150,y:300,r:80} ],
         image:"images/quetes/q3/2.png",
         arrivee:[
-          "Ce relais-ci bourdonne, hostile. Un pare-feu matériel clignote au rythme d'un curseur qui balaie une réglette lumineuse.",
-          "« Sécurité à l'ancienne », grésille Sorn. « Faut taper pile dans la fenêtre quand elle passe. Trois fois. Et je te préviens : tu n'auras qu'un essai. »"
+          "La silène court sur le sol nu, en un ruban pâle qui file vers l'horizon sans dévier d'un mètre. Rien dans la nature ne pousse aussi droit.",
+          "« Les pieds s'allument en cascade, l'un après l'autre », grésille Adaya. « Relève l'ordre. Si c'est un signal, il se répète. Si c'est du hasard, on le saura aussi. »"
         ],
-        defi:{ type:"piratage", manches:3, vitesse:1400,
-          texte:"Le pare-feu attend. Une seule tentative.",
+        defi:{ type:"sequence", longueur:5,
+          texte:["Les corolles s'illuminent l'une après l'autre, puis s'éteignent. Reproduis la séquence."],
           reussite:[
-            "Trois arrêts nets, pile dans le vert. Le pare-feu s'effondre dans un couinement électronique.",
-            "« …Propre. » Un silence appréciateur. « Le troisième relais a recraché un mot, mais en glyphes du Protocole. Direction le sud. »"
+            "Le motif se répète, identique, à la seconde près. Ce n'est pas une plante qui pousse : c'est une plante qui compte.",
+            "Un long silence dans l'oreillette. « …Répète-moi ça. » Adaya te fait recommencer deux fois. Puis, très bas : « Elles suivent une horloge. »",
+            "« Il y a un creux, plus loin, où elles sont vieilles et serrées. Va voir. Et écoute-moi bien : ce que tu ramènes de là-bas, c'est toi qui décides. »"
           ] } },
 
-      { indice:"Troisième relais, enfoui dans le désert au sud : il parle, mais dans la langue du Protocole.",
-        cible:{ x:1400, y:1250, r:80 }, leurres:[ {x:400,y:900,r:80}, {x:1900,y:400,r:80}, {x:2100,y:1100,r:80} ],
+      /* ---- 3. La souche mère — CHOIX (Cercles) ---- */
+      { indice:"Suis le ruban jusqu'à un creux abrité. C'est le plus vieux massif du secteur. Et le seul.",
+        cible:{ x:640, y:760, r:80 }, leurres:[ {x:1350,y:1150,r:80}, {x:1800,y:520,r:80}, {x:520,y:1400,r:80} ],
         image:"images/quetes/q3/3.png",
         arrivee:[
-          "À demi ensablée, la balise n'affiche pas un mot mais trois glyphes du Protocole, chacun gravé à côté d'un pictogramme.",
-          "« Le Protocole ne parle pas notre langue, gamin, il parle en symboles », marmonne Sorn. « Regarde les pictos à côté, déduis le sens de chaque glyphe. Et réfléchis avant de valider — un seul essai. »"
+          "Le creux respire. Des centaines de tiges enchevêtrées, certaines épaisses comme un bras, pulsent ensemble dans une lumière laiteuse. Au centre, une souche unique dont tout le reste semble partir.",
+          "« Trois façons de faire, et je te mentirai pas sur les prix », dit Adaya. « Tu prélèves la souche, j'ai ma réponse et le massif meurt. Tu relèves sans toucher, j'ai des bribes et il vit. Ou tu ramasses ce qui se vend, et tu manges ce mois-ci. »",
+          "« Je te demanderai pas de te justifier. »"
         ],
-        defi:{ type:"glyphes",
-          texte:"Trois glyphes, trois pictogrammes pour t'aider à en déduire le sens.",
-          consigne:"Associe chaque glyphe à son sens en t'aidant du pictogramme.",
-          paires:[
-            { glyphe:"⟑", picto:"📡", sens:"signal" },
-            { glyphe:"⌇", picto:"⚠", sens:"danger" },
-            { glyphe:"⟿", picto:"➜", sens:"aller" }
+        defi:{ type:"choix",
+          texte:["La souche pulse sous ta paume, tiède. Ce que tu fais maintenant, personne ne le verra jamais."],
+          options:[
+            { texte:"Prélever la souche entière — la réponse, quel qu'en soit le prix.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as tranché la souche. Le massif s'éteint derrière toi, tige après tige." },
+            { texte:"Relever sans prélever — des données incomplètes, un massif vivant.",
+              cercles:{ racines:5 },
+              journal:"Tu as tout noté et rien pris. Le creux respire encore." },
+            { texte:"Récolter tout ce qui se monnaie et vendre le reste au plus offrant.",
+              cercles:{ eclats:5 },
+              journal:"Ton sac est plein et ta conscience légère. Le creux, lui, ne s'en remettra pas." }
           ],
-          distracteurs:["eau","dormir","feu"],
           reussite:[
-            "Dès la dernière association juste, les trois glyphes s'alignent et s'illuminent : SIGNAL — DANGER — ALLER. La balise émet une longue note grave, une position s'inscrit sur ton écran.",
-            "« ‹ Signal. Danger. Aller. › » Sorn répète, sombre. « Charmant programme. Le quatrième relais est loin, à l'est — il lance un scan long. Va falloir patienter, gamin. »"
+            "Tu remontes du creux. La lumière du massif — ce qu'il en reste — décroît lentement derrière toi.",
+            "« Rentre », dit Adaya. « On analyse. »"
           ] } },
 
-      { indice:"Quatrième relais, une antenne isolée à l'est : elle lance un scan longue portée. Il faudra attendre.",
-        cible:{ x:2000, y:800, r:80 }, leurres:[ {x:600,y:1200,r:80}, {x:1200,y:300,r:80}, {x:900,y:900,r:80} ],
+      /* ---- 4. Le verdict — ATTENTE (non ratable) ---- */
+      { indice:"Reviens à la serre. Et prends ton temps, l'analyse en prendra aussi.",
+        cible:{ x:1250, y:770, r:90 }, leurres:[ {x:800,y:400,r:80}, {x:1700,y:1100,r:80}, {x:2100,y:800,r:80} ],
         image:"images/quetes/q3/4.png",
         arrivee:[
-          "Une antenne squelettique fend le ciel. Dès que tu l'actives, elle entame un balayage lent de l'horizon.",
-          "« Rien à forcer ici », dit Sorn. « Juste à attendre que ça scanne. Prends un café. Enfin… si t'as un café. »"
+          "Adaya travaille sans un mot pendant que la centrifugeuse hurle. Dehors, la nuit tombe sur les serres.",
+          "« Deux heures, au moins. Assieds-toi, ou va faire un tour. Je t'appelle. »"
         ],
-        defi:{ type:"attente", duree:30000,
-          texte:"Le scan longue portée doit tourner un moment.",
+        defi:{ type:"attente", duree:60000,
+          texte:["La centrifugeuse tourne. Rien à faire qu'attendre — tu peux t'éloigner et revenir."],
           reussite:[
-            "Le scan s'achève dans un bip clair. L'antenne recrache les coordonnées du dernier nœud — le nœud central.",
-            "« Nous y voilà. Le cœur du réseau. » La voix de Sorn se tend un peu. « Dernière étape. Il faut l'amorcer dans le bon ordre, sinon il se re-verrouille pour de bon. »"
-          ] } },
-
-      { indice:"Nœud central, au cœur du monde : amorce-le dans le bon ordre pour réveiller tout le réseau.",
-        cible:{ x:1250, y:750, r:80 }, leurres:[ {x:400,y:400,r:80}, {x:1900,y:1300,r:80}, {x:700,y:1300,r:80} ],
-        image:"images/quetes/q3/5.png",
-        arrivee:[
-          "Le nœud central pulse d'une lumière profonde, quatre phases d'amorçage affichées en désordre sur sa console.",
-          "« Écoute-moi bien : d'abord tu l'alimentes, ensuite tu vérifies, puis tu synchronises, et seulement là tu émets. Remets ça dans l'ordre. Un essai. »"
-        ],
-        defi:{ type:"ordre",
-          texte:"Remets les phases d'amorçage dans le bon ordre.",
-          consigne:"Clique les phases dans l'ordre correct.",
-          elements:["Alimentation","Diagnostic","Synchronisation","Émission"],
-          reussite:[
-            "Les quatre phases s'enclenchent l'une après l'autre. Le nœud s'illumine d'un coup, et au loin, un à un, tous les relais te répondent en écho. Le réseau respire.",
-            "Long silence radio. Puis, presque doux : « …Tu as réveillé Silène tout entière, gamin. Reviens au comptoir. On approche du but. »"
+            "« La plante n'est pas d'ici. » Adaya pose ses lunettes. « Enfin — elle n'est pas d'ici comme le reste n'est pas d'ici. Elle est arrivée avec nous. Elle a juste mieux tenu le coup. »",
+            "« Et elle compte quelque chose. Un intervalle. Je saurai pas te dire quoi, pas avec ce que j'ai, pas avec ce qu'il me reste de temps. »",
+            "Elle range ses flacons un long moment. Puis, sans se retourner : « E. Sorn. Le technicien relais. Il est vivant ? »",
+            "Tu réponds. Elle hoche la tête, une seule fois, et ne demande rien d'autre — ni où, ni comment, ni pourquoi il n'est jamais venu.",
+            "« Reviens quand tu veux, petit. La serre est ouverte. »"
           ] } }
     ],
-    recompense:{ credits:600, pa:1, objets:{ fab_recharge_d_oxygene:2 }, flags:{} }
-    },
+    recompense:{ credits:350, xp:55, pa:1, flags:{} }
+  },
 
   {
     id:"q4",
-    nom:"Le port fantôme",
+    nom:"Ce qui dormait",
     donneur:"Vieux Sorn",
+    // L'intervalle de la silène (Q3) n'est pas une horloge : c'est un compte à rebours
+    // qui converge vers le poste d'embarquement de l'évacuation.
+    // ⚠ CONTRÔLE DE NIVEAU : combat puissance 22 au site 3.
+    //   Base 10/10/10 + 3 pts/niveau -> victoire nette vers le niveau 5 en spécialisé,
+    //   arrachée dès 16, échec sous 16 (personnage qui n'a rien dépensé).
+    // Le manifeste du site 4 amorce Q5 : une navette encore enregistrée à quai.
     intro:[
-      "Sorn déplie une image granuleuse sur l'établi : une carcasse de spatioport, hérissée d'antennes mortes. « Voilà où se joue ton permis, gamin. Un vieux port que le Protocole a fait sien. »",
-      "« Personne n'en revient. Mais toi, tu vas y entrer, repérer, et ressortir — sans te faire cramer. Six étapes. Et à la fin… » Il hésite. « À la fin, tu sauras des choses sur moi que j'aurais préféré garder. »",
-      "« Rappelle-toi : sur les mécanismes, un seul essai par jour. Le Protocole ne laisse pas de seconde chance. »"
+      "Sorn t'attend debout, ce qui ne lui ressemble pas. Il a un papier à la main — le relevé d'Adaya, transmis par tu ne sais quel détour.",
+      "« Elle dit que ta fleur compte un intervalle. Elle a raison. » Il pose le papier. « Sauf que c'est pas une horloge, gamin. Une horloge, ça tourne en rond. Ça, ça descend. »",
+      "Il te laisse trouver le mot tout seul, et comme tu ne le trouves pas assez vite : « Un compte à rebours. Qui converge quelque part. »",
+      "« Et je sais où ça converge, parce que j'y étais. » Il décroche l'oreillette du clou. « L'embarquement. Tu vas y aller, et moi je vais te guider, et après ça on n'en parle plus jamais. »"
     ],
     etapes:[
-      { indice:"Un passeur t'attend dans un trou perdu au sud-ouest : il te rapproche du port, mais pas gratuitement.",
-        cible:{ x:800, y:1200, r:80 }, leurres:[ {x:1600,y:300,r:80}, {x:2000,y:900,r:80}, {x:1200,y:600,r:80} ],
+
+      /* ---- 1. Le point de convergence — GLYPHES (ratable) ---- */
+      { indice:"Reprends le ruban de fleurs et remonte-le vers l'ouest, là où il se resserre. La signalétique du Protocole tient encore debout par là.",
+        cible:{ x:760, y:660, r:80 }, leurres:[ {x:1500,y:1150,r:80}, {x:1950,y:480,r:80}, {x:1050,y:1400,r:80} ],
         image:"images/quetes/q4/1.png",
         arrivee:[
-          "Sous une bâche crasseuse, un contrebandier édenté te toise. Il tapote sa main tendue.",
-          "« Paie-le », grésille Sorn. « C'est un charognard, mais c'est le seul à connaître un passage vers le port. »"
+          "Les tiges se resserrent en un faisceau qui ne laisse plus de doute sur la direction. À l'endroit où elles convergent, des panneaux de service émergent du sol, leurs pictogrammes encore lisibles sous la poussière.",
+          "« Je connais ces symboles par cœur », grogne Sorn. « J'aurais préféré mourir sans les revoir. Apparie-les, ils t'indiqueront la porte de service. »"
         ],
-        defi:{ type:"paiement", cout:500, texte:"« La route est chère, l'ami. »",
-          reussite:[ "Le passeur empoche les crédits, crache par terre, et pointe un sas rouillé dans la falaise. « Par là. Et m'oublie. »", "« Bien. Le sas extérieur, maintenant. Verrouillé, forcément. »" ] } },
+        defi:{ type:"glyphes",
+          texte:["Six panneaux de service, six glyphes du Protocole. Rends à chacun son sens."],
+          consigne:"Associe chaque pictogramme à sa signification.",
+          paires:[
+            { picto:"⛨", glyphe:"ΛΞ", sens:"Périmètre" },
+            { picto:"⌁", glyphe:"ΘΘ", sens:"Alimentation" },
+            { picto:"⚑", glyphe:"ΨΔ", sens:"Point de rassemblement" },
+            { picto:"⏱", glyphe:"ΞΞ", sens:"Départ programmé" },
+            { picto:"⚕", glyphe:"ΦΛ", sens:"Poste médical" },
+            { picto:"⛔", glyphe:"ΔΔ", sens:"Accès restreint" }
+          ],
+          distracteurs:["Zone de forage","Réfectoire","Quarantaine"],
+          reussite:[
+            "Les panneaux racontent tous la même chose : ici, on rassemblait, on soignait, et on partait. À heure fixe.",
+            "Une flèche à demi effacée pointe vers un talus. Dessous, une porte de service, close.",
+            "« Voilà. » La voix de Sorn s'est éteinte d'un cran. « Le hangar est derrière. »"
+          ] } },
 
-      { indice:"Le sas extérieur du port, à l'ouest : forcé par un vieux verrou à symboles.",
-        cible:{ x:650, y:850, r:80 }, leurres:[ {x:1500,y:1200,r:80}, {x:1900,y:400,r:80}, {x:1100,y:1400,r:80} ],
+      /* ---- 2. La pile morte — LIVRAISON (non ratable) ---- */
+      { indice:"La porte de service est juste à côté, mais elle n'a plus de jus depuis quarante ans. Trouve de quoi la réveiller.",
+        cible:{ x:700, y:600, r:80 }, leurres:[ {x:1400,y:900,r:80}, {x:1800,y:1300,r:80}, {x:1200,y:200,r:80} ],
         image:"images/quetes/q4/2.png",
         arrivee:[
-          "Le sas est scellé par un cadran à symboles, gravé et usé. Aucune indication.",
-          "« Un verrou à combinaison. Tâtonne : il te dira ce qui est bien placé. Mais pas éternellement. »"
-        ],
-        defi:{ type:"cadenas", longueur:4, symboles:["●","■","▲","◆","★","⬢"], essais:8,
-          texte:"Trouve la combinaison du sas.",
-          reussite:[ "Le dernier symbole s'enclenche. Le sas s'ouvre dans un souffle d'air vicié.", "« Tu es dedans. » La voix de Sorn se fait basse. « Fais gaffe aux patrouilles, maintenant. Observe avant de bouger. »" ] } },
-
-      { indice:"Une coursive de garde, au nord : mémorise le passage des sentinelles avant de t'y risquer.",
-        cible:{ x:1000, y:400, r:80 }, leurres:[ {x:1800,y:1000,r:80}, {x:400,y:1300,r:80}, {x:2100,y:600,r:80} ],
-        image:"images/quetes/q4/3.png",
-        arrivee:[
-          "Un panneau d'affichage clignote encore, listant les rondes. Il va s'éteindre d'une seconde à l'autre.",
-          "« Lis vite et retiens », souffle Sorn. « Tu n'auras pas deux fois l'horaire. »"
-        ],
-        defi:{ type:"memoire", duree:7000,
-          texte:"L'horaire des rondes s'affiche brièvement.",
-          info:["Ronde NORD : passage à 2 h","Ronde EST : passage à 5 h","Ronde SUD : passage à 9 h","Ronde OUEST : passage à 11 h"],
-          question:"À quelle heure passe la ronde de l'EST ?",
-          reponses:["5","5h","5 h"],
-          reussite:[ "Tu te glisses entre deux rondes, pile dans le creux. Personne.", "« Impeccable. La grille d'alarme est juste devant. Là, va falloir être rapide. »" ] } },
-
-      { indice:"La grille d'alarme, au cœur du port : désactive-la vite, très vite.",
-        cible:{ x:1300, y:1000, r:80 }, leurres:[ {x:500,y:400,r:80}, {x:1900,y:1300,r:80}, {x:2050,y:200,r:80} ],
-        image:"images/quetes/q4/4.png",
-        arrivee:[
-          "Un boîtier d'alarme pulse en rouge, un curseur balayant sa réglette à toute allure.",
-          "« Quatre coupures, et vite », presse Sorn. « Rate une seule fenêtre et tout le port te tombe dessus. »"
-        ],
-        defi:{ type:"piratage", manches:4, vitesse:1050,
-          texte:"Désactive l'alarme — quatre fenêtres, rapides.",
-          reussite:[ "Le boîtier s'éteint dans un dernier couinement. Silence. Tu respires.", "« …Toujours vivant. Étonnant. Le bureau des permis est tout près. Il te faudra une puce. »" ] } },
-
-      { indice:"Le bureau des permis, à l'est du port : dépose une puce falsifiée dans le lecteur.",
-        cible:{ x:1750, y:700, r:80 }, leurres:[ {x:600,y:1200,r:80}, {x:1200,y:200,r:80}, {x:900,y:1400,r:80} ],
-        image:"images/quetes/q4/5.png",
-        arrivee:[
-          "Un lecteur de puces attend, œil rouge clignotant. Il faut lui glisser une fausse identité.",
-          "« Assemble-la avec ce que tu as », dit Sorn. « Un circuit, du câblage. Rien de sorcier pour toi, maintenant. »"
+          "La porte est intacte, ce qui est déjà une information : personne n'est entré ici depuis la fermeture. Le boîtier d'alimentation pend, vidé de sa cellule.",
+          "« Trois Voltane et un lingot, ça suffira à lui redonner le goût de s'ouvrir », dit Sorn. « Prends ton temps. Elle est pas pressée, elle. »"
         ],
         defi:{ type:"livraison",
-          texte:"Le lecteur réclame les composants d'une puce falsifiée.",
-          objets:{ fab_circuit_imprime:1, fab_cablage:2 },
-          reussite:[ "La puce s'insère. Le lecteur vire au vert, une porte blindée coulisse au fond.", "« Ça a marché. » Un long silence. « Derrière, ce sont les archives. Ce que tu vas y lire… ne me juge pas trop vite, gamin. »" ] } },
+          objets:{ voltane:3, fab_lingot_de_voltane:1 },
+          texte:["Le boîtier réclame de la Voltane brute et un lingot pour tenir la charge."],
+          reussite:[
+            "La porte remonte de trente centimètres et se bloque en grinçant. Assez pour passer, pas assez pour être rassurant.",
+            "De l'autre côté : un hall d'embarquement. Des bancs alignés. Des sacs, encore posés dessous."
+          ] } },
 
-      { indice:"La salle des archives, derrière la porte blindée : la vérité t'y attend.",
-        cible:{ x:750, y:1050, r:80 }, leurres:[ {x:1600,y:500,r:80}, {x:2000,y:1100,r:80}, {x:1300,y:1350,r:80} ],
-        image:"images/quetes/q4/6.png",
+      /* ---- 3. La sentinelle — COMBAT (contrôle de niveau) ---- */
+      { indice:"Entre dans le hall. Et gamin — quoi que tu croises là-dedans, ça fait que son boulot. Ça change rien, mais je préfère que tu le saches.",
+        cible:{ x:680, y:560, r:80 }, leurres:[ {x:1600,y:400,r:80}, {x:900,y:1250,r:80}, {x:2000,y:950,r:80} ],
+        image:"images/quetes/q4/3.png",
         arrivee:[
-          "Des écrans poussiéreux s'allument à ton passage. Des dossiers du Protocole, par milliers. Et un, épinglé, avec une photo : un homme plus jeune, un œil intact, un uniforme du Protocole. C'est Sorn.",
-          "La radio reste muette un long moment. Puis, d'une voix cassée : « …Oui. J'ai porté leur uniforme. Avant de comprendre. Avant de fuir. Les initiales, sur le mur… c'était ma coéquipière. Ils l'ont gardée, elle. Pose ta question, et finissons-en. »"
+          "Elle est au fond du hall, immobile depuis si longtemps que la poussière a fait d'elle une statue. Ton pas la réveille. Elle se déplie sans hâte, sans colère, et se met en travers du couloir.",
+          "ACCÈS RESTREINT. ÉVACUATION EN COURS. VEUILLEZ REJOINDRE LE POINT DE RASSEMBLEMENT.",
+          "« Elle croit encore que l'embarquement a lieu aujourd'hui », souffle Sorn. « Quarante ans qu'elle attend qu'on lui dise que c'est fini. Personne l'a jamais fait. »"
+        ],
+        defi:{ type:"combat",
+          nom:"Sentinelle d'embarquement",
+          puissance:22,
+          gain:2,
+          xp:10,
+          texte:["Elle ne t'attaquera pas la première. Elle ne te laissera pas passer non plus. Elle applique une consigne, et la consigne n'a pas de date de fin."],
+          reussite:[
+            "La sentinelle se replie enfin, ou s'effondre, ou se tait — selon la manière dont tu t'y es pris. Le couloir est libre.",
+            "Sorn ne dit rien pendant que tu enjambes ce qu'il en reste."
+          ] } },
+
+      /* ---- 4. Le manifeste — ÉNIGME (essais illimités : jamais de verrou sur un final) ---- */
+      { indice:"Au bout du couloir, le poste d'embarquement. C'est là que tout s'est joué. Vas-y.",
+        cible:{ x:640, y:520, r:80 }, leurres:[ {x:1300,y:1000,r:80}, {x:1850,y:650,r:80}, {x:1100,y:1450,r:80} ],
+        image:"images/quetes/q4/4.png",
+        arrivee:[
+          "Le poste d'embarquement est resté ouvert, registres compris. Sur l'écran principal, le manifeste de la dernière rotation clignote encore, jamais clôturé.",
+          "EMBARQUÉS : 1 244. NON EMBARQUÉS : ___. CLÔTURE IMPOSSIBLE — SAISIE MANQUANTE.",
+          "La machine attend depuis quarante ans qu'un opérateur lui donne le chiffre pour pouvoir refermer son registre."
         ],
         defi:{ type:"enigme",
-          texte:"Le terminal des archives te teste une dernière fois, comme pour vérifier que tu as compris.",
-          question:"« Qu'est-ce que le Protocole ne rend jamais, selon Sorn ? »",
-          reponses:["rien","jamais rien"],
-          indice:"Il te l'a dit devant le terminal du Rouage.",
-          reussite:[ "« Rien. Exact. » Les écrans s'éteignent un à un. « Tu as tout vu. Rentre au comptoir, gamin. Il ne reste plus qu'une chose à faire — la plus folle. »" ] } }
+          texte:"NON EMBARQUÉS — SAISIE REQUISE POUR CLÔTURE.",
+          question:"« Combien de personnes sont restées dehors ? »",
+          reponses:["80","quatre-vingts","quatre vingts","quatre-vingt","80 personnes"],
+          indice:"Sorn te l'a dit lui-même, à l'émetteur : elles avaient jusqu'au soir pour rentrer.",
+          reussite:[
+            "Tu saisis le chiffre. Le registre se clôt dans un déclic minuscule, et l'écran affiche, pour la première fois depuis quarante ans : ROTATION CLÔTURÉE.",
+            "Puis, en dessous, une ligne que personne n'était là pour lire :",
+            "APPAREIL DE RÉSERVE — NAVETTE MAAR-3/07 — STATUT : À QUAI. ENTRETIEN AUTOMATIQUE ACTIF. EN ATTENTE D'ÉQUIPAGE.",
+            "« …Répète. » La voix de Sorn n'est plus la même. « Répète ce que tu viens de lire, gamin. Lentement. »",
+            "Un silence très long. Puis, presque pour lui-même : « Y en a une qui est jamais partie. »"
+          ] } }
     ],
-    recompense:{ credits:1000, pa:1, objets:{ fab_kit_de_soin:1 }, flags:{} }
+    recompense:{ credits:500, xp:80, pa:1, flags:{} }
   },
 
   {
     id:"q5",
-    nom:"Le dernier lancement",
+    nom:"L'appareil de réserve",
     donneur:"Vieux Sorn",
+    // Dernière vérité de Sorn : il est RADIÉ (« NE PAS RÉINTÉGRER », lu en Q2).
+    // Il n'a jamais cherché la navette parce que la trouver l'obligerait à
+    // constater qu'il ne peut pas monter dedans. Il ne demandera rien.
     intro:[
-      "Sorn t'attend, debout, presque droit pour une fois. « On y est. Un vieux pas de tir, une navette qui tient encore, et le verrou orbital du Protocole entre toi et les étoiles. »",
-      "« Sept étapes. La dernière te donnera ton permis — et ta liberté. Moi, je reste. Non, ne discute pas. Quelqu'un doit garder l'œil ouvert ici. »",
-      "« Allez. Rallume cette carcasse et fais-moi mentir : reviens vivant, une dernière fois. »"
+      "Sorn n'a pas dormi. Ça se voit à sa façon de tenir sa tasse à deux mains.",
+      "« Un appareil de réserve, c'était dans les procédures. Une navette qu'on laisse à quai au cas où. » Il hausse les épaules, trop vite. « Je savais qu'il devait y en avoir une. J'ai jamais cherché. »",
+      "Il repose la tasse. « Le quai est sous l'anneau. C'est pour ça qu'ils le gardent, tu comprends ? Ils gardent pas un secret. Ils gardent une zone d'embarquement, parce que personne a jamais déclaré l'évacuation terminée. »",
+      "« Toi tu viens de clôturer la rotation. Donc y a une place d'équipage qui s'est ouverte. » Il te regarde. « Va la prendre. »"
     ],
     etapes:[
-      { indice:"Le pas de tir abandonné, au sud-ouest : synchronise la console de lancement.",
-        cible:{ x:900, y:1150, r:80 }, leurres:[ {x:1700,y:400,r:80}, {x:1300,y:900,r:80}, {x:2000,y:1250,r:80} ],
+
+      /* ---- 1. Le quai scellé — PIRATAGE (ratable) ---- */
+      { indice:"Reprends les couloirs de service du hall. Ça descend, ça passe sous l'anneau. T'entres pas dedans, tu passes dessous — nuance.",
+        cible:{ x:600, y:480, r:80 }, leurres:[ {x:1450,y:800,r:80}, {x:1900,y:1200,r:80}, {x:1000,y:180,r:80} ],
         image:"images/quetes/q5/1.png",
         arrivee:[
-          "La console de lancement crépite, quatre voyants attendant une séquence de synchronisation.",
-          "« Suis le rythme qu'elle te montre. Répète-le, de plus en plus long. Une erreur et tout se recale. »"
+          "Le couloir descend longtemps. Puis il débouche sur un volume immense, éclairé par des veilleuses qui n'ont jamais cessé de fonctionner : un quai d'embarquement, sous des centaines de tonnes de structure.",
+          "Le sas terminal est scellé par une procédure toujours active. « Cherche le canal de maintenance, pas la porte », dit Sorn. « Ils laissaient toujours une voie de service. » Un temps. « …Je le sais, c'est tout. »"
         ],
-        defi:{ type:"sequence", longueur:5, symboles:["◤","◥","◣","◢"],
-          texte:"Reproduis la séquence de synchronisation.",
-          reussite:[ "Les quatre voyants passent au vert d'un coup. La console vibre, réveillée.", "« Synchronisée. Va au cœur du réacteur — c'est verrouillé dans leur langue. »" ] } },
+        defi:{ type:"piratage",
+          texte:["Le sas refuse l'accès. Un canal de maintenance reste ouvert, mal protégé — il n'a jamais servi."],
+          reussite:[
+            "Le sas s'ouvre sur le quai. Elle est là, posée sur ses béquilles, bâchée, minuscule sous la voûte : la navette de réserve.",
+            "Sorn ne dit rien pendant un long moment. Puis : « Elle est propre. L'entretien automatique a tenu quarante ans. » Sa voix se casse à peine. « Ces machines-là aussi, elles ont fait leur boulot. »"
+          ] } },
 
-      { indice:"Le cœur du réacteur, à l'ouest : contourne le verrou du Protocole.",
-        cible:{ x:600, y:700, r:80 }, leurres:[ {x:1500,y:1200,r:80}, {x:1900,y:500,r:80}, {x:1100,y:1400,r:80} ],
+      /* ---- 2. Le dépôt de pièces — PAIEMENT ---- */
+      { indice:"Y a un dépôt corporatif à l'étage au-dessus. Il facture encore. Prends de quoi payer, il négocie pas.",
+        cible:{ x:660, y:420, r:80 }, leurres:[ {x:1250,y:1100,r:80}, {x:1750,y:300,r:80}, {x:2050,y:900,r:80} ],
         image:"images/quetes/q5/2.png",
         arrivee:[
-          "Le sas du réacteur affiche quatre glyphes du Protocole, chacun près d'un pictogramme à demi effacé.",
-          "« Encore leurs symboles. Tu commences à les connaître. Déduis, et ne te trompe pas. »"
+          "Le dépôt a survécu à tout, y compris à la fin du monde qui l'employait. Derrière une vitre blindée, des rechanges alignés au cordeau, et un terminal de facturation d'une politesse insupportable.",
+          "L'entretien automatique de la navette a consommé ses stocks depuis des décennies. Il lui faut des joints, un régulateur, une cellule neuve.",
+          "« Paie », soupire Sorn. « Comme le péage. Elles ont pas d'avis, elles ont un tarif. »"
         ],
-        defi:{ type:"glyphes",
-          texte:"Quatre glyphes verrouillent le réacteur.",
-          consigne:"Associe chaque glyphe à son sens à l'aide du pictogramme.",
-          paires:[
-            { glyphe:"⟑", picto:"📡", sens:"signal" },
-            { glyphe:"⌇", picto:"⚠", sens:"danger" },
-            { glyphe:"⟿", picto:"➜", sens:"aller" },
-            { glyphe:"⍚", picto:"🔒", sens:"verrou" }
-          ],
-          distracteurs:["eau","feu","dormir","manger"],
-          reussite:[ "Les quatre glyphes s'éteignent l'un après l'autre. Le cœur du réacteur s'ouvre en grondant.", "« Dedans. Bien. La tour de contrôle t'attend — et son alarme, plus vicieuse que les autres. »" ] } },
+        defi:{ type:"paiement", cout:800,
+          texte:["Le terminal affiche la note. Elle est salée, et parfaitement indifférente à ta situation."],
+          reussite:[
+            "Le bras de service délivre les pièces une à une, avec des précautions dérisoires, et te souhaite une bonne rotation.",
+            "Tu remontes les bras chargés. La navette, elle, n'a pas bougé d'un millimètre depuis quarante ans."
+          ] } },
 
-      { indice:"La tour de contrôle, au centre-est : aligne la fenêtre de tir avant qu'ils ne t'alignent.",
-        cible:{ x:1400, y:900, r:80 }, leurres:[ {x:500,y:500,r:80}, {x:2050,y:1200,r:80}, {x:1000,y:200,r:80} ],
+      /* ---- 3. Le réveil — MÉMOIRE (ratable) ---- */
+      { indice:"Retourne au quai et monte à bord. Elle va te demander de répéter sa séquence d'allumage — c'est sa façon de vérifier qu'elle a un équipage.",
+        cible:{ x:600, y:480, r:80 }, leurres:[ {x:1350,y:700,r:80}, {x:1850,y:1000,r:80}, {x:950,y:1300,r:80} ],
         image:"images/quetes/q5/3.png",
         arrivee:[
-          "L'écran de tir clignote frénétiquement, un curseur filant sur sa réglette.",
-          "« Cinq fois, et vite. C'est la dernière alarme entre toi et l'orbite. Ne la rate pas. »"
+          "L'habitacle sent le plastique neuf et l'air recyclé mille fois. Les sièges n'ont jamais été occupés. Sur la console, un mot manuscrit, scotché puis oublié : « pour la dernière rotation ».",
+          "Tu poses les pièces. La navette s'éveille, teste ses circuits un par un, puis affiche une séquence lumineuse et attend."
         ],
-        defi:{ type:"piratage", manches:5, vitesse:900,
-          texte:"Aligne la fenêtre de tir — cinq fois, rapides.",
-          reussite:[ "Le dernier verrou d'alarme cède. La tour est à toi.", "« …Cinq sur cinq. T'es plus le bleu que j'ai connu. Va faire le plein — ça va être long. »" ] } },
+        defi:{ type:"memoire",
+          texte:["VÉRIFICATION D'ÉQUIPAGE. RÉPÉTEZ LA SÉQUENCE D'ALLUMAGE."],
+          reussite:[
+            "Les réacteurs de manœuvre s'amorcent dans un souffle grave qui fait vibrer tout le quai. Au-dessus, une trappe de plafond commence à s'écarter sur un morceau de ciel.",
+            "« Elle marche. » Sorn a un rire bref, incrédule. « Bon sang, elle marche. »"
+          ] } },
 
-      { indice:"Les soutes à carburant, au sud-est : lance la pressurisation et attends le plein.",
-        cible:{ x:1900, y:1200, r:80 }, leurres:[ {x:600,y:900,r:80}, {x:1200,y:400,r:80}, {x:400,y:1300,r:80} ],
+      /* ---- 4. Le rôle d'équipage — CHOIX (narratif + Cercles) ---- */
+      { indice:"Reste à bord. Elle va te demander un cap. Réfléchis avant de répondre — c'est le genre de question qu'on te pose une fois.",
+        cible:{ x:600, y:480, r:80 }, leurres:[ {x:1500,y:1250,r:80}, {x:2000,y:600,r:80}, {x:1100,y:250,r:80} ],
         image:"images/quetes/q5/4.png",
         arrivee:[
-          "Les cuves grondent, la pressurisation s'amorce. Rien à faire qu'attendre — longtemps.",
-          "« Patiente. Et profites-en pour regarder le ciel. Bientôt, il sera à toi. »"
+          "RÔLE D'ÉQUIPAGE — POSTE VACANT. INSCRIPTION ACCEPTÉE. La navette vient de t'enregistrer sans cérémonie, comme elle l'aurait fait il y a quarante ans.",
+          "CAP DE ROTATION — SAISIE REQUISE.",
+          "Derrière toi, Sorn s'est approché du sas. Tu l'entends poser la main sur le lecteur d'identité."
         ],
-        defi:{ type:"attente", duree:45000,
-          texte:"Pressurisation et plein en cours.",
-          reussite:[ "Un voyant vert : pleins faits, soutes pressurisées. La navette frémit.", "« Prête à voler. Reste le verrou orbital. Le plus dur. Concentre-toi, gamin. »" ] } },
-
-      { indice:"Le verrou orbital, tout au sud : la dernière sécurité du Protocole.",
-        cible:{ x:700, y:1250, r:80 }, leurres:[ {x:1600,y:600,r:80}, {x:2000,y:300,r:80}, {x:1300,y:1000,r:80} ],
-        image:"images/quetes/q5/5.png",
-        arrivee:[
-          "Un cadran massif, cinq symboles à trouver, gravés dans un alliage noir. La serrure finale.",
-          "« C'est leur meilleur verrou. Cinq symboles. Prends ton temps — mais pas trop, ils vont finir par te repérer. »"
-        ],
-        defi:{ type:"cadenas", longueur:5, symboles:["●","■","▲","◆","★","⬢","✦"], essais:8,
-          texte:"Force le verrou orbital — cinq symboles.",
-          reussite:[ "Le cadran tourne enfin. Un grondement sourd : le ciel s'ouvre au-dessus du pas de tir.", "« …Il a cédé. » La voix de Sorn tremble. « Encore un pas, gamin. Un seul. »" ] } },
-
-      { indice:"La rampe de lancement, au nord : le dernier péage avant les étoiles.",
-        cible:{ x:1100, y:500, r:80 }, leurres:[ {x:500,y:1200,r:80}, {x:1900,y:1100,r:80}, {x:1500,y:200,r:80} ],
-        image:"images/quetes/q5/6.png",
-        arrivee:[
-          "Un dernier automate de péage bloque la rampe, réclamant sa dîme absurde jusqu'au bout.",
-          "« Même mourant, le Protocole fait payer. Règle, et grimpe dans ce cockpit. »"
-        ],
-        defi:{ type:"paiement", cout:800, texte:"« Taxe de lancement. Non négociable. »",
-          reussite:[ "L'automate s'écarte. La rampe est libre. La navette t'attend, gueule ouverte.", "« Monte. » La radio grésille, émue. « Une dernière question, et tu t'envoles. »" ] } },
-
-      { indice:"Le cockpit, au bout de la rampe : monte, et lance le compte à rebours.",
-        cible:{ x:820, y:1000, r:80 }, leurres:[ {x:1700,y:500,r:80}, {x:1200,y:1300,r:80}, {x:2000,y:800,r:80} ],
-        image:"images/quetes/q5/7.png",
-        arrivee:[
-          "Tu t'installes aux commandes. Les instruments s'allument, un à un, comme un cœur qui repart. Au loin, sur la rampe, une silhouette voûtée te regarde partir, une main levée.",
-          "« Alors voilà. » La voix de Sorn, une dernière fois. « Tu vas y arriver. Quelqu'un doit garder l'œil ouvert ici-bas — ce sera moi. Réponds-moi juste ça, et décolle. »"
-        ],
-        defi:{ type:"enigme",
-          texte:"Sur ton écran, une dernière ligne clignote, de la main de Sorn.",
-          question:"« Qui reste garder l'œil ouvert sur Silène ? »",
-          reponses:["sorn","le vieux sorn","vieux sorn"],
-          indice:"Il vient de te le dire.",
-          reussite:[ "Tu tapes son nom. L'écran s'illumine : PERMIS DE VOL ACCORDÉ. Les moteurs rugissent, la navette s'arrache du sol, et Silène rapetisse sous toi jusqu'à n'être qu'une bille bleutée. Les étoiles, enfin.", "« …Bonne route, gamin. » Un dernier grésillement, puis le silence. Tu as ton permis. L'espace t'attend." ] } }
+        defi:{ type:"choix",
+          texte:["Trois caps s'affichent. Aucun n'est recommandé — la machine n'a pas d'avis là-dessus non plus."],
+          options:[
+            { texte:"Une autre station. Si celle-ci s'appelle MAAR-3, les autres existent quelque part.",
+              cercles:{ assembleurs:5 },
+              journal:"Cap enregistré : les autres stations." },
+            { texte:"Le champ d'astéroïdes. Ce qui se mine là-haut vaut cher ici.",
+              cercles:{ eclats:5 },
+              journal:"Cap enregistré : le champ d'astéroïdes." },
+            { texte:"L'orbite de l'anneau. Le voir enfin d'en haut.",
+              cercles:{ veilleurs:5 },
+              journal:"Cap enregistré : l'orbite de l'anneau." }
+          ],
+          reussite:[
+            "CAP ENREGISTRÉ. ROTATION EN ATTENTE DE DÉPART.",
+            "Derrière toi, le lecteur d'identité émet un bip bref. IDENTITÉ RADIÉE — ACCÈS REFUSÉ. STATUT : DÉSERTION.",
+            "Sorn retire sa main sans un mot. Il hoche la tête, une fois, comme on valide un calcul dont on connaissait déjà le résultat.",
+            "« Bon. » Il redescend la passerelle. « J'ai des relais à réparer, moi. »",
+            "Il ne se retourne pas. Sur la console, le mot manuscrit est toujours scotché là : « pour la dernière rotation ». Ce n'était pas la dernière."
+          ] } }
     ],
-    recompense:{ credits:2000, pa:2, objets:{ fab_navette_legere:1 }, flags:{ permisVaisseau:true, espace1:true } }
+    recompense:{ credits:800, xp:120, pa:2, flags:{ permisVaisseau:true, espace1:true } }
   }
 
   // Quête finale de la carte Silène : Q5 accorde le permis de vaisseau + ouvre l'espace (flag espace1).

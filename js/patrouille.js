@@ -21,15 +21,19 @@ function chancePatrouille(){ return (typeof _apt==="function" && _apt("om1")) ? 
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }
 
 // Butin technologique d'une patrouille neutralisée (chance + place au sac). Renvoie l'id lâché ou null.
-function butinPatrouille(){
+async function butinPatrouille(){
   if(placesLibres() <= 0) return null;
+  let id = null;
   // Cristal de Nyx : butin très rare du Protocole (seule source ordinaire, en attendant les zones/l'espace).
-  if(Math.random() < PATROUILLE_CRISTAL && typeof item==="function" && item("cristal")){ ajouterAuSac("cristal",1); return "cristal"; }
-  if(Math.random() > PATROUILLE_DROP_TAUX) return null;
-  const pool = PATROUILLE_DROPS.filter(id => typeof item==="function" && item(id));
-  if(!pool.length) return null;
-  const id = pool[alea(0, pool.length-1)];
-  ajouterAuSac(id, 1);
+  if(Math.random() < PATROUILLE_CRISTAL && typeof item==="function" && item("cristal")) id = "cristal";
+  else {
+    if(Math.random() > PATROUILLE_DROP_TAUX) return null;
+    const pool = PATROUILLE_DROPS.filter(x => typeof item==="function" && item(x));
+    if(!pool.length) return null;
+    id = pool[alea(0, pool.length-1)];
+  }
+  const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"patrouille" });
+  if(!r || !(r.ajoutes||{})[id]) return null;
   return id;
 }
 
@@ -90,30 +94,30 @@ function ouvrirPatrouille(){
   m.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click", ()=>patrouilleChoix(b.dataset.p)));
 }
 
-function patrouilleChoix(p){
-  if(p==="combattre"){ fermerPatrouille(); resoudreCombat({}); }
+async function patrouilleChoix(p){
+  if(p==="combattre"){ fermerPatrouille(); await resoudreCombat({}); }
   else if(p==="faufiler"){ patrouilleFaufiler(); }
   else if(p==="hacker"){ patrouilleHacker(); }
   else if(p==="diversion"){ patrouilleDiversionListe(); }
 }
 
-function patrouilleFaufiler(){
+async function patrouilleFaufiler(){
   fermerPatrouille();
   const p = Math.min(0.90, 0.30 + agiliteEffective()/300 + (_apt("om1")?0.15:0));   // Agilité + Discrétion
   if(Math.random() < p){ journal("Tu te faufiles hors de portée de la patrouille. Rien perdu.","gain"); apresAction(); }
-  else { journal("Repéré ! La patrouille te tombe dessus.","alerte"); resoudreCombat({ embuscade:true }); }
+  else { journal("Repéré ! La patrouille te tombe dessus.","alerte"); await resoudreCombat({ embuscade:true }); }
 }
 
-function patrouilleHacker(){
+async function patrouilleHacker(){
   if(!ordiHackEquipe()){ fermerPatrouille(); return; }
   fermerPatrouille();
   const p = Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500);   // Intrusion + Intelligence
   if(Math.random() < p){
     const g = aptButinCombat(alea(10,22)+bonusCredits()); etat.credits += g;
-    const drop = butinPatrouille(); gagnerXp(8);
+    const drop = await butinPatrouille(); gagnerXp(8);
     journal(`Patrouille piratée et neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}. Aucun dégât.`,"gain");
     apresAction();
-  } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); resoudreCombat({}); }
+  } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); await resoudreCombat({}); }
 }
 
 function patrouilleDiversionListe(){
@@ -131,9 +135,9 @@ function patrouilleDiversionListe(){
   m.querySelectorAll("[data-div]").forEach(b=>b.addEventListener("click", ()=>patrouilleDiversion(b.dataset.div)));
   m.querySelector("[data-retour]").addEventListener("click", ouvrirPatrouille);
 }
-function patrouilleDiversion(id){
+async function patrouilleDiversion(id){
   if((etat.sac[id]||0) <= 0) return;
-  retirerDuSac(id, 1);
+  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"divertir" })) return;
   fermerPatrouille();
   journal(`Diversion : tu abandonnes 1 ${item(id).nom}. La patrouille se détourne, tu files.`,"gain");
   apresAction();

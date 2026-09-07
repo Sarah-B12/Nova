@@ -53,10 +53,12 @@ function menuActionObjet(act, id){
   else if(act==="vendre") vendreDepuisMenu(id);
 }
 
-function braderObjet(id){
+async function braderObjet(id){
   const v=valeurBrade(id); if(v==null || (etat.sac[id]||0)<=0) return;
   const gain=Math.max(1, Math.round(v/2));
-  retirerDuSac(id,1); etat.credits += gain;
+  // L'objet part côté serveur AVANT que les crédits n'arrivent : pas de gain sans perte.
+  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"brader" })) return;
+  etat.credits += gain;
   if(etat.pas) etat.pas.vendu=true;
   journal(`${item(id).nom} bradé — +${gain} ₡.`,"gain");
   apresAction();

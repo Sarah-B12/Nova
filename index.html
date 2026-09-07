@@ -21,18 +21,26 @@
 <body>
 
 <!-- INSCRIPTION -->
-<div class="modale" id="modale-inscription" hidden>
+<div class="modale" id="modale-auth" hidden>
   <div class="membrane modale-boite">
-    <h2>Inscription</h2>
-    <p>Choisis ton nom d'opérateur. <b>Il sera définitif.</b> Ta faction te sera attribuée au hasard pour équilibrer les populations.</p>
-    <input type="text" id="inscription-nom" maxlength="18" placeholder="Nom du personnage">
-    <button class="valider" id="inscription-valider">Rejoindre Silène</button>
+    <div class="auth-tabs" style="display:flex;gap:6px;margin-bottom:12px">
+      <button class="mini" id="auth-tab-c">Connexion</button>
+      <button class="mini" id="auth-tab-i">Inscription</button>
+    </div>
+    <p id="auth-info" style="margin:0 0 10px"></p>
+    <input type="text" id="auth-pseudo" maxlength="18" placeholder="Pseudo (définitif)">
+    <input type="email" id="auth-email" placeholder="E-mail" autocomplete="email">
+    <input type="password" id="auth-mdp" placeholder="Mot de passe (min. 6 caractères)" autocomplete="new-password">
+    <input type="password" id="auth-mdp2" placeholder="Confirme le mot de passe" autocomplete="new-password">
+    <label style="display:flex;align-items:center;gap:7px;font-size:13px;margin:8px 0 0;cursor:pointer;color:var(--sourdine)"><input type="checkbox" id="auth-voir"> Afficher le mot de passe</label>
+    <p id="auth-erreur" style="color:#ff5257;margin:8px 0 0" hidden></p>
+    <button class="valider" id="auth-valider">Rejoindre Silène</button>
   </div>
 </div>
 
 <div class="modale" id="modale-bienvenue" hidden>
   <div class="membrane modale-boite">
-    <h2>Bienvenue sur Ori 55</h2>
+    <h2>Bienvenue sur Maar</h2>
     <div style="text-align:left; line-height:1.6; margin:4px 0 8px">
       <p>Ce monde ne te fera pas de cadeau. Silène est rude, le Protocole rôde, et rien ici ne se gagne vite. C'est voulu.</p>
       <p><b>Ne te précipite pas.</b> Nova Epic n'est pas une course : les personnages qui durent sont ceux qui prennent le temps de bâtir, d'apprendre un métier, de comprendre le terrain. Vouloir tout finir en un jour, c'est le meilleur moyen de s'épuiser — ou de finir en prison.</p>
@@ -56,6 +64,17 @@
     </div>
     <div class="zone-carte"><svg id="carte" aria-label="Carte de Silène"></svg></div>
     <p class="vide" style="text-align:center; margin:8px 0 0">Clique n'importe où sur la carte pour t'y déplacer (coût selon la distance).</p>
+  </div>
+</div>
+
+<div class="modale-carte" id="modale-orbite" aria-hidden="true">
+  <div class="cadre-carte">
+    <div class="barre-carte">
+      <div class="titre-carte">Orbite basse <span id="orbite-vaisseau" class="itip-gris"></span></div>
+      <button class="mini" id="orbite-fermer">Fermer ✕</button>
+    </div>
+    <div class="zone-carte"><svg id="carte-orbite" aria-label="Orbite basse"></svg></div>
+    <p class="vide" id="orbite-info" style="text-align:center; margin:8px 0 0">Clique une destination pour l'examiner.</p>
   </div>
 </div>
 
@@ -135,6 +154,7 @@
             </div>
           </div>
         </div>
+        <div id="reputations" class="rep-badges"></div>
 
         <h2 style="margin-top:20px">Description RP</h2>
         <div id="desc-vue"></div>
@@ -149,14 +169,15 @@
           <select id="mur-visibilite"><option value="amis">Mes amis</option><option value="tous">Tout le monde</option></select>
         </div>
         <div id="mur-liste"></div>
-        <div class="mur-saisie"><input type="text" id="mur-champ" maxlength="200" placeholder="Écrire un message…"><button class="mini" id="mur-publier">Publier</button></div>
+        <div class="mur-ecrire"><div class="mur-outils" id="mur-outils"></div><textarea id="mur-champ" rows="3" placeholder="Écrire un message…"></textarea><div class="mur-bas"><span class="mur-compteur"><span id="mur-compte">0</span>/500</span><button class="mini" id="mur-publier">Publier</button></div></div>
       </section>
 
       <!-- PLANÈTE -->
       <section class="panneau membrane" data-panneau="planete">
         <div class="banniere" id="banniere-pause" hidden>⏸ Personnage en pause — reprends-le dans les Paramètres.</div>
         <div id="pas-encart" class="pas-encart" hidden></div>
-        <button class="action" id="ouvrir-carte" style="margin-bottom:8px"><span>Carte du monde</span><span class="cout">se déplacer</span></button>
+        <button class="action" id="ouvrir-carte" style="margin-bottom:8px"><span>Carte de Silène</span><span class="cout">se déplacer</span></button>
+        <button class="action" id="ouvrir-orbite" style="margin-bottom:8px; display:none" hidden><span>Orbite basse</span><span class="cout">en vaisseau</span></button>
         <p id="region-info" style="margin:0 0 12px; font-size:14px"></p>
 
         <div class="sous-menu" id="hub-nav">
@@ -190,6 +211,7 @@
           <div class="sous-vue" id="sous-maison"></div>
           <div class="sous-vue" id="sous-recolte" hidden>
             <p class="vide">Clique une case pour y bâtir une structure, puis exploite-la. Terrain de même taille pour tous.</p>
+            <p class="vide" id="terrain-astuce" hidden style="margin:0 0 8px">Bâtis une mine, un bio-dôme… selon ta formation.</p>
             <div class="terrain-grille" id="terrain-grille"></div>
             <div class="plot-actions" id="plot-actions"></div>
           </div>
@@ -200,14 +222,15 @@
             <div class="menu-carte">
               <button class="lien-carte actif" data-centre="formations">Formations</button>
               <button class="lien-carte" data-centre="gouvernement">Gouvernement</button>
-              <button class="lien-carte" data-centre="votes">Votes</button>
-              <button class="lien-carte" data-centre="guerres">Guerres de faction</button>
+              <button class="lien-carte" data-centre="votes">Élections</button>
+              <button class="lien-carte" data-centre="bureau">Bureau</button>
+              <button class="lien-carte" data-centre="guerres">Expéditions</button>
               <button class="lien-carte" data-centre="prison">Prison</button>
             </div>
             <div class="vue-carte" id="centre-corps"></div>
           </div>
         </div>
-        <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><p class="vide">Envoyer des crédits ou des objets à d'autres joueurs… à venir (multijoueur).</p></div>
+        <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><div id="poste-vue"></div></div>
         <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><div id="marche-vue"></div></div>
         <div class="hub-vue" id="hub-boutique" hidden><h3>La Boutique</h3><div id="boutique-vue"></div></div>
         <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><div id="voler-vue"></div></div>
@@ -256,16 +279,18 @@
     </main>
   </div>
 
-  <div class="membrane journal-carte"><h2>Journal</h2><div id="journal"></div></div>
+  <div class="membrane journal-carte"><h2>Journal</h2><div id="journal-filtres" class="journal-filtres"></div><div id="journal"></div></div>
 
   <footer>
     <span>Sauvegarde automatique · v0.6 prototype</span>
-    <div class="boutons"><button id="btn-sauver">Sauvegarder</button><button id="btn-reset">Réinitialiser</button></div>
+    <div class="boutons"><button id="btn-sauver">Sauvegarder</button><button id="btn-deco">Déconnexion</button><button id="btn-reset">Réinitialiser</button></div>
   </footer>
 
 </div>
 
 <!-- Modules chargés dans l'ordre : données/config d'abord, amorçage en dernier -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/serveur.js"></script>
 <script src="js/config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/terrain.js"></script>
@@ -284,6 +309,7 @@
 <script src="js/menu-objet.js"></script>
 <script src="js/boutique.js"></script>
 <script src="js/carte.js"></script>
+<script src="js/orbite.js"></script>
 <script src="js/formations.js"></script>
 <script src="js/aptitudes-data.js"></script>
 <script src="js/aptitudes.js"></script>
@@ -293,9 +319,15 @@
 <script src="js/quetes.js"></script>
 <script src="js/voler.js"></script>
 <script src="js/parametres.js"></script>
+<script src="js/pause.js"></script>
+<script src="js/mort.js"></script>
 <script src="js/comm.js"></script>
 <script src="js/avatar.js"></script>
 <script src="js/onboarding.js"></script>
+<script src="js/profil-page.js"></script>
+<script src="js/poste.js"></script>
+<script src="js/gouvernement.js"></script>
+<script src="js/espionnage.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/bootstrap.js"></script>
 <script src="js/dev-console.js"></script>

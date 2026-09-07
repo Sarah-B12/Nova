@@ -6,9 +6,20 @@
    =========================================================== */
 let boutiqueTab = "graines";
 
+// Message visible DANS la boutique : le journal est hors champ quand la modale est ouverte.
+let _boutiqueMsgTimer = null;
+function _boutiqueMsg(txt){
+  const z = document.querySelector("#boutique-msg"); if(!z) return;
+  z.textContent = txt;
+  z.style.display = "";
+  z.style.color = "var(--orange, #ff8a3d)";
+  clearTimeout(_boutiqueMsgTimer);
+  _boutiqueMsgTimer = setTimeout(()=>{ if(z) z.style.display = "none"; }, 4000);
+}
 function renderBoutique(){
   const z = document.querySelector("#boutique-vue"); if(!z) return;
-  let html = `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
+  let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
+  html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
   html += `<div class="marche-tabs">` + CAT_BOUTIQUE.map(c=>`<button class="marche-tab${c.id===boutiqueTab?" actif":""}" data-bcat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
   html += `<div class="marche-liste">`;
   const arts = BOUTIQUE.filter(a=>a.cat===boutiqueTab);
@@ -30,11 +41,15 @@ function renderBoutique(){
   if(typeof brancherTips==="function") brancherTips(z);
 }
 
-function acheterBoutique(id){
+async function acheterBoutique(id){
   const a = BOUTIQUE.find(x=>x.id===id); if(!a) return;
-  if(etat.credits < a.prix){ journal("Crédits insuffisants.","alerte"); return; }
-  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
-  etat.credits -= a.prix; ajouterAuSac(id, 1);
+  if(etat.credits < a.prix){ journal("Crédits insuffisants.","alerte"); _boutiqueMsg("Crédits insuffisants."); return; }
+  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); _boutiqueMsg("Sac plein — fais de la place avant d'acheter."); return; }
+  // L'objet arrive côté serveur AVANT le débit : pas de crédits perdus sans objet.
+  const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"boutique" });
+  if(!r) return;
+  if(!(r.ajoutes||{})[id]){ journal("Sac plein.","alerte"); _boutiqueMsg("Sac plein — fais de la place avant d'acheter."); return; }
+  etat.credits -= a.prix;
   journal(`Boutique : ${a.nom} acheté — ${a.prix} ₡.`,"gain");
   apresAction(); renderBoutique();
 }

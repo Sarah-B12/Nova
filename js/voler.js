@@ -27,7 +27,8 @@ function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITE
 function _enVille(){ return (typeof enZoneFaction==="function") && enZoneFaction(); }
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
 function prisonRestant(){ return Math.max(0, (etat.prisonJusqua||0)-Date.now()); }
-function _emprisonner(){ etat.prisonJusqua = Date.now() + _vjm(); etat.prisonFaction = (typeof villeActuelle==="function") ? villeActuelle() : etat.faction; }
+function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; if(typeof sb!=="undefined"&&sb) sb.rpc("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)}).catch(()=>{}); if(typeof sauvegarder==="function") sauvegarder(); }
+function _emprisonner(){ emprisonnerJoueur((typeof villeActuelle==="function"?villeActuelle():etat.faction)||etat.faction, _vjm()); }
 function _melange(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 /* ---------- Cible simulée ---------- */
@@ -48,36 +49,46 @@ function _piocherObjets(sac, cap, agi){
   const ids=Object.keys(sac).filter(id=>(sac[id]||0)>0); _melange(ids); const butin=[];
   for(const id of ids){ if(butin.length>=cap) break;
     const rv=(typeof risqueVol==="function")?risqueVol(id):0.4;
-    if(Math.random() < Math.min(0.9, rv*(1+agi/300))) butin.push([id, Math.min(sac[id], 1+Math.floor(Math.random()*2))]);
+    if(Math.random() < Math.min(0.9, rv*(1+agi/300))){
+      const n = (typeof _lotVolable==="function") ? _lotVolable(id, sac[id])
+                                                  : Math.min(sac[id], 1+Math.floor(Math.random()*2));
+      butin.push([id, n]);
+    }
   }
   return butin;
 }
 
 /* ---------- Actions ---------- */
-function tenterVoler(){
+async function tenterVoler(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
   if(!_enVille()){ journal("Va dans une ville pour cibler quelqu'un.","alerte"); return; }
   if(!aDiscretion()){ journal("Il te faut l'aptitude Discrétion pour voler.","alerte"); return; }
   const c=genererCible(); if(_cibleProtegee(c)) return;
-  if(!depenserEnergie(VOL_ENERGIE)) return;
+  if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniVol(
-    ()=>{ const butin=_piocherObjets(c.sac, VOL_CAP_OBJETS, agiliteEffective());
+    async ()=>{ const butin=_piocherObjets(c.sac, VOL_CAP_OBJETS, agiliteEffective());
       if(!butin.length) journal(`Tu fouilles ${c.nom} mais repars les mains vides.`,"alerte");
-      else { for(const [id,n] of butin){ let k=n; while(k-->0 && placesLibres()>0) ajouterAuSac(id,1); }
-        journal(`Vol réussi sur ${c.nom} : ${butin.map(([id,n])=>`${n}× ${item(id)?item(id).nom:id}`).join(", ")}.`,"gain"); }
+      else {
+        const gains={}; for(const [id,n] of butin){ gains[id]=(gains[id]||0)+n; }
+        const r = await agirServeur({ ajouter:gains, motif:"vol" });
+        const pris = r ? (r.ajoutes||{}) : {};
+        const liste = Object.keys(pris).map(id=>`${pris[id]}× ${item(id)?item(id).nom:id}`).join(", ");
+        if(liste) journal(`Vol réussi sur ${c.nom} : ${liste}.`+(r&&r.sac_plein?" (sac plein)":""),"gain");
+        else journal(`Vol réussi sur ${c.nom}, mais ton sac est plein.`,"alerte");
+      }
       apresAction(); majVoler(); },
     ()=>{ journal(`Échec ! ${c.nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte");
       if(Math.random()<0.45){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte"); }
       apresAction(); majVoler(); }
   );
 }
-function tenterHacker(){
+async function tenterHacker(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
   if(!_enVille()){ journal("Va dans une ville pour cibler quelqu'un.","alerte"); return; }
   if(!_ordiEquipe()){ journal("Équipe un Ordinateur de hacking pour hacker.","alerte"); return; }
   if(!aIntrusion()){ journal("Il te faut l'aptitude Intrusion pour hacker.","alerte"); return; }
   const c=genererCible(); if(_cibleProtegee(c)) return;
-  if(!depenserEnergie(VOL_ENERGIE)) return;
+  if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniHack(
     ()=>{ const pct=Math.min(VOL_CAP_CREDITS, 0.12 + intelligenceEffective()/1000); const gain=Math.min(VOL_CAP_ABS, Math.floor(c.credits*pct));
       etat.credits+=gain; journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. (Son journal ne verra qu'« un anonyme ».)`,"gain"); apresAction(); majVoler(); },
@@ -442,7 +453,8 @@ function majVoler(){
   if(_volTimer){ clearInterval(_volTimer); _volTimer=null; }
   if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents dans une ville</b>. Rends-toi dans une ville de faction.</p>`; return; }
   if(enPrison()){
-    z.innerHTML=`<div class="vol-prison">⛓️ <b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.</div>`;
+    z.innerHTML=`<div class="vol-prison">⛓️ <b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.<div style="margin-top:10px"><button class="mini" id="vol-evasion">Tenter une évasion (−10% énergie)</button></div><p class="itip-gris" style="margin-top:6px">Chance selon Agilité + Intelligence. Échec → tu restes en prison.</p></div>`;
+    const _be=z.querySelector("#vol-evasion"); if(_be) _be.addEventListener("click", tenterEvasion);
     _volTimer=setInterval(()=>{ const el=z.querySelector("#vol-ptemps"); if(!el){ clearInterval(_volTimer); return; } if(enPrison()) el.textContent=_vfmt(prisonRestant()); else { clearInterval(_volTimer); majVoler(); } },500);
     return;
   }
@@ -471,30 +483,69 @@ function majVoler(){
 function _factionNom(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction"); }
 function _avatarMini(){ return `<span class="prison-av"><svg viewBox="0 0 120 130"><path d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/><path d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/><rect x="38" y="46" width="44" height="13" rx="6"/></svg></span>`; }
 function _allerProfil(){ document.querySelectorAll(".panneau").forEach(p=>p.classList.toggle("actif", p.dataset.panneau==="profil")); document.querySelectorAll("[data-onglet]").forEach(o=>o.classList.toggle("actif", o.dataset.onglet==="profil")); }
-function majPrison(el){
+function tenterEvasion(){
+  if(!enPrison()) return;
+  if((etat.energie||0) < 10){ journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte"); return; }
+  etat.energie = Math.max(0, (etat.energie||0) - 10);
+  const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
+  const intel=(typeof intelligenceEffective==="function")?intelligenceEffective():5;
+  const p=Math.min(0.6, 0.12 + (agi+intel)*0.01);
+  if(Math.random() < p){
+    etat.prisonJusqua=0; etat.prisonFaction=null;
+    if(typeof sb!=="undefined"&&sb) sb.rpc("liberer_moi").catch(()=>{});
+    journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain");
+  } else {
+    journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte");
+  }
+  if(typeof sauvegarder==="function") sauvegarder();
+  if(typeof afficher==="function") afficher();
+  majVoler();
+  if(typeof majCentre==="function") majCentre();
+}
+async function syncPrison(){
+  if(typeof sb==="undefined" || !sb) return;
+  try{ const { data } = await sb.rpc("mon_etat_prison");
+    if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
+    else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
+  }catch(e){}
+}
+async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   _hackStyle();
   const fid=(typeof villeActuelle==="function")?villeActuelle():null;
+  el.innerHTML=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3><p class="vide">Chargement…</p>`;
+  let prisonniers=[];
+  try{ const { data } = await sb.from("prison").select("*").eq("faction",fid).gt("jusqua",new Date().toISOString());
+    const rows=data||[]; const ids=rows.map(r=>r.profil_id);
+    const noms={}; if(ids.length){ const { data:pubs } = await sb.from("profils_publics").select("id,nom").in("id",ids); for(const p of (pubs||[])) noms[p.id]=p.nom; }
+    prisonniers=rows.map(r=>({ id:r.profil_id, nom:noms[r.profil_id]||"(?)", reste:new Date(r.jusqua)-Date.now() }));
+  }catch(e){}
+  const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
+  const estRegent = roles.includes("regent") && fid===etat.faction;
+  const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;
   let html=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3>
-    <p class="vide">Quiconque se fait prendre à voler ou hacker dans cette faction y est enfermé <b>24 h</b> : ni déplacement, ni action. Seul le <b>Régent</b> peut gracier (gouvernance à venir).</p>`;
-  const lignes=[];
-  if(enPrison() && etat.prisonFaction===fid) lignes.push({ moi:true, nom:(etat.nom||"Toi"), reste:prisonRestant() });
-  const noms=["Kael-42","Toz-19","Nyx-7","Brann-63","Sela-28","Dax-11"];   // prisonniers simulés (démo)
-  const nb=1+Math.floor(Math.random()*3);
-  for(let i=0;i<nb;i++) lignes.push({ moi:false, nom:noms[Math.floor(Math.random()*noms.length)], reste:Math.floor(Math.random()*_vjm()) });
-  html+=`<div class="prison-liste">`;
-  for(const pr of lignes){
-    html+=`<div class="prison-ligne${pr.moi?" moi":""}">${_avatarMini()}`
-      + `<button class="prison-nom" data-moi="${pr.moi?1:0}" data-nom="${pr.nom}">${pr.nom}${pr.moi?" (toi)":""}</button>`
-      + `<span class="qte">${_vfmt(pr.reste)}</span>`
-      + `<button class="mini" disabled title="Réservé au Régent (gouvernance à venir)">Gracier</button></div>`;
+    <p class="vide">Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier.</p>`;
+  if(!prisonniers.length) html+=`<p class="vide">Personne en prison ici.</p>`;
+  else{
+    html+=`<div class="prison-liste">`;
+    for(const pr of prisonniers){ const moi=pr.id===moiId;
+      html+=`<div class="prison-ligne${moi?" moi":""}">${_avatarMini()}`
+        + `<button class="prison-nom" data-nom="${pr.nom}">${pr.nom}${moi?" (toi)":""}</button>`
+        + `<span class="qte">${_vfmt(Math.max(0,pr.reste))}</span>`
+        + (estRegent?`<button class="mini" data-gracier="${pr.id}">Gracier</button>`:`<button class="mini" disabled title="Réservé au Régent">Gracier</button>`)
+        + `</div>`;
+    }
+    html+=`</div>`;
   }
-  html+=`</div>`;
+  if(enPrison()) html+=`<div style="margin-top:10px"><button class="mini" id="prison-evasion">Tenter une évasion (−10% énergie)</button> <span class="itip-gris">Chance selon Agilité + Intelligence. Échec → tu restes.</span></div>`;
   el.innerHTML=html;
-  el.querySelectorAll(".prison-nom").forEach(b=>b.addEventListener("click",()=>{
-    if(b.dataset.moi==="1") _allerProfil();
-    else journal(`Profil de ${b.dataset.nom} : consultable avec le multijoueur.`,"alerte");
+  const pe=el.querySelector("#prison-evasion"); if(pe) pe.addEventListener("click", tenterEvasion);
+  el.querySelectorAll("[data-gracier]").forEach(b=>b.addEventListener("click", async()=>{
+    const { data:res, error } = await sb.rpc("gracier",{ p_profil:b.dataset.gracier });
+    if(error || !res || !res.ok){ journal("Grâce impossible.","alerte"); return; }
+    journal("Prisonnier gracié.","gain"); majPrison(el);
   }));
+  el.querySelectorAll(".prison-nom").forEach(b=>b.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(b.dataset.nom); }));
 }
 
 /* ---------- Style ---------- */

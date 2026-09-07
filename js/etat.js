@@ -6,12 +6,12 @@ function nouvelEtat(){
     inscrit:false, nom:"", faction:null, pos:null, metier:null, creeLe:Date.now(), enPause:false, pauseLe:0, factionLe:0, factionChangeBloque:true, email:"", apparenceLe:0, avatar:null, bienvenueVue:false, protocoleActif:true,
     energie:100, energieMaj:Date.now(), reposLe:0, regenMaj:0,
     credits:1000, niveau:1, xp:0, pointsCompetence:0, retours:0,
-    competences:{ force:10, agilite:5, intelligence:5 },
+    competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
     vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
     jauges:{ o2:90, sante:100, moral:80 },
     sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, coffreDate:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
-    description:"", mur:[], murOuvertA:"amis", amis:[], bloques:[], msgRecus:[], msgEnvoyes:[], msgSemes:false, annonces:[],
+    description:"", mur:[], murOuvertA:"amis", journal:[], amis:[], bloques:[], msgRecus:[], msgEnvoyes:[], msgSemes:false, annonces:[],
     formation:null, pas:{}, pasFini:false, pasPlie:false,
     aptitudes:{ pa:0, pris:[] }, marches:{}, marchesSemes:false,
     quetes:{ done:[], active:null }
@@ -36,30 +36,30 @@ function coutO2(base){ const c = base * (1 - Math.min(0.5, agiliteEffective()/40
 function echapper(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function ageJours(){ return Math.floor((Date.now() - etat.creeLe) / MS_JOUR); }
 /* ---------- Sauvegarde ---------- */
-function sauvegarder(){ try{ localStorage.setItem(CLE, JSON.stringify(etat)); }catch(e){} }
+function sauvegarder(){ try{ localStorage.setItem(CLE, JSON.stringify(etat)); }catch(e){} if(typeof planifierSauveServeur==="function") planifierSauveServeur(); }
+// Normalise un objet d'état (localStorage OU serveur) vers un état complet et cohérent.
+function hydraterEtat(s){
+  const base=nouvelEtat();
+  const sac = {...(s.sac||{})};
+  if(s.materiaux){ for(const k in s.materiaux){ if(s.materiaux[k]>0) sac[k]=(sac[k]||0)+s.materiaux[k]; } }
+  let ordre = (s.sacOrdre||[]).filter(id => (sac[id]||0)>0);
+  for(const id in sac){ if(sac[id]>0 && !ordre.includes(id)) ordre.push(id); }
+  return { ...base, ...s,
+    competences:{...base.competences,...(s.competences||{})},
+    jauges:{...base.jauges,...(s.jauges||{})},
+    sac, sacOrdre:ordre, coffre:{...(s.coffre||{})},
+    soute:{...(s.soute||{})}, souteDate:{...(s.souteDate||{})},
+    maison:{ palier:0, plot:null, chantier:null, ...(s.maison&&typeof s.maison.palier==="number" ? s.maison : {}) }, mur:(s.mur||[]),
+    aptitudes:{...base.aptitudes, ...(s.aptitudes||{})},
+    quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null },
+    terrain:{ parcelles: normaliserParcelles(s.terrain) },
+    creeLe: s.creeLe || Date.now(),
+    energie: (typeof s.energie==="number" ? s.energie : 100),
+    energieMaj: s.energieMaj || Date.now() };
+}
 function charger(){
-  try{
-    const brut=localStorage.getItem(CLE);
-    if(brut){ const base=nouvelEtat(); const s=JSON.parse(brut);
-      const sac = {...(s.sac||{})};
-      if(s.materiaux){ for(const k in s.materiaux){ if(s.materiaux[k]>0) sac[k]=(sac[k]||0)+s.materiaux[k]; } }
-      let ordre = (s.sacOrdre||[]).filter(id => (sac[id]||0)>0);
-      for(const id in sac){ if(sac[id]>0 && !ordre.includes(id)) ordre.push(id); }
-      return { ...base, ...s,
-        competences:{...base.competences,...(s.competences||{})},
-        jauges:{...base.jauges,...(s.jauges||{})},
-        sac, sacOrdre:ordre, coffre:{...(s.coffre||{})},
-        soute:{...(s.soute||{})}, souteDate:{...(s.souteDate||{})},
-        maison:{ palier:0, plot:null, chantier:null, ...(s.maison&&typeof s.maison.palier==="number" ? s.maison : {}) }, mur:(s.mur||[]),
-        aptitudes:{...base.aptitudes, ...(s.aptitudes||{})},
-        quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null },
-        terrain:{ parcelles: normaliserParcelles(s.terrain) },
-        creeLe: s.creeLe || Date.now(),
-        energie: (typeof s.energie==="number" ? s.energie : 100),
-        energieMaj: s.energieMaj || Date.now() };
-    }
-  }catch(e){}
+  try{ const brut=localStorage.getItem(CLE); if(brut) return hydraterEtat(JSON.parse(brut)); }catch(e){}
   return nouvelEtat();
 }
-function reinitialiser(){ if(!confirm("Effacer la partie et recommencer ?"))return; try{localStorage.removeItem(CLE);}catch(e){} etat=nouvelEtat(); document.querySelector("#journal").innerHTML=""; afficher(); ouvrirInscription(); }
+function reinitialiser(){ if(!confirm("Effacer la partie locale et te déconnecter ?"))return; try{localStorage.removeItem(CLE);}catch(e){} if(typeof seDeconnecter==="function"){ seDeconnecter().finally(()=>location.reload()); } else { etat=nouvelEtat(); document.querySelector("#journal").innerHTML=""; afficher(); (typeof ouvrirAuth==="function"?ouvrirAuth:ouvrirInscription)(); } }
 

@@ -9,14 +9,19 @@
    =========================================================== */
 const DRONE_ITEMS = { recolte:"fab_drone_de_recolte", elevage:"fab_drone_d_elevage" };
 function nomDrone(type){ return type==="recolte" ? "Drone de récolte" : "Drone d'élevage"; }
+// Jours restants avant qu'un drone installé ne lâche (null si date inconnue).
+function joursRestantsDrone(dr){
+  if(!dr || !dr.pose || typeof dureeVie!=="function") return null;
+  return Math.max(0, dureeVie(DRONE_ITEMS[dr.type]) - (Date.now()-dr.pose)/JOUR_MS);
+}
 function cibleTypeDrone(type){ return type==="recolte" ? "biodome" : "enclos"; }
 
 /* ---------- Installation / assignation ---------- */
-function placerDrone(si, type){
+async function placerDrone(si, type){
   const iid = DRONE_ITEMS[type]; if((etat.sac[iid]||0)<=0) return;
   const p = etat.terrain.parcelles[structSel]; if(!p || p.type!=="hangar" || p.drones[si]) return;
-  retirerDuSac(iid, 1);
-  p.drones[si] = { type, cible:null, maj:0 };
+  if(!await agirServeur({ retirer:{ [iid]:1 }, motif:"drone_poser" })) return;
+  p.drones[si] = { type, cible:null, maj:0, pose:Date.now() };   // pose = date d'usure
   journal(`${nomDrone(type)} installé dans le hangar. Assigne-lui une parcelle.`,"gain");
   apresAction(); majStruct();
 }
@@ -28,10 +33,11 @@ function assignerDrone(si, idx){
   journal(`${nomDrone(dr.type)} assigné à la parcelle ${idx+1}.`,"gain");
   apresAction(); majStruct();
 }
-function retirerDrone(si){
+async function retirerDrone(si){
   const p = etat.terrain.parcelles[structSel]; const dr = p && p.drones[si]; if(!dr) return;
   const iid = DRONE_ITEMS[dr.type];
-  if(placesLibres()>0){ ajouterAuSac(iid,1); journal(`${nomDrone(dr.type)} retiré (rangé dans le sac).`,"alerte"); }
+  const rr = await agirServeur({ ajouter:{ [iid]:1 }, motif:"drone_retirer" });
+  if(rr && (rr.ajoutes||{})[iid]) journal(`${nomDrone(dr.type)} retiré (rangé dans le sac).`,"alerte");
   else journal(`${nomDrone(dr.type)} détruit (sac plein).`,"alerte");
   p.drones[si] = null;
   apresAction(); majStruct();
@@ -55,7 +61,10 @@ function renderHangar(corps){
       const cible = dr.cible!=null ? etat.terrain.parcelles[dr.cible] : null;
       const ok = cible && cible.type === cibleTypeDrone(dr.type);
       const t = document.createElement("div"); t.className="drone-tete";
-      t.innerHTML = `<b>${nomDrone(dr.type)}</b> — ${ok ? `parcelle ${dr.cible+1} (${STRUCTURES[cible.type].nom})` : `<span style="color:var(--coral)">non assigné</span>`}`;
+      const ic = (typeof iconeItem==="function") ? iconeItem(DRONE_ITEMS[dr.type]) : "";
+      const jr = (typeof joursRestantsDrone==="function") ? joursRestantsDrone(dr) : null;
+      const usure = (jr!=null) ? ` <span class="usure ${jr<1?"critique":""}">${Math.ceil(jr)}j</span>` : "";
+      t.innerHTML = `<span class="drone-ic">${ic}</span><b>${nomDrone(dr.type)}</b>${usure} — ${ok ? `parcelle ${dr.cible+1} (${STRUCTURES[cible.type].nom})` : `<span style="color:var(--coral)">non assigné</span>`}`;
       slot.appendChild(t);
       const ct = cibleTypeDrone(dr.type);
       const dispo = etat.terrain.parcelles.map((pp,idx)=>({pp,idx})).filter(o=>o.pp && o.pp.type===ct);
@@ -86,14 +95,17 @@ function majDrones(){
   });
   if(agi && typeof sauvegarder==="function") sauvegarder();
 }
-function droneRecolte(p){
+async function droneRecolte(p){
   // arrose ce qui pousse (et n'a pas déjà été arrosé aujourd'hui)
   p.cases.forEach(c=>{ if(c && c.croissance<PLANT_MAX && !memeJour(c.arrose)){ c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now(); } });
   // récolte ce qui est mûr
-  p.cases.forEach((c,i)=>{ if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0; for(let k=0;k<nb;k++){ if(placesLibres()<=0)break; ajouterAuSac(c.plante,1); pr++; } if(pr>0) journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; } });
+  for(let i=0;i<p.cases.length;i++){ const c=p.cases[i]; if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0; const res = await agirServeur({ ajouter:{ [c.plante]:nb }, motif:"drone_recolte" }); pr = res ? ((res.ajoutes||{})[c.plante]||0) : 0; if(pr>0) journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; } }
 }
-function droneElevage(p){
+async function droneElevage(p){
   let fed=0;
-  p.cases.forEach(c=>{ if(c){ const a=animal(c.animal); if(c.repas<a.repasAdulte && (etat.sac["ferragave"]||0)>0){ retirerDuSac("ferragave",1); c.repas++; fed++; } } });
+  for(const c of p.cases){ if(!c) continue; const a=animal(c.animal);
+    if(c.repas<a.repasAdulte && (etat.sac["ferragave"]||0)>0){
+      if(await agirServeur({ retirer:{ ferragave:1 }, motif:"drone_nourrir" })){ c.repas++; fed++; }
+    } }
   if(fed>0) journal(`Drone d'élevage : ${fed} repas de Ferragave distribué(s).`,"gain");
 }

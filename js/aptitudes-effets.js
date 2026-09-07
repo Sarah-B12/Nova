@@ -33,10 +33,20 @@ function regenPassif(){
   const h = (now - etat.regenMaj) / 3600000;
   if(h <= 0) return;
   etat.regenMaj = now;
-  if(_apt("cu3")) etat.jauges.o2 = Math.min(100, etat.jauges.o2 + h * 2);        // Photosynthèse +2 O₂/h
+  // ⚠ Les jauges appartiennent au serveur. On calcule le gain ici (les aptitudes
+  // sont une donnée client) mais on le fait APPLIQUER par agir(), sinon il serait
+  // écrasé au premier appel serveur — le piège des crédits, puis de l'énergie.
+  let go2 = 0, gs = 0, gm = 0;
+  if(_apt("cu3")) go2 = Math.max(0, Math.min(100, etat.jauges.o2 + h*2) - etat.jauges.o2);   // Photosynthèse +2 O₂/h
   if(_apt("cu4")){                                                               // Organisme : +1 santé/moral/h, plafond 60
-    etat.jauges.sante = Math.max(etat.jauges.sante, Math.min(60, etat.jauges.sante + h));
-    etat.jauges.moral = Math.max(etat.jauges.moral, Math.min(60, etat.jauges.moral + h));
+    gs = Math.max(0, Math.min(60, etat.jauges.sante + h) - etat.jauges.sante);
+    gm = Math.max(0, Math.min(60, etat.jauges.moral + h) - etat.jauges.moral);
+  }
+  if((go2 + gs + gm) >= 1 && typeof agirServeur === "function"){
+    // Seuil de 1 point : on n'envoie pas une requête pour 0,03 point d'O₂.
+    agirServeur({ jauges:{ o2:Math.round(go2), sante:Math.round(gs), moral:Math.round(gm) }, motif:"regen_aptitude" });
+  } else {
+    etat.regenMaj = now - (h * 3600000);   // on garde le reliquat pour le prochain passage
   }
 }
 

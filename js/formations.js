@@ -112,13 +112,19 @@ function changerCentre(c){
 function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
   const chezSoi = (typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true;
-  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi };   // réservés à ta faction
+  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi };   // réservés à ta faction
   document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>{ b.style.display = masque[b.dataset.centre] ? "none" : ""; });
+  // Bureau : visible seulement si on a un rôle au gouvernement (async)
+  if(!masque.bureau && typeof _chargerMesRolesGouv==="function"){ _chargerMesRolesGouv().then(roles=>{ const b=document.querySelector('#hub-centre [data-centre="bureau"]'); if(b) b.style.display = roles.length ? "" : "none"; }); }
   if(masque[centreVue]) centreVue = "gouvernement";
   document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
   if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }
+  if(centreVue==="gouvernement"){ if(typeof majGouvernement==="function") majGouvernement(el); return; }
+  if(centreVue==="votes"){ if(typeof majElections==="function") majElections(el); return; }
+  if(centreVue==="bureau"){ if(typeof majBureau==="function") majBureau(el); return; }
+  if(centreVue==="guerres"){ if(typeof majExpeditions==="function") majExpeditions(el); return; }
   const titres = { gouvernement:"Gouvernement", votes:"Votes", guerres:"Guerres de faction" };
   const notes = {
     gouvernement:"Régent, Maréchal et Intendant élus par la faction, avec leurs pouvoirs… à venir.",
@@ -297,7 +303,7 @@ function parseIngredients(txt){
 }
 
 /* ---------- Fabrication ---------- */
-function fabriquer(seuil){
+async function fabriquer(seuil){
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const f = etat.formation; if(!f) return;
   f.fait = f.fait || {};
@@ -319,18 +325,22 @@ function fabriquer(seuil){
 
   const pid = PROD_PAR_NOM[normNom(nom)].id;
   if(typeof estVaisseau==="function" && estVaisseau(pid) && !etat.permisVaisseau){ journal("Assemblage de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
-  for(let i=0;i<ings.length;i++) retirerDuSac(ings[i].id, qtes[i]);      // consomme (libère de la place)
-  const pris = ajouterAuSac(pid, 1);
-  if(pris < 1){                                        // sécurité : sac saturé, on rend les ingrédients
-    for(let i=0;i<ings.length;i++) ajouterAuSac(ings[i].id, qtes[i]);
-    journal("Sac plein — impossible de ranger l'objet fabriqué.", "alerte"); return;
+  // Un SEUL appel atomique : ingrédients consommés et objet reçu, ou rien du tout.
+  // (Sans « tout ou rien », un sac saturé aurait mangé les ingrédients sans rendre l'objet.)
+  const retirer = {};
+  for(let i=0;i<ings.length;i++){ if(qtes[i]>0) retirer[ings[i].id] = (retirer[ings[i].id]||0) + qtes[i]; }
+
+  const bonus2 = !!(aptFabSerie() && Math.random()<0.10);       // Production en série : 2ᵉ objet
+  let rendu = null, renduId = null;
+  if(aptFabSkip() && Math.random()<0.20){                        // Récup d'atelier : 1 unité rendue
+    let bi=0; for(let i=1;i<qtes.length;i++) if(qtes[i]>qtes[bi]) bi=i;
+    if(qtes[bi]>0){ renduId = ings[bi].id; rendu = item(renduId).nom; }
   }
-  // Production en série : 10 % de sortir un 2ᵉ objet
-  let bonus2 = false;
-  if(aptFabSerie() && Math.random()<0.10){ if(ajouterAuSac(pid,1)>=1) bonus2 = true; }
-  // Récup d'atelier : 20 % de rendre 1 unité (l'ingrédient le plus abondant)
-  let rendu = null;
-  if(aptFabSkip() && Math.random()<0.20){ let bi=0; for(let i=1;i<qtes.length;i++) if(qtes[i]>qtes[bi]) bi=i; if(qtes[bi]>0 && ajouterAuSac(ings[bi].id,1)>=1) rendu=item(ings[bi].id).nom; }
+  const ajouter = { [pid]: bonus2 ? 2 : 1 };
+  if(renduId) ajouter[renduId] = (ajouter[renduId]||0) + 1;
+
+  const res = await agirServeur({ retirer, ajouter, motif:"fabrication", toutOuRien:true });
+  if(!res) return;
 
   const gagne = Math.min(ptsFab(nom) + aptFabPoints(), CAP_RECETTE - (f.fait[seuil]||0));
   if(gagne > 0){ f.fait[seuil] = (f.fait[seuil]||0) + gagne; f.points += gagne; }

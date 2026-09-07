@@ -223,7 +223,7 @@ const LIEUX = [
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
 function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x, y:v.y}; }
 // Ville dont on est dans le rayon (ou null).
-function villeActuelle(){ for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; } return null; }
+function villeActuelle(){ if(!etat.pos) return null; for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; } return null; }
 function enZoneFaction(){ return villeActuelle(); }
 // Vrai si le joueur est sur l'anneau du Protocole (à TOL près) — servira au hack/espionnage.
 function surAnneauProtocole(){ if(!etat.pos) return false; return Math.abs(dist(etat.pos.x,etat.pos.y,ZONE_PROTOCOLE.x,ZONE_PROTOCOLE.y) - ZONE_PROTOCOLE.r) <= TOL_PROTOCOLE; }

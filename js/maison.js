@@ -47,18 +47,19 @@ function agrandirMaison(){
   m.chantier = { cible:m.palier+1, depose:{}, travail:0 };
   journal(`Chantier lancé : ${nomPalier(m.chantier.cible)}.`,"gain"); apresAction();
 }
-function deposerMat(matId){
+async function deposerMat(matId){
   const c=etat.maison.chantier; if(!c) return;
   const r=recetteMaison(c.cible); const besoin=r[matId]||0; const dej=c.depose[matId]||0;
   if(dej>=besoin){ journal("Déjà assez de cette matière.","alerte"); return; }
   if((etat.sac[matId]||0)<=0){ journal("Tu n'as pas cette matière dans ton sac.","alerte"); return; }
-  retirerDuSac(matId,1); c.depose[matId]=dej+1; apresAction();
+  if(!await agirServeur({ retirer:{ [matId]:1 }, motif:"chantier" })) return;
+  c.depose[matId]=dej+1; apresAction();
 }
-function travaillerMaison(){
+async function travaillerMaison(){
   const c=etat.maison.chantier; if(!c) return;
   const dispo = deposeTotal(c) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
-  if(!depenserEnergie(TRAVAIL_ENERGIE)) return;
+  if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
   c.travail++;
   const total=travailTotal(c.cible); const r=recetteMaison(c.cible);
   const toutDepose = Object.keys(r).every(k=>(c.depose[k]||0)>=r[k]);
@@ -75,8 +76,20 @@ function demolirMaison(){
   etat.maison={ palier:0, plot:null, chantier:null };
   journal("Logement démoli.","alerte"); apresAction();
 }
-function deposerObjet(id){ if(!etat.sac[id])return; if(itemsCoffre()>=capaciteMaison()){journal("Rangement plein — agrandis ton logement.","alerte");return;} const ts=etat.sacDate&&etat.sacDate[id]; retirerDuSac(id,1); etat.coffre[id]=(etat.coffre[id]||0)+1; if(typeof reporterDate==="function"){ etat.coffreDate=etat.coffreDate||{}; reporterDate(etat.coffreDate,id,ts||Date.now()); } apresAction(); }
-function retirerObjet(id){ if(!etat.coffre[id])return; if(placesLibres()<=0){journal("Sac plein.","alerte");return;} const ts=etat.coffreDate&&etat.coffreDate[id]; etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } ajouterAuSac(id,1); if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); } apresAction(); }
+async function deposerObjet(id){
+  if(!etat.sac[id]) return;
+  const ts = etat.sacDate && etat.sacDate[id];
+  if(!await rangerServeur(id, 1, "coffre", "sac")) return;
+  if(typeof reporterDate==="function"){ etat.coffreDate=etat.coffreDate||{}; reporterDate(etat.coffreDate,id,ts||Date.now()); }
+  apresAction();
+}
+async function retirerObjet(id){
+  if(!etat.coffre[id]) return;
+  const ts = etat.coffreDate && etat.coffreDate[id];
+  if(!await rangerServeur(id, 1, "sac", "coffre")) return;
+  if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); }
+  apresAction();
+}
 
 /* ---------- Rendu de la vue Maison (#sous-maison) ---------- */
 function majMaison(){
@@ -125,13 +138,15 @@ function majMaison(){
 
   if(m.palier>0){
     const g=z.querySelector("#coffre-grille");
-    const stacks=TOUS_ITEMS.filter(a=>(etat.coffre[a.id]||0)>0);
+    // Une tuile par LOT, comme dans le sac : chaque acquisition garde son échéance.
+    const stacks = (typeof lotsAffichage==="function") ? lotsAffichage("coffre") : [];
     const cible=Math.max(6, Math.ceil((stacks.length+1)/6)*6);
     for(let i=0;i<cible;i++){ const t=document.createElement("div");
-      if(i<stacks.length){ const it=stacks[i]; t.className="tuile utilisable";
-        t.innerHTML=`<span class="icone">${iconeItem(it.id)}</span><span class="compte">${etat.coffre[it.id]}</span>`;
-        if(typeof montrerItemTip==="function"){ t.addEventListener("mouseenter",()=>montrerItemTip(t,it.id)); t.addEventListener("mouseleave",cacherItemTip); }
-        t.addEventListener("click",()=>{ if(typeof cacherItemTip==="function")cacherItemTip(); retirerObjet(it.id); }); }
+      if(i<stacks.length){ const lot=stacks[i]; const iid=lot.item; t.className="tuile utilisable";
+        t.dataset.item = iid;
+        t.innerHTML=`<span class="icone">${iconeItem(iid)}</span><span class="compte">${lot.qte}</span>${(typeof badgeLot==="function")?badgeLot(lot):""}`;
+        if(typeof montrerItemTip==="function"){ t.addEventListener("mouseenter",()=>montrerItemTip(t,iid)); t.addEventListener("mouseleave",cacherItemTip); }
+        t.addEventListener("click",()=>{ if(typeof cacherItemTip==="function")cacherItemTip(); retirerObjet(iid); }); }
       else t.className="tuile vide";
       g.appendChild(t);
     }

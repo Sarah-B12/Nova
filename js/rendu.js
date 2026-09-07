@@ -19,6 +19,7 @@ function raisonAction(a){
   return "";
 }
 function afficher(){
+  if(typeof cacherItemTip==="function") cacherItemTip();
   if(typeof verifPauseAuto==="function") verifPauseAuto();
   document.querySelector("#nom-affiche").textContent = etat.nom || "Opérateur";
   const foAct = etat.formation && FORMATIONS[etat.formation.cle];
@@ -28,7 +29,8 @@ function afficher(){
   document.querySelector("#stat-credits").textContent = etat.credits;
   document.querySelector("#stat-xp").textContent = `${etat.xp}/${seuilXp(etat.niveau)}`;
 
-  if(typeof enZoneFaction==="function" && enZoneFaction()) etat.jauges.o2 = 100;   // ville de faction : air respirable, O₂ plein
+  // ⚠ L'O₂ plein en zone de faction est désormais appliqué PAR LE SERVEUR
+  // (agir() et jauges_lire() connaissent la position). Le client ne l'écrit plus.
   majJauge("o2", etat.jauges.o2); majJauge("sante", etat.jauges.sante); majJauge("moral", etat.jauges.moral);
 
   regenEnergie();
@@ -78,14 +80,30 @@ function afficher(){
   });
 
   majCarte(); majSac(); majTerrain(); majMur();
+  if(typeof majBoutonOrbite==="function") majBoutonOrbite();
   if(typeof majEquipement==="function") majEquipement();
   if(typeof majVaisseau==="function") majVaisseau();
   if(typeof majQueteHubSiPertinent==="function") majQueteHubSiPertinent();
   if(typeof majPas==="function") majPas();
+  if(typeof majJournal==="function") majJournal();
+  const _rz=document.querySelector("#reputations"); if(_rz && typeof _badgesReput==="function") _rz.innerHTML=_badgesReput(etat.reputation||0, etat.cercles||{});
   if(typeof renderMarche==="function"){ const hm=document.querySelector("#hub-marche"); if(hm && !hm.hidden) renderMarche(); }
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
   if(typeof majAptitudes==="function") majAptitudes();
+}
+/* Rafraîchissement LÉGER : uniquement les jauges qui bougent avec le temps.
+   afficher() reconstruit une douzaine de panneaux (sac, terrain, mur, quêtes…),
+   ce qui efface les formulaires en cours de saisie — inutile pour animer une barre. */
+function majJaugesSeules(){
+  if(!etat || !etat.inscrit) return;
+  if(typeof regenEnergie==="function") regenEnergie();
+  if(typeof regenPassif==="function") regenPassif();
+  const je=document.querySelector("#jauge-energie");
+  if(je){ const e=Math.floor(etat.energie);
+    je.querySelector(".val").textContent=e+"%";
+    je.querySelector(".remplissage").style.width=e+"%"; }
+  if(etat.jauges){ majJauge("o2",etat.jauges.o2); majJauge("sante",etat.jauges.sante); majJauge("moral",etat.jauges.moral); }
 }
 function majJauge(cle, v){ const bloc=document.querySelector(`#jauge-${cle}`); const val=Math.round(v); bloc.querySelector(".val").textContent=val; bloc.querySelector(".remplissage").style.width=val+"%"; bloc.classList.toggle("critique", val<=25); }
 
@@ -103,7 +121,18 @@ function infoItemHTML(id){
   return h;
 }
 let _itip=null;
-function itemTip(){ if(!_itip){ _itip=document.createElement("div"); _itip.id="item-tip"; _itip.hidden=true; document.body.appendChild(_itip); } return _itip; }
+function itemTip(){ if(!_itip){ _itip=document.createElement("div"); _itip.id="item-tip"; _itip.hidden=true; document.body.appendChild(_itip);
+    // Filet : referme une infobulle orpheline quand la souris quitte tout porteur.
+    // ⚠ Les tuiles du sac portent data-id (dataset.id), pas data-item : chercher
+    // uniquement [data-item] refermait l'infobulle à chaque mouvement DANS la tuile
+    // (d'où le clignotement). On accepte les deux attributs.
+    document.addEventListener("mouseover", e=>{
+      if(!_itip || _itip.hidden) return;
+      const cible = e.target && e.target.closest && e.target.closest("[data-item],[data-id]");
+      if(!cible) _itip.hidden = true;
+    });
+    window.addEventListener("scroll", ()=>{ if(_itip) _itip.hidden=true; }, true);
+  } return _itip; }
 function montrerItemTip(el, id){ const html=infoItemHTML(id); if(!html) return; const t=itemTip(); t.innerHTML=html; t.hidden=false;
   const r=el.getBoundingClientRect(), tw=t.offsetWidth, th=t.offsetHeight;
   let x=r.left+r.width/2-tw/2, y=r.top-th-8; if(y<8) y=r.bottom+8;
@@ -114,21 +143,37 @@ function brancherTips(root){ if(!root || typeof montrerItemTip!=="function") ret
 function majSac(){
   document.querySelector("#sac-cap").textContent = `${placesUtilisees()}/${capaciteSac()} places`;
   const z=document.querySelector("#sac"); z.innerHTML="";
-  const stacks = etat.sacOrdre.filter(id => (etat.sac[id]||0)>0);
+  // Une tuile par LOT : deux acquisitions du même objet à des dates différentes
+  // s'affichent séparément, chacune avec sa propre échéance. L'ordre choisi par
+  // le joueur (sacOrdre) prime ; à l'intérieur d'un objet, du plus ancien au plus
+  // récent — c'est aussi l'ordre dans lequel le serveur les consomme (FIFO).
+  const lots = (etat.lots||[]).filter(l => l && l.lieu==="sac" && l.qte>0);
+  const rang = id => { const i = (etat.sacOrdre||[]).indexOf(id); return i<0 ? 9999 : i; };
+  const stacks = lots.length
+    ? lots.slice().sort((a,b)=> (rang(a.item)-rang(b.item)) || (a.acquis-b.acquis))
+    : (etat.sacOrdre||[]).filter(id => (etat.sac[id]||0)>0)
+        .map(id => ({ item:id, lieu:"sac", qte:etat.sac[id], acquis:null }));   // repli avant la synchro
   if(stacks.length===0){ z.innerHTML=`<p class="vide" style="grid-column:1/-1">Ton sac est vide. Va miner ou récolter sur ton Terrain.</p>`; return; }
   const cible = Math.max(12, Math.ceil((stacks.length+2)/6)*6);   // remplit une grille propre
   for (let i=0;i<cible;i++){
     const cell=document.createElement("div"); cell.className="sac-case";
     const t=document.createElement("div");
     if (i < stacks.length){
-      const id=stacks[i]; const it=item(id);
+      const lot=stacks[i]; const id=lot.item; const it=item(id);
       if(!it){ t.className="tuile vide"; cell.appendChild(t); z.appendChild(cell); continue; }   // objet inconnu (ancienne sauvegarde)
       t.className = "tuile utilisable";
-      t.draggable = true; t.dataset.id = id;
-      const jr = (typeof joursRestants==="function") ? joursRestants(id) : null;
-      const perissable = (typeof dureeVie==="function") && dureeVie(id) < 30;
-      const badgeUsure = (perissable && jr!=null) ? `<span class="usure ${jr<1?"critique":jr<dureeVie(id)/2?"faible":""}">${Math.ceil(jr)}j</span>` : "";
-      t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${etat.sac[id]}</span>${badgeUsure}`;
+      t.draggable = true; t.dataset.id = id; t.dataset.item = id;
+      // Échéance propre à CE lot, pas au plus ancien de l'objet.
+      const jr = (lot.acquis!=null && typeof dureeVie==="function")
+        ? Math.max(0, dureeVie(id) - (Date.now()-lot.acquis)/JOUR_MS)
+        : ((typeof joursRestants==="function") ? joursRestants(id) : null);
+      // Tout objet finit par disparaître, y compris ceux à 30 jours : on affiche
+      // donc le badge pour TOUS. Le masquer au-delà de 30 j ne prévenait que pour
+      // une partie de l'inventaire, ce qui trompait plus que ça n'informait.
+      const badgeUsure = (jr!=null)
+        ? `<span class="usure ${jr<1?"critique":jr<dureeVie(id)/2?"faible":""}">${Math.ceil(jr)}j</span>`
+        : "";
+      t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${lot.qte}</span>${badgeUsure}`;
       t.addEventListener("dragstart", ()=>{ dragId=id; t.classList.add("drag"); });
       t.addEventListener("dragend",   ()=>{ dragId=null; t.classList.remove("drag"); });
       t.addEventListener("dragover",  e=>e.preventDefault());
@@ -162,12 +207,25 @@ function renduDescription(txt){
   while((m=re.exec(txt))!==null){ html+=echapper(txt.slice(last,m.index)).replace(/\n/g,"<br>"); const url=m[1].trim(); html += /^https?:\/\//i.test(url) ? `<img class="desc-img" alt="" src="${echapper(url)}">` : echapper(m[0]); last=re.lastIndex; }
   html+=echapper(txt.slice(last)).replace(/\n/g,"<br>"); return html;
 }
-function majMur(){
-  const z=document.querySelector("#mur-liste"); z.innerHTML="";
-  if(!etat.mur.length){ z.innerHTML=`<p class="vide">Aucun message. En multijoueur, d'autres joueurs pourront écrire ici.</p>`; return; }
-  for(const msg of etat.mur){ const d=document.createElement("div"); d.className="mur-msg"; d.innerHTML=`<span class="mur-auteur">${echapper(msg.auteur)}</span>${echapper(msg.texte)}`; z.appendChild(d); }
+async function majMur(){
+  const z=document.querySelector("#mur-liste"); if(!z) return;
+  const pan=document.querySelector('[data-panneau="profil"]');
+  if(!pan || !pan.classList.contains("actif")) return;                 // ne charge que quand le panneau Profil est visible
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ z.innerHTML=`<p class="vide">Mur indisponible (hors ligne).</p>`; return; }
+  let id=(typeof _monId!=="undefined")?_monId:null;
+  if(!id && typeof sessionActuelle==="function"){ const s=await sessionActuelle(); id=s?s.user.id:null; }
+  if(!id){ z.innerHTML=`<p class="vide">Connecte-toi pour voir ton mur.</p>`; return; }
+  if(typeof _ppChargerMur==="function") _ppChargerMur(id, "#mur-liste");
 }
-function publierMur(){ const c=document.querySelector("#mur-champ"); const t=c.value.trim(); if(!t)return; etat.mur.unshift({auteur:etat.nom||"Toi",texte:t}); if(etat.mur.length>50)etat.mur.pop(); c.value=""; sauvegarder(); majMur(); }
+async function publierMur(){
+  const c=document.querySelector("#mur-champ"); const t=(c.value||"").trim(); if(!t) return;
+  if(t.length>500){ journal("Message trop long (500 caractères maximum).","alerte"); return; }
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
+  const s=await sessionActuelle(); if(!s) return;
+  const { error } = await sb.from("mur").insert({ profil_id:s.user.id, auteur_id:s.user.id, texte:t });
+  if(error){ console.warn("[mur]", error.message); return; }
+  c.value=""; if(typeof _ppChargerMur==="function") _ppChargerMur(s.user.id, "#mur-liste");
+}
 
 function construireBoutique(){ const z=document.querySelector("#boutique"); if(!z) return; for(const art of CONSOMMABLES){ const b=document.createElement("button"); b.className="achat"; b.id=`achat-${art.id}`; b.dataset.item=art.id; b.innerHTML=`<span>${art.nom}</span><span class="cout">${art.prix} ₡</span>`; b.addEventListener("click",()=>acheter(art)); b.addEventListener("mouseenter",()=>{ if(typeof montrerItemTip==="function") montrerItemTip(b, art.id); }); b.addEventListener("mouseleave",()=>{ if(typeof cacherItemTip==="function") cacherItemTip(); }); z.appendChild(b); } }
 function construireCompetences(){

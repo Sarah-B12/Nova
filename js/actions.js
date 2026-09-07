@@ -5,7 +5,7 @@
    le moteur partagé, appelé par les choix de la fenêtre de patrouille.
    =========================================================== */
 /* ---------- Actions ---------- */
-function reposer(){
+async function reposer(){
   if(etat.enPause){ journal("Personnage en pause.","alerte"); return; }
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const ville = (typeof villeActuelle==="function") ? villeActuelle() : null;
@@ -14,12 +14,17 @@ function reposer(){
   const chezSoi = ville===etat.faction;
   const gain = chezSoi?25:20, cap = chezSoi?80:70;
   if(etat.jauges.sante>=cap && etat.jauges.moral>=cap){ journal(`Déjà en forme — le repos ne dépasse pas ${cap} (kit/ration pour aller plus haut).`,"alerte"); return; }
+  // Les jauges sont serveur : on calcule le gain UTILE (plafonné) et on l'envoie.
+  const gs = Math.max(0, Math.min(cap, etat.jauges.sante + gain) - etat.jauges.sante);
+  const gm = Math.max(0, Math.min(cap, etat.jauges.moral + gain) - etat.jauges.moral);
+  if(!await agirServeur({ jauges:{ sante:gs, moral:gm }, motif:"repos" })) return;
   etat.reposLe = Date.now();
-  etat.jauges.sante = Math.max(etat.jauges.sante, Math.min(cap, etat.jauges.sante + gain));
-  etat.jauges.moral = Math.max(etat.jauges.moral, Math.min(cap, etat.jauges.moral + gain));
   journal(chezSoi ? `Repos chez toi : +${gain} santé/moral (plafond ${cap}).` : `Repos à l'auberge : +${gain} santé/moral (plafond ${cap}).`,"gain");
   apresAction();
 }
+/* ⚠ CODE MORT : l'action « Explorer » a été retirée du jeu (GDD §21) et aucun
+   bouton ne l'appelle. Elle utilise encore l'ancien modèle (depenserEnergie,
+   ajouterAuSac) et créerait des fantômes si on la rebranchait telle quelle. */
 function explorer(){
   if(enZoneFaction()){ journal("Exploration impossible en zone de faction.","alerte"); return; }
   if(!depenserEnergie(aptEnergieExplore(ACTION_COUT.explorer)))return;
@@ -31,7 +36,7 @@ function explorer(){
 /* ---------- Combat (moteur partagé — patrouilles du Protocole) ----------
    opts.embuscade : la patrouille frappe la première → chance de victoire réduite,
    pas d'esquive, dégâts majorés. */
-function resoudreCombat(opts){
+async function resoudreCombat(opts){
   opts = opts || {};
   const F = forceEffective();
   // Dureté de la patrouille ; les aptitudes de combat (Instinct de combat, Combustion) l'abaissent.
@@ -41,7 +46,7 @@ function resoudreCombat(opts){
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(10);
-    const drop = (typeof butinPatrouille==="function") ? butinPatrouille() : null;   // récup tech du Protocole
+    const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : null;   // récup tech du Protocole
     journal(`Patrouille du Protocole neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}.`,"gain");
   } else {
     // Santé perdue : ~50 à Force 0, ~10 à Force 200 (+ patrouille costaude).
@@ -54,25 +59,29 @@ function resoudreCombat(opts){
     if(typeof equipDegatsMult==="function") ps = ps*equipDegatsMult();
     ps = Math.max(3, aptCombatDegats(Math.round(ps)));
     const pm = Math.max(2, Math.round(ps*0.5));
-    etat.jauges.sante=borne(etat.jauges.sante-ps); etat.jauges.moral=borne(etat.jauges.moral-pm); gagnerXp(3);
+    await agirServeur({ jauges:{ sante:-ps, moral:-pm }, motif:"combat_perdu" }); gagnerXp(3);
     journal(`La patrouille a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}.`,"alerte");
   }
   apresAction();
 }
-function acheter(art){
+async function acheter(art){
   const dehors = !enZoneFaction();
   if(dehors && !aptBoutiquePartout()){ journal("Boutique accessible en zone de faction.","alerte"); return; }
   const prix = dehors ? aptBoutiqueSurcout(art.prix) : art.prix;
   if(etat.credits<prix)return;
   if(placesLibres()<=0){journal("Sac plein.","alerte");return;}
-  etat.credits-=prix; ajouterAuSac(art.id,1);
+  // L'objet arrive côté serveur AVANT le débit : pas de crédits perdus sans objet.
+  const r = await agirServeur({ ajouter:{ [art.id]:1 }, motif:"boutique_mobile" });
+  if(!r) return;
+  if(!(r.ajoutes||{})[art.id]){ journal("Sac plein.","alerte"); return; }
+  etat.credits-=prix;
   journal(`${art.nom} acheté (−${prix} ₡)${dehors?" (boutique mobile)":""}. Rangé dans le sac.`); apresAction();
 }
-function utiliser(art){
+async function utiliser(art){
   const id = (typeof art==="string") ? art : art.id;
   const eff = (typeof effetConso==="function") ? effetConso(id) : null;
   if(!eff || !etat.sac[id]) return;
-  retirerDuSac(id,1);
+  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"consommer" })) return;
   const parts=[];
   for(const g in eff){ const soin=aptSoin(eff[g]); etat.jauges[g]=borne((etat.jauges[g]||0)+soin); parts.push(`+${soin} ${labelJauge(g)}`); }
   journal(`${item(id)?item(id).nom:(art.nom||id)} utilisé : ${parts.join(", ")}.`,"gain");
@@ -80,4 +89,10 @@ function utiliser(art){
 }
 function ameliorer(cle){ if(etat.pointsCompetence<=0)return; if(etat.competences[cle]>=CAP_COMP){journal("Compétence au maximum (200).","alerte");return;} etat.pointsCompetence--; etat.competences[cle]++; journal(`${COMPETENCES.find(c=>c.id===cle).nom} améliorée (${etat.competences[cle]}).`); afficher(); sauvegarder(); }
 function apresAction(){ verifierVital(); afficher(); sauvegarder(); }
-function verifierVital(){ if(etat.jauges.o2<=0||etat.jauges.sante<=0){ const p=Math.floor(etat.credits*0.30); etat.credits-=p; etat.retours++; etat.jauges={o2:50,sante:20,moral:20}; if(typeof posDefaut==="function") etat.pos=posDefaut(); journal(`Évacuation d'urgence : retour à ta faction. −${p} ₡. Refais tes réserves (O₂, kit de soin) avant de repartir.`,"alerte"); } }
+/* ⚠ L'évacuation d'urgence est REMPLACÉE par le couloir de la mort : le serveur
+   pose profils.mort_le dès qu'une jauge atteint 0 (agir()), et la résurrection
+   applique elle-même le retour à la faction et la perte de 30 %. Laisser cette
+   version cliente en place produisait une DOUBLE sanction et remettait les
+   jauges localement alors que le serveur considère le personnage mort. */
+function verifierVital(){ return; }
+function _verifierVital_ancien(){ if(etat.jauges.o2<=0||etat.jauges.sante<=0){ const p=Math.floor(etat.credits*0.30); etat.credits-=p; etat.retours++; etat.jauges={o2:50,sante:20,moral:20}; if(typeof posDefaut==="function") etat.pos=posDefaut(); journal(`Évacuation d'urgence : retour à ta faction. −${p} ₡. Refais tes réserves (O₂, kit de soin) avant de repartir.`,"alerte"); } }

@@ -15,6 +15,16 @@
     display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:repeat(4,1fr);
     gap:0.5%; padding:3.4% 5%;   /* cases carrées, à l'intérieur de la clôture (haut/bas relatifs à la largeur) */
   }
+  /* Fond de terrain propre à chaque faction. L'attribut data-faction est posé
+     par majTerrain(). Les deux images sont empilées : si celle de la faction
+     manque encore, terrain.jpg dessous reste visible — pas de trou blanc. */
+  .terrain-grille[data-faction="ignis"]        { background-image:url(../images/terrain_ignis.jpg),        url(../images/terrain.jpg); }
+  .terrain-grille[data-faction="cultivateurs"] { background-image:url(../images/terrain_cultivateurs.jpg), url(../images/terrain.jpg); }
+  .terrain-grille[data-faction="nomades"]      { background-image:url(../images/terrain_nomades.jpg),      url(../images/terrain.jpg); }
+  .terrain-grille[data-faction="toundra"]      { background-image:url(../images/terrain_toundra.jpg),      url(../images/terrain.jpg); }
+  .terrain-grille[data-faction="rouage"]       { background-image:url(../images/terrain_rouage.jpg),       url(../images/terrain.jpg); }
+  .terrain-grille[data-faction] { background-size:cover, cover; background-position:center, center; background-repeat:no-repeat, no-repeat; }
+
   .plot { position:relative; border:1px dashed rgba(150,180,220,.28); border-radius:8px; display:grid; place-items:center; cursor:pointer; transition:border-color .12s, background .12s; }
   .plot:hover { border-color:var(--orange); background:rgba(255,158,84,.06); }
   .plot.occupe { border:1px solid transparent; background:none; }

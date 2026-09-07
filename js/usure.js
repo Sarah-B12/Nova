@@ -24,10 +24,15 @@ function dureeVie(id){
   const it=item(id); if(!it) return USURE_MAX;
   return Math.min(USURE_MAX, DUREE_VIE_CAT[it.cat] ?? DUREE_VIE_CAT[it.type] ?? USURE_MAX);
 }
-// Jours restants avant disparition d'une pile du sac (pour l'affichage). null si non suivi.
-function joursRestants(id){
-  if(!etat.sacDate || etat.sacDate[id]==null) return null;
-  return Math.max(0, dureeVie(id) - (Date.now()-etat.sacDate[id])/JOUR_MS);
+// Jours restants avant disparition (affichage du badge « Xj »).
+// On prend le lot le PLUS ANCIEN : c'est lui qui partira en premier, et c'est
+// aussi lui que les retraits consomment d'abord (FIFO).
+function joursRestants(id, lieu){
+  if(typeof joursRestantsLot === "function"){
+    const j = joursRestantsLot(id, lieu||"sac");
+    if(j != null) return j;
+  }
+  return null;
 }
 
 /* --- Vulnérabilité au vol : probabilité de base qu'un objet soit dérobé (0 = jamais). --- */
@@ -38,7 +43,27 @@ function risqueVol(id){
   if(/vaisseau|cargo|navette/.test(n)) return 0.02;                                                  // vaisseaux : quasi involables
   if(n.includes("implant")) return 0.05;                                                             // dans le corps
   if(/casque|plastron|jambi|couteau|pistolet|lame|fusil|canon|drone|tourelle/.test(n)) return 0.15;  // équipement/pièces portées
-  return VOL_CAT[it.cat] ?? VOL_CAT[it.type] ?? 0.35;                                                 // matières/consommables du sac
+  return (VOL_CAT[it.cat] ?? VOL_CAT[it.type] ?? 0.35) * _facteurValeurVol(id);                       // matières/consommables du sac
+}
+
+/* Un objet cher est mieux gardé, mieux planqué, plus lourd à sortir d'une poche.
+   Sans ce facteur, une pièce à 600 ₡ se volait aussi facilement qu'un caillou :
+   la catégorie seule ne distinguait pas un Composant avancé d'un objet à 40 ₡.
+   Courbe en racine carrée autour d'un prix de référence, bornée pour qu'aucun
+   objet ne devienne ni impossible ni gratuit. */
+const VOL_PRIX_REF = 60;      // prix « ordinaire » : facteur 1
+function _facteurValeurVol(id){
+  const p = (typeof PRIX_ITEM !== "undefined") ? PRIX_ITEM[id] : null;
+  const prix = p ? (p.moy || p.min || 0) : 0;
+  if(!prix) return 1;
+  return Math.max(0.25, Math.min(1.5, Math.sqrt(VOL_PRIX_REF / prix)));
+}
+/* Combien d'unités partent d'un coup : au-delà d'un certain prix, une seule. */
+function _lotVolable(id, dispo){
+  const p = (typeof PRIX_ITEM !== "undefined") ? PRIX_ITEM[id] : null;
+  const prix = p ? (p.moy || p.min || 0) : 0;
+  const max = prix >= 200 ? 1 : (prix >= 80 ? 2 : 3);
+  return Math.min(dispo, 1 + Math.floor(Math.random() * max));
 }
 
 /* Reporte une date d'acquisition en gardant la plus ANCIENNE (empêche de « rafraîchir » un objet en le déplaçant). */
@@ -46,40 +71,69 @@ function reporterDate(map, id, ts){ if(ts==null) return; map[id] = (map[id]!=nul
 function _verbeUsure(it){ return (it && (it.cat==="plante" || it.cat==="organique" || it.type==="conso")) ? "a péri" : "s'est usé"; }
 
 /* --- Péremption : sac, coffre de la maison ET équipement porté (au temps). --- */
-function majUsure(){
-  if(!etat.sac) return;
-  etat.sacDate = etat.sacDate||{}; etat.coffreDate = etat.coffreDate||{}; etat.equipementDate = etat.equipementDate||{}; etat.souteDate = etat.souteDate||{};
+/* ⚠ PHASE 4 : sac / coffre / soute appartiennent au SERVEUR. On ne supprime
+   plus rien localement (ce serait écrasé au prochain appel) : on collecte ce
+   qui a péri et on demande au serveur de le retirer via la RPC perimer().
+   Les dates restent client (donnees) — un tricheur peut donc éviter la
+   péremption, mais pas créer d'objets. À durcir avec la Phase 4 stricte. */
+async function majUsure(){
+  etat.equipementDate = etat.equipementDate||{};
   const now = Date.now(); let perte = false;
-  // Sac
-  for(const id of Object.keys(etat.sac)){
-    if((etat.sac[id]||0) <= 0) continue;
-    if(etat.sacDate[id] == null){ etat.sacDate[id] = now; continue; }
-    if(now - etat.sacDate[id] > dureeVie(id)*JOUR_MS){
-      const nb = etat.sac[id], it = item(id);
-      delete etat.sac[id]; delete etat.sacDate[id]; etat.sacOrdre = etat.sacOrdre.filter(x=>x!==id);
-      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} et a disparu du sac.`,"alerte"); perte = true;
+
+  /* PHASE 4 — les stocks sont des LOTS détenus par le serveur.
+     Le client ne tient plus de dates : il lit etat.lots, repère ceux qui ont
+     dépassé leur durée de vie, et demande au serveur de les retirer.
+     Chaque lot vieillit pour son propre compte : ajouter du frais ne condamne
+     plus l'ancien, et l'ancien ne condamne plus le frais. */
+  // ⚠ Tant que les lots n'ont pas été chargés depuis le serveur, on ne périme RIEN.
+  // Sinon, au rechargement, une liste périmée ferait supprimer des lots bien vivants.
+  if(!etat._lotsSynchro){ if(perte && typeof sauvegarder=="function") sauvegarder(); return; }
+
+  // ⚠ EN PAUSE : on ne périme RIEN non plus. Les dates ne sont dégelées qu'à la
+  // SORTIE de pause ; d'ici là elles paraissent dépassées. Un joueur pausé qui se
+  // connecte pour voir son écran déclenche afficher() donc majUsure, et aurait
+  // fait détruire des objets parfaitement vivants.
+  if(etat.enPause){ if(perte && typeof sauvegarder=="function") sauvegarder(); return; }
+  const expires = [];
+  for(const l of (etat.lots||[])){
+    if(!l || !(l.qte > 0)) continue;
+    if(l.lieu === "equipe") continue;   // l'équipement porté s'use à part (etat.equipementDate)
+    const dv = (typeof dureeVie==="function") ? dureeVie(l.item) : null;
+    if(dv == null) continue;
+    if(now - l.acquis > dv * JOUR_MS){
+      const it = (typeof item==="function") ? item(l.item) : null;
+      const ou = l.lieu==="coffre" ? " (rangement de la maison)" : (l.lieu==="soute" ? " (soute du vaisseau)" : " et a disparu du sac");
+      journal(`${l.qte}× ${it?it.nom:l.item} ${_verbeUsure(it)}${ou}.`,"alerte");
+      expires.push({ item:l.item, lieu:l.lieu, acquis:l.acquis });
+      perte = true;
     }
   }
-  // Coffre de la maison (ne préserve pas)
-  if(etat.coffre) for(const id of Object.keys(etat.coffre)){
-    if((etat.coffre[id]||0) <= 0) continue;
-    if(etat.coffreDate[id] == null){ etat.coffreDate[id] = now; continue; }
-    if(now - etat.coffreDate[id] > dureeVie(id)*JOUR_MS){
-      const nb = etat.coffre[id], it = item(id);
-      delete etat.coffre[id]; delete etat.coffreDate[id];
-      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} (rangement de la maison).`,"alerte"); perte = true;
+  if(expires.length && typeof sb !== "undefined"){
+    try{
+      const { data } = await sb.rpc("perimer", { p_lots: expires });
+      if(data && data.ok && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
+    }catch(e){ /* réessayé au prochain passage */ }
+  }
+
+  // Drones installés dans un hangar : ils ont quitté le sac, donc rien ne les
+  // usait. Ils vieillissent depuis leur date de pose, comme l'équipement porté.
+  if(etat.terrain && Array.isArray(etat.terrain.parcelles)){
+    for(const p of etat.terrain.parcelles){
+      if(!p || p.type!=="hangar" || !Array.isArray(p.drones)) continue;
+      p.drones.forEach((dr, si)=>{
+        if(!dr) return;
+        if(dr.pose == null){ dr.pose = now; return; }          // ancien drone : on le date maintenant
+        const did = (typeof DRONE_ITEMS!=="undefined") ? DRONE_ITEMS[dr.type] : null;
+        if(!did) return;
+        if(now - dr.pose > dureeVie(did)*JOUR_MS){
+          const it = item(did);
+          p.drones[si] = null;
+          journal(`${it?it.nom:"Un drone"} s'est usé et a cessé de fonctionner.`,"alerte"); perte = true;
+        }
+      });
     }
   }
-  // Soute du vaisseau (ne préserve pas non plus)
-  if(etat.soute) for(const id of Object.keys(etat.soute)){
-    if((etat.soute[id]||0) <= 0) continue;
-    if(etat.souteDate[id] == null){ etat.souteDate[id] = now; continue; }
-    if(now - etat.souteDate[id] > dureeVie(id)*JOUR_MS){
-      const nb = etat.soute[id], it = item(id);
-      delete etat.soute[id]; delete etat.souteDate[id];
-      journal(`${nb}× ${it?it.nom:id} ${_verbeUsure(it)} (soute du vaisseau).`,"alerte"); perte = true;
-    }
-  }
+
   // Équipement porté (s'use au temps aussi)
   if(etat.equipement) for(const slot of Object.keys(etat.equipement)){
     const id = etat.equipement[slot]; if(!id) continue;
@@ -95,8 +149,18 @@ function majUsure(){
     if(etat.vaisseauDate == null){ etat.vaisseauDate = now; }
     else if(now - etat.vaisseauDate > dureeVie(etat.vaisseau)*JOUR_MS){
       const it = item(etat.vaisseau);
-      if(etat.soute) for(const sid of Object.keys(etat.soute)){ let q=etat.soute[sid]||0; while(q>0 && placesLibres()>0){ ajouterAuSac(sid,1); q--; } }
-      etat.soute = {}; etat.souteDate = {};
+      // La soute part avec le vaisseau : on rapatrie ce qui tient, le reste est perdu.
+      for(const sid of Object.keys(etat.soute||{})){
+        const q = etat.soute[sid]||0; if(q<=0) continue;
+        const tient = Math.max(0, Math.min(q, placesLibres()));
+        if(tient > 0) await rangerServeur(sid, tient, "sac", "soute");
+      }
+      const restants = (etat.lots||[]).filter(l => l.lieu==="soute" && l.qte>0)
+        .map(l => ({ item:l.item, lieu:"soute", acquis:l.acquis }));
+      if(restants.length && typeof sb !== "undefined"){
+        try{ const { data } = await sb.rpc("perimer", { p_lots: restants });
+             if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){}
+      }
       etat.vaisseau = null; etat.vaisseauDate = null;
       journal(`${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
     }
