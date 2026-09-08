@@ -267,6 +267,13 @@
   .menu-act:hover { border-color:var(--bleu); color:#fff; }
   .menu-act.brader { color:var(--orange-hi,#ff9e54); }
   .menu-act.brader:hover { border-color:var(--orange); }
+  .menu-qte { display:flex; align-items:center; gap:6px; margin-top:9px; }
+  .menu-qte input { flex:1; min-width:0; text-align:center; padding:8px 6px;
+    background:#0f1830; border:1px solid var(--line); border-radius:8px;
+    color:var(--texte); font-family:inherit; font-size:15px; }
+  .menu-qte input::-webkit-outer-spin-button,
+  .menu-qte input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .menu-qte input[type=number] { -moz-appearance:textfield; appearance:textfield; }
 
   /* Icône du drone dans le hangar (même esprit que l'enclos et le bio-dôme). */
   .drone-tete .drone-ic { display:inline-block; vertical-align:middle; margin-right:8px; }

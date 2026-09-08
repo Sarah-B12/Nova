@@ -66,7 +66,7 @@ function monterAptitudes(){
   const panneau = document.querySelector('[data-panneau="aptitudes"]'); if(!panneau) return;
   panneau.innerHTML =
     `<h2>Aptitudes <span class="pts" id="apt-pa"></span></h2>
-     <p class="vide" style="margin:0 0 12px">1 point d'Aptitude par quête accomplie. Chaîne stricte : chaque nœud exige le précédent. Réattribution : ${APT_RESPEC.toLocaleString("fr-FR")} ₡.</p>
+     <p class="vide" style="margin:0 0 12px">Les points d'Aptitude se gagnent en accomplissant des quêtes ; certaines en donnent plus que d'autres. Chaîne stricte : chaque nœud exige le précédent. Réattribution : ${APT_RESPEC.toLocaleString("fr-FR")} ₡.</p>
      <div class="apt-sous-menu">
        <button class="apt-sous-lien actif" data-apt="communes">Aptitudes communes</button>
        <button class="apt-sous-lien" data-apt="speciales">Aptitudes spéciales</button>

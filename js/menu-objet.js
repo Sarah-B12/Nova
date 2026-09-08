@@ -36,31 +36,76 @@ function ouvrirMenuObjet(id){
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
   if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
   if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché…</button>`;
-  if(brade!=null) html += `<button class="menu-act brader" data-act="brader">Brader — ${Math.max(1,Math.round(brade/2))} ₡</button>`;
+  /* Bradage : au-delà d'une unité, on propose une quantité plutôt que d'obliger
+     à recommencer objet par objet. Les retraits sont FIFO côté serveur
+     (inv_retirer), donc ce sont TOUJOURS les lots les plus anciens — donc les
+     plus proches de la péremption — qui partent en premier. */
+  if(brade!=null){
+    const u = Math.max(1, Math.round(brade/2));
+    const dispo = etat.sac[id]||0;
+    if(dispo > 1){
+      html += `<div class="menu-qte">
+        <button class="mini" data-q="-1">−</button>
+        <input id="brade-q" type="number" inputmode="numeric" min="1" max="${dispo}" value="1">
+        <button class="mini" data-q="1">+</button>
+        <button class="mini" data-q="max">Tout (${dispo})</button>
+      </div>
+      <button class="menu-act brader" data-act="brader">Brader <span id="brade-n">1</span> — <span id="brade-t">${u}</span> ₡</button>`;
+    } else {
+      html += `<button class="menu-act brader" data-act="brader">Brader — ${u} ₡</button>`;
+    }
+  }
   html += `</div>`;
 
   const m=document.querySelector("#menu-objet"); m.innerHTML=html; m.hidden=false;
   m.querySelector("[data-fermer]").addEventListener("click", fermerMenuObjet);
   m.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click", ()=>menuActionObjet(b.dataset.act, id)));
+
+  const champ = m.querySelector("#brade-q");
+  if(champ){
+    const dispo = etat.sac[id]||0, u = Math.max(1, Math.round(valeurBrade(id)/2));
+    const maj = ()=>{
+      let n = parseInt(champ.value,10); if(!Number.isFinite(n)) n = 1;
+      n = Math.max(1, Math.min(dispo, n));
+      champ.value = n;
+      m.querySelector("#brade-n").textContent = n;
+      m.querySelector("#brade-t").textContent = n * u;
+    };
+    champ.addEventListener("input", maj);
+    m.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click", ()=>{
+      champ.value = b.dataset.q==="max" ? dispo : (parseInt(champ.value,10)||1) + parseInt(b.dataset.q,10);
+      maj();
+    }));
+    maj();
+  }
 }
 
+let _brdQte = 1;   // lue AVANT fermerMenuObjet(), qui vide le menu et perd le champ
 function menuActionObjet(act, id){
+  if(act==="brader"){
+    const c=document.querySelector("#brade-q");
+    _brdQte = c ? Math.max(1, parseInt(c.value,10)||1) : 1;
+  }
   fermerMenuObjet();
   if(act==="consommer" && typeof utiliser==="function") utiliser(id);
   else if(act==="equiper" && typeof equiper==="function") equiper(id);
   else if(act==="equiper-vaisseau" && typeof equiperVaisseau==="function") equiperVaisseau(id);
-  else if(act==="brader") braderObjet(id);
+  else if(act==="brader") braderObjet(id, _brdQte);
   else if(act==="vendre") vendreDepuisMenu(id);
 }
 
-async function braderObjet(id){
-  const v=valeurBrade(id); if(v==null || (etat.sac[id]||0)<=0) return;
-  const gain=Math.max(1, Math.round(v/2));
-  // L'objet part côté serveur AVANT que les crédits n'arrivent : pas de gain sans perte.
-  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"brader" })) return;
+async function braderObjet(id, qte){
+  const v=valeurBrade(id); if(v==null) return;
+  const dispo = etat.sac[id]||0; if(dispo<=0) return;
+  const n = Math.max(1, Math.min(dispo, parseInt(qte,10)||1));
+  const gain=Math.max(1, Math.round(v/2)) * n;
+  /* Les objets partent côté serveur AVANT que les crédits n'arrivent : pas de
+     gain sans perte. Le retrait est FIFO (inv_retirer) : les lots les plus
+     anciens, donc les plus proches de la péremption, s'en vont en premier. */
+  if(!await agirServeur({ retirer:{ [id]:n }, motif:"brader" })) return;
   etat.credits += gain;
   if(etat.pas) etat.pas.vendu=true;
-  journal(`${item(id).nom} bradé — +${gain} ₡.`,"gain");
+  journal(`${item(id).nom}${n>1?` ×${n}`:""} bradé — +${gain} ₡.`,"gain");
   apresAction();
 }
 

@@ -48,6 +48,10 @@
     .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
     .rep-badge{ cursor:default; }
+    .gouv-blason{ display:flex; justify-content:center; margin:10px 0 14px; }
+    .gouv-blason img{ width:132px; height:132px; object-fit:contain;
+      filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
+    @media (max-width:560px){ .gouv-blason img{ width:96px; height:96px; } }
     .rep-n{ font-size:14px; font-weight:700; color:var(--orange-hi,#ffb060); }
     .gouv-textarea{ width:100%; box-sizing:border-box; background:#0f1830; border:1px solid var(--line); border-radius:var(--r-s,10px); color:var(--texte,#dfe8f2); padding:10px; font-family:inherit; font-size:14px; resize:vertical; margin-bottom:10px; }
   `;
@@ -67,6 +71,16 @@ const CERCLES = [
    badge. Sans elle on retombe sur la médaille 🎖️ générique.
    Chaque image a un repli emoji via onerror, donc un blason manquant
    n'efface pas le badge. */
+/* Blason de faction en grand, sous le titre de l'onglet Gouvernement.
+   Repli silencieux : sans faction ou sans fichier, on n'affiche rien plutôt
+   qu'un cadre vide (l'emoji 🎖️ n'aurait aucun sens à cette taille). */
+function _blasonFaction(fac){
+  if(!fac) return "";
+  const f = (typeof FACTIONS!=="undefined") ? FACTIONS.find(x=>x.id===fac) : null;
+  return `<div class="gouv-blason"><img src="images/blasons/${fac}.png"
+      alt="${f?f.nom:fac}" title="${f?f.nom:fac}" onerror="this.parentNode.remove()"></div>`;
+}
+
 function _badgesReput(repFaction, cercles, faction){
   cercles = cercles || {};
   const fac = (typeof FACTIONS!=="undefined") ? FACTIONS.find(f=>f.id===faction) : null;
@@ -101,6 +115,7 @@ async function majGouvernement(el){
   try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
   const reste = Math.max(0, 500 - dejaJour);
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
+    ${_blasonFaction(fac)}
     <div class="gouv-caisse"><span>Caisse de la faction</span><b class="or">${solde.toLocaleString("fr-FR")} ₡</b></div>
     <p class="itip-gris">Alimentée par les <b>taxes du marché</b> de la faction et les <b>dons</b> des membres.</p>
     <div class="gouv-don">
