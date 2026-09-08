@@ -12,12 +12,19 @@
     .poste-ligne{ display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid var(--line); border-radius:8px; padding:9px 11px; margin:6px 0; }
     .poste-txt{ flex:1; }
     .poste-envoi{ display:flex; flex-direction:column; gap:9px; max-width:460px; }
-    .poste-envoi input, .poste-envoi select{ width:100%; box-sizing:border-box; background:#0f1830; border:1px solid var(--line); border-radius:var(--r-s,10px); color:var(--texte,#dfe8f2); padding:9px 11px; font-family:inherit; font-size:14px; }
-    .poste-envoi input:focus, .poste-envoi select:focus{ outline:none; border-color:var(--orange,#ff8a3d); }
+    /* Ne PAS viser tous les input de .poste-envoi sans restriction : les boutons
+       radio heritaient de width:100% et du padding. Chrome les ignore sur un
+       radio, Safari/iPad les applique — chaque bouton prenait toute la largeur
+       de son label et se posait sur le texte. */
+    .poste-envoi input:not([type=radio]):not([type=checkbox]), .poste-envoi select{ width:100%; box-sizing:border-box; background:#0f1830; border:1px solid var(--line); border-radius:var(--r-s,10px); color:var(--texte,#dfe8f2); padding:9px 11px; font-family:inherit; font-size:14px; }
+    .poste-envoi input:not([type=radio]):focus, .poste-envoi select:focus{ outline:none; border-color:var(--orange,#ff8a3d); }
+    /* Taille imposee : sans cela, iOS agrandit les radios de facon imprevisible. */
+    .poste-types input[type=radio]{ width:18px; height:18px; min-width:18px; flex:0 0 18px;
+      margin:0; padding:0; accent-color:var(--orange,#ff8a3d); }
     .poste-envoi input:-webkit-autofill{ -webkit-box-shadow:0 0 0 40px #0f1830 inset !important; -webkit-text-fill-color:var(--texte,#dfe8f2) !important; }
     .poste-envoi #poste-qte{ width:80px; } .poste-envoi #poste-prix{ width:180px; }
     .poste-types{ display:flex; flex-wrap:wrap; gap:12px; }
-    .poste-types label{ display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; }
+    .poste-types label{ display:flex; align-items:center; gap:7px; cursor:pointer; font-size:14px; white-space:nowrap; }
     .hub-banniere{ width:100%; max-height:150px; object-fit:cover; border-radius:10px; margin-bottom:12px; display:block; }
   `;
   document.head.appendChild(st);

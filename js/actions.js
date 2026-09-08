@@ -88,10 +88,27 @@ async function utiliser(art){
   const id = (typeof art==="string") ? art : art.id;
   const eff = (typeof effetConso==="function") ? effetConso(id) : null;
   if(!eff || !etat.sac[id]) return;
-  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"consommer" })) return;
+  /* ⚠ Les jauges appartiennent au SERVEUR (colonnes o2/sante/moral). L'objet
+     était retiré côté serveur mais le soin appliqué en LOCAL, sans être passé
+     dans p_jauges : agirServeur écrase ensuite etat.jauges avec les valeurs
+     renvoyées, donc le gain s'affichait puis disparaissait à l'action
+     suivante. Le joueur perdait son kit pour rien. On envoie désormais les
+     deltas DANS le même appel, atomique avec le retrait. */
+  const avant = Object.assign({}, etat.jauges);
+  const deltas = {};
+  for(const g in eff) deltas[g] = aptSoin(eff[g]);
+
+  const res = await agirServeur({ retirer:{ [id]:1 }, jauges:deltas, motif:"consommer" });
+  if(!res) return;
+
+  // Gain RÉEL : le serveur plafonne à 100, annoncer le nominal serait mentir.
   const parts=[];
-  for(const g in eff){ const soin=aptSoin(eff[g]); etat.jauges[g]=borne((etat.jauges[g]||0)+soin); parts.push(`+${soin} ${labelJauge(g)}`); }
-  journal(`${item(id)?item(id).nom:(art.nom||id)} utilisé : ${parts.join(", ")}.`,"gain");
+  for(const g in deltas){
+    const gagne = Math.round((etat.jauges[g] ?? 0) - (avant[g] ?? 0));
+    parts.push(`+${gagne} ${labelJauge(g)}`);
+  }
+  const perdu = parts.every(p=>p.startsWith("+0"));
+  journal(`${item(id)?item(id).nom:(art.nom||id)} utilisé : ${parts.join(", ")}${perdu?" — jauges déjà au maximum":""}.`, perdu?"alerte":"gain");
   apresAction();
 }
 function ameliorer(cle){ if(etat.pointsCompetence<=0)return; if(etat.competences[cle]>=CAP_COMP){journal("Compétence au maximum (200).","alerte");return;} etat.pointsCompetence--; etat.competences[cle]++; journal(`${COMPETENCES.find(c=>c.id===cle).nom} améliorée (${etat.competences[cle]}).`); afficher(); sauvegarder(); }
