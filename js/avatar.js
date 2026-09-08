@@ -9,7 +9,7 @@
    augmenter à mesure que tu ajoutes des images (les rangées apparaissent seules).
    =========================================================== */
 const AV_VISAGE     = { h:20, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
-const AV_CHEVEUX    = { h:0,  f:9 };   // coiffures : f_1..f_4 (aucune pour les hommes pour l'instant)
+const AV_CHEVEUX    = { h:0,  f:4 };   // coiffures : f_1..f_4 (aucune pour les hommes pour l'instant)
 const AV_PILOSITE   = 0;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
 const AV_ACCESSOIRE = { h:0, f:0 };    // accessoires par genre (morphologies différentes)
 
@@ -119,8 +119,26 @@ async function _validerAvatar(){
   if(typeof afficher==="function") afficher();
   if(typeof majParametres==="function") majParametres();
 }
+/* ⚠ _renderAvModal reconstruit tout le HTML à chaque clic : les rangées de
+   vignettes sont en overflow-x:auto, leur défilement horizontal repartait donc
+   à zéro et on était renvoyé à la première coiffure. On mémorise la position
+   de chaque rangée (clé = nom de la couche) et on la restaure après coup. */
+function _avScrollsLire(m){
+  const pos = {};
+  (m ? m.querySelectorAll(".av-vigs") : []).forEach(z=>{ pos[z.dataset.couche] = z.scrollLeft; });
+  return pos;
+}
+function _avScrollsEcrire(m, pos){
+  if(!m || !pos) return;
+  m.querySelectorAll(".av-vigs").forEach(z=>{
+    const v = pos[z.dataset.couche];
+    if(typeof v === "number") z.scrollLeft = v;
+  });
+}
+
 function _renderAvModal(){
   const m=_avModal(); const a=_avBrouillon; if(!a) return; const g=a.genre||"h";
+  const _pos = _avScrollsLire(m);
   const fige = !!(_avEtatServeur && _avEtatServeur.defini);   // genre choisi à l'inscription = figé à vie
   const e = _avEtatServeur || {};
   const tarif = _avObligatoire ? `Choisis ton visage. <b>Le genre est définitif</b> et l'apparence sera verrouillée 6 mois.`
@@ -153,6 +171,7 @@ function _renderAvModal(){
     _majAvPortrait(); _renderAvModal(); }));
   m.querySelectorAll("[data-choix]").forEach(b=>b.addEventListener("click",()=>{ const p=b.dataset.choix.split(":"); a[p[0]]=parseInt(p[1],10); _majAvPortrait(); _renderAvModal(); }));
   // (les [data-choix] écrivent dans _avBrouillon, jamais dans etat.avatar)
+  _avScrollsEcrire(m, _pos);   // rendre au joueur la position où il était
 }
 function _avRangee(titre, couche, n, avecAucun, g){
   let opts="";
@@ -163,7 +182,7 @@ function _avRangee(titre, couche, n, avecAucun, g){
     opts+=`<button class="av-vig${cur[couche]===i?" actif":""}" data-choix="${couche}:${i}"><img src="images/avatars/${file}.png" onerror="this.parentElement.style.display='none'"></button>`;
   }
   if(!n) opts+=`<span class="itip-gris" style="align-self:center">à venir</span>`;
-  return `<div class="av-rangee"><div class="av-rangee-tete">${titre}</div><div class="av-vigs">${opts}</div></div>`;
+  return `<div class="av-rangee"><div class="av-rangee-tete">${titre}</div><div class="av-vigs" data-couche="${couche}">${opts}</div></div>`;
 }
 function _majAvPortrait(){
   const el=document.querySelector("#av-portrait"); if(!el) return;

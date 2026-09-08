@@ -59,11 +59,12 @@
       <div class="carte-jauges">
         <span class="cj" id="cj-energie">Énergie <b id="carte-energie">100</b>%</span>
         <span class="cj" id="cj-o2">O₂ <b id="carte-o2">100</b></span>
+        <span class="cj-apercu" id="carte-apercu"></span>
       </div>
       <button class="mini" id="carte-fermer">Fermer ✕</button>
     </div>
     <div class="zone-carte"><svg id="carte" aria-label="Carte de Silène"></svg></div>
-    <p class="vide" style="text-align:center; margin:8px 0 0">Clique n'importe où sur la carte pour t'y déplacer (coût selon la distance).</p>
+    <p class="vide" style="text-align:center; margin:8px 0 0">Survole la carte pour voir le coût du trajet, clique pour t'y déplacer.</p>
   </div>
 </div>
 
@@ -100,7 +101,7 @@
     </div>
     <div class="statut-haut">
       <div class="id-haut"><b id="nom-affiche">Opérateur</b><span class="sous">Niv <b id="stat-niveau">1</b> · XP <b id="stat-xp">0/20</b></span></div>
-      <div class="credits-haut">Crédits <b class="or" id="stat-credits">0</b> ₡</div>
+      <div class="credits-haut">Crédits <b class="or" id="stat-credits">0</b> <span class="devise">₡</span></div>
       <div class="jauge energie" id="jauge-energie" title="Regagnée avec le temps (+10 %/h) et à chaque niveau (+100 %).">
         <div class="jauge-tete"><span>Énergie</span><span class="val">100%</span></div>
         <div class="piste"><div class="remplissage"></div></div>

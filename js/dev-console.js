@@ -164,9 +164,9 @@ function _devCartePerso(){
    fait sinon plusieurs écrans de défilement. */
 async function devCandidatures(){
   const z = document.querySelector("#dev-cand"); if(!z) return;
-  const cy = (document.querySelector("#dev-cand-cycle")||{}).value.trim();
   z.innerHTML = `<p class="dev-note">Chargement…</p>`;
-  const { data, error } = await sb.rpc("admin_candidatures", { p_cycle: cy || null });
+  // p_cycle omis : la RPC retombe sur le cycle en cours, le seul qu'on surveille.
+  const { data, error } = await sb.rpc("admin_candidatures", { p_cycle: null });
   if(error){ z.innerHTML = `<p class="dev-note">Échec : ${echapper(error.message)}</p>`; return; }
   if(!data || !data.ok){ z.innerHTML = `<p class="dev-note">Refusé : réservé au staff.</p>`; return; }
   const liste = data.liste || [];
@@ -241,14 +241,15 @@ function majDev(){
        <div id="dev-res"><p class="dev-note">Tape un pseudo (une partie suffit) puis Entrée.</p></div>
        <div class="dev-bloc"><h4>Candidatures — élection en cours</h4>
          <p class="dev-note">Programmes de <b>toutes</b> les factions, pour vérifier qu'aucun ne pose problème. Repliés par défaut : clique un nom pour le dérouler.</p>
-         <div class="dev-champ"><input id="dev-cand-cycle" placeholder="Cycle (AAAA-MM) — vide = en cours"><button class="mini" id="dev-cand-go">Charger</button></div>
-         <div id="dev-cand"></div></div>
+         <div class="dev-champ"><button class="mini" id="dev-cand-go">Rafraîchir</button></div>
+         <div id="dev-cand"><p class="dev-note">Chargement…</p></div></div>
        <div class="dev-bloc"><h4>Mode tranquillité</h4>
          <p class="dev-note">Sur <b>ton</b> personnage : plus de déclin quotidien, et santé / moral / O₂ remis à 100 chaque nuit. Les dégâts de combat sont réparés le lendemain — tu n'es pas invulnérable.</p>
          <div class="dev-actions"><button class="mini" id="dev-tranq">Mode tranquillité …</button></div></div>`;
     r.querySelector("#dev-chercher").addEventListener("click", devChercherJoueur);
     r.querySelector("#dev-tranq").addEventListener("click", devTranquillite);
     r.querySelector("#dev-cand-go").addEventListener("click", devCandidatures);
+    devCandidatures();   // chargé d'office : c'est le cycle en cours qu'on surveille
     _majBoutonTranquillite();
     r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") devChercherJoueur(); });
   }

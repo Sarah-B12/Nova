@@ -93,8 +93,32 @@ function majJournal(){
 
 /* ---------- Niveaux ---------- */
 function seuilXp(n){ return 20*n; }
+/* ⚠ `energie` / `energie_maj` sont des COLONNES SERVEUR depuis la Phase 4 : le
+   client ne les pousse plus. Poser etat.energie = 100 ici n'atteignait donc
+   jamais la base — la recharge s'affichait puis retombait dès que
+   agirServeur() réappliquait la valeur du serveur. La montée de niveau passe
+   maintenant par la RPC niveau_monter(), qui recharge côté base.
+   gagnerXp reste SYNCHRONE (une trentaine d'appelants) : la RPC part en
+   arrière-plan et met à jour etat.energie à sa réponse. */
 function gagnerXp(n){
   etat.xp += n;
-  while (etat.xp >= seuilXp(etat.niveau)) { etat.xp -= seuilXp(etat.niveau); etat.niveau++; etat.pointsCompetence += PTS_PAR_NIVEAU; etat.energie = 100; etat.energieMaj = Date.now(); journal(`Niveau ${etat.niveau} atteint ! +${PTS_PAR_NIVEAU} points, énergie pleine.`,"gain"); }
+  let monte = false;
+  while (etat.xp >= seuilXp(etat.niveau)) {
+    etat.xp -= seuilXp(etat.niveau); etat.niveau++;
+    etat.pointsCompetence += PTS_PAR_NIVEAU; monte = true;
+    journal(`Niveau ${etat.niveau} atteint ! +${PTS_PAR_NIVEAU} points, énergie pleine.`,"gain");
+  }
+  if(monte) _monterNiveauServeur(etat.niveau);
+}
+
+async function _monterNiveauServeur(niveau){
+  if(typeof SERVEUR_DISPO === "undefined" || !SERVEUR_DISPO) return;
+  try{
+    const { data, error } = await sb.rpc("niveau_monter", { p_niveau: niveau|0 });
+    if(error){ if(typeof _catchLog==="function") _catchLog(error, "systeme.js#niveau"); return; }
+    if(!data || !data.ok) return;              // pas_de_montee : rien à faire
+    etat.energie = data.energie; etat.energieMaj = Date.now();
+    if(typeof afficher==="function") afficher();
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "systeme.js#niveau2"); }
 }
 
