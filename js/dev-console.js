@@ -157,6 +157,49 @@ function _devCartePerso(){
 /* Mode tranquillité — onglet Recherche, donc accessible aux DEUX consoles
    (dev et admin), comme la fiche joueur. L'état vit dans profils.tranquillite,
    colonne protégée par le trigger : un joueur ne peut pas se l'accorder. */
+/* Candidatures : lecture modération, toutes factions confondues.
+   La RLS de `candidatures` cloisonne par faction — d'où la RPC
+   admin_candidatures(), qui contrôle est_admin() côté serveur.
+   Les programmes sont dans des <details> : une élection à cinq factions
+   fait sinon plusieurs écrans de défilement. */
+async function devCandidatures(){
+  const z = document.querySelector("#dev-cand"); if(!z) return;
+  const cy = (document.querySelector("#dev-cand-cycle")||{}).value.trim();
+  z.innerHTML = `<p class="dev-note">Chargement…</p>`;
+  const { data, error } = await sb.rpc("admin_candidatures", { p_cycle: cy || null });
+  if(error){ z.innerHTML = `<p class="dev-note">Échec : ${echapper(error.message)}</p>`; return; }
+  if(!data || !data.ok){ z.innerHTML = `<p class="dev-note">Refusé : réservé au staff.</p>`; return; }
+  const liste = data.liste || [];
+  if(!liste.length){ z.innerHTML = `<p class="dev-note">Aucune candidature pour le cycle ${echapper(data.cycle)}.</p>`; return; }
+
+  const parFac = {};
+  liste.forEach(c => { (parFac[c.faction] = parFac[c.faction] || []).push(c); });
+  const nomFac = f => (typeof FACTIONS!=="undefined" && (FACTIONS.find(x=>x.id===f)||{}).nom) || f;
+
+  let h = `<p class="dev-note">Cycle <b>${echapper(data.cycle)}</b> — ${liste.length} candidature(s).</p>`;
+  Object.keys(parFac).sort().forEach(f => {
+    h += `<div class="cand-fac"><b>${echapper(nomFac(f))}</b> <span class="dev-note">${parFac[f].length}</span></div>`;
+    parFac[f].forEach(c => {
+      const d = c.cree_le ? new Date(c.cree_le).toLocaleString() : "";
+      h += `<details class="cand-item">
+        <summary>${echapper(c.nom)} <span class="dev-note">· ${c.longueur} car. · ${echapper(d)}</span></summary>
+        <div class="cand-prog">${echapper(c.programme || "(programme vide)")}</div>
+        <button class="mini" data-suppr="${c.profil_id}" data-fac="${f}" data-cy="${echapper(data.cycle)}">Supprimer cette candidature</button>
+      </details>`;
+    });
+  });
+  z.innerHTML = h;
+
+  z.querySelectorAll("[data-suppr]").forEach(b => b.addEventListener("click", async () => {
+    if(!confirm("Supprimer cette candidature ?")) return;
+    const { data:r, error:e } = await sb.rpc("admin_suppr_candidature",
+      { p_profil: b.dataset.suppr, p_faction: b.dataset.fac, p_cycle: b.dataset.cy });
+    if(e || (r && r.ok === false)){ alert("Échec : " + (e ? e.message : "refusé")); return; }
+    journal("[STAFF] candidature supprimée.","alerte");
+    devCandidatures();
+  }));
+}
+
 let _tranqActif = null;
 async function _majBoutonTranquillite(){
   const b = document.querySelector("#dev-tranq"); if(!b) return;
@@ -196,11 +239,16 @@ function majDev(){
       `<p class="dev-note">Recherche parmi <b>tous les comptes</b>. Chaque action est journalisée et annoncée au joueur.</p>
        <div class="dev-champ"><input id="dev-q" placeholder="Rechercher un pseudo…"><button class="mini" id="dev-chercher">Chercher</button></div>
        <div id="dev-res"><p class="dev-note">Tape un pseudo (une partie suffit) puis Entrée.</p></div>
+       <div class="dev-bloc"><h4>Candidatures — élection en cours</h4>
+         <p class="dev-note">Programmes de <b>toutes</b> les factions, pour vérifier qu'aucun ne pose problème. Repliés par défaut : clique un nom pour le dérouler.</p>
+         <div class="dev-champ"><input id="dev-cand-cycle" placeholder="Cycle (AAAA-MM) — vide = en cours"><button class="mini" id="dev-cand-go">Charger</button></div>
+         <div id="dev-cand"></div></div>
        <div class="dev-bloc"><h4>Mode tranquillité</h4>
          <p class="dev-note">Sur <b>ton</b> personnage : plus de déclin quotidien, et santé / moral / O₂ remis à 100 chaque nuit. Les dégâts de combat sont réparés le lendemain — tu n'es pas invulnérable.</p>
          <div class="dev-actions"><button class="mini" id="dev-tranq">Mode tranquillité …</button></div></div>`;
     r.querySelector("#dev-chercher").addEventListener("click", devChercherJoueur);
     r.querySelector("#dev-tranq").addEventListener("click", devTranquillite);
+    r.querySelector("#dev-cand-go").addEventListener("click", devCandidatures);
     _majBoutonTranquillite();
     r.querySelector("#dev-q").addEventListener("keydown", e=>{ if(e.key==="Enter") devChercherJoueur(); });
   }
@@ -375,6 +423,12 @@ function monterDev(){
     .dev-note{ font-size:11.5px; color:#8b95a8; line-height:1.45; margin:0 0 10px; }
     .dev-dim{ color:#8b95a8; }
     .dev-champ{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .cand-fac{ margin:12px 0 5px; font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--orange-hi,#ffb060); }
+    .cand-item{ border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:#0f1830; }
+    .cand-item summary{ cursor:pointer; padding:7px 10px; font-size:13px; }
+    .cand-item[open] summary{ border-bottom:1px solid var(--line); }
+    .cand-prog{ padding:9px 11px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+    .cand-item .mini{ margin:0 11px 10px; }
     .dev-champ input, .dev-champ select{ background:#0f1830; border:1px solid #2a3550; border-radius:8px; color:#dfe7f5; padding:8px 10px; font-family:inherit; flex:1; min-width:120px; }
     .dev-bloc{ margin:0 0 14px; } .dev-bloc h4{ margin:0 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:#9fb0c4; }
     .dev-carte{ border:1px solid #2a3550; border-radius:10px; padding:12px; background:#0f1830; }

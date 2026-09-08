@@ -258,14 +258,18 @@ const QUETES = [
     nom:"La fleur qui n'aurait pas dû",
     donneur:"Adaya",
     donneurLieu:"Serre des Cultivateurs",
-    // Première quête sans Sorn : Adaya, 3e ligne du registre d'équipe de Q2.
-    // Elle était DEHORS le jour de la fermeture. Elle est rentrée à pied.
+    // Première quête sans Sorn : Adaya porte le nom de la 3e ligne du registre
+    // de Q2. ⚠ CANON v2 — elle n'est PAS un témoin (trois siècles) mais une
+    // DESCENDANTE. Sa mémoire de famille dit « on était dehors et on est
+    // rentré à pied » ; celle des Sorn dit « il s'est sauvé ». Les deux
+    // décrivent le même jour et ne se recoupent pas. Elles ne se parlent
+    // jamais : le joueur est leur seul lien.
     // Premier défi « choix » de la campagne (site 3) : savoir / vivant / profit.
     // Gains SEULEMENT (pas de malus tant que les joueurs n'ont rien accumulé).
     // Le moteur gère pourtant les valeurs négatives : à envisager plus tard.
     intro:[
       "La vieille femme t'attend sous la verrière, les mains dans un bac de terreau noir. Elle ne se retourne pas tout de suite.",
-      "« Adaya. » Elle s'essuie enfin les paumes. « On m'a dit qu'un bleu était allé fouiller un registre d'équipe au nord-ouest. Un registre où j'ai un nom, figure-toi. Troisième ligne. »",
+      "« Adaya. » Elle s'essuie enfin les paumes. « On m'a dit qu'un bleu était allé fouiller un registre d'équipe au nord-ouest. Un registre où il y a mon nom, figure-toi. Troisième ligne. Trois cents ans avant moi, mais c'est le même. »",
       "Elle te laisse encaisser, puis désigne du menton un bocal posé sur l'établi : une tige pâle, luminescente, qui pulse doucement dans son bouillon.",
       "« Ça, ça pousse le long de l'ancien périmètre. Exactement le long. Sur une terre où rien ne prend depuis trois siècles. » Elle te regarde. « J'aimerais comprendre avant de mourir. Tu m'aides ? »",
       "Elle t'accroche une oreillette au col — la même camelote que celle de Sorn, en mieux entretenue. « Je te guide. Je serai précise sur le pourquoi, approximative sur le où. La carte date d'avant. »"
@@ -285,8 +289,8 @@ const QUETES = [
           texte:["Il lui faut de la Sylve pour le substrat et de la Sporelle pour la culture. Ça pousse dans le coin, ou ça s'achète."],
           reussite:[
             "Elle broie, filtre, verse. Ses gestes ont la précision d'un métier qu'on n'oublie pas.",
-            "« J'étais dehors, ce jour-là. Relevé de sondes, secteur nord. » Elle ne lève pas les yeux de sa pipette. « J'ai vu le périmètre se fermer d'un coup, comme une paupière. Et plus de radio. »",
-            "« Je suis rentrée à pied. Onze jours. » Un temps. « On était douze à partir ce matin-là. »",
+            "« Chez nous, on raconte toujours la même histoire aux gosses. » Elle ne lève pas les yeux de sa pipette. « Celle-là était dehors ce jour-là, relevé de sondes, secteur nord. Elle a vu le périmètre se fermer d'un coup, comme une paupière. Et plus de radio. »",
+            "« Elle est rentrée à pied. Onze jours. » Un temps. « Douze étaient partis ce matin-là. On n'a jamais dit combien sont revenus — ça, c'est la partie qu'on saute. »",
             "Elle bouche le flacon d'un coup sec. « Bon. Le tracé, maintenant. »"
           ] } },
 
@@ -298,11 +302,16 @@ const QUETES = [
           "La silène court sur le sol nu, en un ruban pâle qui file vers l'horizon sans dévier d'un mètre. Rien dans la nature ne pousse aussi droit.",
           "« Les pieds s'allument en cascade, l'un après l'autre », grésille Adaya. « Relève l'ordre. Si c'est un signal, il se répète. Si c'est du hasard, on le saura aussi. »"
         ],
+        /* ⚠ Cette séquence EST le rythme du périmètre — le cycle d'appel que le
+           Protocole rejoue depuis trois siècles. Le joueur la reproduit ici
+           sans le savoir, la reconnaît en Q4 et l'exécute de ses mains en Q5
+           (défi `memoire`). Ne pas la traiter comme un Simon Says décoratif. */
         defi:{ type:"sequence", longueur:5,
           texte:["Les corolles s'illuminent l'une après l'autre, puis s'éteignent. Reproduis la séquence."],
           reussite:[
-            "Le motif se répète, identique, à la seconde près. Ce n'est pas une plante qui pousse : c'est une plante qui compte.",
-            "Un long silence dans l'oreillette. « …Répète-moi ça. » Adaya te fait recommencer deux fois. Puis, très bas : « Elles suivent une horloge. »",
+            "Le motif se répète, identique, à la seconde près. Ce n'est pas une plante qui pousse : c'est une plante qui bat la mesure.",
+            "Un long silence dans l'oreillette. « …Répète-moi ça. » Adaya te fait recommencer deux fois. Puis, très bas : « Elles suivent une horloge. Pas une saison, petit — une horloge. »",
+            "« Et les Nomades ont un chant de route qui fait exactement ce trajet. Personne chez eux ne sait pourquoi. Ils le chantent, c'est tout. »",
             "« Il y a un creux, plus loin, où elles sont vieilles et serrées. Va voir. Et écoute-moi bien : ce que tu ramènes de là-bas, c'est toi qui décides. »"
           ] } },
 
@@ -345,9 +354,10 @@ const QUETES = [
           texte:["La centrifugeuse tourne. Rien à faire qu'attendre — tu peux t'éloigner et revenir."],
           reussite:[
             "« La plante n'est pas d'ici. » Adaya pose ses lunettes. « Enfin — elle n'est pas d'ici comme le reste n'est pas d'ici. Elle est arrivée avec nous. Elle a juste mieux tenu le coup. »",
-            "« Et elle compte quelque chose. Un intervalle. Je saurai pas te dire quoi, pas avec ce que j'ai, pas avec ce qu'il me reste de temps. »",
-            "Elle range ses flacons un long moment. Puis, sans se retourner : « E. Sorn. Le technicien relais. Il est vivant ? »",
-            "Tu réponds. Elle hoche la tête, une seule fois, et ne demande rien d'autre — ni où, ni comment, ni pourquoi il n'est jamais venu.",
+            "« Et elle ne compte pas les jours : elle suit quelque chose. » Adaya tapote son relevé. « Les vagues reviennent au même intervalle, encore et encore, sans jamais aboutir à rien. Ça ne descend pas vers une date. Ça tourne. »",
+            "« Quelque chose, là-bas, recommence la même chose depuis trois cents ans. Je saurai pas te dire quoi, pas avec ce que j'ai, pas avec ce qu'il me reste de temps. »",
+            "Elle range ses flacons un long moment. Puis, sans se retourner : « Il reste un Sorn ? Du technicien relais, celui de la deuxième ligne. »",
+            "Tu réponds. Elle hoche la tête, une seule fois, et ne demande rien d'autre — ni où, ni comment, ni pourquoi les deux familles ne se sont jamais adressé la parole en trois siècles.",
             "« Reviens quand tu veux, petit. La serre est ouverte. »"
           ] } }
     ],
@@ -358,17 +368,20 @@ const QUETES = [
     id:"q4",
     nom:"Ce qui dormait",
     donneur:"Vieux Sorn",
-    // L'intervalle de la silène (Q3) n'est pas une horloge : c'est un compte à rebours
-    // qui converge vers le poste d'embarquement de l'évacuation.
+    // ⚠ CANON v2 — l'intervalle de la silène (Q3) n'est PAS un compte à rebours
+    // (un décompte de trois siècles n'a pas de sens) : c'est un CYCLE D'APPEL.
+    // Périodiquement, le Protocole rouvre le quai, diffuse l'appel, attend,
+    // referme. Depuis trois cents ans. Personne ne vient. Il recommence.
+    // Sorn n'y était pas : il le DÉDUIT, comme le joueur.
     // ⚠ CONTRÔLE DE NIVEAU : combat puissance 22 au site 3.
     //   Base 10/10/10 + 3 pts/niveau -> victoire nette vers le niveau 5 en spécialisé,
     //   arrachée dès 16, échec sous 16 (personnage qui n'a rien dépensé).
     // Le manifeste du site 4 amorce Q5 : une navette encore enregistrée à quai.
     intro:[
       "Sorn t'attend debout, ce qui ne lui ressemble pas. Il a un papier à la main — le relevé d'Adaya, transmis par tu ne sais quel détour.",
-      "« Elle dit que ta fleur compte un intervalle. Elle a raison. » Il pose le papier. « Sauf que c'est pas une horloge, gamin. Une horloge, ça tourne en rond. Ça, ça descend. »",
-      "Il te laisse trouver le mot tout seul, et comme tu ne le trouves pas assez vite : « Un compte à rebours. Qui converge quelque part. »",
-      "« Et je sais où ça converge, parce que j'y étais. » Il décroche l'oreillette du clou. « L'embarquement. Tu vas y aller, et moi je vais te guider, et après ça on n'en parle plus jamais. »"
+      "« Elle dit que ta fleur bat la mesure. Elle a raison. » Il pose le papier. « Et moi j'ai passé la nuit dessus. »",
+      "« Une horloge, ça tourne en rond. Celle-là aussi. Sauf qu'une horloge, ça sert à savoir l'heure — et ce truc-là, il sert à appeler quelqu'un. » Il laisse le mot tomber tout seul. « À intervalle fixe. Encore. Et encore. »",
+      "« Et ça appelle vers un endroit précis. » Il décroche l'oreillette du clou, et sa main tremble un peu. « L'embarquement, gamin. Le mot que je t'avais dit de laisser tomber. Tu vas y aller, et après ça on n'en parle plus jamais. »"
     ],
     etapes:[
 
@@ -378,7 +391,8 @@ const QUETES = [
         image:"images/quetes/q4/1.png",
         arrivee:[
           "Les tiges se resserrent en un faisceau qui ne laisse plus de doute sur la direction. À l'endroit où elles convergent, des panneaux de service émergent du sol, leurs pictogrammes encore lisibles sous la poussière.",
-          "« Je connais ces symboles par cœur », grogne Sorn. « J'aurais préféré mourir sans les revoir. Apparie-les, ils t'indiqueront la porte de service. »"
+          "Quatre d'entre eux te sont familiers. Tu les as manipulés à l'aveugle, sur le cadenas du poste enseveli, sans savoir qu'ils voulaient dire quelque chose.",
+          "« Ces symboles, c'est le seul héritage propre de ma famille », grogne Sorn. « On me les a appris avant l'alphabet, et personne n'a jamais su me dire pourquoi. Apparie-les, ils t'indiqueront la porte de service. »"
         ],
         defi:{ type:"glyphes",
           texte:["Six panneaux de service, six glyphes du Protocole. Rends à chacun son sens."],
@@ -420,8 +434,9 @@ const QUETES = [
         image:"images/quetes/q4/3.png",
         arrivee:[
           "Elle est au fond du hall, immobile depuis si longtemps que la poussière a fait d'elle une statue. Ton pas la réveille. Elle se déplie sans hâte, sans colère, et se met en travers du couloir.",
+          "Sous la poussière, la silhouette est blindée, close, sans visage. Impossible de dire s'il y a un mécanisme là-dedans ou quelqu'un. Tu ne le sauras pas aujourd'hui.",
           "ACCÈS RESTREINT. ÉVACUATION EN COURS. VEUILLEZ REJOINDRE LE POINT DE RASSEMBLEMENT.",
-          "« Elle croit encore que l'embarquement a lieu aujourd'hui », souffle Sorn. « Quarante ans qu'elle attend qu'on lui dise que c'est fini. Personne l'a jamais fait. »"
+          "« Elle croit encore que l'embarquement a lieu aujourd'hui », souffle Sorn. « Trois cents ans qu'elle attend qu'on lui dise que c'est fini. Personne l'a jamais fait. Personne peut. »"
         ],
         defi:{ type:"combat",
           nom:"Sentinelle d'embarquement",
@@ -440,16 +455,24 @@ const QUETES = [
         image:"images/quetes/q4/4.png",
         arrivee:[
           "Le poste d'embarquement est resté ouvert, registres compris. Sur l'écran principal, le manifeste de la dernière rotation clignote encore, jamais clôturé.",
-          "EMBARQUÉS : 1 244. NON EMBARQUÉS : ___. CLÔTURE IMPOSSIBLE — SAISIE MANQUANTE.",
-          "La machine attend depuis trois cents ans qu'un opérateur lui donne le chiffre pour pouvoir refermer son registre."
+          "PERSONNEL RECENSÉ : 1 324.   EMBARQUÉS : 1 244.   NON EMBARQUÉS : ___.",
+          "CLÔTURE IMPOSSIBLE — SAISIE MANQUANTE. La machine attend depuis trois cents ans qu'un opérateur lui donne le chiffre. Les deux autres sont là, sous tes yeux, depuis le début."
         ],
+        /* ⚠ Le chiffre 80 est une RÉVÉLATION de cette quête, pas un acquis :
+           il ne peut donc pas être demandé de mémoire. L'écran affiche le
+           recensé et les embarqués — le joueur soustrait. Comprendre l'écran
+           EST la solution. (L'ancien indice renvoyait à une réplique de Q2
+           qui n'existe plus : les 80 y étaient annoncés trop tôt.) */
         defi:{ type:"enigme",
           texte:"NON EMBARQUÉS — SAISIE REQUISE POUR CLÔTURE.",
-          question:"« Combien de personnes sont restées dehors ? »",
+          question:"« Combien de personnes ne sont jamais montées à bord ? »",
           reponses:["80","quatre-vingts","quatre vingts","quatre-vingt","80 personnes"],
-          indice:"Sorn te l'a dit lui-même, à l'émetteur : elles avaient jusqu'au soir pour rentrer.",
+          indice:"Recensés moins embarqués. Les deux nombres sont affichés au-dessus.",
           reussite:[
-            "Tu saisis le chiffre. Le registre se clôt dans un déclic minuscule, et l'écran affiche, pour la première fois depuis trois cents ans : ROTATION CLÔTURÉE.",
+            "Quatre-vingts. Tu saisis le chiffre, et il te paraît d'abord petit — jusqu'à ce que tu penses aux bancs du hall, et aux sacs encore posés dessous.",
+            "Le registre se clôt dans un déclic minuscule, et l'écran affiche, pour la première fois depuis trois cents ans : ROTATION CLÔTURÉE.",
+            "« Quatre-vingts. » Sorn répète le mot comme s'il le pesait. « Ils avaient jusqu'au soir pour rentrer. Après la coupure, ils avaient plus rien pour se faire rappeler. »",
+            "Un silence. « Voilà ce qu'il a compris en trois jours. »",
             "Puis, en dessous, une ligne que personne n'était là pour lire :",
             "APPAREIL DE RÉSERVE — NAVETTE MAAR-3/07 — STATUT : À QUAI. ENTRETIEN AUTOMATIQUE ACTIF. EN ATTENTE D'ÉQUIPAGE.",
             "« …Répète. » La voix de Sorn n'est plus la même. « Répète ce que tu viens de lire, gamin. Lentement. »",
@@ -463,12 +486,16 @@ const QUETES = [
     id:"q5",
     nom:"L'appareil de réserve",
     donneur:"Vieux Sorn",
-    // Dernière vérité de Sorn : il est RADIÉ (« NE PAS RÉINTÉGRER », lu en Q2).
-    // Il n'a jamais cherché la navette parce que la trouver l'obligerait à
-    // constater qu'il ne peut pas monter dedans. Il ne demandera rien.
+    // Dernière vérité : c'est le NOM des Sorn qui est radié (« NE PAS
+    // RÉINTÉGRER », lu en Q2), pas l'homme. Un registre vieux de trois siècles
+    // refuse encore un patronyme. Il n'a jamais cherché la navette parce que
+    // la trouver l'obligerait à constater qu'il ne peut pas monter dedans.
+    // ⚠ C'est ici que tombe la révélation majeure de l'arc (étape 2) : le
+    //    Protocole est fait d'HOMMES. Tout le fil « c'est des machines »,
+    //    semé dès Q1 par Sorn lui-même, se paie là.
     intro:[
       "Sorn n'a pas dormi. Ça se voit à sa façon de tenir sa tasse à deux mains.",
-      "« Un appareil de réserve, c'était dans les procédures. Une navette qu'on laisse à quai au cas où. » Il hausse les épaules, trop vite. « Je savais qu'il devait y en avoir une. J'ai jamais cherché. »",
+      "« Un appareil de réserve, c'était dans les procédures. Une navette qu'on laisse à quai au cas où. » Il tapote le carnet de maintenance que tu lui as rapporté du poste enseveli. « C'est écrit là-dedans, en marge. Je l'ai lu à quinze ans. J'ai jamais cherché. »",
       "Il repose la tasse. « Le quai est sous l'anneau. C'est pour ça qu'ils le gardent, tu comprends ? Ils gardent pas un secret. Ils gardent une zone d'embarquement, parce que personne a jamais déclaré l'évacuation terminée. »",
       "« Toi tu viens de clôturer la rotation. Donc y a une place d'équipage qui s'est ouverte. » Il te regarde. « Va la prendre. »"
     ],
@@ -495,8 +522,16 @@ const QUETES = [
         image:"images/quetes/q5/2.png",
         arrivee:[
           "Le dépôt a survécu à tout, y compris à la fin du monde qui l'employait. Derrière une vitre blindée, des rechanges alignés au cordeau, et un terminal de facturation d'une politesse insupportable.",
+          "La coursive qui y mène surplombe le quai. Tu y arrives au mauvais moment — ou au bon.",
+          "En bas, une lumière ambre s'allume sur toute la longueur du quai. Puis une seconde. Puis une troisième, et la cadence s'installe : celle que tu as reproduite sur les corolles, à la fleur près.",
+          "APPEL D'EMBARQUEMENT — PERSONNEL NON ÉVACUÉ — PRÉSENTEZ-VOUS AU POINT DE RASSEMBLEMENT.",
+          "Ils sont onze. Ils se rangent le long de la ligne jaune, à intervalles réguliers, et ils attendent. Personne ne vient. Ils attendent quand même, le temps qu'il faut, parce que c'est le temps prévu.",
+          "Puis les lumières s'éteignent dans l'ordre inverse, et l'un d'eux fait un geste. Ils décrochent leurs casques.",
+          "Il y a des visages dessous. Un homme âgé, deux très jeunes. L'un se frotte les yeux. Un autre dit quelque chose et deux épaules se secouent de rire — tu n'entends rien, la vitre est trop épaisse, mais on rit pareil partout.",
+          "Dans ton oreillette, Sorn ne dit rien du tout. Pendant très longtemps.",
+          "Puis : « …J'ai passé ma vie à dire que c'était des machines. »",
           "L'entretien automatique de la navette a consommé ses stocks depuis des décennies. Il lui faut des joints, un régulateur, une cellule neuve.",
-          "« Paie », soupire Sorn. « Comme le péage. Elles ont pas d'avis, elles ont un tarif. »"
+          "« Paie. » Sa voix est enrouée. « Le dépôt, lui, c'est bien une machine. Elles ont pas d'avis, elles ont un tarif. »"
         ],
         defi:{ type:"paiement", cout:800,
           texte:["Le terminal affiche la note. Elle est salée, et parfaitement indifférente à ta situation."],
@@ -513,9 +548,13 @@ const QUETES = [
           "L'habitacle sent le plastique neuf et l'air recyclé mille fois. Les sièges n'ont jamais été occupés. Sur la console, un mot manuscrit, scotché puis oublié : « pour la dernière rotation ».",
           "Tu poses les pièces. La navette s'éveille, teste ses circuits un par un, puis affiche une séquence lumineuse et attend."
         ],
+        /* ⚠ C'est la MÊME cadence que les corolles de Q3 et que l'appel vu à
+           l'étape 2 : le joueur exécute de ses mains le geste que le Protocole
+           répète dans le vide depuis trois siècles. Écho long de l'arc. */
         defi:{ type:"memoire",
           texte:["VÉRIFICATION D'ÉQUIPAGE. RÉPÉTEZ LA SÉQUENCE D'ALLUMAGE."],
           reussite:[
+            "Tes doigts la connaissent avant toi. C'est la cadence des corolles, celle du quai, celle qu'ils battent en bas depuis trois cents ans — la navette et les fleurs et les hommes suivent tous la même horloge, et tu viens de la reproduire sans y penser.",
             "Les réacteurs de manœuvre s'amorcent dans un souffle grave qui fait vibrer tout le quai. Au-dessus, une trappe de plafond commence à s'écarter sur un morceau de ciel.",
             "« Elle marche. » Sorn a un rire bref, incrédule. « Bon sang, elle marche. »"
           ] } },
@@ -544,7 +583,8 @@ const QUETES = [
           ],
           reussite:[
             "CAP ENREGISTRÉ. ROTATION EN ATTENTE DE DÉPART.",
-            "Derrière toi, le lecteur d'identité émet un bip bref. IDENTITÉ RADIÉE — ACCÈS REFUSÉ. STATUT : DÉSERTION.",
+            "Derrière toi, le lecteur d'identité émet un bip bref. SORN, E. — IDENTITÉ RADIÉE. ACCÈS REFUSÉ. NE PAS RÉINTÉGRER.",
+            "Ce n'est pas lui qu'on refuse. C'est un nom, sur un registre qu'aucun vivant n'a signé, tenu par une administration morte depuis trois siècles. La machine ne fait pas la différence. Elle n'a jamais eu à la faire.",
             "Sorn retire sa main sans un mot. Il hoche la tête, une fois, comme on valide un calcul dont on connaissait déjà le résultat.",
             "« Bon. » Il redescend la passerelle. « J'ai des relais à réparer, moi. »",
             "Il ne se retourne pas. Sur la console, le mot manuscrit est toujours scotché là : « pour la dernière rotation ». Ce n'était pas la dernière."
