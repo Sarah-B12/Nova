@@ -14,7 +14,11 @@ function nouvelEtat(){
     competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
     vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
-    jauges:{ o2:90, sante:100, moral:80 },
+    /* ⚠ Défauts alignés sur ceux des COLONNES profils.o2/sante/moral (100 chacune).
+       Ils valaient 90/100/80 : un nouveau joueur voyait 90 % d'O₂ et 80 % de moral
+       à l'inscription, avant que chargerJaugesServeur() ne rétablisse les vrais 100.
+       Les jauges appartiennent au serveur (jauges_lire / agir) — voir CLES_SERVEUR. */
+    jauges:{ o2:100, sante:100, moral:100 },
     sac:{}, sacDate:{}, sacOrdre:[], coffre:{}, coffreDate:{}, maison:{ palier:0, plot:null, chantier:null }, terrain:{ parcelles: Array(N_PLOTS).fill(null) },
     description:"", mur:[], murOuvertA:"amis", journal:[], amis:[], bloques:[], msgRecus:[], msgEnvoyes:[], msgSemes:false, annonces:[],
     formation:null, pas:{}, pasFini:false, pasPlie:false,
@@ -70,7 +74,10 @@ function hydraterEtat(s){
        Ces trois valeurs ne sont légitimes que si elles viennent de sac_lire(). */
     lots:[], _lotsSynchro:false, equipeServeur:{}, forceCombatServeur:undefined,
     competences:{...base.competences,...(s.competences||{})},
-    jauges:{...base.jauges,...(s.jauges||{})},
+    /* ⚠ On ne restaure PAS s.jauges : o2/sante/moral sont des colonnes serveur,
+       lues par chargerJaugesServeur() au démarrage. Une copie persistée
+       s'affichait à sa place le temps de la requête. */
+    jauges:{...base.jauges},
     sac, sacOrdre:ordre, coffre:{...(s.coffre||{})},
     soute:{...(s.soute||{})}, souteDate:{...(s.souteDate||{})},
     maison:{ palier:0, plot:null, chantier:null, ...(s.maison&&typeof s.maison.palier==="number" ? s.maison : {}) }, mur:(s.mur||[]),

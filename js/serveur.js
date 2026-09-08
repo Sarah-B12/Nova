@@ -87,7 +87,8 @@ const CLES_SERVEUR = [
   "_lotsSynchro",                    // garde-fou de majUsure : DOIT repartir à faux au démarrage
   "equipeServeur", "forceCombatServeur", // reflets de sac_lire() : recalculés à chaque appel
   "avatar",                          // colonne profils.avatar, écrite par changer_apparence()
-  "apparenceLe"                      // vestige : le verrou est calculé par apparence_etat()
+  "apparenceLe",                     // vestige : le verrou est calculé par apparence_etat()
+  "jauges"                           // colonnes o2/sante/moral : lues par jauges_lire(), écrites par agir()
 ];
 
 // Copie de l'état SANS les données serveur : elles vivent dans `inventaire`.

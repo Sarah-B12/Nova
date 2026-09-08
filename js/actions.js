@@ -41,16 +41,23 @@ async function resoudreCombat(opts){
   const F = forceEffective();
   // Dureté de la patrouille ; les aptitudes de combat (Instinct de combat, Combustion) l'abaissent.
   const cf = Math.max(0, alea(6,26) - aptCombatFcReduc());
-  // Chance de vaincre : ~1 % à Force 0, plafond 95 % (jamais 100 %).
-  let pWin = Math.min(0.95, Math.max(0.01, 0.01 + 0.0047*(F - cf)));
+  /* ⚠ ÉQUILIBRAGE v0.53. Avant : 0,01 + 0,0047×(F−cf), plancher 1 %.
+     Un nouveau joueur (Force 10) contre une patrouille moyenne (cf 16) avait
+     1 % de victoire — pas « difficile », nul — et perdait 53 santé, donc
+     mourait en DEUX défaites. Avec 15 % de rencontre par déplacement, il
+     mourait en explorant. Base relevée à 22 %, plancher à 5 %. */
+  let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf)));
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(10);
     const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : null;   // récup tech du Protocole
     journal(`Patrouille du Protocole neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}.`,"gain");
   } else {
-    // Santé perdue : ~50 à Force 0, ~10 à Force 200 (+ patrouille costaude).
-    let ps = Math.max(10, Math.min(55, Math.round(50 - 0.20*F + cf*0.3)));
+    /* Santé perdue : ~16 à Force 0, ~5 à Force 200 (+ patrouille costaude).
+       Avant : 50 − 0,20×F + cf×0,3, borné 10-55. Divisé par ~3 : un nouveau
+       joueur encaisse maintenant SIX défaites avant la mort au lieu de deux,
+       ce qui laisse le temps d'aller acheter un kit de soin. */
+    let ps = Math.max(3, Math.min(24, Math.round(16 - 0.055*F + cf*0.22)));
     if(opts.embuscade) ps = Math.round(ps*1.3);
     // Esquive (Agilité + jambières) : impossible en embuscade.
     const esq = opts.embuscade ? 0 : Math.min(0.6, agiliteEffective()/400 + (typeof equipEsquive==="function"?equipEsquive()/100:0));

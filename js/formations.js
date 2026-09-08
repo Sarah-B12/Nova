@@ -183,11 +183,14 @@ function vueFormations(){
     const h = document.createElement("div");
     h.innerHTML = `<h3 style="margin-top:10px">${fo.nom}</h3><p class="vide" style="margin:0 0 6px">${fo.desc}</p>`;
     wrap.appendChild(h);
-    wrap.appendChild(listeRecettes(fo, 0));
-    const act = document.createElement("div"); act.className="actions"; act.style.marginTop="12px";
+    /* ⚠ Le bouton était ajouté APRÈS listeRecettes(), donc sous plusieurs
+       dizaines de lignes d'arbre : les joueurs ne le trouvaient pas. Il est
+       maintenant juste sous la description, avant la liste. */
+    const act = document.createElement("div"); act.className="actions"; act.style.margin="4px 0 14px";
     const b = document.createElement("button"); b.className="action";
     b.innerHTML = `<span>Commencer cette formation</span><span class="cout">${fo.recettes.length} recettes</span>`;
     b.addEventListener("click", ()=>commencerFormation(formationApercu)); act.appendChild(b); wrap.appendChild(act);
+    wrap.appendChild(listeRecettes(fo, 0));
     return wrap;
   }
   // Choix parmi les 4 formations
