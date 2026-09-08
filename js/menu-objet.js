@@ -35,7 +35,7 @@ function ouvrirMenuObjet(id){
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
   if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
-  if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché…</button>`;
+  if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché — fixe ton prix…</button>`;
   /* Bradage : au-delà d'une unité, on propose une quantité plutôt que d'obliger
      à recommencer objet par objet. Les retraits sont FIFO côté serveur
      (inv_retirer), donc ce sont TOUJOURS les lots les plus anciens — donc les
@@ -43,14 +43,20 @@ function ouvrirMenuObjet(id){
   if(brade!=null){
     const u = Math.max(1, Math.round(brade/2));
     const dispo = etat.sac[id]||0;
+    /* ⚠ La quantité est ENCADRÉE avec le bouton Brader. Posée seule entre
+       « Vendre au marché… » et « Brader », elle se lisait comme un réglage de
+       la vente. Le cadre et l'intitulé lèvent l'ambiguïté. */
     if(dispo > 1){
-      html += `<div class="menu-qte">
-        <button class="mini" data-q="-1">−</button>
-        <input id="brade-q" type="number" inputmode="numeric" min="1" max="${dispo}" value="1">
-        <button class="mini" data-q="1">+</button>
-        <button class="mini" data-q="max">Tout (${dispo})</button>
-      </div>
-      <button class="menu-act brader" data-act="brader">Brader <span id="brade-n">1</span> — <span id="brade-t">${u}</span> ₡</button>`;
+      html += `<div class="menu-groupe">
+        <div class="menu-groupe-t">Brader — vente immédiate, ${u} ₡ l'unité</div>
+        <div class="menu-qte">
+          <button class="mini" data-q="-1">−</button>
+          <input id="brade-q" type="number" inputmode="numeric" min="1" max="${dispo}" value="1">
+          <button class="mini" data-q="1">+</button>
+          <button class="mini" data-q="max">Tout (${dispo})</button>
+        </div>
+        <button class="menu-act brader" data-act="brader">Brader <span id="brade-n">1</span> — <span id="brade-t">${u}</span> ₡</button>
+      </div>`;
     } else {
       html += `<button class="menu-act brader" data-act="brader">Brader — ${u} ₡</button>`;
     }

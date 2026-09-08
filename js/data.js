@@ -43,9 +43,14 @@ const MINERAIS = MATIERES.filter(m => m.cat === "minerai" && m.id !== "cristal")
 // Noms et images provisoires — à remplacer quand tu me donneras tes visuels.
 const PLANTES = [
   { id:"sylve",     nom:"Sylve",     type:"matiere", cat:"organique", croissance:30 },  // matériau (pas du fourrage : cat ≠ plante)
-  { id:"sporelle",  nom:"Sporelle",  type:"matiere", cat:"plante", croissance:34 },  // ~3 jours
-  { id:"nectine",   nom:"Nectine",   type:"matiere", cat:"plante", croissance:25 },  // ~4 jours
-  { id:"ferragave", nom:"Ferragave", type:"matiere", cat:"plante", croissance:20 }   // ~5 jours
+  { id:"sporelle",  nom:"Sporelle",  type:"matiere", cat:"plante", croissance:20 },  // 5 arrosages
+  { id:"nectine",   nom:"Nectine",   type:"matiere", cat:"plante", croissance:25 },  // 4 arrosages
+  /* ⚠ La Ferragave est la SEULE plante qui nourrit les animaux (terrain.js:144),
+     et il faut 4 repas par bête pour l'amener à l'âge adulte. À 20 %/arrosage
+     elle était la plus lente du bio-dôme : l'élevage attendait la culture.
+     Passée à 50 % — 2 arrosages, donc 2 jours — elle devient la denrée de base.
+     Aucun risque d'exploit économique : c'est aussi la moins chère (3 ₡). */
+  { id:"ferragave", nom:"Ferragave", type:"matiere", cat:"plante", croissance:50 }   // 2 arrosages
 ];
 function plante(id){ return PLANTES.find(p=>p.id===id); }
 // Animaux élevés dans l'enclos.

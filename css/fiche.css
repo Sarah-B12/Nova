@@ -7,6 +7,9 @@
   .fiche-corps { flex:1; min-width:240px; display:flex; flex-direction:column; gap:10px; }
   .fiche-tete { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .fiche-tete .metier { margin:0; }
+  /* Porte désormais l'ANCIENNETÉ (l'XP est remontée à côté du niveau, dans
+     .id-haut). Nom de classe conservé : le renommer casserait le style sans
+     rien apporter. */
   .xp-ligne { font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
   .xp-ligne b { color:var(--bleu); }
   .vitaux { display:flex; flex-direction:column; gap:8px; }

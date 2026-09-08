@@ -27,14 +27,22 @@ const QUETES = [
     donneur:"Vieux Sorn",
     // ⚠ Coordonnées approximatives (monde 2400×1600) — à ajuster en jouant.
     // Fil rouge : les quatre balises rediffusent un même vieil ordre, en morceaux.
-    //   « …toutes unités… maintenir le périmètre… jusqu'au retour… de la mère. »
-    // Sorn l'explique trop vite à la balise 2, et se tait à la balise 4.
+    //   « TOUTES UNITÉS — MAINTENIR LE PÉRIMÈTRE JUSQU'À L'EMBARQUEMENT
+    //     DU PERSONNEL NON ÉVACUÉ. »
+    // Le joueur n'apprend qu'une chose ici : ce n'est pas du bruit, c'est UN
+    // texte, et ce texte est un ordre. Le mot semé est « embarquement » —
+    // Sorn le désamorce trop vite à la balise 4.
+    // ⚠ CANON v2 : l'évacuation date d'environ TROIS CENTS ans. Sorn n'est
+    //    pas un témoin mais un DESCENDANT (voir LORE_Protocole.md §5) : il ne
+    //    sait rien, il a hérité d'un métier et d'une honte sans objet.
     // AUCUN défi ratable ici : première quête, on ne verrouille jamais un débutant.
     intro:[
       "Un vieux bonhomme voûté te jauge de son unique œil valide — l'autre disparaît sous un bandeau d'implants qui grésille par intermittence. « Encore un bleu qui croit qu'on survit ici avec du courage et un joli sac. »",
       "Il crache par terre, puis désigne du menton un boîtier fumant sur son établi. « J'ai réveillé un vieux relais du Protocole. Il recrache d'anciennes coordonnées — quatre balises. Moi, mes genoux rendent l'âme avant la première. »",
-      "« Toi, tu vas les suivre et me rapporter ce qu'elles disent. Je te paie, et personne ne pleure. Enfin… si tu reviens. » Un rictus fend sa barbe grise. « Ce que je ne garantis pas, gamin. »",
-      "Il te tend une oreillette cabossée. « Je te guide d'ici. Préviens-toi tout de suite : mon décodeur crache des zones, pas des points. Je te dirai où chercher, à toi de fouiller le coin. »"
+      "« Réparer ces saloperies, c'est le métier de ma famille. Mon père, son père, et ainsi de suite jusqu'à un type dont il ne reste qu'un nom sur un registre. » Il hausse une épaule. « On n'a jamais su pourquoi on faisait ça. On le fait. »",
+      "« Toi, tu vas suivre ces balises et me rapporter ce qu'elles disent. Je te paie, et personne ne pleure. Enfin… si tu reviens. » Un rictus fend sa barbe grise. « Ce que je ne garantis pas, gamin. »",
+      "Il te tend une oreillette cabossée. « Je te guide d'ici. Préviens-toi tout de suite : mon décodeur crache des zones, pas des points. Je te dirai où chercher, à toi de fouiller le coin. »",
+      "« Et note ce que tu trouves. » Il désigne vaguement ton poignet. « T'as un carnet là-dedans — Communication, onglet Carnet. Ces balises disent des choses par bouts, et les bouts, ça se perd. Moi j'ai passé ma vie à regretter ce que j'ai pas écrit. »"
     ],
     etapes:[
 
@@ -46,14 +54,18 @@ const QUETES = [
           "La roche tiède fume doucement sous tes bottes. Un relais à demi enfoui clignote dans la caillasse ; une voix synthétique en jaillit, distordue, puis se stabilise sur une phrase qu'elle répète en boucle : « …toutes unités… toutes unités… »",
           "Ta radio crachote. « T'es arrivé ? Étonnant. Le relais va te poser une devinette débile — le Protocole adore ça, il teste avant de parler. Débrouille-toi, j'ai pas que ça à faire. »"
         ],
+        /* ⚠ Était une devinette (« je grandis en dévorant… ») : contenu
+           interchangeable, aucun lien avec Silène ni le Protocole. Devient
+           une TRANSCRIPTION — le premier geste du joueur est de recoudre ce
+           que la balise crache mal. Essais illimités. */
         defi:{ type:"enigme",
-          texte:"Le relais interrompt sa litanie et module sa question dans un français d'un autre âge :",
-          question:"« Je grandis en dévorant, je meurs en buvant. Que suis-je ? »",
-          reponses:["le feu","feu","la flamme","flamme"],
-          indice:"Il danse en permanence sur les pentes d'Ignis.",
+          texte:"La litanie se brouille, revient, se brouille encore. Le relais ne pose aucune question : il attend qu'on lui confirme ce qu'il vient de dire.",
+          question:"« RÉPÉTEZ LA BRIBE REÇUE. » — deux mots.",
+          reponses:["toutes unites","toutes unités","toutes unite","toutes unité","unites","unités"],
+          indice:"Écoute encore. La voix les répète en boucle depuis que tu es arrivé.",
           reussite:[
-            "À peine ta réponse prononcée, le relais s'affaisse et se met à fondre — pourtant, sous tes doigts, le métal reste étrangement froid. De la coulée figée émerge un carré de papier, intact, couvert de coordonnées tracées à la main.",
-            "Tu essuies la bouillasse tiède sur ta combinaison et déplies le feuillet. La radio grésille. « Fais voir… ouais. Ça pointe vers le froid. Là où même l'eau renonce à geler. » Une pause. « On se rapproche, gamin. »"
+            "Le relais accuse réception — deux tons secs, comme un fonctionnaire qui coche une case — puis s'affaisse et se met à fondre. Sous tes doigts, pourtant, le métal reste étrangement froid. De la coulée figée émerge un carré de papier, intact, couvert de coordonnées tracées à la main.",
+            "Tu essuies la bouillasse tiède sur ta combinaison et déplies le feuillet. La radio grésille. « Toutes unités… » Sorn mâchonne le mot. « C'est un début de phrase, ça. Y en a d'autres, forcément. » Une pause. « Ça pointe vers le froid. Là où même l'eau renonce à geler. On se rapproche, gamin. »"
           ] } },
 
       /* ---- 2. La borne givrée — ATTENTE (non ratable) ---- */
@@ -63,7 +75,7 @@ const QUETES = [
         arrivee:[
           "Une borne émerge de la neige, prise dans une gangue de glace épaisse comme un poing. L'écran vit encore dessous, vert pâle, mais aucune commande ne répond.",
           "« Elle est gelée jusqu'aux entrailles », grogne Sorn. « Force pas, tu la casseras. Ces trucs-là se réchauffent tout seuls quand on les sollicite — mets la main dessus et attends. Va faire un tour si t'as la bougeotte, elle t'attendra. »",
-          "Sa voix baisse d'un cran. « La Toundra… j'y ai laissé des choses, autrefois. Des gens, surtout. » Un silence de givre. « …Bref. »"
+          "Sa voix baisse d'un cran. « La Toundra… il paraît qu'on avait de la famille là-bas. Très loin en arrière. » Un silence de givre. « Chez nous on n'en parle pas. Va savoir pourquoi. …Bref. »"
         ],
         defi:{ type:"attente", duree:45000,
           texte:["Tu poses la paume sur la gangue. Sous la glace, quelque chose se remet lentement à tourner.",
@@ -71,7 +83,8 @@ const QUETES = [
           reussite:[
             "La borne dégèle d'un coup dans un cliquetis mécanique. L'écran s'anime et débite une bribe d'un vieux message, la même voix que la première balise, deux mots plus loin : « …maintenir le périmètre… »",
             "Une plaque de glace glisse et révèle un renfoncement où pulse une graine luminescente, gravée de nouvelles coordonnées.",
-            "« Maintenir le périmètre, maintenir le périmètre… » Sorn souffle par le nez. « Quarante ans qu'ils montent la garde devant une porte que plus personne ne franchira. Voilà ce que c'est, le Protocole : des chiens qui attendent un maître mort. »"
+            "« Maintenir le périmètre, maintenir le périmètre… » Sorn souffle par le nez. « Trois siècles qu'ils montent la garde devant une porte que plus personne ne franchira. Voilà ce que c'est, le Protocole : des chiens qui attendent un maître mort. »",
+            "Il ajoute, plus bas : « Deuxième morceau. Ça se recolle, ton machin. »"
           ] } },
 
       /* ---- 3. Le relais éventré — LIVRAISON (non ratable) ---- */
@@ -87,7 +100,7 @@ const QUETES = [
           texte:"Le logement de la carte est béant. Deux fragments de Voltane et un peu de Silite refermeraient le circuit.",
           // (la livraison n'est pas ratable : on complète ou on revient plus tard)
           reussite:[
-            "Tu cales les composants dans le logement. Le relais avale le courant d'un coup et parle, la même voix, deux mots plus loin encore : « …jusqu'au retour… »",
+            "Tu cales les composants dans le logement. Le relais avale le courant d'un coup et parle, la même voix, quelques mots plus loin : « …jusqu'à l'embarquement… »",
             "Puis il recrache une dernière série de coordonnées — vers l'ouest, vers l'anneau. La radio reste muette une seconde de trop.",
             "« Vers l'ouest ? » La voix de Sorn a changé de texture. « Bon. Vas-y. Mais tu t'approches pas de l'anneau, t'entends ? Tu restes au seuil. »"
           ] } },
@@ -98,18 +111,27 @@ const QUETES = [
         image:"images/quetes/q1/4.png",
         arrivee:[
           "L'anneau du Protocole occupe tout l'horizon, violet et silencieux. La dernière balise est plantée là, face à lui, comme une sentinelle qui aurait oublié de mourir.",
-          "Elle ne pose pas de devinette. Elle demande une identification, et l'écran attend, curseur clignotant, le nom de la station où tu te trouves."
+          "Elle ne pose pas de devinette. Elle affiche les trois bribes que tu as ramassées, bout à bout, avec un trou à la fin — et elle attend que tu combles le trou."
         ],
+        /* ⚠ Était « quel est le nom de ce secteur ? », dont la réponse était
+           affichée en haut de l'écran en permanence : ce n'était pas une
+           épreuve. Devient la RECOUTURE des trois bribes — le joueur découvre
+           que ce n'était pas du bruit mais un seul ordre. Essais illimités.
+           La contradiction SILÈNE / MAAR-3 est déplacée dans la réussite :
+           c'est une révélation, pas une question. */
         defi:{ type:"enigme",
-          texte:"IDENTIFICATION REQUISE. NOMMEZ LA STATION.",
-          question:"« Quel est le nom de ce secteur ? »",
-          reponses:["silene","silène","secteur silene","secteur silène"],
-          indice:"C'est écrit en haut de ton écran depuis le premier jour.",
+          texte:"TOUTES UNITÉS — MAINTENIR LE PÉRIMÈTRE JUSQU'À ██████████ DU PERSONNEL NON ÉVACUÉ.",
+          question:"« Les trois balises disaient la même phrase. De quoi le Protocole attend-il la fin ? »",
+          reponses:["embarquement","l embarquement","l'embarquement","embarquer","embarcation"],
+          indice:"La troisième balise l'a prononcé. Un seul mot.",
           reussite:[
-            "Tu tapes le seul nom que tu connaisses. L'écran le digère une seconde de trop, puis répond :",
-            "SILÈNE — TERME NON RÉPERTORIÉ. STATION : MAAR-3. DERNIER ORDRE : MAINTENIR JUSQU'AU RETOUR DE LA MÈRE.",
-            "« La mère, la base-mère », lâche Sorn sans que tu aies rien demandé. « Le vaisseau de la corpo. Ils appelaient tous ça comme ça, à l'époque. Rien de mystique, gamin, arrête de faire cette tête. »",
-            "Il enchaîne aussitôt, un ton plus haut : « Et Silène non répertorié, forcément. Les machines connaissent que les matricules. MAAR-3, MAAR-12, va savoir. C'est des machines. »",
+            "Le mot se met en place et la phrase se referme sur elle-même. Ce n'était pas quatre machines cassées : c'était une seule, répétée quatre fois, depuis si longtemps qu'elle s'est fêlée en route.",
+            "TOUTES UNITÉS — MAINTENIR LE PÉRIMÈTRE JUSQU'À L'EMBARQUEMENT DU PERSONNEL NON ÉVACUÉ.",
+            "L'écran ne s'éteint pas. Il ajoute une ligne, comme s'il se parlait à lui-même :",
+            "SILÈNE — TERME NON RÉPERTORIÉ. STATION : MAAR-3. ORDRE EN COURS.",
+            "« En cours. » Sorn a un rire sec. « Trois cents ans, et le truc dit encore “en cours”. »",
+            "Puis, trop vite, sans que tu aies rien demandé : « Et l'embarquement, t'emballe pas. C'est le mot qu'ils collaient sur tout, à l'époque. Embarquement des cargaisons, embarquement des équipes, embarquement de la soupe. Ça veut rien dire. »",
+            "Il enchaîne aussitôt, un ton plus haut : « Silène non répertorié, forcément. Ces machines connaissent que les matricules. MAAR-3, MAAR-12, va savoir. C'est des machines. »",
             "« Bon. T'as ce que je voulais. Rentre. »"
           ] } }
     ],
@@ -121,9 +143,13 @@ const QUETES = [
     nom:"L'écho du Protocole",
     donneur:"Vieux Sorn",
     // Q2 = la quête où Sorn est OBLIGÉ de parler. Révélations en escalier :
-    //   1. il connaît les codes · 2. il est sur un registre d'équipe
-    //   3. il y est barré (« déserteur ») · 4. il a obéi, et des gens sont restés dehors.
-    // ⚠ Le signataire de l'ordre reste ILLISIBLE : le lien Maar/Mère ne se dévoile pas ici.
+    //   1. il connaît les codes (savoir de famille) · 2. son NOM est sur un
+    //   registre vieux de trois siècles · 3. il y est barré (« déserteur »)
+    //   · 4. son aïeul n'a pas fui : il a EXÉCUTÉ, puis déserté trois jours après.
+    // ⚠ Sorn DÉCOUVRE tout ça en même temps que le joueur. Il n'a jamais su.
+    // ⚠ Les 80 non-embarqués sont une révélation de Q4 : ne PAS les citer ici.
+    // ⚠ Le signataire de l'ordre reste ILLISIBLE. (La piste « Maar = Mère » est
+    //    ABANDONNÉE — voir LORE_Protocole.md. Le mystère porte sur le Protocole.)
     intro:[
       "Sorn ne lève pas les yeux de son établi quand tu pousses la porte. Il démonte le même connecteur depuis un moment, et le remonte, et le redémonte.",
       "« Le truc, à l'anneau. Ce qu'il t'a sorti. » Il repose son tournevis, très lentement. « Un ordre qui tourne encore. Ça veut dire que quelqu'un l'a signé, et que personne ne l'a jamais annulé. »",
@@ -138,12 +164,16 @@ const QUETES = [
         arrivee:[
           "Une trappe affleure sous la poudreuse, marquée d'un sigle du Protocole à demi effacé. Le sas est verrouillé par un cadenas à glyphes, de ceux qu'on ouvrait au chalumeau faute de mieux.",
           "« Perds pas ton temps à le forcer. » Sorn s'est manifesté avant même que tu ne demandes. Un silence. « Ils utilisaient jamais plus de trois glyphes. Et toujours dans le même petit jeu. Essaie, tu verras. »",
-          "Tu ne lui demandes pas comment il le sait. Il ne te le dirait pas."
+          "Tu ne lui demandes pas comment il le sait. Il dirait que c'est un savoir de famille, et il aurait raison sans savoir pourquoi."
         ],
-        defi:{ type:"cadenas", longueur:3, symboles:["●","■","▲","◆"], essais:8,
+        /* ⚠ Les quatre glyphes sont ceux du Protocole, repris tels quels dans
+           l'épreuve de Q4 : le joueur les manipule ici sans les comprendre et
+           en apprend le sens deux quêtes plus tard. Rétroactivement, ce cadenas
+           devient un indice. Ne pas les changer sans changer Q4. */
+        defi:{ type:"cadenas", longueur:3, symboles:["⛨","⌁","⚑","⛔"], essais:8,
           texte:["Trois logements, quatre glyphes possibles. Le sas te dira, à chaque tentative, combien sont bien placés."],
           reussite:[
-            "Le sas cède avec un soupir d'air comprimé vieux de quarante ans. À l'intérieur : un établi, des outils rangés au carré, une combinaison pliée sur un tabouret. Quelqu'un est parti d'ici en pensant revenir.",
+            "Le sas cède avec un soupir d'air comprimé vieux de trois cents ans. À l'intérieur : un établi, des outils rangés au carré, une combinaison pliée sur un tabouret. Quelqu'un est parti d'ici en pensant revenir.",
             "Tu ramasses un carnet de maintenance. Des relevés, des dates, des signatures abrégées.",
             "« Alors ? » La voix de Sorn est trop neutre. « …Bon. Y a un registre d'équipe quelque part au nord-ouest. Va le chercher. »"
           ] } },
@@ -154,7 +184,7 @@ const QUETES = [
         image:"images/quetes/q2/2.png",
         arrivee:[
           "Un bloc administratif écrasé sous son propre toit. Dans ce qui fut un bureau, une console de registre tient encore debout, alimentée par on ne sait quoi.",
-          "L'écran demande la reconstitution du journal de bord avant de délivrer la fiche d'équipe — une vérification de routine, pour un personnel qui n'existe plus depuis quarante ans."
+          "L'écran demande la reconstitution du journal de bord avant de délivrer la fiche d'équipe — une vérification de routine, pour un personnel qui n'existe plus depuis trois siècles."
         ],
         /* ⚠ v0.53 — l'épreuve demandait l'ordre d'AFFECTATION de sept noms, dont
            trois paires de postes identiques : rien à l'écran ne permettait de
@@ -162,7 +192,7 @@ const QUETES = [
            donc UN essai par jour. Remplacé par une chaîne de causes : chaque
            entrée nomme la précédente, l'ordre se lit dans le texte. */
         defi:{ type:"ordre",
-          texte:["Six entrées de journal flottent à l'écran, dispersées par quarante ans de mémoire corrompue. La console refuse d'ouvrir la fiche d'équipe tant que la chronologie n'est pas rétablie."],
+          texte:["Six entrées de journal flottent à l'écran, dispersées par trois siècles de mémoire corrompue. La console refuse d'ouvrir la fiche d'équipe tant que la chronologie n'est pas rétablie."],
           consigne:"Remets les entrées dans l'ordre où elles ont été écrites.",
           elements:[
             "Relevé de routine. Rien à signaler sur le secteur nord.",
@@ -175,8 +205,10 @@ const QUETES = [
           reussite:[
             "La console valide et affiche la fiche complète de l'équipe. Ton regard s'arrête à la deuxième ligne.",
             "SORN, E. — TECHNICIEN RELAIS — STATUT : DÉSERTION. RADIÉ. NE PAS RÉINTÉGRER.",
-            "Tu appelles. Pas de réponse. Tu appelles encore. La radio reste muette pendant tout le trajet du retour, et quand elle se rallume enfin, c'est pour dire, très vite : « Y a un péage mort dans les vieilles galeries du sud-ouest. Il lui faut de la monnaie. Vas-y. »",
-            "Et rien d'autre."
+            "Tu appelles. Pas de réponse. Tu appelles encore. Quand la radio se rallume enfin, la voix est méconnaissable de platitude : « Lis-moi la ligne. Mot pour mot. »",
+            "Tu la lis. Le silence qui suit dure le temps d'un trajet entier.",
+            "« Chez nous, on disait qu'il s'était sauvé. Un lâche, dans la famille, on fait avec. » Un raclement de gorge. « On disait pas qu'il était technicien relais. Ça, on l'a jamais dit. »",
+            "Puis, trop vite : « Y a un péage mort dans les vieilles galeries du sud-ouest. Il lui faut de la monnaie. Vas-y. »"
           ] } },
 
       /* ---- 3. Le péage mort — PAIEMENT (non ratable) ---- */
@@ -185,7 +217,7 @@ const QUETES = [
         image:"images/quetes/q2/3.png",
         arrivee:[
           "Le portique se dresse au milieu de nulle part, barrant une galerie qui ne mène plus à rien. Un lecteur de crédits clignote, patient, impeccablement entretenu par ses propres automatismes.",
-          "REDEVANCE D'ACCÈS — PERSONNEL AUTORISÉ UNIQUEMENT. Quarante ans que la machine facture le passage à des ouvriers qui ne viendront pas.",
+          "REDEVANCE D'ACCÈS — PERSONNEL AUTORISÉ UNIQUEMENT. Trois cents ans que la machine facture le passage à des ouvriers qui ne viendront pas.",
           "« Paie », lâche Sorn. « Discute pas avec une caisse enregistreuse. Elle a pas d'avis, elle a une consigne. C'est pire. »"
         ],
         defi:{ type:"paiement", cout:80,
@@ -200,7 +232,7 @@ const QUETES = [
         cible:{ x:560, y:900, r:80 }, leurres:[ {x:1750,y:700,r:80}, {x:1100,y:1300,r:80}, {x:2050,y:1000,r:80} ],
         image:"images/quetes/q2/4.png",
         arrivee:[
-          "L'émetteur est une colonne noire plantée face à l'anneau. Aucune arme, aucune défense : juste une voix qui répète un ordre depuis quarante ans, dans le vide.",
+          "L'émetteur est une colonne noire plantée face à l'anneau. Aucune arme, aucune défense : juste une voix qui répète un ordre depuis trois cents ans, dans le vide.",
           "Un terminal de service s'allume à ton approche. VÉRIFICATION D'IDENTITÉ REQUISE POUR CONSULTATION DE L'ORDRE PERMANENT.",
           "Il demande le nom du technicien de garde le jour de la fermeture du périmètre. Tu as lu le registre. Tu sais."
         ],
@@ -211,10 +243,11 @@ const QUETES = [
           indice:"Deuxième ligne du registre d'équipe.",
           reussite:[
             "IDENTITÉ CONFIRMÉE. ORDRE PERMANENT — SCELLEMENT DU PÉRIMÈTRE. EXÉCUTANT : SORN, E. SIGNATAIRE : [DONNÉE CORROMPUE]. STATUT : JAMAIS ANNULÉ.",
-            "« C'est moi qui ai coupé le relais de la Toundra. » La voix arrive sans prévenir, très calme. « On m'a dit de fermer la boucle, j'ai fermé la boucle. C'est mon travail. C'était mon travail. »",
-            "« Y avait quatre-vingts personnes dehors. Elles avaient jusqu'au soir pour rentrer. Après ma coupure, elles avaient plus rien pour se faire rappeler. »",
-            "Un long silence, puis un rire bref, pas drôle du tout. « J'ai déserté trois jours plus tard. Trois jours. Tu vois le courage. »",
-            "« Voilà. T'es content ? » Un cliquetis : il te vire ta paie avant que tu répondes. « Rentre. Et va pas t'imaginer qu'on est amis. »"
+            "Exécutant. Pas témoin, pas suspect. Celui qui a fait le geste.",
+            "« Il l'a fait. » La voix de Sorn arrive sans prévenir, très calme, et c'est cette platitude qui inquiète. « On m'a raconté toute mon enfance qu'il avait détalé. Il a pas détalé. Il a fermé la boucle, proprement, parce qu'on le lui avait demandé. »",
+            "« Et il a déserté trois jours après. » Un long silence. « Trois jours. Qu'est-ce qu'on comprend, en trois jours, pour lâcher un poste qu'on vient de tenir ? »",
+            "« Le signataire est illisible. Évidemment. » Un rire bref, pas drôle du tout. « Trois siècles que ma famille répare leurs relais sans savoir pourquoi. J'ai la moitié de la réponse et elle me plaît pas. »",
+            "Un cliquetis : il te vire ta paie avant que tu dises quoi que ce soit. « Rentre. Et va pas t'imaginer qu'on est amis. »"
           ] } }
     ],
     recompense:{ credits:250, xp:40, pa:1, flags:{} }
@@ -234,7 +267,7 @@ const QUETES = [
       "La vieille femme t'attend sous la verrière, les mains dans un bac de terreau noir. Elle ne se retourne pas tout de suite.",
       "« Adaya. » Elle s'essuie enfin les paumes. « On m'a dit qu'un bleu était allé fouiller un registre d'équipe au nord-ouest. Un registre où j'ai un nom, figure-toi. Troisième ligne. »",
       "Elle te laisse encaisser, puis désigne du menton un bocal posé sur l'établi : une tige pâle, luminescente, qui pulse doucement dans son bouillon.",
-      "« Ça, ça pousse le long de l'ancien périmètre. Exactement le long. Sur une terre où rien ne prend depuis quarante ans. » Elle te regarde. « J'aimerais comprendre avant de mourir. Tu m'aides ? »",
+      "« Ça, ça pousse le long de l'ancien périmètre. Exactement le long. Sur une terre où rien ne prend depuis trois siècles. » Elle te regarde. « J'aimerais comprendre avant de mourir. Tu m'aides ? »",
       "Elle t'accroche une oreillette au col — la même camelote que celle de Sorn, en mieux entretenue. « Je te guide. Je serai précise sur le pourquoi, approximative sur le où. La carte date d'avant. »"
     ],
     etapes:[
@@ -366,7 +399,7 @@ const QUETES = [
           ] } },
 
       /* ---- 2. La pile morte — LIVRAISON (non ratable) ---- */
-      { indice:"La porte de service est juste à côté, mais elle n'a plus de jus depuis quarante ans. Trouve de quoi la réveiller.",
+      { indice:"La porte de service est juste à côté, mais elle n'a plus de jus depuis trois cents ans. Trouve de quoi la réveiller.",
         cible:{ x:700, y:600, r:80 }, leurres:[ {x:1400,y:900,r:80}, {x:1800,y:1300,r:80}, {x:1200,y:200,r:80} ],
         image:"images/quetes/q4/2.png",
         arrivee:[
@@ -408,7 +441,7 @@ const QUETES = [
         arrivee:[
           "Le poste d'embarquement est resté ouvert, registres compris. Sur l'écran principal, le manifeste de la dernière rotation clignote encore, jamais clôturé.",
           "EMBARQUÉS : 1 244. NON EMBARQUÉS : ___. CLÔTURE IMPOSSIBLE — SAISIE MANQUANTE.",
-          "La machine attend depuis quarante ans qu'un opérateur lui donne le chiffre pour pouvoir refermer son registre."
+          "La machine attend depuis trois cents ans qu'un opérateur lui donne le chiffre pour pouvoir refermer son registre."
         ],
         defi:{ type:"enigme",
           texte:"NON EMBARQUÉS — SAISIE REQUISE POUR CLÔTURE.",
@@ -416,7 +449,7 @@ const QUETES = [
           reponses:["80","quatre-vingts","quatre vingts","quatre-vingt","80 personnes"],
           indice:"Sorn te l'a dit lui-même, à l'émetteur : elles avaient jusqu'au soir pour rentrer.",
           reussite:[
-            "Tu saisis le chiffre. Le registre se clôt dans un déclic minuscule, et l'écran affiche, pour la première fois depuis quarante ans : ROTATION CLÔTURÉE.",
+            "Tu saisis le chiffre. Le registre se clôt dans un déclic minuscule, et l'écran affiche, pour la première fois depuis trois cents ans : ROTATION CLÔTURÉE.",
             "Puis, en dessous, une ligne que personne n'était là pour lire :",
             "APPAREIL DE RÉSERVE — NAVETTE MAAR-3/07 — STATUT : À QUAI. ENTRETIEN AUTOMATIQUE ACTIF. EN ATTENTE D'ÉQUIPAGE.",
             "« …Répète. » La voix de Sorn n'est plus la même. « Répète ce que tu viens de lire, gamin. Lentement. »",
@@ -453,7 +486,7 @@ const QUETES = [
           texte:["Le sas refuse l'accès. Un canal de maintenance reste ouvert, mal protégé — il n'a jamais servi."],
           reussite:[
             "Le sas s'ouvre sur le quai. Elle est là, posée sur ses béquilles, bâchée, minuscule sous la voûte : la navette de réserve.",
-            "Sorn ne dit rien pendant un long moment. Puis : « Elle est propre. L'entretien automatique a tenu quarante ans. » Sa voix se casse à peine. « Ces machines-là aussi, elles ont fait leur boulot. »"
+            "Sorn ne dit rien pendant un long moment. Puis : « Elle est propre. L'entretien automatique a tenu trois cents ans. » Sa voix se casse à peine. « Ces machines-là aussi, elles ont fait leur boulot. »"
           ] } },
 
       /* ---- 2. Le dépôt de pièces — PAIEMENT ---- */
@@ -469,7 +502,7 @@ const QUETES = [
           texte:["Le terminal affiche la note. Elle est salée, et parfaitement indifférente à ta situation."],
           reussite:[
             "Le bras de service délivre les pièces une à une, avec des précautions dérisoires, et te souhaite une bonne rotation.",
-            "Tu remontes les bras chargés. La navette, elle, n'a pas bougé d'un millimètre depuis quarante ans."
+            "Tu remontes les bras chargés. La navette, elle, n'a pas bougé d'un millimètre depuis trois cents ans."
           ] } },
 
       /* ---- 3. Le réveil — MÉMOIRE (ratable) ---- */
@@ -492,7 +525,7 @@ const QUETES = [
         cible:{ x:600, y:480, r:80 }, leurres:[ {x:1500,y:1250,r:80}, {x:2000,y:600,r:80}, {x:1100,y:250,r:80} ],
         image:"images/quetes/q5/4.png",
         arrivee:[
-          "RÔLE D'ÉQUIPAGE — POSTE VACANT. INSCRIPTION ACCEPTÉE. La navette vient de t'enregistrer sans cérémonie, comme elle l'aurait fait il y a quarante ans.",
+          "RÔLE D'ÉQUIPAGE — POSTE VACANT. INSCRIPTION ACCEPTÉE. La navette vient de t'enregistrer sans cérémonie, comme elle l'aurait fait il y a trois cents ans.",
           "CAP DE ROTATION — SAISIE REQUISE.",
           "Derrière toi, Sorn s'est approché du sas. Tu l'entends poser la main sur le lecteur d'identité."
         ],

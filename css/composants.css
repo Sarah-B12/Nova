@@ -267,7 +267,12 @@
   .menu-act:hover { border-color:var(--bleu); color:#fff; }
   .menu-act.brader { color:var(--orange-hi,#ff9e54); }
   .menu-act.brader:hover { border-color:var(--orange); }
-  .menu-qte { display:flex; align-items:center; gap:6px; margin-top:9px; }
+  .menu-groupe { margin-top:11px; padding:9px 10px 10px; border:1px solid var(--line);
+    border-radius:10px; background:rgba(255,158,84,.05); }
+  .menu-groupe-t { font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--sourdine); margin-bottom:7px; }
+  .menu-groupe .menu-act { margin-top:8px; }
+  .menu-qte { display:flex; align-items:center; gap:6px; }
   .menu-qte input { flex:1; min-width:0; text-align:center; padding:8px 6px;
     background:#0f1830; border:1px solid var(--line); border-radius:8px;
     color:var(--texte); font-family:inherit; font-size:15px; }
