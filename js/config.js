@@ -11,9 +11,11 @@ const PTS_PAR_NIVEAU = 3;
 const MS_JOUR = 86400000;
 
 const COMPETENCES = [
-  { id:"force", nom:"Force", desc:"Améliore tes chances au combat et réduit les dégâts subis en cas de défaite." },
-  { id:"agilite", nom:"Agilité", desc:"Réduit le coût en oxygène de tes actions (−1 O₂ tous les 5 points)." },
-  { id:"intelligence", nom:"Intelligence", desc:"Augmente les crédits gagnés par tes actions (+1 tous les 5 points)." }
+  /* Descriptions volontairement évocatrices : elles disent à quoi sert la
+     compétence, pas ses formules. Les chiffres changent, ces textes non. */
+  { id:"force", nom:"Force", desc:"Fait de toi un combattant qu'on évite : tu l'emportes plus souvent, tu encaisses moins, et tu pèses lourd dans les expéditions de ta faction." },
+  { id:"agilite", nom:"Agilité", desc:"Te rend vif et discret : tu ménages ton oxygène en chemin, tu esquives les coups, tu passes sous le nez des patrouilles et tu as la main leste." },
+  { id:"intelligence", nom:"Intelligence", desc:"Aiguise ton flair : meilleure négociation, récoltes plus généreuses, chapardage plus rentable et systèmes qui cèdent plus vite." }
 ];
 const FACTIONS = [
   { id:"ignis",        nom:"Ignis",        avantage:"Zones chaudes moins coûteuses",            couleur:"#f2743a" },

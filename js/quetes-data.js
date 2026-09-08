@@ -154,12 +154,24 @@ const QUETES = [
         image:"images/quetes/q2/2.png",
         arrivee:[
           "Un bloc administratif écrasé sous son propre toit. Dans ce qui fut un bureau, une console de registre tient encore debout, alimentée par on ne sait quoi.",
-          "L'écran demande la reconstitution de l'ordre d'affectation de l'équipe de maintenance — une vérification de routine, pour un personnel qui n'existe plus depuis quarante ans."
+          "L'écran demande la reconstitution du journal de bord avant de délivrer la fiche d'équipe — une vérification de routine, pour un personnel qui n'existe plus depuis quarante ans."
         ],
+        /* ⚠ v0.53 — l'épreuve demandait l'ordre d'AFFECTATION de sept noms, dont
+           trois paires de postes identiques : rien à l'écran ne permettait de
+           trancher (8 combinaisons possibles), et `ordre` est dans DEFIS_UNTRY,
+           donc UN essai par jour. Remplacé par une chaîne de causes : chaque
+           entrée nomme la précédente, l'ordre se lit dans le texte. */
         defi:{ type:"ordre",
-          texte:["Sept noms flottent à l'écran, dans le désordre. La console attend leur ordre d'affectation."],
-          consigne:"Du premier affecté au dernier arrivé.",
-          elements:["Vareck, D. — chef d'équipe","Sorn, E. — technicien relais","Adaya, P. — technicienne","Loew, M. — logistique","Trebbe, S. — logistique","Nyandu, K. — apprenti","Ivar, R. — apprenti"],
+          texte:["Six entrées de journal flottent à l'écran, dispersées par quarante ans de mémoire corrompue. La console refuse d'ouvrir la fiche d'équipe tant que la chronologie n'est pas rétablie."],
+          consigne:"Remets les entrées dans l'ordre où elles ont été écrites.",
+          elements:[
+            "Relevé de routine. Rien à signaler sur le secteur nord.",
+            "Le relais 12 émet une porteuse qui n'est pas au catalogue. Vareck demande une inspection.",
+            "Inspection faite : ce n'est pas une panne, c'est un ordre. Nous n'avons pas l'habilitation pour le lire.",
+            "Demande de consigne transmise à l'autorité. En attente de réponse.",
+            "Réponse reçue. Évacuation immédiate. Ne rien emporter, ne rien éteindre.",
+            "Poste fermé. Sept noms au registre, six passages au sas."
+          ],
           reussite:[
             "La console valide et affiche la fiche complète de l'équipe. Ton regard s'arrête à la deuxième ligne.",
             "SORN, E. — TECHNICIEN RELAIS — STATUT : DÉSERTION. RADIÉ. NE PAS RÉINTÉGRER.",
