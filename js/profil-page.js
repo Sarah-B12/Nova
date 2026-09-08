@@ -17,6 +17,14 @@
                   background:#0f1830; border:1px solid var(--line); border-radius:8px; padding:6px; }
     .emo-panneau .mur-emo{ font-size:19px; line-height:1; padding:5px; background:none; border:0; cursor:pointer; border-radius:6px; }
     .emo-panneau .mur-emo:hover{ background:#1b2848; }
+    .pp-jauges{ margin:8px 0 4px; display:flex; flex-direction:column; gap:4px; max-width:260px; }
+    .pp-jauge{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--sourdine); }
+    .pp-jauge > span:first-child{ min-width:44px; }
+    .pp-jauge b{ min-width:34px; text-align:right; color:var(--texte); }
+    .pp-jbar{ flex:1; height:7px; background:#0f1830; border-radius:4px; overflow:hidden; }
+    .pp-jbar i{ display:block; height:100%; border-radius:4px; }
+    .j-o2{ background:#4aa3ff; } .j-sante{ background:#48c98a; } .j-moral{ background:#e8a33d; }
+    .pp-mort{ color:#ff5257; font-size:13px; margin:8px 0 4px; }
     .mur-b{ background:rgba(16,40,37,.7)!important; color:var(--texte,#dfe8f2)!important; border:1px solid var(--edge,#3a5a52)!important; border-radius:8px 3px 8px 3px; padding:4px 11px!important; cursor:pointer; font-size:14px; min-width:30px; }
     .mur-b:hover{ border-color:var(--orange,#ff8a3d)!important; }
   `;
@@ -116,6 +124,28 @@ function _brancherCompteurMur(champSel, compteSel, max){
   const maj=()=>{ const n=(champ.value||"").length; cpt.textContent=n; if(cpt.parentElement) cpt.parentElement.classList.toggle("trop", n>max); };
   champ.addEventListener("input", maj); maj();
 }
+/* Jauges d'un profil : visibles pour soi-même et pour ses AMIS uniquement.
+   Le serveur (RPC profil_jauges) vérifie le lien dans les deux sens ; le
+   client n'a aucun moyen de forcer l'affichage. Elles ne sont volontairement
+   PAS dans `profils_publics`, qui est lisible par tout le monde : un moral à 0
+   divise les compétences par ~3, donc trahit la valeur au combat. */
+async function _ppChargerJauges(id){
+  const z=document.querySelector("#pp-jauges"); if(!z || !id) return;
+  let d=null;
+  try{ const r=await sb.rpc("profil_jauges",{ p_profil:id }); d=r.data; }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#jauges"); return; }
+  if(!d || !d.ok) return;                       // non_ami : on n'affiche rien du tout
+  if(d.mort){ z.innerHTML = `<p class="pp-mort">Personnage mort — en attente de résurrection.</p>`; return; }
+  const barre=(lib,v,cls)=>`<div class="pp-jauge"><span>${lib}</span>
+      <span class="pp-jbar"><i class="${cls}" style="width:${Math.max(0,Math.min(100,v))}%"></i></span>
+      <b>${Math.round(v)}%</b></div>`;
+  z.innerHTML = `<div class="pp-jauges">
+      ${barre("O₂", d.o2, "j-o2")}
+      ${barre("Santé", d.sante, "j-sante")}
+      ${barre("Moral", d.moral, "j-moral")}
+    </div>`;
+}
+
 async function ouvrirPageProfil(nom){
   if(!nom) return;
   _ppStyle(); if(typeof _avStyle==="function") _avStyle();
@@ -157,6 +187,7 @@ async function ouvrirPageProfil(nom){
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>
         ${credLigne}
+        <div id="pp-jauges"></div>
         <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button>` : ""}</div>
       </div>
     </div>
@@ -205,6 +236,7 @@ async function ouvrirPageProfil(nom){
   const champ=m.querySelector("#pp-mur-champ"); if(champ) champ.addEventListener("keydown",e=>{ if(e.key==="Enter" && (e.ctrlKey||e.metaKey)) _ppPublierMur(p.id); });
   _brancherCompteurMur("#pp-mur-champ","#pp-mur-compte",500);
   _remplirBarreMur("#pp-mur-outils"); _brancherOutilsMur("#pp-mur-champ","#pp-mur-outils");
+  _ppChargerJauges(p.id);   // asynchrone : le serveur décide si le lien d'amitié autorise l'affichage
 
   _ppChargerMur(p.id);
   _ppChargerAmis(p.id);

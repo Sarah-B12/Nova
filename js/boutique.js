@@ -28,7 +28,14 @@ function renderBoutique(){
     let sous = "";
     if(a.cat==="graines"){ const g=GRAINES.find(x=>x.id===a.id); sous = g ? `donne de la ${plante(g.plante).nom}` : ""; }
     else if(a.cat==="bebes"){ const b=BEBES.find(x=>x.id===a.id); sous = b ? `produit du ${item(animal(b.animal).produit).nom}` : ""; }
-    else { const e=effetConso(a.id); sous = e ? `+${e.soin} ${e.jauge} à l'usage` : "carburant de vaisseau"; }
+    else {
+      /* ⚠ effetConso() renvoie une carte jauge→valeur ({o2:25}, {sante:20,moral:20}),
+         pas {soin, jauge} : l'ancienne forme à jauge unique. On lisait e.soin et
+         e.jauge, d'où le « +undefined undefined » affiché en boutique. */
+      const e=effetConso(a.id);
+      const parts = e ? Object.entries(e).filter(([,v])=>v).map(([g,v])=>`+${v} ${labelJauge(g)}`) : [];
+      sous = parts.length ? `${parts.join(", ")} à l'usage` : "carburant de vaisseau";
+    }
     html += `<div class="marche-ligne" data-item="${a.id}"><span class="marche-ic">${iconeItem(a.id)}</span>`
       + `<span class="marche-nom">${a.nom}<span class="qte">${sous}</span></span>`
       + `<span class="marche-prix">${a.prix} ₡</span>`
