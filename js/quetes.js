@@ -57,7 +57,21 @@ async function avancerQuete(){
   if(a.etape >= q.etapes.length){ await terminerQuete(); }
   else { const e=etapeActive(); journal("Étape suivante"+(e&&e.indice?` : « ${e.indice} »`:"")+".","gain"); sauvegarder(); }
   rafraichirQuetes();
+
+  /* ⚠ On vient de remettre a._sur à false, or queteArrivee() n'est appelée que
+     depuis voyager() — donc seulement APRÈS un déplacement. Si l'étape suivante
+     est au même endroit que la précédente (Q4 2→3 et 3→4, Q5 3→4 : moins de
+     80 u d'écart, soit le rayon de la cible), le joueur se retrouvait devant un
+     panneau lui demandant d'aller là où il se tient déjà, et devait s'éloigner
+     puis revenir pour débloquer. On réévalue donc la présence tout de suite.
+     Le garde-fou évite une récursion si deux étapes SANS défi se suivaient au
+     même point : queteArrivee() rappellerait avancerQuete() en boucle. */
+  if(!_avanceEnChaine){
+    _avanceEnChaine = true;
+    try{ queteArrivee(); } finally { _avanceEnChaine = false; }
+  }
 }
+let _avanceEnChaine = false;
 async function terminerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id); const r=q.recompense||{};
   if(r.credits) etat.credits += r.credits;

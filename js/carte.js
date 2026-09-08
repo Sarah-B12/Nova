@@ -133,11 +133,12 @@ async function voyager(x, y){
   // Protocole : impossible d'entrer dans le cercle -> on est projeté sur l'anneau (le trait)
   const z = ZONE_PROTOCOLE, dp = dist(x, y, z.x, z.y);
   if(dp < z.r){ const a = Math.atan2(y - z.y, x - z.x); x = z.x + Math.cos(a) * z.r; y = z.y + Math.sin(a) * z.r; }
-  const dFull=dist(etat.pos.x,etat.pos.y,x,y);
-  if(dFull<6) return;
-  const dOpen = distanceOuverte(etat.pos, {x,y});                 // portion à découvert (hors cercles)
-  const coutE = dOpen>0 ? aptEnergieDeplacement(Math.max(1, Math.round(dOpen/PAS)))   : 0;
-  const coutO = dOpen>0 ? coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))               : 0;
+  // ⚠ Le calcul est délégué à coutTrajet(), la MÊME fonction que l'aperçu au
+  //    survol : dupliquer la formule ici la ferait diverger tôt ou tard, et
+  //    l'aperçu se mettrait à annoncer un prix différent de celui débité.
+  const c = coutTrajet(x, y);
+  if(!c) return;                                   // trop court (< 6 u) ou position inconnue
+  const dOpen = c.dOpen, coutE = c.coutE, coutO = c.coutO;
   if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
   // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.
   etat.pos={ x:Math.round(x), y:Math.round(y) };
