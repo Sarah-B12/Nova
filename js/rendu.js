@@ -86,7 +86,7 @@ function afficher(){
   if(typeof majQueteHubSiPertinent==="function") majQueteHubSiPertinent();
   if(typeof majPas==="function") majPas();
   if(typeof majJournal==="function") majJournal();
-  const _rz=document.querySelector("#reputations"); if(_rz && typeof _badgesReput==="function") _rz.innerHTML=_badgesReput(etat.reputation||0, etat.cercles||{});
+  const _rz=document.querySelector("#reputations"); if(_rz && typeof _badgesReput==="function") _rz.innerHTML=_badgesReput(etat.reputation||0, etat.cercles||{}, etat.faction);
   if(typeof renderMarche==="function"){ const hm=document.querySelector("#hub-marche"); if(hm && !hm.hidden) renderMarche(); }
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;

@@ -45,6 +45,9 @@
     .rep-badges{ display:flex; justify-content:center; gap:18px; margin:12px 0 4px; flex-wrap:wrap; }
     .rep-badge{ display:flex; flex-direction:column; align-items:center; gap:2px; }
     .rep-ic{ font-size:22px; line-height:1; }
+    .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
+    .rep-badge{ cursor:default; }
     .rep-n{ font-size:14px; font-weight:700; color:var(--orange-hi,#ffb060); }
     .gouv-textarea{ width:100%; box-sizing:border-box; background:#0f1830; border:1px solid var(--line); border-radius:var(--r-s,10px); color:var(--texte,#dfe8f2); padding:10px; font-family:inherit; font-size:14px; resize:vertical; margin-bottom:10px; }
   `;
@@ -52,17 +55,30 @@
 })();
 function _gouvFacNom(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:"ta faction"; }
 const CERCLES = [
+  // `ic` = repli si le blason images/blasons/<id>.png manque (onerror).
   { id:"eclats",      nom:"Les Éclats",            ic:"💠" },
   { id:"racines",     nom:"Les Racines",           ic:"🌿" },
   { id:"veilleurs",   nom:"Les Veilleurs",         ic:"🔭" },
   { id:"langues",     nom:"Les Langues-violacées", ic:"👅" },
   { id:"assembleurs", nom:"Les Assembleurs",       ic:"⚙️" }
 ];
-function _badgesReput(repFaction, cercles){
+/* Badges de réputation : blasons dessinés (images/blasons/<id>.png).
+   ⚠ 3e paramètre AJOUTÉ : la faction, pour choisir le bon blason du premier
+   badge. Sans elle on retombe sur la médaille 🎖️ générique.
+   Chaque image a un repli emoji via onerror, donc un blason manquant
+   n'efface pas le badge. */
+function _badgesReput(repFaction, cercles, faction){
   cercles = cercles || {};
-  const badges = [ {ic:"🎖️", nom:"Réputation de faction", val:(repFaction||0)} ];
-  CERCLES.forEach(c=>badges.push({ ic:c.ic, nom:c.nom, val:(cercles[c.id]||0) }));
-  return badges.map(b=>`<div class="rep-badge" title="${b.nom}"><span class="rep-ic">${b.ic}</span><span class="rep-n">${b.val}</span></div>`).join("");
+  const fac = (typeof FACTIONS!=="undefined") ? FACTIONS.find(f=>f.id===faction) : null;
+  const badges = [ { id:faction||null, ic:"🎖️", nom:fac?`Réputation — ${fac.nom}`:"Réputation de faction", val:(repFaction||0) } ];
+  CERCLES.forEach(c=>badges.push({ id:c.id, ic:c.ic, nom:c.nom, val:(cercles[c.id]||0) }));
+  return badges.map(b=>{
+    const vis = b.id
+      ? `<img class="rep-img" src="images/blasons/${b.id}.png" alt="" loading="lazy"
+             onerror="this.outerHTML='<span class=\'rep-ic\'>${b.ic}</span>'">`
+      : `<span class="rep-ic">${b.ic}</span>`;
+    return `<div class="rep-badge" title="${b.nom}">${vis}<span class="rep-n">${b.val}</span></div>`;
+  }).join("");
 }
 const GOUV_ROLES = [ {id:"regent",nom:"Régent"}, {id:"architecte",nom:"Architecte"}, {id:"chef_guerre",nom:"Stratège"}, {id:"espion",nom:"Ombre"} ];
 async function _chargerGouvernement(fac){

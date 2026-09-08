@@ -1,5 +1,5 @@
 /* ===========================================================
-   COMM — Communication. 3 sous-onglets : Amis, Messages, Annonces.
+   COMM — Communication. 4 sous-onglets : Amis, Messages, Annonces, Carnet.
    Multijoueur simulé (annuaire de joueurs fictifs) en attendant le backend.
    Ce module : sous-onglets + LISTE D'AMIS (recherche, profil, ajout, blocage).
    =========================================================== */
@@ -60,6 +60,7 @@ function majComm(){
   if(commVue==="amis"){ z.innerHTML = vueAmis(); brancherAmis(z); return; }
   if(commVue==="messages"){ z.innerHTML = `<p class="vide">Chargement…</p>`; _rendreMessages(z); return; }
   if(commVue==="annonces"){ z.innerHTML = `<p class="vide">Chargement…</p>`; _rendreAnnonces(z); return; }
+  if(commVue==="carnet"){ _rendreCarnet(z); return; }
 }
 
 /* ---------- Amis (serveur : demandes réciproques) ---------- */
@@ -372,6 +373,37 @@ function vueAnnonces(toutes, miennes){
   for(const a of toutes) h+=_carteAnnonce(a);
   return h+`</div>`;
 }
+/* CARNET — bloc-notes personnel. Vit dans etat.carnet, donc dans `donnees` :
+   aucune table ni RPC, il suit la sauvegarde du profil et se retrouve sur tous
+   les appareils du joueur. Personne d'autre n'y a accès (RLS sur profils).
+   Le collage est AUTORISÉ : le bloquer n'aurait été qu'un ralentisseur
+   (F12, JS désactivé ou une capture d'écran le contournent), au prix d'une
+   gêne réelle pour les joueurs sur mobile et les lecteurs d'écran. */
+const CARNET_MAX = 6000;
+function _rendreCarnet(z){
+  const v = etat.carnet || "";
+  z.innerHTML = `
+    <p class="vide" style="margin:0 0 8px">Tes notes, indices et hypothèses. Enregistré sur ton compte — tu les retrouveras partout. Personne d'autre ne les voit.</p>
+    <textarea class="carnet-zone" id="carnet-zone" maxlength="${CARNET_MAX}" placeholder="Ce que tu as vu, ce que tu crois comprendre…">${echapper(v)}</textarea>
+    <div class="carnet-pied"><span id="carnet-etat">Enregistré</span><span id="carnet-compte">${v.length} / ${CARNET_MAX}</span></div>`;
+
+  const t = z.querySelector("#carnet-zone");
+  const et = z.querySelector("#carnet-etat");
+  const cp = z.querySelector("#carnet-compte");
+  let minuteur = null;
+
+  t.addEventListener("input", ()=>{
+    etat.carnet = t.value.slice(0, CARNET_MAX);
+    cp.textContent = `${etat.carnet.length} / ${CARNET_MAX}`;
+    et.textContent = "…";
+    clearTimeout(minuteur);
+    minuteur = setTimeout(()=>{                 // on ne sauvegarde pas à chaque frappe
+      if(typeof sauvegarder==="function") sauvegarder();
+      et.textContent = "Enregistré";
+    }, 900);
+  });
+}
+
 async function _rendreAnnonces(z){
   const { toutes, miennes } = await _chargerAnnonces();
   _annCache = toutes; _annMiennes = miennes;
@@ -420,6 +452,11 @@ function _commStyle(){
   const st=document.createElement("style");
   st.textContent=`
     #comm-nav{ margin-bottom:12px; }
+    .carnet-zone{ width:100%; min-height:340px; resize:vertical; background:#0f1830;
+      border:1px solid var(--line); border-radius:10px; color:var(--texte);
+      padding:12px; font-family:inherit; font-size:14px; line-height:1.55; }
+    .carnet-pied{ display:flex; justify-content:space-between; align-items:center;
+      gap:10px; margin-top:8px; font-size:12px; color:var(--sourdine); }
     .comm-lien{ background:none; border:none; border-bottom:2px solid transparent; color:var(--sourdine); padding:8px 12px; cursor:pointer; font:inherit; font-size:14px; }
     .comm-lien.actif{ color:var(--orange-hi); border-bottom-color:var(--orange); }
     .comm-recherche{ display:flex; gap:8px; margin-bottom:6px; }

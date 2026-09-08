@@ -191,7 +191,7 @@ async function ouvrirPageProfil(nom){
         <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button>` : ""}</div>
       </div>
     </div>
-    <div class="rep-badges" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}):""}</div>
+    <div class="rep-badges" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
     <div id="pp-terrain" hidden></div>
     <div id="pp-journal-staff" hidden></div>
     <h2 style="margin-top:20px">Description RP</h2>
