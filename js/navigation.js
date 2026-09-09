@@ -126,6 +126,7 @@ async function inscrire(){
   // Étape OBLIGATOIRE : le genre est figé à vie, il doit être choisi sciemment
   // et non hérité d'un défaut. L'éditeur ne se ferme que sur validation serveur.
   if(typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});
+  if(typeof syncApresConnexion==="function") await syncApresConnexion();   // même raison qu'à la connexion
   montrerBienvenue();
 }
 async function connecter(){
@@ -142,6 +143,10 @@ async function connecter(){
   if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();
   journal(`Bon retour, ${etat.nom}.`,"gain");
+  /* ⚠ Sans ceci, le sac restait vide et les jauges aux défauts client jusqu'au
+     prochain rechargement de page : la synchronisation Phase 4 ne tournait
+     qu'au démarrage (bootstrap.js), pas après une connexion. */
+  if(typeof syncApresConnexion==="function") await syncApresConnexion();
   // Rattrapage : compte créé avant cette règle, ou inscription interrompue
   // avant la validation de l'avatar (rechargement de page, onglet fermé).
   if(!etat.avatar && typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});

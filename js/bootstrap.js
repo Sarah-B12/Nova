@@ -87,17 +87,24 @@ setInterval(() => { if(etat.inscrit && typeof compterPoste==="function") compter
 setInterval(() => { if(etat.inscrit && typeof compterAnnonce==="function") compterAnnonce(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof syncPrison==="function") syncPrison(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof syncEffetsCombat==="function") syncEffetsCombat(); }, 60000);
-// Phase 4 : les stocks appartiennent au serveur — on les charge à la connexion.
-setTimeout(() => {
+/* Phase 4 : stocks, jauges, pause et mort appartiennent au serveur.
+   ⚠ Ce bloc ne tournait qu'au CHARGEMENT DE LA PAGE, et sortait aussitôt si
+   le joueur n'était pas encore connecté (`etat.inscrit` faux). Quand on se
+   connectait ensuite sans recharger, plus personne ne les chargeait : sac
+   vide, et jauges restées aux DÉFAUTS CLIENT (100/100/100) alors que le
+   serveur pouvait en compter 20. D'où « le sac disparaît, sauf si je fais un
+   refresh ». La synchronisation est donc une fonction, appelée ici ET après
+   chaque connexion ou inscription (navigation.js). */
+async function syncApresConnexion(){
   if(!etat.inscrit) return;
   const t = [];
   if(typeof chargerStocksServeur==="function") t.push(chargerStocksServeur());
   if(typeof chargerJaugesServeur==="function") t.push(chargerJaugesServeur());   // jauges serveur
   if(typeof _syncPause==="function") t.push(_syncPause());                        // état de pause serveur
   if(typeof syncMort==="function")   t.push(syncMort());                          // couloir de la mort
-  Promise.all(t).then(()=>{
-    if(typeof afficher==="function") afficher();
-    if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
-    if(typeof majEcranMort==="function")  majEcranMort();    // écran bloquant si mort
-  });
-}, 1200);
+  await Promise.all(t);
+  if(typeof afficher==="function") afficher();
+  if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
+  if(typeof majEcranMort==="function")  majEcranMort();    // écran bloquant si mort
+}
+setTimeout(syncApresConnexion, 1200);
