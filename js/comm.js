@@ -95,6 +95,11 @@ async function _chargerRelations(){
     else if(role==="demandeur") out.envoyees.push(info);
     else out.recues.push(info);
   }
+  /* Les relations arrivaient dans l'ordre où la base les rend — c'est-à-dire
+     sans ordre utile. On trie chaque liste par pseudo, sans tenir compte de la
+     casse ni des accents : « Élane » doit se ranger avec les E, pas après Z. */
+  const parNom = (a,b) => String(a.nom||"").localeCompare(String(b.nom||""), "fr", { sensitivity:"base" });
+  out.amis.sort(parNom); out.envoyees.sort(parNom); out.recues.sort(parNom);
   return out;
 }
 function _etatRelation(id){ const r=_relCache[id]; if(!r) return null; if(r.statut==="accepte") return "ami"; return r.role==="demandeur"?"envoyee":"recue"; }
@@ -458,8 +463,8 @@ function vueAnnonces(toutes, miennes){
    `profils_publics`, qui n'expose ni crédits ni `donnees`.
    ⚠ On charge UNE faction à la fois : tout afficher d'un coup serait long à
    lire et lourd à transférer. */
-let _popFaction = null, _popQ = "", _popVus = 60, _popCache = null;
-const POP_PAS = 60;
+let _popFaction = null, _popQ = "", _popVus = 120, _popCache = null;
+const POP_PAS = 120;   // les noms tiennent en grille : on peut en montrer beaucoup plus
 
 async function _rendrePopulation(z){
   if(!_popFaction) _popFaction = etat.faction || (typeof FACTIONS!=="undefined" ? FACTIONS[0].id : null);
@@ -467,7 +472,7 @@ async function _rendrePopulation(z){
   let h = `<div class="pop-nav">` + fs.map(f =>
       `<button class="msg-lien${f.id===_popFaction?" actif":""}" data-pop="${f.id}">${echapper(f.nom)}</button>`
     ).join("") + `</div>
-    <div class="dev-champ" style="margin:8px 0"><input id="pop-q" placeholder="Filtrer par pseudo…" value="${echapper(_popQ)}"></div>
+    <div class="pop-filtre"><input id="pop-q" placeholder="Chercher un pseudo…" value="${echapper(_popQ)}" autocomplete="off"></div>
     <div id="pop-liste"><p class="vide">Chargement…</p></div>`;
   z.innerHTML = h;
 
@@ -487,7 +492,7 @@ async function _peuplerPopulation(z){
   if(!_popCache || _popCache.faction !== _popFaction){
     if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ zl.innerHTML = `<p class="vide">Serveur indisponible.</p>`; return; }
     const { data, error } = await sb.from("profils_publics")
-      .select("id,nom,niveau,formation,derniere_activite")
+      .select("nom,derniere_activite")          // annuaire : le pseudo suffit, le reste est sur la fiche
       .eq("faction", _popFaction).order("nom", { ascending:true });
     if(error){ console.warn("[population]", error.message); zl.innerHTML = `<p class="vide">Lecture impossible.</p>`; return; }
     _popCache = { faction:_popFaction, liste:(data||[]) };
@@ -502,13 +507,14 @@ async function _peuplerPopulation(z){
     zl.innerHTML = `<p class="vide">${filtre ? "Aucun pseudo ne correspond." : "Personne dans cette faction."}</p>`;
     return;
   }
-  let h = `<p class="itip-gris" style="margin:0 0 8px"><b>${tous.length}</b> membre${tous.length>1?"s":""}${fac?` — ${echapper(fac.nom)}`:""}${filtre?` (sur ${_popCache.liste.length})`:""}</p><div class="pop-liste">`;
+  const enL = vus.filter(p => (typeof _presenceEnLigne==="function") && _presenceEnLigne(p.derniere_activite)).length;
+  let h = `<p class="itip-gris" style="margin:0 0 8px"><b>${tous.length}</b> membre${tous.length>1?"s":""}${fac?` — ${echapper(fac.nom)}`:""}${filtre?` (sur ${_popCache.liste.length})`:""}${enL?` · ${enL} en ligne`:""}</p><div class="pop-grille">`;
+  /* Grille auto-adaptative : autant de colonnes que la largeur en autorise,
+     une seule sur téléphone. Une liste verticale devenait vite interminable. */
   vus.forEach(p => {
     const enLigne = (typeof _presenceEnLigne==="function") && _presenceEnLigne(p.derniere_activite);
-    h += `<button class="pop-item" data-profil="${echapper(p.nom)}">
-        <span class="comm-dot ${enLigne?"on":"off"}"></span>
-        <span class="pop-nom">${echapper(p.nom)}</span>
-        <span class="pop-meta">Niv ${p.niveau|0}${p.formation?` · ${echapper(p.formation)}`:""}</span>
+    h += `<button class="pop-item" data-profil="${echapper(p.nom)}" title="${echapper(p.nom)}">
+        <span class="comm-dot ${enLigne?"on":"off"}"></span><span class="pop-nom">${echapper(p.nom)}</span>
       </button>`;
   });
   h += `</div>`;
@@ -641,13 +647,18 @@ function _commStyle(){
     .msg-qui-lien:hover{ color:#fff; }
     .msg-plus{ display:block; width:100%; margin-top:8px; }
     .pop-nav{ display:flex; gap:6px; flex-wrap:wrap; }
-    .pop-liste{ display:flex; flex-direction:column; gap:5px; }
-    .pop-item{ display:flex; align-items:center; gap:9px; width:100%; text-align:left;
-      background:#0f1830; border:1px solid var(--line); border-radius:9px 3px 9px 3px;
-      color:var(--texte); padding:8px 11px; font-family:inherit; font-size:13px; cursor:pointer; }
-    .pop-item:hover{ border-color:var(--bleu); }
+    .pop-filtre{ margin:9px 0 10px; }
+    .pop-filtre input{ width:100%; box-sizing:border-box; background:#0f1830;
+      border:1px solid var(--line); border-radius:10px 4px 10px 4px; color:var(--texte);
+      padding:9px 12px; font-family:inherit; font-size:14px; }
+    .pop-filtre input:focus{ outline:none; border-color:var(--orange); }
+    .pop-grille{ display:grid; gap:5px; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); }
+    .pop-item{ display:flex; align-items:center; gap:7px; width:100%; text-align:left;
+      background:#0f1830; border:1px solid var(--line); border-radius:8px 3px 8px 3px;
+      color:var(--texte); padding:7px 10px; font-family:inherit; font-size:13px; cursor:pointer; }
+    .pop-item:hover{ border-color:var(--bleu); color:#fff; }
     .pop-nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .pop-meta{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); white-space:nowrap; }
+    @media (max-width:420px){ .pop-grille{ grid-template-columns:1fr; } }
     .msg-ecrire{ display:flex; flex-direction:column; gap:8px; }
     .msg-ecrire input, .msg-ecrire textarea{ background:#0f1830; border:1px solid var(--line); border-radius:8px; color:var(--texte); padding:9px 11px; font-family:inherit; }
     .msg-ecrire textarea{ resize:vertical; }

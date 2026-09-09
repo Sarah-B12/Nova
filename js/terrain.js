@@ -295,7 +295,7 @@ function renderStructActions(p, el){
     if(!c){
       const dispoP = PLANTES.filter(pl => possedeStock(graineDe(pl.id)));
       el.innerHTML=`<p style="margin:0 0 8px">Emplacement ${ci+1} — planter :</p>`;
-      if(!dispoP.length){ el.innerHTML += `<p class="vide">Aucune graine dans ton sac ou ta maison. Achète-en à la Boutique.</p>`; return; }
+      if(!dispoP.length){ el.innerHTML += `<p class="vide">Aucune graine dans ton sac ou ta maison. Achètes-en à la Boutique.</p>`; return; }
       const listeP=document.createElement("div"); listeP.className="choix-liste";
       dispoP.forEach(pl=>{ const n=nbStock(graineDe(pl.id)); const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>${pl.nom} <small>(+${pl.croissance}% / jour · ${n} graine${n>1?"s":""})</small></span>`; b.addEventListener("click",()=>poserPlante(ci,pl.id)); listeP.appendChild(b); });
       el.appendChild(listeP); return;
@@ -308,7 +308,7 @@ function renderStructActions(p, el){
     if(!c){
       const dispoA = ANIMAUX.filter(a => possedeStock(bebeDe(a.id)));
       el.innerHTML=`<p style="margin:0 0 8px">Emplacement ${ci+1} — élever :</p>`;
-      if(!dispoA.length){ el.innerHTML += `<p class="vide">Aucun bébé animal dans ton sac ou ta maison. Achète-en à la Boutique.</p>`; return; }
+      if(!dispoA.length){ el.innerHTML += `<p class="vide">Aucun bébé animal dans ton sac ou ta maison. Achètes-en à la Boutique.</p>`; return; }
       const listeA=document.createElement("div"); listeA.className="choix-liste";
       dispoA.forEach(a=>{ const n=nbStock(bebeDe(a.id)); const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>Petit ${a.nom} <small>(→ ${item(a.produit).nom} · ${n} dispo)</small></span>`; b.addEventListener("click",()=>poserAnimal(ci,a.id)); listeA.appendChild(b); });
       el.appendChild(listeA); return;

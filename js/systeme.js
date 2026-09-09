@@ -43,6 +43,14 @@ function _categoriser(t){
 }
 function journal(t, type="", cat=null){
   if(!etat.journal) etat.journal=[];
+  /* ⚠ Entrées identiques qui se suivent : on incrémente un compteur au lieu
+     d'empiler. Acheter dix graines produisait dix lignes rigoureusement
+     semblables, qui noyaient le reste du journal. */
+  const der = etat.journal[0];
+  if(der && der.t === t && der.type === type){
+    der.n = (der.n || 1) + 1; der.d = Date.now();
+    majJournal(); _bulle(t, type); return;
+  }
   etat.journal.unshift({ t, type, cat: cat || _categoriser(t), d: Date.now() });
   _purgerJournal();
   majJournal();
@@ -143,6 +151,7 @@ function _journalStyle(){
     .jf-b{ font-size:11px; padding:2px 8px; border-radius:8px 3px 8px 3px; background:rgba(16,40,37,.7); color:var(--sourdine); border:1px solid var(--line); cursor:pointer; }
     .jf-b.actif{ color:var(--orange-hi,#ffb060); border-color:var(--orange,#ff8a3d); }
     #journal{ max-height:340px; overflow:auto; }
+    .j-n{ font-family:"Space Mono",monospace; font-size:10px; font-weight:700; color:var(--orange-hi,#ffb060); }
     .j-cat{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; margin-right:6px; vertical-align:middle; text-transform:uppercase; letter-spacing:.4px; }
     .j-systeme{ background:#3a4a5a; color:#cdd8e6; } .j-quete{ background:#6b53d6; color:#fff; }
     .j-minage{ background:#8a6a3a; color:#ffe1b0; } .j-agri{ background:#3f7a42; color:#dfffcf; }
@@ -167,7 +176,7 @@ function majJournal(){
   }
   const list=etat.journal.filter(e=>_journalFiltre==="tout"||e.cat===_journalFiltre).slice(0,80);
   z.innerHTML = list.length
-    ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${_echapJ(e.t)}</div>`).join("")
+    ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
     : `<p class="vide" style="margin:6px 0">Aucune entrée${_journalFiltre!=="tout"?" dans cette catégorie":""}.</p>`;
 }
 

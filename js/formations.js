@@ -112,7 +112,9 @@ function changerCentre(c){
 function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
   const chezSoi = (typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true;
-  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi };   // réservés à ta faction
+  // ⚠ `annonce` est masquée hors de sa faction : on ne lit pas les nouvelles
+  //    des autres, même en visitant leur ville.
+  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi, annonce:!chezSoi };
   // ⚠ Bureau : la vérification des rôles est ASYNCHRONE. Sans le souvenir du
   // dernier résultat, l'onglet s'affichait puis disparaissait — un clignotement
   // à chaque changement d'onglet du Centre. On applique donc d'abord ce qu'on
@@ -130,12 +132,14 @@ function majCentre(){
       if(b) b.style.display = etat._aRoleGouv ? "" : "none";
     });
   }
+  if(!masque.annonce && typeof majPastillesCentre==="function") majPastillesCentre();
   if(masque[centreVue]) centreVue = "gouvernement";
   document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
   if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }
   if(centreVue==="gouvernement"){ if(typeof majGouvernement==="function") majGouvernement(el); return; }
+  if(centreVue==="annonce"){ if(typeof majAnnonceFaction==="function") majAnnonceFaction(el); return; }
   if(centreVue==="votes"){ if(typeof majElections==="function") majElections(el); return; }
   if(centreVue==="bureau"){ if(typeof majBureau==="function") majBureau(el); return; }
   if(centreVue==="guerres"){ if(typeof majExpeditions==="function") majExpeditions(el); return; }

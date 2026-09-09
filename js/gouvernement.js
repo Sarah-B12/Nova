@@ -48,6 +48,13 @@
     .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
     .rep-badge{ cursor:default; }
+    .ann-carte{ border:1px solid var(--line); border-left:3px solid var(--orange,#ff8a3d);
+      border-radius:12px 4px 12px 4px; background:rgba(255,138,61,.05); padding:13px 15px; margin-top:6px; }
+    .ann-tete{ font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--orange-hi,#ffb060); margin-bottom:9px; }
+    .ann-txt{ font-size:14px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+    .centre-pastille{ display:inline-block; min-width:17px; padding:0 5px; margin-left:6px;
+      background:var(--orange,#ff8a3d); color:#0a1020; border-radius:9px;
+      font-family:"Space Mono",monospace; font-size:11px; font-weight:700; text-align:center; }
     .gouv-blason{ display:flex; justify-content:center; margin:10px 0 14px; }
     .gouv-blason img{ width:132px; height:132px; object-fit:contain;
       filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
@@ -105,7 +112,19 @@ async function _chargerGouvernement(fac){
   }catch(e){ return { parRole:{}, noms:{} }; }
 }
 
+/* ⚠ COURSE DE RENDU. Cette fonction est `async` et enchaîne plusieurs `await`
+   entre la réinitialisation de `el.innerHTML` et l'ajout de ses blocs
+   (gouvernement, fragments, annonce). Deux appels rapprochés — par exemple
+   `apresAction()` puis le `majCentre()` explicite après un don — se
+   chevauchaient : chacun repartait de zéro, puis TOUS DEUX ajoutaient leurs
+   blocs au contenu final. D'où les sections « Gouvernement » et « Fragments »
+   en double, voire en triple.
+   Parade : un jeton de version. Après chaque `await`, un rendu abandonne s'il
+   n'est plus le plus récent. */
+let _gouvRendu = 0;
 async function majGouvernement(el){
+  const _jeton = ++_gouvRendu;
+  const _perime = () => _jeton !== _gouvRendu;
   if(!el) return;
   const fac = etat.faction;
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Chargement…</p>`;
@@ -124,33 +143,34 @@ async function majGouvernement(el){
       <span class="itip-gris">Reste aujourd'hui : <b>${reste} ₡</b> / 500</span>
     </div>`;
   const b = el.querySelector("#gouv-don-btn"); if(b) b.addEventListener("click", faireDon);
-  try{ const { data:ann } = await sb.from("annonce_faction").select("*").eq("faction",fac).maybeSingle();
-    if(ann && ann.texte && ann.texte.trim()){
-      const rendu=(typeof _formatMur==="function")?_formatMur(ann.texte):ann.texte.replace(/</g,"&lt;");
-      el.insertAdjacentHTML("afterbegin", `<div class="gouv-annonce">📢 <b>Annonce du Régent</b><div class="gouv-annonce-txt">${rendu}</div></div>`);
-      if(etat.annonceFactionVue !== ann.cree_le){ etat.annonceFactionVue = ann.cree_le; if(typeof sauvegarder==="function") sauvegarder(); }
-      const t=document.querySelector('#hub-centre [data-centre="gouvernement"]'); if(t) t.innerHTML="Gouvernement";
-    }
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#2"); }
+  /* ⚠ L'annonce du Régent a quitté ce panneau : elle a son propre onglet
+     « Annonce » (majAnnonceFaction, plus bas). Un rectangle coincé en tête du
+     Gouvernement passait inaperçu et alourdissait la vue. */
   const gouv = await _chargerGouvernement(fac);
   const s2 = await sessionActuelle(); const moiId = s2?s2.user.id:null;
   const jeSuisRegent = gouv.parRole["regent"] && gouv.parRole["regent"]===moiId;
   const rolesHtml = GOUV_ROLES.map(r=>{
     const id=gouv.parRole[r.id]; const nom=id?(gouv.noms[id]||"(?)"):null;
     let ctrl="";
+    /* Le Régent peut transmettre sa charge — RPC à part, car il y perd son
+       pouvoir et le poste ne peut pas rester vacant. */
+    if(jeSuisRegent && r.id==="regent"){ ctrl += `<button class="mini" data-transmettre="1">Transmettre la charge</button>`; }
     if(jeSuisRegent && r.id!=="regent"){ ctrl += `<button class="mini" data-nommer="${r.id}">${nom?"Changer":"Nommer"}</button>`; if(nom) ctrl += `<button class="mini danger" data-demrole="${r.id}">Démettre</button>`; }
     if(id===moiId && r.id!=="regent") ctrl += `<button class="mini danger" data-demission="${r.id}">Démissionner</button>`;
     return `<div class="gouv-role"><span>${r.nom} : ${nom?`<button class="comm-nom" data-profil="${nom}">${nom}</button>`:'<span class="itip-gris">vacant</span>'}</span><span class="comm-btns">${ctrl}</span></div>`;
   }).join("");
+  if(_perime()) return;
   const bloc = document.createElement("div");
   bloc.innerHTML = `<h4 class="gsec" style="margin-top:16px">Gouvernement</h4>${rolesHtml}${jeSuisRegent?'<p class="itip-gris" style="margin-top:6px">Tu es Régent : tu peux nommer ou démettre les autres rôles.</p>':""}`;
   el.appendChild(bloc);
   bloc.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   bloc.querySelectorAll("[data-nommer]").forEach(b=>b.addEventListener("click",()=>_regentNommer(b.dataset.nommer)));
+  bloc.querySelectorAll("[data-transmettre]").forEach(b=>b.addEventListener("click", _regentTransmettre));
   bloc.querySelectorAll("[data-demrole]").forEach(b=>b.addEventListener("click",()=>_regentDemettre(b.dataset.demrole)));
   bloc.querySelectorAll("[data-demission]").forEach(b=>b.addEventListener("click",()=>_demissionner(b.dataset.demission)));
   try{
     const { data:frags } = await sb.from("fragments").select("*");
+    if(_perime()) return;
     const tous=frags||[]; const mine=tous.filter(f=>f.detenteur===fac);
     let fh=`<h4 class="gsec" style="margin-top:16px">Fragments du Protocole (${mine.length}/2)</h4>`;
     fh+=`<div class="frag-slots">`;
@@ -164,6 +184,70 @@ async function majGouvernement(el){
     const b2=document.createElement("div"); b2.innerHTML=fh; el.appendChild(b2);
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#3"); }
 }
+/* ===========================================================
+   ANNONCE — onglet dédié, réservé à SA PROPRE faction (masqué ailleurs,
+   voir `masque.annonce` dans formations.js). Marque l'annonce comme lue,
+   ce qui éteint la pastille de l'onglet.
+   =========================================================== */
+/* Pastilles des onglets du Centre : une annonce non lue, une expédition
+   programmée. Interrogées à part du rendu pour que l'information apparaisse
+   même quand le joueur est sur un autre onglet. */
+async function majPastillesCentre(){
+  const fac = etat.faction; if(!fac) return;
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
+  const pose = (onglet, libelle, n) => {
+    const b = document.querySelector(`#hub-centre [data-centre="${onglet}"]`);
+    if(b) b.innerHTML = libelle + (n ? `<span class="centre-pastille">${n}</span>` : "");
+  };
+  try{
+    const [a, e] = await Promise.all([
+      sb.from("annonce_faction").select("cree_le").eq("faction",fac).maybeSingle(),
+      sb.from("expeditions").select("id").eq("faction",fac).eq("resolue",false).limit(5)
+    ]);
+    const nouvelle = a.data && a.data.cree_le && etat.annonceFactionVue !== a.data.cree_le;
+    pose("annonce", "Transmission", nouvelle ? 1 : 0);
+    pose("guerres", "Expéditions", (e.data||[]).length);
+  }catch(err){ if(typeof _catchLog==="function") _catchLog(err, "gouvernement.js#pastilles"); }
+}
+
+let _annRendu = 0;
+async function majAnnonceFaction(el){
+  const jeton = ++_annRendu;
+  const fac = etat.faction;
+  el.innerHTML = `<h3>Transmission — ${_gouvFacNom(fac)}</h3><p class="vide">Chargement…</p>`;
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ el.innerHTML += `<p class="vide">Serveur indisponible.</p>`; return; }
+
+  let ann = null;
+  try{
+    const { data, error } = await sb.from("annonce_faction").select("*").eq("faction",fac).maybeSingle();
+    if(error) throw error;
+    ann = data;
+  }catch(e){
+    if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#annonce");
+    if(jeton === _annRendu) el.innerHTML = `<h3>Transmission — ${_gouvFacNom(fac)}</h3><p class="vide">Lecture impossible.</p>`;
+    return;
+  }
+  if(jeton !== _annRendu) return;   // un autre rendu a pris la main
+
+  let h = `<h3>Transmission — ${_gouvFacNom(fac)}</h3>${_blasonFaction(fac)}`;
+  if(ann && ann.texte && ann.texte.trim()){
+    const rendu = (typeof _formatMur==="function") ? _formatMur(ann.texte) : ann.texte.replace(/</g,"&lt;");
+    const quand = ann.cree_le ? new Date(ann.cree_le).toLocaleString("fr-FR") : "";
+    h += `<div class="ann-carte">
+        <div class="ann-tete">📡 Transmission du Régent${quand?` <span class="itip-gris">· ${echapper(quand)}</span>`:""}</div>
+        <div class="ann-txt">${rendu}</div></div>`;
+    // Marquée comme lue : c'est ce qui éteint la pastille de l'onglet.
+    if(etat.annonceFactionVue !== ann.cree_le){
+      etat.annonceFactionVue = ann.cree_le;
+      if(typeof sauvegarder==="function") sauvegarder();
+    }
+  } else {
+    h += `<p class="vide">Aucune transmission en cours. Le Régent peut en diffuser une depuis son Bureau.</p>`;
+  }
+  el.innerHTML = h;
+  if(typeof majPastillesCentre==="function") majPastillesCentre();
+}
+
 let _bureauVue = null;
 function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre"}[b]||b; }
 async function compterAnnonce(){
@@ -295,7 +379,7 @@ async function _rendreBureauStratege(el, fac){
       const mx=rp>=90?3:rp>=70?2:1, cur=mercs[c.id]||0, prix=1500*(cur+1);
       h+=`<div class="gouv-role"><span>${c.ic} <b>${c.nom}</b> <span class="itip-gris">${cur}/${mx} engagé(s)</span></span><span class="comm-btns">${cur<mx?`<button class="mini" data-merc="${c.id}">Engager (${prix} ₡)</button>`:""}${cur>0?`<button class="mini danger" data-mercr="${c.id}">Rompre</button>`:""}</span></div>`;
     }});
-    if(!any) h+=`<p class="vide">Aucun Cercle à ≥50 de réputation. Gagne-en via les quêtes.</p>`;
+    if(!any) h+=`<p class="vide">Aucun Cercle à ≥50 de réputation. Gagnes-en via les quêtes.</p>`;
   }
   try{
     const { data:hist } = await sb.from("expeditions").select("cible,objectif,date_prevue,rapport")
@@ -591,6 +675,46 @@ async function _fabriquerDefense(id){
   journal("Objet de défense fabriqué et rangé dans la réserve.","gain");
   if(typeof majCentre==="function") majCentre();
 }
+/* Transmission de la charge de Régent. Deux confirmations plutôt qu'une :
+   le pouvoir change de mains définitivement, sans élection, et l'ancien Régent
+   ne peut pas revenir en arrière tout seul. */
+function _regentTransmettre(){
+  const m=_gouvModal();
+  m.innerHTML=`<div class="membrane modale-boite"><h2>Transmettre la charge</h2>
+    <p class="itip-gris" style="margin:0 0 8px">Entre le pseudo d'un membre de ta faction. <b>Tu cesseras d'être Régent immédiatement</b> et tu ne pourras pas revenir en arrière sans son accord.</p>
+    <input type="text" id="tr-pseudo" placeholder="Pseudo" maxlength="24">
+    <button class="valider" id="tr-valider">Transmettre</button></div>`;
+  m.hidden=false;
+  const inp=m.querySelector("#tr-pseudo"); if(inp) inp.focus();
+  const go=async()=>{
+    const nom=(inp.value||"").trim(); if(!nom) return;
+    const id=(typeof _idDe==="function")?await _idDe(nom):null;
+    if(!id){ journal("Pseudo introuvable.","alerte"); return; }
+    const ok = (typeof confirmerJoli==="function")
+      ? await confirmerJoli("Transmettre la charge",
+          `${nom} deviendra Régent à ta place, tout de suite. Tu perds tes pouvoirs — nomination, Transmission, caisse — et seul le prochain scrutin, ou sa décision, pourra te les rendre.`,
+          "Transmettre", true)
+      : confirm(`Transmettre la charge de Régent à ${nom} ?`);
+    if(!ok) return;
+    const { data:res, error } = await sb.rpc("regent_transmettre",{ p_profil:id });
+    if(error || !res || !res.ok){ const e=res&&res.err;
+      if(e==="pas_meme_faction")  journal("Ce joueur n'est pas de ta faction.","alerte");
+      else if(e==="pas_regent")   journal("Tu n'es pas Régent.","alerte");
+      else if(e==="soi_meme")     journal("Tu es déjà Régent.","alerte");
+      else if(e==="mort")         journal(`${res.nom} est mort — impossible de lui confier la charge.`,"alerte");
+      else if(e==="en_pause")     journal(`${res.nom} est en pause — impossible de lui confier la charge.`,"alerte");
+      else if(e==="introuvable")  journal("Pseudo introuvable.","alerte");
+      else journal("Transmission impossible.","alerte");
+      return; }
+    m.hidden=true;
+    journal(`Tu as transmis la charge de Régent à ${res.nom}.`,"alerte");
+    if(typeof majCentre==="function") majCentre();
+  };
+  m.querySelector("#tr-valider").addEventListener("click", go);
+  if(inp) inp.addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
+  m.addEventListener("click", e=>{ if(e.target===m) m.hidden=true; });
+}
+
 function _regentNommer(role){
   const m=_gouvModal();
   const roleNom=(GOUV_ROLES.find(r=>r.id===role)||{}).nom||role;

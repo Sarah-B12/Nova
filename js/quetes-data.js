@@ -257,7 +257,7 @@ const QUETES = [
     id:"q3",
     nom:"La fleur qui n'aurait pas dû",
     donneur:"Adaya",
-    donneurLieu:"Serre des Cultivateurs",
+    donneurLieu:"Serre du Rhizome",
     // Première quête sans Sorn : Adaya porte le nom de la 3e ligne du registre
     // de Q2. ⚠ CANON v2 — elle n'est PAS un témoin (trois siècles) mais une
     // DESCENDANTE. Sa mémoire de famille dit « on était dehors et on est
@@ -281,7 +281,7 @@ const QUETES = [
         cible:{ x:1250, y:770, r:90 }, leurres:[ {x:1900,y:400,r:80}, {x:700,y:1250,r:80}, {x:1500,y:150,r:80} ],
         image:"images/quetes/q3/1.png",
         arrivee:[
-          "Les serres des Cultivateurs bourdonnent d'insectes pollinisateurs relâchés là depuis des générations. Adaya a monté sa paillasse entre deux rangs de ferragave, comme si de rien n'était.",
+          "Les serres du Rhizome bourdonnent d'insectes pollinisateurs relâchés là depuis des générations. Adaya a monté sa paillasse entre deux rangs de ferragave, comme si de rien n'était.",
           "« Avant de courir dehors, on prépare le bain. Sans milieu de culture, ton échantillon sera bon à jeter en deux heures. »"
         ],
         defi:{ type:"livraison",

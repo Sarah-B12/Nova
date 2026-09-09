@@ -68,12 +68,36 @@ async function renderMarche(){
   const achat = _offresCache.filter(o=>o.vendeur_id!==_marcheMonId && categorieMarche(o.item_id)===marcheTab);
   html += `<div class="marche-liste">`;
   if(!achat.length) html += `<p class="vide">Aucun objet en vente dans cette catégorie.</p>`;
+  /* ⚠ UNE SEULE LIGNE PAR OBJET, tous vendeurs et tous prix confondus. Le
+     marché affichait autant de lignes qu'il y avait de lots, ce qui donnait
+     plusieurs « Couteau de survie » d'affilée et rendait la comparaison
+     impossible.
+     L'offre mise en avant — et celle qu'achète le bouton — est la MOINS
+     CHÈRE ; à prix égal, la PLUS ANCIENNEMENT déposée. Le tri est donc
+     prix croissant, puis date de dépôt croissante.
+     ⚠ On ne fusionne pas les lots eux-mêmes : acheter_offre() prend
+     l'identifiant d'UN lot et l'achète en entier. Le bouton dit donc combien
+     d'unités il rapporte. */
+  const _grp = {}; const _ordre = [];
   for(const o of achat){
-    const p = PRIX_ITEM[o.item_id] || {}; const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
-    html += `<div class="marche-ligne" data-item="${o.item_id}"><span class="marche-ic">${iconeItem(o.item_id)}</span>`
-      + `<span class="marche-nom">${item(o.item_id).nom}<span class="qte">${o.quantite} en vente · ${o.vendeurNom} · moy ${p.moy||"?"} ₡</span></span>`
+    if(!_grp[o.item_id]){ _grp[o.item_id] = []; _ordre.push(o.item_id); }
+    _grp[o.item_id].push(o);
+  }
+  for(const iid of _ordre){
+    const lots = _grp[iid].sort((a,b) =>
+      (a.prix - b.prix) || (new Date(a.cree_le) - new Date(b.cree_le)));
+    const o = lots[0];                                   // la moins chère, la plus ancienne à égalité
+    const total = lots.reduce((s,x) => s + x.quantite, 0);
+    const pmax = lots[lots.length-1].prix;
+    const p = PRIX_ITEM[iid] || {};
+    const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
+    const detail = lots.length > 1
+      ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ · moy ${p.moy||"?"} ₡`
+      : `${o.quantite} en vente · ${o.vendeurNom} · moy ${p.moy||"?"} ₡`;
+    html += `<div class="marche-ligne" data-item="${iid}"><span class="marche-ic">${iconeItem(iid)}</span>`
+      + `<span class="marche-nom">${item(iid).nom}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
-      + `<button class="mini" data-acheter="${o.id}">Acheter</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
+      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${o.vendeurNom}">Acheter${o.quantite>1?` ×${o.quantite}`:""}</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
   html += `</div>`;
   z.innerHTML = html;

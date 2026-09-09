@@ -113,14 +113,17 @@ function majCarte(){
   if(av){ const col=(FACTIONS.find(f=>f.id===etat.faction)||{}).couleur||"#ff9a44";
     av.innerHTML=`<circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="6" fill="${col}"/>`; }
   const ville=villeActuelle(); const lieu=lieuActuel(); let t;
-  if(ville){ const fc=FACTIONS.find(f=>f.id===ville); t=`Tu es à <b style="color:${fc.couleur}">${fc.nom}</b>. <span style="color:var(--bleu)">Repos et comptoir disponibles.</span>`; }
+  /* ⚠ « Repos et comptoir disponibles » retiré : ces deux services n'existent
+     plus. Et « Tu es à Les Nomades » était bancal — les noms de faction
+     portent leur article, on n'en met donc pas devant. */
+  if(ville){ const fc=FACTIONS.find(f=>f.id===ville); t=`<b style="color:${fc.couleur}">${fc.nom}</b> <span style="color:var(--sourdine)">— ta zone de faction.</span>`; }
   else if(surAnneauProtocole()){ t=`<b style="color:#b9a0f0">Anneau du Protocole.</b> <span style="color:var(--sourdine)">L'Ombre de ta faction peut hacker le Protocole ici. On ne peut pas entrer dans la zone.</span>`; }
   else { t=`Zone sauvage.`;
     if(lieu){ if(lieu.type==="mine") t+=` <span style="color:var(--orange)">Filon riche.</span>`; if(lieu.type==="chasse") t+=` <span style="color:var(--coral)">Terrain de chasse.</span>`; if(lieu.type==="quete") t+=` <span style="color:var(--bleu)">Étape de quête (bientôt).</span>`; }
     /* Mention retirée : le minage/la chasse ne se font plus n'importe où en
        zone sauvage, seulement sur un `lieu` (filon, terrain de chasse), déjà
        signalé juste au-dessus. */ }
-  document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">[${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}]</span>`;
+  document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">· pos. ${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}</span>`;
   if(surAnneauProtocole()){ const ri=document.querySelector("#region-info"); if(ri){ const hb=document.createElement("button"); hb.className="mini"; hb.textContent="Hacker le Protocole"; hb.style.marginLeft="8px"; hb.addEventListener("click",()=>{ if(typeof hackerProtocoleDepuisCarte==="function") hackerProtocoleDepuisCarte(); }); ri.appendChild(hb); } }
   if(typeof majMarqueursQuete==="function") majMarqueursQuete();
   const cl=document.querySelector("#carte-lieu"); if(cl) cl.innerHTML = t;

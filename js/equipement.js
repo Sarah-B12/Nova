@@ -167,7 +167,7 @@ function ouvrirPicker(slot){
   if(dispo.length){
     for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;
   } else if(!equipe){
-    html += `<p class="vide" style="margin:6px 0 0">Aucun objet pour cet emplacement dans ton sac. Fabrique-en à l'atelier.</p>`;
+    html += `<p class="vide" style="margin:6px 0 0">Aucun objet pour cet emplacement dans ton sac. Fabriques-en à l'atelier.</p>`;
   } else {
     html += `<p class="vide" style="margin:6px 0 0">Rien d'autre à équiper ici.</p>`;
   }
