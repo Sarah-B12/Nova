@@ -119,10 +119,43 @@ async function assurerDansSac(id, n){
 }
 
 // Chargement initial des trois stocks (à la connexion).
+/* ⚠ Cette fonction ignorait `error` et avalait ses exceptions dans un catch
+   muet. Quand sac_lire échouait — typiquement au démarrage, le jeton de
+   session n'étant pas encore restauré — le sac restait VIDE sans un mot dans
+   la console, et le joueur croyait avoir tout perdu. La première action
+   (acheter une graine) déclenchait un agir() dont la réponse contient
+   l'inventaire complet : tout réapparaissait d'un coup, ce qui rendait le bug
+   incompréhensible.
+   Trois corrections : on attend que la session existe, on réessaie, et un
+   échec définitif est DIT au joueur au lieu de lui montrer un sac vide comme
+   si c'était la vérité. */
 async function chargerStocksServeur(){
   if(typeof sb === "undefined") return null;
-  try{ const { data } = await sb.rpc("sac_lire"); _appliquerEtatStocks(data); return data; }
-  catch(e){ return null; }
+  const MAX = 3;
+  for(let i = 0; i < MAX; i++){
+    try{
+      // Le jeton peut ne pas être prêt juste après le chargement de la page.
+      if(typeof sessionActuelle === "function"){
+        const ses = await sessionActuelle();
+        if(!ses){ await new Promise(r=>setTimeout(r, 400 * (i+1))); continue; }
+      }
+      const { data, error } = await sb.rpc("sac_lire");
+      if(error) throw error;
+      if(!data) throw new Error("sac_lire : réponse vide");
+      _appliquerEtatStocks(data);
+      etat._sacEchec = false;
+      return data;
+    }catch(e){
+      console.warn(`[sac_lire] tentative ${i+1}/${MAX} :`, (e && e.message) || e);
+      if(typeof _catchLog === "function") _catchLog(e, "inventaire.js#sac_lire");
+      await new Promise(r=>setTimeout(r, 500 * (i+1)));
+    }
+  }
+  /* Échec définitif : surtout ne pas laisser croire que le sac est vide.
+     `_lotsSynchro` reste faux, donc la péremption ne touchera à rien. */
+  etat._sacEchec = true;
+  journal("Ton sac n'a pas pu être chargé — recharge la page. Il n'est pas vide, le serveur n'a simplement pas répondu.", "alerte");
+  return null;
 }
                                              // places dans le sac
 function placesUtilisees(){ return Object.values(etat.sac).reduce((a,b)=>a+b,0); }
@@ -199,15 +232,35 @@ function badgeLot(lot){
 }
 
 
-/* Jauges : lecture serveur (à la connexion et après une action hors agir()). */
+/* Jauges : lecture serveur (à la connexion et après une action hors agir()).
+   ⚠ Même défaut que sac_lire : `error` ignoré et catch muet. Un échec laissait
+   les jauges aux DÉFAUTS CLIENT — 100/100/100 — alors que le serveur pouvait
+   en compter 20. Le joueur partait affronter une patrouille en se croyant
+   intact. Ici l'affichage faux est plus dangereux que dans le sac, donc mêmes
+   réessais et même aveu d'échec. */
 async function chargerJaugesServeur(){
   if(typeof sb === "undefined") return null;
-  try{
-    const { data } = await sb.rpc("jauges_lire");
-    if(data && data.ok){
+  const MAX = 3;
+  for(let i = 0; i < MAX; i++){
+    try{
+      if(typeof sessionActuelle === "function"){
+        const ses = await sessionActuelle();
+        if(!ses){ await new Promise(r=>setTimeout(r, 400 * (i+1))); continue; }
+      }
+      const { data, error } = await sb.rpc("jauges_lire");
+      if(error) throw error;
+      if(!data || !data.ok) throw new Error("jauges_lire : réponse inutilisable");
       etat.jauges = etat.jauges || {};
       etat.jauges.o2 = data.o2; etat.jauges.sante = data.sante; etat.jauges.moral = data.moral;
+      etat._jaugesEchec = false;
+      return data;
+    }catch(e){
+      console.warn(`[jauges_lire] tentative ${i+1}/${MAX} :`, (e && e.message) || e);
+      if(typeof _catchLog === "function") _catchLog(e, "inventaire.js#jauges_lire");
+      await new Promise(r=>setTimeout(r, 500 * (i+1)));
     }
-    return data;
-  }catch(e){ return null; }
+  }
+  etat._jaugesEchec = true;
+  journal("Tes jauges n'ont pas pu être lues — recharge la page avant d'agir. Les valeurs affichées ne sont pas fiables.", "alerte");
+  return null;
 }

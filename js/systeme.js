@@ -46,6 +46,86 @@ function journal(t, type="", cat=null){
   etat.journal.unshift({ t, type, cat: cat || _categoriser(t), d: Date.now() });
   _purgerJournal();
   majJournal();
+  _bulle(t, type);          // retour immédiat : le journal seul passe inaperçu
+}
+
+/* ===========================================================
+   BULLES — retour visuel passager sur chaque entrée de journal.
+   Beaucoup d'actions (miner, se déplacer, manquer d'énergie) n'avaient AUCUN
+   retour à l'écran : le joueur cliquait sans rien voir et ne découvrait
+   l'effet qu'en ouvrant son sac ou en lisant le journal. Comme les 418 appels
+   à journal() couvrent déjà tous les cas, on s'y accroche une seule fois
+   plutôt que d'instrumenter chaque action.
+   ⚠ Trois garde-fous : 3 bulles visibles au maximum (cliquer cinquante fois
+   sur la carte ne doit pas empiler cinquante bulles), les répétitions
+   immédiates incrémentent un compteur « ×N » au lieu de s'ajouter, et
+   l'animation se désactive si le système demande moins de mouvement.
+   =========================================================== */
+const BULLE_MS = 3600, BULLE_MAX = 3;
+let _bulleDer = "", _bulleDerEl = null, _bulleDerN = 1;
+
+function _bulleStyle(){
+  if(document.querySelector("#bulles-style")) return;
+  const st=document.createElement("style"); st.id="bulles-style";
+  st.textContent = `
+    #bulles{ position:fixed; right:14px; bottom:14px; z-index:9000;
+      display:flex; flex-direction:column; gap:7px; align-items:flex-end;
+      pointer-events:none; max-width:min(360px, calc(100vw - 28px)); }
+    .bulle{ background:rgba(14,22,42,.96); border:1px solid var(--line,#24344d);
+      border-left:3px solid var(--sourdine,#8b95a8); border-radius:10px 4px 10px 4px;
+      color:var(--texte,#dfe8f2); font-size:13px; line-height:1.4; padding:9px 12px;
+      box-shadow:0 6px 22px rgba(0,0,0,.5); animation:bulle-in .18s ease-out;
+      pointer-events:auto; cursor:default; }
+    .bulle.gain{ border-left-color:#8bd450; }
+    .bulle.alerte{ border-left-color:#ff8a3d; }
+    .bulle.poste{ border-left-color:#6cc8ff; }
+    .bulle .bn{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine,#8b95a8); margin-left:6px; }
+    .bulle.part{ animation:bulle-out .45s ease-in forwards; }
+    @keyframes bulle-in{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+    @keyframes bulle-out{ to{ opacity:0; transform:translateY(-6px); } }
+    @media (max-width:560px){ #bulles{ left:14px; align-items:stretch; } }
+    @media (prefers-reduced-motion: reduce){
+      .bulle{ animation:none; } .bulle.part{ animation:none; opacity:0; }
+    }
+  `;
+  document.head.appendChild(st);
+}
+
+function _bulle(t, type){
+  if(!t) return;
+  if(typeof document === "undefined" || !document.body) return;
+  _bulleStyle();
+  let z = document.querySelector("#bulles");
+  if(!z){ z = document.createElement("div"); z.id = "bulles"; document.body.appendChild(z); }
+
+  // Répétition immédiate : on incrémente au lieu d'empiler.
+  if(t === _bulleDer && _bulleDerEl && z.contains(_bulleDerEl)){
+    _bulleDerN++;
+    let n = _bulleDerEl.querySelector(".bn");
+    if(!n){ n = document.createElement("span"); n.className = "bn"; _bulleDerEl.appendChild(n); }
+    n.textContent = "×" + _bulleDerN;
+    clearTimeout(_bulleDerEl._t);
+    _bulleDerEl._t = setTimeout(()=>_bulleFermer(_bulleDerEl), BULLE_MS);
+    return;
+  }
+
+  const b = document.createElement("div");
+  b.className = "bulle " + (type || "");
+  b.textContent = t;
+  z.appendChild(b);
+  _bulleDer = t; _bulleDerEl = b; _bulleDerN = 1;
+
+  while(z.children.length > BULLE_MAX) _bulleFermer(z.firstElementChild, true);
+  b._t = setTimeout(()=>_bulleFermer(b), BULLE_MS);
+}
+
+function _bulleFermer(b, tout_de_suite){
+  if(!b || !b.parentNode) return;
+  clearTimeout(b._t);
+  if(b === _bulleDerEl){ _bulleDerEl = null; _bulleDer = ""; }
+  if(tout_de_suite){ b.remove(); return; }
+  b.classList.add("part");
+  setTimeout(()=>{ if(b.parentNode) b.remove(); }, 450);
 }
 function _purgerJournal(){
   if(!etat.journal) return;

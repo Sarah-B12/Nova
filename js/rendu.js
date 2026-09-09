@@ -86,7 +86,7 @@ function afficher(){
   if(typeof majQueteHubSiPertinent==="function") majQueteHubSiPertinent();
   if(typeof majPas==="function") majPas();
   if(typeof majJournal==="function") majJournal();
-  const _rz=document.querySelector("#reputations"); if(_rz && typeof _badgesReput==="function") _rz.innerHTML=_badgesReput(etat.reputation||0, etat.cercles||{}, etat.faction);
+  const _rz=document.querySelector("#reputations"); if(_rz && typeof _badgesReput==="function") _rz.innerHTML=_badgesReput(etat.reputation||0, etat.cercles||{});
   if(typeof renderMarche==="function"){ const hm=document.querySelector("#hub-marche"); if(hm && !hm.hidden) renderMarche(); }
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
@@ -196,6 +196,16 @@ function majSac(){
 
 /* ---------- Maison & matières ---------- */
 function majTerrain(){
+  /* La consultation reste libre, seules les ACTIONS sont refusées (voir
+     _refusTerrain dans terrain.js). Sans ce bandeau, un joueur hors de sa
+     ville cliquerait sans comprendre pourquoi rien ne se passe. */
+  const z = document.querySelector("#terrain-loin");
+  if(z){
+    const loin = (typeof surMonTerrain === "function") && !surMonTerrain();
+    z.innerHTML = loin
+      ? `<p class="terrain-loin">Tu es hors de ta ville : tu peux regarder ton terrain, mais pas y travailler. Rejoins ${typeof _nomMaFaction==="function"?_nomMaFaction():"ta faction"} sur la carte.</p>`
+      : "";
+  }
   if(typeof majMaison==="function") majMaison();
   majRecolte();
 }

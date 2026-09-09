@@ -63,6 +63,10 @@
     border-radius:8px 3px 8px 3px; border:1px solid var(--line); white-space:nowrap; }
   .cj-apercu .ap-ok { color:var(--sourdine); }
   .cj-apercu .ap-ko { color:#ff8a3d; border-color:#ff8a3d; }
+  /* Bandeau « hors de ta ville » en tête du hub Terrain. */
+  .terrain-loin { margin:0 0 12px; padding:9px 12px; font-size:13px; line-height:1.45;
+    color:#ffb060; background:rgba(255,138,61,.08);
+    border:1px solid rgba(255,138,61,.45); border-radius:10px 3px 10px 3px; }
   .statut-haut .jauge.energie { width:200px; margin:0; }
   @media (max-width:620px){ header { justify-content:center; } .marque { text-align:center; width:100%; } .statut-haut { justify-content:center; } }
   .layout { display:block; }

@@ -700,7 +700,7 @@ async function majElections(el){
       const nb=vinfos.decompte[c.profil_id]||0;
       const voix = phase==="vote" ? ` <span class="itip-gris">· ${nb} voix</span>` : "";
       const aVote=!!vinfos.monVote, jaiVoteLui=vinfos.monVote===c.profil_id;
-      let btnVote=""; if(phase==="vote"){ btnVote = aVote ? (jaiVoteLui?`<span class="itip-gris">✓ ton vote</span>`:"") : `<button class="mini" data-voter="${c.profil_id}">Voter</button>`; }
+      let btnVote=""; if(phase==="vote"){ btnVote = aVote ? (jaiVoteLui?`<span class="itip-gris">✓ ton vote</span>`:"") : `<button class="mini" data-voter="${c.profil_id}" data-nom="${echapper(c.nom||"")}">Voter</button>`; }
       return `<div class="gouv-role"><button class="comm-nom" data-profil="${c.nom}">${c.nom}${c.profil_id===moiId?" (toi)":""}${voix}</button><span class="comm-btns">${btnVote}<button class="mini" data-prog="${c.profil_id}">Voir le programme</button>${(typeof estAdmin==="function"&&estAdmin())?`<button class="mini danger" data-admcand="${c.profil_id}" title="Supprimer (modération)">✕</button>`:""}</span></div>`;
     }).join("");
     if(phase==="vote" && vinfos.monVote) h += `<p class="itip-gris" style="margin-top:6px">Tu as voté. Ton choix est définitif.</p>`;
@@ -714,7 +714,7 @@ async function majElections(el){
   el.innerHTML = h;
   el.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   el.querySelectorAll("[data-prog]").forEach(x=>x.addEventListener("click",()=>{ const c=cands.find(k=>k.profil_id===x.dataset.prog); if(c) _voirProgramme(c.nom, c.programme); }));
-  el.querySelectorAll("[data-voter]").forEach(x=>x.addEventListener("click",()=>_voter(x.dataset.voter)));
+  el.querySelectorAll("[data-voter]").forEach(x=>x.addEventListener("click",()=>_voter(x.dataset.voter, x.dataset.nom)));
   el.querySelectorAll("[data-admcand]").forEach(x=>x.addEventListener("click",async()=>{ if(!confirm("Supprimer cette candidature ?"))return; try{ await sb.rpc("admin_suppr_candidature",{p_profil:x.dataset.admcand,p_faction:fac,p_cycle:_cycleActuel()}); journal("Candidature supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#22"); } if(typeof majCentre==="function") majCentre(); }));
   const bp=el.querySelector("#cand-presenter"); if(bp) bp.addEventListener("click",()=>_ouvrirCandidature(""));
   const bm=el.querySelector("#cand-modif"); if(bm) bm.addEventListener("click",()=>_ouvrirCandidature(moiCand?moiCand.programme:""));
@@ -747,8 +747,64 @@ async function _retirerCandidature(){
   journal("Candidature retirée.","alerte");
   if(typeof majCentre==="function") majCentre();
 }
-async function _voter(candidatId){
-  if(!confirm("Confirmer ton vote ? C'est définitif.")) return;
+/* Boîte de confirmation maison, aux couleurs du jeu. La `confirm()` native
+   est imposée par le navigateur : police système, pas de mise en forme, et
+   sur mobile elle affiche le nom de domaine — pour un geste aussi engageant
+   qu'un vote définitif, ça détonne. Renvoie une promesse booléenne, donc
+   réutilisable ailleurs (candidature, démission…). */
+function confirmerJoli(titre, texte, libelleOk, danger){
+  return new Promise(resolve => {
+    if(!document.querySelector("#cj-style")){
+      const st=document.createElement("style"); st.id="cj-style";
+      st.textContent = `
+        #cj-fond{ position:fixed; inset:0; background:rgba(4,8,18,.72); z-index:9500;
+          display:flex; align-items:center; justify-content:center; padding:18px;
+          animation:cj-f .16s ease-out; }
+        .cj-boite{ background:var(--surface,#101a30); border:1px solid var(--edge,#24344d);
+          border-radius:14px 5px 14px 5px; box-shadow:0 18px 50px rgba(0,0,0,.6);
+          max-width:400px; width:100%; padding:18px 20px 16px; animation:cj-b .18s ease-out; }
+        .cj-boite h4{ margin:0 0 8px; font-size:14px; letter-spacing:.05em; text-transform:uppercase;
+          color:var(--orange-hi,#ffb060); }
+        .cj-boite p{ margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--texte,#dfe8f2); }
+        .cj-actions{ display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap; }
+        .cj-actions button{ padding:8px 15px; border-radius:9px 3px 9px 3px; cursor:pointer;
+          font-family:inherit; font-size:13px; background:transparent;
+          border:1px solid var(--line,#24344d); color:var(--sourdine,#8b95a8); }
+        .cj-actions .cj-ok{ border-color:var(--orange,#ff8a3d); color:var(--orange-hi,#ffb060); }
+        .cj-actions .cj-ok.danger{ border-color:#ff5257; color:#ff7a7e; }
+        .cj-actions button:hover{ color:#fff; }
+        @keyframes cj-f{ from{opacity:0} to{opacity:1} }
+        @keyframes cj-b{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none} }
+        @media (prefers-reduced-motion: reduce){ #cj-fond,.cj-boite{ animation:none; } }
+      `;
+      document.head.appendChild(st);
+    }
+    const fond=document.createElement("div"); fond.id="cj-fond";
+    fond.innerHTML = `<div class="cj-boite" role="dialog" aria-modal="true">
+        <h4>${echapper(titre)}</h4>
+        <p>${echapper(texte)}</p>
+        <div class="cj-actions">
+          <button class="cj-non">Annuler</button>
+          <button class="cj-ok${danger?" danger":""}">${echapper(libelleOk||"Confirmer")}</button>
+        </div></div>`;
+    document.body.appendChild(fond);
+
+    const fin = v => { document.removeEventListener("keydown", clavier); fond.remove(); resolve(v); };
+    const clavier = e => { if(e.key==="Escape") fin(false); if(e.key==="Enter") fin(true); };
+    document.addEventListener("keydown", clavier);
+    fond.querySelector(".cj-ok").addEventListener("click", ()=>fin(true));
+    fond.querySelector(".cj-non").addEventListener("click", ()=>fin(false));
+    fond.addEventListener("click", e=>{ if(e.target===fond) fin(false); });   // clic hors cadre = annuler
+    fond.querySelector(".cj-ok").focus();
+  });
+}
+
+async function _voter(candidatId, nom){
+  if(!await confirmerJoli(
+      "Confirmer ton vote",
+      nom ? `Tu votes pour ${nom}. Un seul vote par cycle, et il est définitif.`
+          : "Un seul vote par cycle, et il est définitif.",
+      "Voter")) return;
   const { data:res, error } = await sb.rpc("voter", { p_candidat:candidatId });
   if(error || !res || !res.ok){
     const e=res&&res.err;

@@ -26,7 +26,18 @@ function surSiteQuete(){ const e=etapeActive(); if(!e || !e.cible || !etat.pos) 
   return Math.hypot(etat.pos.x-e.cible.x, etat.pos.y-e.cible.y) <= (e.cible.r||70); }
 function _enFaction(){ return (typeof villeActuelle==="function") && villeActuelle()===etat.faction; }
 function _jourMs(){ return (typeof JOUR_MS!=="undefined")?JOUR_MS:86400000; }
-function _fmtDuree(ms){ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); if(s<60) return s+" s"; const m=Math.floor(s/60); return m+" min "+(s%60)+" s"; }
+/* Un verrou de quête peut durer des heures : « 400 min » ne parle à personne.
+   On passe en h/min au-delà de l'heure, en min/s en dessous. */
+function _fmtDuree(ms){
+  ms = Math.max(0, ms);
+  const s = Math.ceil(ms/1000);
+  if(s < 60) return s + " s";
+  const m = Math.floor(s/60);
+  if(m < 60) return m + " min " + (s%60) + " s";
+  const h = Math.floor(m/60);
+  if(h < 24) return h + " h " + String(m%60).padStart(2,"0");
+  return Math.floor(h/24) + " j " + (h%24) + " h";
+}
 
 // Mini-jeux ratables : un essai par jour.
 const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat"]);

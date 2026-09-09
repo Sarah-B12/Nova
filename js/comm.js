@@ -268,7 +268,13 @@ function vueMessages(recus, envoyes){
   liste.forEach((m,i)=>{
     const qui = msgVue==="recus"?("De "+m.de):("À "+m.a);
     const nonlu = !m.lu ? " nonlu" : "";               // reçu non ouvert OU envoyé pas encore lu → mis en valeur
-    h+=`<button class="msg-item${nonlu}" data-open="${i}"><span class="msg-obj">${(m.objet||"(sans objet)").replace(/</g,"&lt;")}</span><span class="msg-qui">${qui} · ${_msgDate(m.ts)}</span></button>`;
+    /* ⚠ La ligne était un <button> : on ne peut pas y imbriquer la croix
+       (bouton dans un bouton = HTML invalide, et le clic remonterait au
+       parent). D'où un conteneur avec deux boutons frères. */
+    h+=`<div class="msg-ligne${nonlu}">
+        <button class="msg-item${nonlu}" data-open="${i}"><span class="msg-obj">${(m.objet||"(sans objet)").replace(/</g,"&lt;")}</span><span class="msg-qui">${qui} · ${_msgDate(m.ts)}</span></button>
+        <button class="msg-x" data-suppr-i="${i}" title="Supprimer" aria-label="Supprimer ce message">✕</button>
+      </div>`;
   });
   return h+`</div>`;
 }
@@ -290,6 +296,20 @@ function _commBrouillon(z, id, cle, obj, evt){
 function brancherMessages(z){
   z.querySelectorAll(".msg-lien").forEach(b=>b.addEventListener("click",()=>{ msgVue=b.dataset.msg; majComm(); }));
   z.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>ouvrirMessage(msgVue, parseInt(b.dataset.open,10))));
+  z.querySelectorAll("[data-suppr-i]").forEach(b=>b.addEventListener("click", async e=>{
+    e.stopPropagation();
+    const liste = msgVue==="recus" ? _msgRecusCache : _msgEnvoyesCache;   // noms réels des caches
+    const m = liste && liste[parseInt(b.dataset.supprI, 10)];              // data-suppr-i → dataset.supprI
+    if(!m) return;
+    const quoi = msgVue==="recus" ? "Supprimer ce message ?"
+               : (m.lu ? "Retirer ce message de tes envoyés ?"
+                       : "Rappeler ce message ? Il sera aussi retiré chez le destinataire, qui ne l'a pas encore lu.");
+    const ok = (typeof confirmerJoli==="function")
+      ? await confirmerJoli("Supprimer", quoi, "Supprimer", true)
+      : confirm(quoi);
+    if(!ok) return;
+    await supprimerMessage(msgVue, m, null);
+  }));
   const env=z.querySelector("#msg-envoyer"); if(env) env.addEventListener("click", envoyerMessage);
   _commBrouillon(z, "#msg-dest", "dest", _msgForm);
   _commBrouillon(z, "#msg-obj",  "obj",  _msgForm);
@@ -341,7 +361,8 @@ async function supprimerMessage(type, m, modal){
     else if(!m.lu){ await sb.from("messages").delete().eq("id",m.id); journal("Message rappelé — retiré aussi chez le destinataire (non lu).","alerte"); }
     else { await sb.from("messages").update({efface_de:true}).eq("id",m.id); journal("Message retiré de tes envoyés.","alerte"); }
   }catch(e){ console.warn("[comm] suppression:",e.message); }
-  modal.hidden=true; majComm();
+  if(modal) modal.hidden=true;      // null quand on supprime depuis la liste
+  majComm();
 }
 
 /* ---------- Petites annonces (serveur : mur partagé) ---------- */
@@ -488,6 +509,12 @@ function _commStyle(){
     .msg-item.nonlu{ border-left:3px solid var(--orange); }
     .msg-item.nonlu .msg-obj{ font-weight:700; }
     .msg-obj{ color:var(--texte); } .msg-qui{ color:var(--sourdine); font-size:12px; }
+    .msg-ligne{ display:flex; align-items:stretch; gap:6px; }
+    .msg-ligne .msg-item{ flex:1; min-width:0; }
+    .msg-ligne .msg-obj{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .msg-x{ flex:0 0 auto; width:34px; background:none; border:1px solid var(--line);
+      border-radius:8px; color:var(--sourdine); font-size:14px; cursor:pointer; line-height:1; }
+    .msg-x:hover{ border-color:#ff5257; color:#ff7a7e; }
     .msg-ecrire{ display:flex; flex-direction:column; gap:8px; }
     .msg-ecrire input, .msg-ecrire textarea{ background:#0f1830; border:1px solid var(--line); border-radius:8px; color:var(--texte); padding:9px 11px; font-family:inherit; }
     .msg-ecrire textarea{ resize:vertical; }
