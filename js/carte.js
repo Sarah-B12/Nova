@@ -5,7 +5,10 @@
 const DW = 1500;                       // largeur d'affichage (px) ; le reste défile
 const DH = Math.round(DW * MONDE.h / MONDE.w);
 const PAS = 63;                        // unités par 1 % d'énergie (Toundra->Nomades ≈ 15 %)
-const PAS_O2 = 160;                     // unités par 1 O₂ (déplacement à découvert)
+const PAS_O2 = 80;                      // unités par 1 O₂ (déplacement à découvert) — 160 avant v0.53 : le coût
+                                        // était 3× moindre que celui en énergie, or l'énergie se régénère seule
+                                        // (+10 %/h) alors que l'O₂ ne revient que par objets. Doublé pour que
+                                        // les recharges servent vraiment.
 // Cercle (ville ou lieu) contenant un point, ou null. Le Protocole n'est pas une zone d'abri.
 function cercleContenant(p){
   for(const fid in VILLES){ const v=VILLES[fid]; if(dist(p.x,p.y,v.x,v.y) < v.r) return v; }
