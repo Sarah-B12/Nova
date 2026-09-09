@@ -25,6 +25,7 @@
     .poste-envoi #poste-qte{ width:80px; } .poste-envoi #poste-prix{ width:180px; }
     .poste-types{ display:flex; flex-wrap:wrap; gap:12px; }
     .poste-types label{ display:flex; align-items:center; gap:7px; cursor:pointer; font-size:14px; white-space:nowrap; }
+    .poste-dispo{ font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); margin-left:-4px; }
     .hub-banniere{ width:100%; max-height:150px; object-fit:cover; border-radius:10px; margin-bottom:12px; display:block; }
   `;
   document.head.appendChild(st);
@@ -115,7 +116,7 @@ function _vueEnvoyer(){
     </div>
     <div id="poste-bloc-objet">
       ${sac.length?`<select id="poste-item">${opts}</select>
-      <input type="number" id="poste-qte" min="1" value="1" title="Quantité" style="max-width:70px">
+      <input type="number" id="poste-qte" min="1" value="1" title="Quantité" style="max-width:70px"><span class="poste-dispo" id="poste-dispo"></span>
       <input type="number" id="poste-prix" min="0" value="0" title="Prix à payer par le destinataire (0 = gratuit)" placeholder="Prix (0=gratuit)">`
       :`<p class="vide">Ton sac est vide.</p>`}
     </div>
@@ -142,11 +143,28 @@ function _brancherPoste(z){
   maj();
 }
 function _posteTypeChoisi(z){ const r=z.querySelector('[name="poste-type"]:checked'); return r?r.value:"objet"; }
+/* ⚠ On pouvait saisir une quantité supérieure au stock. L'envoi était déjà
+   borné (posteEnvoyer ~168), mais la TAXE affichée était calculée sur le
+   chiffre saisi : l'aperçu annonçait le prix de 10 objets alors que 3
+   partaient. On borne donc à la saisie, et on rappelle le stock à côté. */
+function _posteBornerQte(z, id){
+  const c = z.querySelector("#poste-qte"); if(!c) return 1;
+  const dispo = Math.max(0, (etat.sac && etat.sac[id]) || 0);
+  let q = parseInt(c.value, 10);
+  if(!Number.isFinite(q) || q < 1) q = 1;
+  if(dispo > 0 && q > dispo) q = dispo;
+  c.max = dispo || 1;
+  if(String(q) !== c.value) c.value = q;
+  const d = z.querySelector("#poste-dispo");
+  if(d) d.textContent = dispo ? `/ ${dispo}` : "";
+  return q;
+}
+
 function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(0.10*(p.moy||0)*qte):0; }
 function _majTaxe(z){
   const t=_posteTypeChoisi(z); const el=z.querySelector("#poste-taxe"); if(!el) return;
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0; el.innerHTML=`Coût total : <b>${m + Math.ceil(0.10*m)} ₡</b> (${m} + taxe ${Math.ceil(0.10*m)} ₡).`; }
-  else { const id=(z.querySelector("#poste-item")||{}).value; const q=parseInt((z.querySelector("#poste-qte")||{}).value,10)||1; el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (10 % du prix de base).`; }
+  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (10 % du prix de base).`; }
 }
 
 async function posteEnvoyer(){

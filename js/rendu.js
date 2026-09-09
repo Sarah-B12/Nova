@@ -61,6 +61,7 @@ function afficher(){
     else el.textContent = raw;
     document.querySelector(`#plus-${c.id}`).disabled = pts<=0 || raw >= CAP_COMP;
   }
+  majBonusCompetences();
   const av=document.querySelector("#comp-avert"); if(av) av.hidden = !penal;
   if(!etat.pos) etat.pos = posDefaut();
   const enFaction = !!enZoneFaction();
@@ -238,11 +239,46 @@ async function publierMur(){
 }
 
 function construireBoutique(){ const z=document.querySelector("#boutique"); if(!z) return; for(const art of CONSOMMABLES){ const b=document.createElement("button"); b.className="achat"; b.id=`achat-${art.id}`; b.dataset.item=art.id; b.innerHTML=`<span>${art.nom}</span><span class="cout">${art.prix} ₡</span>`; b.addEventListener("click",()=>acheter(art)); b.addEventListener("mouseenter",()=>{ if(typeof montrerItemTip==="function") montrerItemTip(b, art.id); }); b.addEventListener("mouseleave",()=>{ if(typeof cacherItemTip==="function") cacherItemTip(); }); z.appendChild(b); } }
+/* Détail des bonus de compétence : un « +3 » à côté du nom, dont l'infobulle
+   dit d'où il vient. Les sources sont lues à leur origine (EQUIP_EFFETS pour
+   chaque pièce équipée) — on ne recopie aucun chiffre, sinon l'affichage
+   divergerait du calcul réel dès qu'un objet change.
+   ⚠ La pénalité de moral est MULTIPLICATIVE (×0,30 à moral 0) et s'applique
+   après les bonus : elle a donc sa propre ligne, en négatif. */
+function _sourcesBonus(comp){
+  const cle = comp==="force" ? "force" : (comp==="agilite" ? "agi" : "int");
+  const src = [];
+  const eq = (typeof etat!=="undefined" && etat.equipement) ? etat.equipement : {};
+  for(const emplacement in eq){
+    const id = eq[emplacement]; if(!id) continue;
+    const e = (typeof EQUIP_EFFETS!=="undefined") ? EQUIP_EFFETS[id] : null;
+    const v = e && e[cle]; if(!v) continue;
+    const nom = (typeof item==="function" && item(id)) ? item(id).nom : id;
+    src.push({ v, nom });
+  }
+  return src;
+}
+function majBonusCompetences(){
+  if(typeof COMPETENCES==="undefined") return;
+  const penal = (typeof penaliteMoral==="function") ? penaliteMoral() : 1;
+  for(const c of COMPETENCES){
+    const el = document.querySelector(`#bonus-${c.id}`); if(!el) continue;
+    const src = _sourcesBonus(c.id);
+    const total = src.reduce((s,x)=>s+x.v, 0);
+    if(!total && penal >= 1){ el.innerHTML = ""; continue; }
+    const lignes = src.map(x=>`+${x.v} — ${echapper(x.nom)}`);
+    if(penal < 1) lignes.push(`×${penal.toString().replace(".",",")} — moral au plus bas`);
+    const signe = total > 0 ? `+${total}` : (total < 0 ? String(total) : "");
+    el.innerHTML = `<span class="comp-b${penal<1?" mauvais":""}" tabindex="0">${signe||"⚠"}`
+      + `<span class="tip" role="tooltip">${lignes.join("<br>")}</span></span>`;
+  }
+}
+
 function construireCompetences(){
   const z=document.querySelector("#competences");
   for(const c of COMPETENCES){
     const l=document.createElement("div"); l.className="comp-ligne";
-    l.innerHTML=`<span class="comp-nom" tabindex="0">${c.nom}<span class="tip" role="tooltip">${c.desc}</span></span><span class="comp-val" id="comp-${c.id}">0</span><button class="comp-plus" id="plus-${c.id}" title="Dépenser un point">+</button>`;
+    l.innerHTML=`<span class="comp-nom" tabindex="0">${c.nom}<span class="tip" role="tooltip">${c.desc}</span></span><span class="comp-bonus" id="bonus-${c.id}"></span><span class="comp-val" id="comp-${c.id}">0</span><button class="comp-plus" id="plus-${c.id}" title="Dépenser un point">+</button>`;
     z.appendChild(l);
     l.querySelector(`#plus-${c.id}`).addEventListener("click", ()=>ameliorer(c.id));
   }

@@ -44,6 +44,20 @@
   }
   .comp-nom:hover .tip, .comp-nom:focus .tip { display:block; }
   .comp-val { font-family:"Space Mono",monospace; font-weight:700; color:var(--bleu); min-width:32px; text-align:right; }
+  /* Bonus de compétence : « +3 » cliquable/survolable, réutilise le style .tip
+     de .comp-nom pour rester cohérent. `tabindex` sur .comp-b rend l'infobulle
+     atteignable au clavier et au toucher, où il n'y a pas de survol. */
+  .comp-bonus { display:flex; align-items:center; }
+  .comp-b { position:relative; cursor:help; font-family:"Space Mono",monospace; font-size:12px;
+    color:#8bd450; border:1px solid rgba(139,212,80,.4); border-radius:7px 3px 7px 3px; padding:1px 6px; }
+  .comp-b.mauvais { color:#ff8a3d; border-color:rgba(255,138,61,.5); }
+  .comp-b .tip {
+    display:none; position:absolute; bottom:150%; right:0; width:230px; z-index:7;
+    background:var(--surface-2); border:1px solid var(--edge); border-radius:10px; padding:9px 11px;
+    font-family:"Space Mono",monospace; font-size:11px; color:var(--texte); line-height:1.5;
+    box-shadow:0 8px 22px rgba(0,0,0,.5); text-align:left; white-space:normal;
+  }
+  .comp-b:hover .tip, .comp-b:focus .tip { display:block; }
   .comp-plus { font-family:"Space Mono",monospace; width:28px; height:28px; background:var(--surface-2); color:var(--texte); border:1px solid var(--edge); border-radius:10px 5px 10px 5px; cursor:pointer; font-size:15px; }
   .comp-plus:hover:not(:disabled) { border-color:var(--orange); box-shadow:0 0 8px rgba(255,138,61,.3); }
   .comp-plus:disabled { opacity:.3; cursor:not-allowed; }

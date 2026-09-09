@@ -1,5 +1,5 @@
 /* ===========================================================
-   COMM — Communication. 4 sous-onglets : Amis, Messages, Annonces, Carnet.
+   COMM — Communication. 5 sous-onglets : Amis, Messages, Annonces, Population, Carnet.
    Multijoueur simulé (annuaire de joueurs fictifs) en attendant le backend.
    Ce module : sous-onglets + LISTE D'AMIS (recherche, profil, ajout, blocage).
    =========================================================== */
@@ -60,6 +60,7 @@ function majComm(){
   if(commVue==="amis"){ z.innerHTML = vueAmis(); brancherAmis(z); return; }
   if(commVue==="messages"){ z.innerHTML = `<p class="vide">Chargement…</p>`; _rendreMessages(z); return; }
   if(commVue==="annonces"){ z.innerHTML = `<p class="vide">Chargement…</p>`; _rendreAnnonces(z); return; }
+  if(commVue==="population"){ _rendrePopulation(z); return; }
   if(commVue==="carnet"){ _rendreCarnet(z); return; }
 }
 
@@ -221,11 +222,19 @@ async function _chargerProfilComplet(nom){
 async function voirProfilJoueur(nom){ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(nom); }
 
 /* ---------- Messages (serveur) ---------- */
-const MSG_MAX = 20;
+const MSG_MAX = 20;          // messages affichés par page (pas un quota)
+const MSG_BOITE = 30;        // plafond RÉEL de la réception — doit égaler PLAFOND dans message_envoyer()
 const MSG_JOURS = 30;
 let msgVue = "recus";
 let _msgPrefill = null;
 let _msgRecusCache = [], _msgEnvoyesCache = [];
+/* Nombre de messages affichés par boîte. MSG_MAX n'est PAS un quota : rien
+   n'est jamais supprimé automatiquement, c'était une simple limite de lecture.
+   Les messages au-delà existaient donc en base mais restaient hors de portée
+   jusqu'à leur purge à 30 jours. Le bouton « Plus anciens » les rend
+   accessibles, par paliers de MSG_MAX. */
+let _msgVus = { recus: MSG_MAX, envoyes: MSG_MAX };
+let _msgTotaux = { recus: 0, envoyes: 0 };
 function _msgDate(d){ const j=Math.floor((Date.now()-d)/86400000); if(j<=0) return "aujourd'hui"; if(j===1) return "hier"; return `il y a ${j} j`; }
 
 async function _chargerMessages(){
@@ -233,10 +242,17 @@ async function _chargerMessages(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return out;
   const s=await sessionActuelle(); if(!s) return out; _monId=s.user.id;
   const lim = new Date(Date.now()-MSG_JOURS*86400000).toISOString();
+  // `count:"exact"` donne le total en base : c'est lui qui décide d'afficher
+  // ou non le bouton « Plus anciens ».
   const [rq, eq] = await Promise.all([
-    sb.from("messages").select("*").eq("a_id",s.user.id).eq("efface_a",false).gte("cree_le",lim).order("cree_le",{ascending:false}).limit(MSG_MAX),
-    sb.from("messages").select("*").eq("de_id",s.user.id).eq("efface_de",false).gte("cree_le",lim).order("cree_le",{ascending:false}).limit(MSG_MAX)
+    /* ⚠ PAS de filtre sur 30 jours en réception : rien n'y est purgé, et un
+       message ancien occupe quand même une place du plafond. Le filtrer
+       afficherait « 30/30 » avec une boîte en apparence vide. */
+    sb.from("messages").select("*",{count:"exact"}).eq("a_id",s.user.id).eq("efface_a",false).order("cree_le",{ascending:false}).limit(_msgVus.recus),
+    sb.from("messages").select("*",{count:"exact"}).eq("de_id",s.user.id).eq("efface_de",false).gte("cree_le",lim).order("cree_le",{ascending:false}).limit(_msgVus.envoyes)
   ]);
+  _msgTotaux.recus   = (typeof rq.count === "number") ? rq.count : (rq.data||[]).length;
+  _msgTotaux.envoyes = (typeof eq.count === "number") ? eq.count : (eq.data||[]).length;
   if(rq.error) console.warn("[comm] messages reçus:", rq.error.message);
   if(eq.error) console.warn("[comm] messages envoyés:", eq.error.message);
   const rec=rq.data||[], env=eq.data||[];
@@ -248,12 +264,16 @@ async function _chargerMessages(){
   return out;
 }
 function vueMessages(recus, envoyes){
-  const nR=recus.length, nE=envoyes.length, nNL=recus.filter(m=>!m.lu).length;
+  const nNL=recus.filter(m=>!m.lu).length;
+  /* Le compteur affiche le TOTAL en base, pas le nombre affiché : « 20/20 »
+     ressemblait à un quota atteint alors que rien n'était plein. */
   let h=`<div class="msg-nav">`
-    + `<button class="msg-lien${msgVue==="recus"?" actif":""}" data-msg="recus">Réception (${nR}/${MSG_MAX})${nNL?` · ${nNL} non lu${nNL>1?"s":""}`:""}</button>`
-    + `<button class="msg-lien${msgVue==="envoyes"?" actif":""}" data-msg="envoyes">Envoyés (${nE}/${MSG_MAX})</button>`
+    + `<button class="msg-lien${msgVue==="recus"?" actif":""}" data-msg="recus">Réception (${_msgTotaux.recus}/${MSG_BOITE})${nNL?` · ${nNL} non lu${nNL>1?"s":""}`:""}</button>`
+    + `<button class="msg-lien${msgVue==="envoyes"?" actif":""}" data-msg="envoyes">Envoyés (${_msgTotaux.envoyes})</button>`
     + `<button class="msg-lien${msgVue==="ecrire"?" actif":""}" data-msg="ecrire">Écrire</button></div>`;
-  h+=`<p class="itip-gris" style="margin:0 0 8px">Messages conservés <b>${MSG_JOURS} jours</b> · chaque boîte affiche <b>${MSG_MAX} messages</b> au maximum.</p>`;
+  h+= (msgVue==="recus")
+    ? `<p class="itip-gris" style="margin:0 0 8px">Ta réception garde <b>${MSG_BOITE} messages</b> au maximum, sans limite de durée : à toi de faire le tri. <b>Pleine, plus personne ne peut t'écrire.</b></p>`
+    : `<p class="itip-gris" style="margin:0 0 8px">Tes envois quittent cette liste au bout de <b>${MSG_JOURS} jours</b>. Le destinataire, lui, garde le message tant qu'il ne le supprime pas.</p>`;
   if(msgVue==="ecrire"){
     return h+`<div class="msg-ecrire">
       <input id="msg-dest" placeholder="Destinataire (pseudo)" maxlength="24">
@@ -276,6 +296,10 @@ function vueMessages(recus, envoyes){
         <button class="msg-x" data-suppr-i="${i}" title="Supprimer" aria-label="Supprimer ce message">✕</button>
       </div>`;
   });
+  const total = _msgTotaux[msgVue] || 0;
+  if(liste.length < total){
+    h += `<button class="mini msg-plus" id="msg-plus">Plus anciens (${total - liste.length} restant${total-liste.length>1?"s":""})</button>`;
+  }
   return h+`</div>`;
 }
 async function _rendreMessages(z){
@@ -294,8 +318,15 @@ function _commBrouillon(z, id, cle, obj, evt){
   n.addEventListener(evt||"input", ()=>{ obj[cle]=n.value; });
 }
 function brancherMessages(z){
-  z.querySelectorAll(".msg-lien").forEach(b=>b.addEventListener("click",()=>{ msgVue=b.dataset.msg; majComm(); }));
+  z.querySelectorAll(".msg-lien").forEach(b=>b.addEventListener("click",()=>{
+    msgVue=b.dataset.msg;
+    _msgVus = { recus: MSG_MAX, envoyes: MSG_MAX };   // repli à 20 en changeant d'onglet
+    _popCache = null;                                  // la population se relit à chaque visite
+    majComm();
+  }));
   z.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>ouvrirMessage(msgVue, parseInt(b.dataset.open,10))));
+  const bp=z.querySelector("#msg-plus");
+  if(bp) bp.addEventListener("click", ()=>{ _msgVus[msgVue] = (_msgVus[msgVue]||MSG_MAX) + MSG_MAX; majComm(); });
   z.querySelectorAll("[data-suppr-i]").forEach(b=>b.addEventListener("click", async e=>{
     e.stopPropagation();
     const liste = msgVue==="recus" ? _msgRecusCache : _msgEnvoyesCache;   // noms réels des caches
@@ -333,9 +364,21 @@ async function envoyerMessage(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
   const s=await sessionActuelle(); if(!s) return;
   const aId=await _idDe(dest); if(!aId){ journal("Destinataire introuvable.","alerte"); return; }
-  const { error } = await sb.from("messages").insert({ de_id:s.user.id, a_id:aId, objet:obj, texte:txt });
+  /* ⚠ L'insertion directe est révoquée côté serveur : le plafond de 30
+     messages reçus se contournerait depuis F12. Tout passe par la RPC. */
+  const { data:r, error } = await sb.rpc("message_envoyer", { p_a:aId, p_objet:obj, p_texte:txt });
   if(error){ console.warn("[comm] envoi:",error.message); journal("Échec de l'envoi.","alerte"); return; }
-  journal(`Message envoyé à ${dest}.`,"gain");
+  if(!r || !r.ok){
+    const e = r && r.err;
+    if(e==="boite_pleine")      journal(`La boîte de ${dest} est pleine (${r.plafond} messages) — il doit faire de la place avant que tu puisses lui écrire.`,"alerte");
+    else if(e==="trop_long")    journal("Message trop long.","alerte");
+    else if(e==="vide")         journal("Le message est vide.","alerte");
+    else if(e==="destinataire") journal("Destinataire introuvable.","alerte");
+    else journal("Envoi refusé.","alerte");
+    _msgForm={ dest, obj, txt };            // on rend son texte au joueur
+    majComm(); return;
+  }
+  journal(`Message envoyé à ${dest}.${(r.restant<=5)?` Il ne reste que ${r.restant} place${r.restant>1?"s":""} dans sa boîte.`:""}`,"gain");
   msgVue="envoyes"; majComm();
 }
 function _msgModal(){ let m=document.querySelector("#comm-msg"); if(!m){ m=document.createElement("div"); m.id="comm-msg"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m){ m.hidden=true; majComm(); } }); } return m; }
@@ -409,6 +452,76 @@ function vueAnnonces(toutes, miennes){
    Le collage est AUTORISÉ : le bloquer n'aurait été qu'un ralentisseur
    (F12, JS désactivé ou une capture d'écran le contournent), au prix d'une
    gêne réelle pour les joueurs sur mobile et les lecteurs d'écran. */
+/* POPULATION — annuaire par faction.
+   Un Régent n'avait aucun moyen de savoir qui compose sa faction : il ne
+   voyait que les candidats en période d'élection. Lecture seule sur
+   `profils_publics`, qui n'expose ni crédits ni `donnees`.
+   ⚠ On charge UNE faction à la fois : tout afficher d'un coup serait long à
+   lire et lourd à transférer. */
+let _popFaction = null, _popQ = "", _popVus = 60, _popCache = null;
+const POP_PAS = 60;
+
+async function _rendrePopulation(z){
+  if(!_popFaction) _popFaction = etat.faction || (typeof FACTIONS!=="undefined" ? FACTIONS[0].id : null);
+  const fs = (typeof FACTIONS!=="undefined") ? FACTIONS : [];
+  let h = `<div class="pop-nav">` + fs.map(f =>
+      `<button class="msg-lien${f.id===_popFaction?" actif":""}" data-pop="${f.id}">${echapper(f.nom)}</button>`
+    ).join("") + `</div>
+    <div class="dev-champ" style="margin:8px 0"><input id="pop-q" placeholder="Filtrer par pseudo…" value="${echapper(_popQ)}"></div>
+    <div id="pop-liste"><p class="vide">Chargement…</p></div>`;
+  z.innerHTML = h;
+
+  z.querySelectorAll("[data-pop]").forEach(b => b.addEventListener("click", () => {
+    _popFaction = b.dataset.pop; _popQ = ""; _popVus = POP_PAS; _popCache = null; majComm();
+  }));
+  const q = z.querySelector("#pop-q");
+  if(q) q.addEventListener("input", () => { _popQ = q.value; _popVus = POP_PAS; _peuplerPopulation(z); });
+
+  await _peuplerPopulation(z);
+  const qq = z.querySelector("#pop-q");
+  if(qq && _popQ){ qq.focus(); qq.setSelectionRange(_popQ.length, _popQ.length); }
+}
+
+async function _peuplerPopulation(z){
+  const zl = z.querySelector("#pop-liste"); if(!zl) return;
+  if(!_popCache || _popCache.faction !== _popFaction){
+    if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ zl.innerHTML = `<p class="vide">Serveur indisponible.</p>`; return; }
+    const { data, error } = await sb.from("profils_publics")
+      .select("id,nom,niveau,formation,derniere_activite")
+      .eq("faction", _popFaction).order("nom", { ascending:true });
+    if(error){ console.warn("[population]", error.message); zl.innerHTML = `<p class="vide">Lecture impossible.</p>`; return; }
+    _popCache = { faction:_popFaction, liste:(data||[]) };
+  }
+  const norme = t => String(t||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const filtre = norme(_popQ);
+  const tous = _popCache.liste.filter(p => !filtre || norme(p.nom).includes(filtre));
+  const vus = tous.slice(0, _popVus);
+  const fac = (typeof FACTIONS!=="undefined") ? FACTIONS.find(f=>f.id===_popFaction) : null;
+
+  if(!tous.length){
+    zl.innerHTML = `<p class="vide">${filtre ? "Aucun pseudo ne correspond." : "Personne dans cette faction."}</p>`;
+    return;
+  }
+  let h = `<p class="itip-gris" style="margin:0 0 8px"><b>${tous.length}</b> membre${tous.length>1?"s":""}${fac?` — ${echapper(fac.nom)}`:""}${filtre?` (sur ${_popCache.liste.length})`:""}</p><div class="pop-liste">`;
+  vus.forEach(p => {
+    const enLigne = (typeof _presenceEnLigne==="function") && _presenceEnLigne(p.derniere_activite);
+    h += `<button class="pop-item" data-profil="${echapper(p.nom)}">
+        <span class="comm-dot ${enLigne?"on":"off"}"></span>
+        <span class="pop-nom">${echapper(p.nom)}</span>
+        <span class="pop-meta">Niv ${p.niveau|0}${p.formation?` · ${echapper(p.formation)}`:""}</span>
+      </button>`;
+  });
+  h += `</div>`;
+  if(vus.length < tous.length) h += `<button class="mini msg-plus" id="pop-plus">Voir plus (${tous.length - vus.length} restant${tous.length-vus.length>1?"s":""})</button>`;
+  zl.innerHTML = h;
+
+  zl.querySelectorAll("[data-profil]").forEach(b => b.addEventListener("click", () => {
+    if(typeof voirProfilJoueur==="function") voirProfilJoueur(b.dataset.profil);
+  }));
+  const bp = zl.querySelector("#pop-plus");
+  if(bp) bp.addEventListener("click", () => { _popVus += POP_PAS; _peuplerPopulation(z); });
+}
+
 const CARNET_MAX = 6000;
 function _rendreCarnet(z){
   const v = etat.carnet || "";
@@ -526,6 +639,15 @@ function _commStyle(){
     .msg-x:hover{ border-color:#ff5257; color:#ff7a7e; }
     .msg-qui-lien{ cursor:pointer; color:var(--bleu,#5aa8e6); border-bottom:1px dotted currentColor; }
     .msg-qui-lien:hover{ color:#fff; }
+    .msg-plus{ display:block; width:100%; margin-top:8px; }
+    .pop-nav{ display:flex; gap:6px; flex-wrap:wrap; }
+    .pop-liste{ display:flex; flex-direction:column; gap:5px; }
+    .pop-item{ display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+      background:#0f1830; border:1px solid var(--line); border-radius:9px 3px 9px 3px;
+      color:var(--texte); padding:8px 11px; font-family:inherit; font-size:13px; cursor:pointer; }
+    .pop-item:hover{ border-color:var(--bleu); }
+    .pop-nom{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pop-meta{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); white-space:nowrap; }
     .msg-ecrire{ display:flex; flex-direction:column; gap:8px; }
     .msg-ecrire input, .msg-ecrire textarea{ background:#0f1830; border:1px solid var(--line); border-radius:8px; color:var(--texte); padding:9px 11px; font-family:inherit; }
     .msg-ecrire textarea{ resize:vertical; }
