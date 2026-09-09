@@ -293,7 +293,16 @@
 </div>
 
 <!-- Modules chargés dans l'ordre : données/config d'abord, amorçage en dernier -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- ⚠ La bibliothèque est SERVIE DEPUIS TON DOMAINE, pas depuis un CDN.
+     Chargée depuis cdn.jsdelivr.net, elle était bloquée par la protection
+     anti-pistage d'Edge (« Tracking Prevention blocked access to storage »),
+     qui empêche une origine tierce d'accéder au stockage : Supabase ne
+     pouvait plus conserver la session, et le joueur retrouvait un sac vide
+     après chaque déconnexion. Une origine unique supprime le problème, et
+     évite au passage la panne si le CDN tombe.
+     Mise à jour : npm pack @supabase/supabase-js@2, puis copier
+     package/dist/umd/supabase.js — penser à changer le nom de version ici. -->
+<script src="js/vendor/supabase-2.116.0.js"></script>
 <script src="js/serveur.js"></script>
 <script src="js/config.js"></script>
 <script src="js/data.js"></script>
