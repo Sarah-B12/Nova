@@ -9,7 +9,7 @@
      enigme (illimité) · choix · livraison · paiement · attente · piratage · glyphes
      ordre · cadenas · sequence · memoire · combat (contrôle de niveau)
    MINI-JEUX RATABLES (DEFIS_UNTRY) : UN essai par jour. Sur échec (validation ratée),
-   l'étape se verrouille jusqu'au lendemain (JOUR_MS). L'énigme reste illimitée ;
+   l'étape se verrouille jusqu'au prochain minuit parisien. L'énigme reste illimitée ;
    livraison/paiement/attente ne sont pas « ratables » (on complète ou pas).
    =========================================================== */
 
@@ -54,8 +54,15 @@ function _fmtDuree(ms){
 
 // Mini-jeux ratables : un essai par jour.
 const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat"]);
+/* ⚠ Le verrou ne dure plus 24 h glissantes mais jusqu'au PROCHAIN MINUIT
+   PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
+   23 h ne bloque donc plus toute la journée du lendemain. Repli sur l'ancien
+   calcul si terrain.js n'est pas chargé, ou en mode test accéléré. */
 function queteVerrou(){ const a=queteActive(); const e=etapeActive();
   if(!a || !e || !e.defi || !DEFIS_UNTRY.has(e.defi.type) || !a._echecLe) return 0;
+  if(typeof memeJour === "function" && typeof msAvantResetJeu === "function"){
+    return memeJour(a._echecLe) ? msAvantResetJeu() : 0;
+  }
   const r=_jourMs()-(Date.now()-a._echecLe); return r>0?r:0; }
 
 let _queteTimer = null; let _queteTO = [];   // animation/compte à rebours + timeouts

@@ -196,7 +196,10 @@ async function _monterNiveauServeur(niveau){
   try{
     const { data, error } = await sb.rpc("niveau_monter", { p_niveau: niveau|0 });
     if(error){ if(typeof _catchLog==="function") _catchLog(error, "systeme.js#niveau"); return; }
-    if(!data || !data.ok) return;              // pas_de_montee : rien à faire
+    if(!data || !data.ok){
+      console.warn("[niveau_monter]", (data && data.err) || "réponse inattendue", "— niveau client", niveau);
+      return;
+    }
     etat.energie = data.energie; etat.energieMaj = Date.now();
     if(typeof afficher==="function") afficher();
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "systeme.js#niveau2"); }

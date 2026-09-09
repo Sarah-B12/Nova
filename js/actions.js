@@ -10,7 +10,7 @@ async function reposer(){
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const ville = (typeof villeActuelle==="function") ? villeActuelle() : null;
   if(!ville){ journal("Repos possible seulement en ville (chez toi ou à l'auberge).","alerte"); return; }
-  if(memeJour(etat.reposLe)){ journal("Tu t'es déjà reposé aujourd'hui.","alerte"); return; }
+  if(memeJour(etat.reposLe)){ journal("Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   const chezSoi = ville===etat.faction;
   const gain = chezSoi?25:20, cap = chezSoi?80:70;
   if(etat.jauges.sante>=cap && etat.jauges.moral>=cap){ journal(`Déjà en forme — le repos ne dépasse pas ${cap} (kit/ration pour aller plus haut).`,"alerte"); return; }

@@ -8,7 +8,7 @@ function raisonAction(a){
   const enFaction = !!enZoneFaction();
   if(a==="reposer"){
     if(!enFaction) return "Le repos se fait en zone de faction : rejoins une ville sur la carte.";
-    if(memeJour(etat.reposLe)) return "Tu t'es déjà reposé aujourd'hui — reviens demain.";
+    if(memeJour(etat.reposLe)) return "Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.";
     if(etat.jauges.sante>=70 && etat.jauges.moral>=70) return "Inutile : le repos plafonne à 70 % (achète un kit/ration pour monter plus haut).";
     return "";
   }

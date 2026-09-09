@@ -46,7 +46,54 @@ function _refusTerrain(){
   return true;
 }
 
-function memeJour(ts){ return ts && (Date.now()-ts) < JOUR_MS; }   // action déjà faite « aujourd'hui »
+/* ===========================================================
+   JOUR DE JEU — remise à zéro à MINUIT, heure de Paris.
+   Avant : fenêtre glissante de 24 h. Chaque arrosage repoussait le suivant,
+   donc l'heure d'action DÉRIVAIT un peu plus chaque jour — au bout d'une
+   semaine on arrosait au milieu de la nuit. Un rendez-vous fixe supprime ça.
+   ⚠ Heure d'été gérée : on ne calcule jamais en UTC + décalage fixe, on
+   demande à Intl la date CIVILE à Paris. Les changements d'heure sont donc
+   pris en compte automatiquement, sans bibliothèque.
+   ⚠ Mode test : si JOUR_MS n'est plus 24 h (accélération), on repasse à la
+   fenêtre glissante — sinon un « jour » de 60 s n'aurait plus aucun sens.
+   =========================================================== */
+const FUSEAU_JEU = "Europe/Paris";
+const _fmtJourJeu = new Intl.DateTimeFormat("fr-CA", {
+  timeZone: FUSEAU_JEU, year:"numeric", month:"2-digit", day:"2-digit"
+});
+function jourDeJeu(ts){ return _fmtJourJeu.format(new Date(ts == null ? Date.now() : ts)); }  // "2026-09-09"
+
+function memeJour(ts){
+  if(!ts) return false;
+  if(typeof JOUR_MS !== "undefined" && JOUR_MS !== 86400000) return (Date.now()-ts) < JOUR_MS;  // test accéléré
+  return jourDeJeu(ts) === jourDeJeu();
+}
+
+/* Décalage d'un fuseau, en minutes, pour un instant donné. Méthode sans
+   dépendance : on reformate l'instant dans le fuseau, on relit les champs
+   comme s'ils étaient UTC, et on mesure l'écart. */
+function _decalageFuseau(d, tz){
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12:false, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", second:"2-digit"
+  }).formatToParts(d).map(x => [x.type, x.value]));
+  const commeUTC = Date.UTC(+p.year, +p.month-1, +p.day, (+p.hour)%24, +p.minute, +p.second);
+  return (commeUTC - Math.floor(d.getTime()/1000)*1000) / 60000;
+}
+
+/* Instant du prochain minuit parisien. Sert aux décomptes « reviens demain ». */
+function prochainResetJeu(){
+  const now = Date.now();
+  if(typeof JOUR_MS !== "undefined" && JOUR_MS !== 86400000) return now + JOUR_MS;   // test accéléré
+  const off = _decalageFuseau(new Date(now), FUSEAU_JEU);
+  const local = new Date(now + off*60000);      // instant décalé : ses champs UTC = l'heure de Paris
+  const depuisMinuit = local.getUTCHours()*3600000 + local.getUTCMinutes()*60000
+                     + local.getUTCSeconds()*1000 + local.getUTCMilliseconds();
+  let cible = now + (86400000 - depuisMinuit);
+  const off2 = _decalageFuseau(new Date(cible), FUSEAU_JEU);
+  return cible + (off - off2)*60000;            // rattrape un changement d'heure dans l'intervalle
+}
+function msAvantResetJeu(){ return Math.max(0, prochainResetJeu() - Date.now()); }
 const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png", hangar:"images/hangar.png" };
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous
 const PLANT_MAX = 100;         // % de croissance pour récolter une plante
@@ -142,7 +189,7 @@ async function arroserCase(ci){
   if(_refusTerrain()) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance>=PLANT_MAX){ journal("Déjà mûr — récolte-le.","alerte"); return; }
-  if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — reviens demain.","alerte"); return; }
+  if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   if(!await agirServeur({ cout:COUT_TERRAIN.arroser, motif:"arroser" })) return;
   c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now();
   journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); majStruct();
@@ -184,7 +231,7 @@ async function tondreCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
-  if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — reviens demain.","alerte"); return; }
+  if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   const nb=aptStructureLot(alea(2,3)+aptTonteBonus());
   const res=await agirServeur({ cout:COUT_TERRAIN.tondre, ajouter:{ [a.produit]:nb }, motif:"tonte" });
   if(!res) return;

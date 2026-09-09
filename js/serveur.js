@@ -123,7 +123,11 @@ async function sauverSurServeur(){
     // l'attribution initiale — traitée par _premiereFaction() ci-dessous.
     formation: _nomFormation(),
     mur_public: (etat.murOuvertA==='tous'),
-    niveau: (etat.niveau|0),
+    /* ⚠ `niveau` N'EST PLUS POUSSÉ ici. niveau_monter() ne recharge l'énergie
+       que si le niveau déclaré dépasse celui en base ; or cette sauvegarde
+       écrivait la colonne de son côté, et quand elle arrivait la première la
+       RPC voyait « pas de montée » et ne rechargeait rien. Course supprimée :
+       niveau_monter() est désormais le seul à écrire profils.niveau. */
     // ⚠ PHASE 4 : energie / energie_maj NE SONT PLUS POUSSÉES ici.
     // Le serveur en est désormais propriétaire (RPC agir()). Les repousser
     // depuis le client écraserait la dépense serveur — même piège que les crédits.
