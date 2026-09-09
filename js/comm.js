@@ -343,7 +343,11 @@ async function ouvrirMessage(type, i){
   const arr=(type==="recus"?_msgRecusCache:_msgEnvoyesCache); const m=arr[i]; if(!m) return;
   if(type==="recus" && !m.lu){ m.lu=true; try{ await sb.from("messages").update({lu:true}).eq("id",m.id); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#2"); } if(typeof compterNotifs==="function") compterNotifs(); }
   const modal=_msgModal();
-  const qui = type==="recus"?("De <b>"+m.de+"</b>"):("À <b>"+m.a+"</b>");
+  /* Le pseudo devient cliquable : on lit souvent un message en se demandant
+     qui est l'expéditeur. `voirProfilJoueur` existe déjà dans ce fichier. */
+  const autre = type==="recus" ? m.de : m.a;
+  const qui = (type==="recus" ? "De " : "À ")
+    + `<b class="msg-qui-lien" data-profil="${echapper(autre||"")}" title="Voir le profil de ${echapper(autre||"")}">${echapper(autre||"?")}</b>`;
   const statut = (type==="envoyes") ? (m.lu?" · lu":" · non lu") : "";
   const suppLabel = (type==="envoyes" && !m.lu) ? "Supprimer pour tous" : "Supprimer";
   modal.innerHTML=`<div class="picker-cadre msg-cadre"><div class="picker-tete"><b>${(m.objet||"(sans objet)").replace(/</g,"&lt;")}</b><button class="mini" data-fermer="1">Fermer</button></div>
@@ -354,6 +358,11 @@ async function ouvrirMessage(type, i){
   modal.querySelector("[data-fermer]").addEventListener("click",()=>{ modal.hidden=true; majComm(); });
   const rp=modal.querySelector("[data-rep]"); if(rp) rp.addEventListener("click",()=>{ _msgPrefill={ dest:m.de, obj:(/^re\s*:/i.test(m.objet||"")?m.objet:"Re : "+(m.objet||"")) }; modal.hidden=true; msgVue="ecrire"; majComm(); });
   const sp=modal.querySelector("[data-suppr]"); if(sp) sp.addEventListener("click",()=>supprimerMessage(type, m, modal));
+  const lp=modal.querySelector("[data-profil]");
+  if(lp && autre) lp.addEventListener("click",()=>{
+    modal.hidden=true;                       // sinon la fiche s'ouvrirait derrière
+    if(typeof voirProfilJoueur==="function") voirProfilJoueur(autre);
+  });
 }
 async function supprimerMessage(type, m, modal){
   try{
@@ -515,6 +524,8 @@ function _commStyle(){
     .msg-x{ flex:0 0 auto; width:34px; background:none; border:1px solid var(--line);
       border-radius:8px; color:var(--sourdine); font-size:14px; cursor:pointer; line-height:1; }
     .msg-x:hover{ border-color:#ff5257; color:#ff7a7e; }
+    .msg-qui-lien{ cursor:pointer; color:var(--bleu,#5aa8e6); border-bottom:1px dotted currentColor; }
+    .msg-qui-lien:hover{ color:#fff; }
     .msg-ecrire{ display:flex; flex-direction:column; gap:8px; }
     .msg-ecrire input, .msg-ecrire textarea{ background:#0f1830; border:1px solid var(--line); border-radius:8px; color:var(--texte); padding:9px 11px; font-family:inherit; }
     .msg-ecrire textarea{ resize:vertical; }

@@ -138,7 +138,8 @@ async function sauverSurServeur(){
   };
   const { error } = await sb.from("profils").update(maj).eq("id", s.user.id);
   if(error) console.warn("[serveur] sauvegarde ÉCHEC:", error.message);
-  else console.log("[serveur] sauvegarde OK — credits=" + (etat.credits|0) + ", faction=" + (etat.faction||"—"));
+  else { console.log("[serveur] sauvegarde OK — credits=" + (etat.credits|0) + ", faction=" + (etat.faction||"—"));
+         _presenceDer = Date.now(); }   // elle écrit derniere_activite : inutile de doubler
 }
 
 /* Sauvegarde serveur « débounce » : appelée par sauvegarder(), max 1 écriture toutes ~2,5 s. */
@@ -148,5 +149,34 @@ function planifierSauveServeur(){
   clearTimeout(_sauveTimer);
   _sauveTimer = setTimeout(sauverSurServeur, 2500);
 }
+/* ===========================================================
+   PRÉSENCE — battement de cœur.
+   `derniere_activite` n'était écrite que par sauverSurServeur(), donc
+   uniquement quand le joueur AGISSAIT. Or le point vert s'éteint après
+   2 minutes : quelqu'un qui lit une annonce, rédige un message ou regarde sa
+   carte passait « hors ligne » l'onglet grand ouvert.
+   ⚠ On n'écrit QUE `derniere_activite` — surtout pas via sauverSurServeur(),
+   qui repousserait tout l'état et coûterait cent fois plus cher.
+   ⚠ Rien n'est envoyé si l'onglet est masqué : un onglet oublié en arrière-plan
+   ne doit pas faire croire que le joueur est là.
+   =========================================================== */
+const PRESENCE_MS = 60000;   // < 120 000, le seuil de _presenceEnLigne()
+let _presenceDer = 0;
+async function battementPresence(){
+  if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
+  if(typeof document !== "undefined" && document.hidden) return;
+  if(Date.now() - _presenceDer < PRESENCE_MS - 5000) return;   // une sauvegarde vient peut-être de le faire
+  const s = await sessionActuelle(); if(!s) return;
+  try{
+    const { error } = await sb.from("profils")
+      .update({ derniere_activite: new Date().toISOString() })
+      .eq("id", s.user.id);
+    if(error){ console.warn("[presence]", error.message); return; }
+    _presenceDer = Date.now();
+  }catch(e){ console.warn("[presence]", (e && e.message) || e); }
+}
+setInterval(battementPresence, PRESENCE_MS);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) battementPresence(); });
+
 /* Filet : pousse la dernière version en quittant la page (meilleur effort). */
 window.addEventListener("beforeunload", () => { if(SERVEUR_DISPO && etat && etat.inscrit) sauverSurServeur(); });

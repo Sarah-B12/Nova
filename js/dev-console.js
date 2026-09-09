@@ -279,6 +279,21 @@ function majDev(){
     const brc=av.querySelector("#dev-recaler-comp"); if(brc) brc.addEventListener("click", devRecalerCompetences);
     const bfb=av.querySelector("#dev-facbloc"); if(bfb) bfb.addEventListener("click", devFactionBloc);
     const bpro=av.querySelector("#dev-protocole"); if(bpro) bpro.addEventListener("click", devProtocole);
+    /* ⚠ Ces deux boutons existaient dans le HTML et leurs fonctions étaient
+       définies (devResetQuete / devResetQuetes), mais RIEN ne les reliait :
+       ils étaient inertes depuis toujours. */
+    const bqr=av.querySelector("#dev-quete-reset");
+    if(bqr) bqr.addEventListener("click", ()=>{
+      const sel=av.querySelector("#dev-quete-sel");
+      if(sel && sel.value) devResetQuete(sel.value);
+    });
+    const bqa=av.querySelector("#dev-quete-reset-all");
+    if(bqa) bqa.addEventListener("click", async ()=>{
+      const ok = (typeof confirmerJoli==="function")
+        ? await confirmerJoli("Réinitialiser les quêtes", "Toutes les quêtes repassent à zéro, y compris celle en cours. Les récompenses déjà reçues ne sont pas reprises.", "Tout réinitialiser", true)
+        : confirm("Réinitialiser TOUTES les quêtes ?");
+      if(ok) devResetQuetes();
+    });
   }
   // (Onglet Cadeaux supprimé : la fiche joueur de l'onglet Recherche fait mieux —
   //  elle cible n'importe quel joueur, journalise et le prévient.)

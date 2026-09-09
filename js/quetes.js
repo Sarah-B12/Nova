@@ -20,7 +20,20 @@ function queteData(id){ return (typeof QUETES!=="undefined") ? QUETES.find(q=>q.
 function queteActive(){ const q=queteEtat(); return q.active || null; }
 function etapeActive(){ const a=queteActive(); if(!a) return null; const q=queteData(a.id); return q ? q.etapes[a.etape] : null; }
 function queteProchaine(){ if(typeof QUETES==="undefined") return null; return QUETES.find(q=>!queteEtat().done.includes(q.id)) || null; }
-function _qnorm(s){ return String(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," "); }
+/* ⚠ Normalisation des réponses. Elle ne gérait ni les apostrophes ni la
+   ponctuation : « l’embarquement » (apostrophe typographique, insérée
+   automatiquement par iOS et par la correction automatique) était REFUSÉ alors
+   que « l'embarquement » passait. Idem pour un point final. Un joueur pouvait
+   avoir la bonne réponse et se croire à côté de la plaque. */
+function _qnorm(s){
+  return String(s||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")   // accents
+    .replace(/[\u2018\u2019\u02bc\u00b4`]/g,"'")       // apostrophes typographiques -> droite
+    .replace(/[.,;:!?…]+$/,"")                          // ponctuation finale
+    .replace(/\s+/g," ")
+    .trim();
+}
 function _par(txt){ if(!txt) return ""; const arr=Array.isArray(txt)?txt:[txt]; return arr.map(t=>`<p class="quete-dial">${t}</p>`).join(""); }
 function surSiteQuete(){ const e=etapeActive(); if(!e || !e.cible || !etat.pos) return false;
   return Math.hypot(etat.pos.x-e.cible.x, etat.pos.y-e.cible.y) <= (e.cible.r||70); }
@@ -139,21 +152,39 @@ function _defiWire(z, d){
   }
 }
 
-/* énigme (illimité) */
+/* énigme (illimité)
+   Pas de bouton « Indice » permanent : on cherche d'abord. Mais après
+   ENIG_SEUIL mauvaises réponses, l'indice apparaît de lui-même — un joueur
+   qui a la bonne idée sans trouver le mot exact ne doit pas rester coincé.
+   ⚠ Le compteur est volontairement NON persistant : il repart à zéro si on
+   quitte l'onglet, ce qui laisse une seconde chance à qui revient reposé.
+   ⚠ `d.indice` est l'indice de l'ÉNIGME. À ne pas confondre avec `e.indice`,
+   l'indice d'OBJECTIF (~ligne 532), qui dit où aller sur la carte. */
+const ENIG_SEUIL = 3;
+let _enigEchecs = 0;
 function _htmlEnigme(d){
+  _enigEchecs = 0;
   return `<div class="quete-etape">${_par(d.texte)}
     <p class="quete-indice">${d.question}</p>
     <div class="quete-rep"><input id="q-enig-champ" placeholder="Ta réponse…" autocomplete="off"><button class="mini" id="q-enig-btn">Valider</button></div>
+    ${d.indice?`<p class="vide" id="q-enig-txt" hidden style="margin:8px 0 0">💡 ${d.indice}</p>`:""}
   </div>`;
-  /* Bouton « Indice » retiré : les énigmes se résolvent sans aide.
-     ⚠ Les champs `indice:` des ÉNIGMES restent dans quetes-data.js — ils ne
-     sont simplement plus rendus, pour que le retour arrière soit trivial.
-     À ne pas confondre avec `e.indice`, l'indice d'OBJECTIF (~ligne 532),
-     qui indique où aller sur la carte et reste indispensable. */
 }
 function _wireEnigme(z,d){
   const b=z.querySelector("#q-enig-btn"), c=z.querySelector("#q-enig-champ");
-  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne réponse !","gain"); reussirDefi(); } else journal("Mauvaise réponse. Réessaie.","alerte"); };
+  const go=()=>{
+    if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){
+      journal("Bonne réponse !","gain"); reussirDefi(); return;
+    }
+    _enigEchecs++;
+    const tx = z.querySelector("#q-enig-txt");
+    if(d.indice && tx && tx.hidden && _enigEchecs >= ENIG_SEUIL){
+      tx.hidden = false;
+      journal("Mauvaise réponse. Un indice vient d'apparaître sous la question.","alerte");
+    } else {
+      journal("Mauvaise réponse. Réessaie.","alerte");
+    }
+  };
   if(b&&c){ b.addEventListener("click",go); c.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); }
 }
 
