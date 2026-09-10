@@ -48,6 +48,18 @@
     .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
     .rep-badge{ cursor:default; }
+    .conc-fil{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:7px;
+      border:1px solid var(--line); border-radius:10px; background:#0b1224; padding:10px; }
+    .conc-msg{ background:#0f1830; border:1px solid var(--line); border-radius:9px 3px 9px 3px;
+      padding:7px 10px; max-width:82%; align-self:flex-start; }
+    .conc-msg.moi{ align-self:flex-end; border-color:rgba(90,168,230,.45); background:rgba(90,168,230,.08); }
+    .conc-tete{ font-family:"Space Mono",monospace; font-size:11px; color:var(--orange-hi,#ffb060); margin-bottom:3px; }
+    .conc-msg.moi .conc-tete{ color:#7cc4f5; }
+    .conc-txt{ font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+    .conc-saisie{ display:flex; gap:7px; align-items:flex-end; margin-top:9px; }
+    .conc-saisie textarea{ flex:1; background:#0f1830; border:1px solid var(--line); border-radius:10px 4px 10px 4px;
+      color:var(--texte); padding:9px 11px; font-family:inherit; font-size:13px; resize:vertical; }
+    .conc-saisie textarea:focus{ outline:none; border-color:var(--orange); }
     .ann-carte{ border:1px solid var(--line); border-left:3px solid var(--orange,#ff8a3d);
       border-radius:12px 4px 12px 4px; background:rgba(255,138,61,.05); padding:13px 15px; margin-top:6px; }
     .ann-tete{ font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--orange-hi,#ffb060); margin-bottom:9px; }
@@ -129,19 +141,31 @@ async function majGouvernement(el){
   const fac = etat.faction;
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Chargement…</p>`;
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Serveur indisponible.</p>`; return; }
-  let solde = 0, dejaJour = 0;
+  /* ⚠ `solde = null` signifie « je n'ai PAS LE DROIT de savoir », pas « zéro ».
+     La policy `caisse_voir` réserve la lecture aux membres de la faction :
+     hors de chez soi, la requête renvoie une liste vide sans erreur. Afficher
+     0 ₡ laissait croire à une caisse épuisée — information fausse, et
+     précieuse pour qui la croirait. */
+  let solde = null, dejaJour = 0;
   try{ const { data } = await sb.from("caisses").select("solde").eq("faction", fac).maybeSingle(); if(data && typeof data.solde==="number") solde = data.solde; }catch(e){ console.warn("[gouv] caisse:", e.message); }
   try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
   const reste = Math.max(0, 500 - dejaJour);
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
     ${_blasonFaction(fac)}
-    <div class="gouv-caisse"><span>Caisse de la faction</span><b class="or">${solde.toLocaleString("fr-FR")} ₡</b></div>
-    <p class="itip-gris">Alimentée par les <b>taxes du marché</b> de la faction et les <b>dons</b> des membres.</p>
-    <div class="gouv-don">
+    <div class="gouv-caisse"><span>Caisse de la faction</span>${solde===null
+      ? `<b class="itip-gris" title="Réservée aux membres de cette faction">— non communiqué</b>`
+      : `<b class="or">${solde.toLocaleString("fr-FR")} ₡</b>`}</div>
+    <p class="itip-gris">${solde===null
+      ? `Le montant d'une caisse n'est connu que de sa faction. L'Ombre peut tenter de l'apprendre par espionnage.`
+      : `Alimentée par les <b>taxes du marché</b> de la faction et les <b>dons</b> des membres.`}</p>
+    ${solde===null ? "" : `<div class="gouv-don">
       <input type="number" id="gouv-don-montant" min="1" max="${reste}" value="${Math.min(100,reste)}" ${reste<=0?"disabled":""}>
       <button class="mini" id="gouv-don-btn" ${reste<=0?"disabled":""}>Faire un don</button>
       <span class="itip-gris">Reste aujourd'hui : <b>${reste} ₡</b> / 500</span>
-    </div>`;
+    </div>`}`;
+    /* ⚠ Pas de bloc de don hors de sa faction : caisse_don() verse toujours
+       dans SA PROPRE caisse, quelle que soit la page consultée. L'afficher
+       ici laissait croire qu'on finançait la faction visitée. */
   const b = el.querySelector("#gouv-don-btn"); if(b) b.addEventListener("click", faireDon);
   /* ⚠ L'annonce du Régent a quitté ce panneau : elle a son propre onglet
      « Annonce » (majAnnonceFaction, plus bas). Un rectangle coincé en tête du
@@ -249,7 +273,79 @@ async function majAnnonceFaction(el){
 }
 
 let _bureauVue = null;
-function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre"}[b]||b; }
+function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre",concertation:"Concertation"}[b]||b; }
+
+/* ===========================================================
+   CONCERTATION — discussion entre les quatre charges d'une faction.
+   Les MP ne permettent pas un échange à quatre, et un successeur n'en
+   hériterait pas : l'historique est attaché à la FACTION.
+   Serveur : gouv_chat_lire / gouv_chat_ecrire, qui revérifient l'appartenance
+   au gouvernement à chaque appel — perdre son poste, c'est perdre l'accès.
+   Messages effacés au bout de 5 jours (gouv_chat_purge, cron horaire).
+   =========================================================== */
+let _concRendu = 0, _concTimer = null;
+
+async function _rendreConcertation(z, fac){
+  const jeton = ++_concRendu;
+  z.innerHTML = `<h3>Concertation — ${_gouvFacNom(fac)}</h3>
+    <p class="itip-gris" style="margin:0 0 8px">Visible des seules charges de ta faction. Les messages s'effacent au bout de <b>5 jours</b>.</p>
+    <div class="conc-fil" id="conc-fil"><p class="vide">Chargement…</p></div>
+    <div class="conc-saisie">
+      <textarea id="conc-txt" rows="2" maxlength="800" placeholder="Écrire au gouvernement…"></textarea>
+      <button class="mini" id="conc-envoi">Envoyer</button>
+    </div>`;
+
+  const envoyer = async () => {
+    const c = z.querySelector("#conc-txt"); const t = (c.value||"").trim();
+    if(!t) return;
+    const b = z.querySelector("#conc-envoi"); if(b) b.disabled = true;
+    const { data:r, error } = await sb.rpc("gouv_chat_ecrire", { p_texte: t });
+    if(b) b.disabled = false;
+    if(error || !r || !r.ok){
+      const e = r && r.err;
+      if(e==="pas_membre")      journal("Tu n'es plus membre du gouvernement.","alerte");
+      else if(e==="trop_vite")  journal("Trop de messages coup sur coup — laisse passer un moment.","alerte");
+      else if(e==="trop_long")  journal("Message trop long (800 caractères).","alerte");
+      else journal("Envoi impossible.","alerte");
+      return;
+    }
+    c.value = "";
+    await _concCharger(z, true);
+  };
+  z.querySelector("#conc-envoi").addEventListener("click", envoyer);
+  z.querySelector("#conc-txt").addEventListener("keydown", e => {
+    if(e.key==="Enter" && (e.ctrlKey||e.metaKey)) envoyer();   // Ctrl+Entrée : envoyer
+  });
+
+  await _concCharger(z, true);
+  // Rafraîchissement pendant qu'on reste sur l'onglet.
+  clearInterval(_concTimer);
+  _concTimer = setInterval(() => {
+    if(jeton !== _concRendu || !document.querySelector("#conc-fil")){ clearInterval(_concTimer); return; }
+    _concCharger(z, false);
+  }, 20000);
+}
+
+async function _concCharger(z, forcerBas){
+  const fil = z.querySelector("#conc-fil"); if(!fil) return;
+  const { data:r, error } = await sb.rpc("gouv_chat_lire", { p_limite: 60 });
+  if(error || !r || !r.ok){
+    fil.innerHTML = `<p class="vide">${(r && r.err==="pas_membre") ? "Réservé aux charges du gouvernement." : "Lecture impossible."}</p>`;
+    return;
+  }
+  const liste = r.liste || [];
+  if(!liste.length){ fil.innerHTML = `<p class="vide">Aucun message. Ouvre la discussion.</p>`; return; }
+
+  // Ne recoller en bas que si l'on y était déjà : sinon on arrache la lecture.
+  const enBas = forcerBas || (fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40);
+  fil.innerHTML = liste.map(m => {
+    const q = m.cree_le ? new Date(m.cree_le).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
+    return `<div class="conc-msg${m.moi?" moi":""}">
+        <div class="conc-tete">${echapper(m.nom)} <span class="itip-gris">${echapper(q)}</span></div>
+        <div class="conc-txt">${echapper(m.texte)}</div></div>`;
+  }).join("");
+  if(enBas) fil.scrollTop = fil.scrollHeight;
+}
 async function compterAnnonce(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   try{
@@ -582,6 +678,10 @@ async function majBureau(el){
   const estRegent = roles.includes("regent");
   let bureaux = estRegent ? ["regent","architecte","chef_guerre","espion"] : roles.filter(r=>["architecte","chef_guerre","espion"].includes(r));
   if(!bureaux.length){ el.innerHTML = `<p class="vide">Tu n'as pas de bureau (aucun rôle au gouvernement).</p>`; return; }
+  /* Onglet commun aux quatre charges : la Concertation appartient au
+     GOUVERNEMENT, pas à un rôle. Ajouté en fin de menu pour ne pas déplacer
+     les repères des joueurs habitués. */
+  bureaux = bureaux.concat(["concertation"]);
   if(!_bureauVue || !bureaux.includes(_bureauVue)) _bureauVue = bureaux[0];
   let h="";
   if(bureaux.length>1) h += `<div class="bur-menu">`+bureaux.map(b=>`<button class="bur-lien${_bureauVue===b?" actif":""}" data-bur="${b}">${_bureauNom(b)}</button>`).join("")+`</div>`;
@@ -589,7 +689,8 @@ async function majBureau(el){
   el.innerHTML = h;
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
   const corps = el.querySelector("#bureau-corps");
-  if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);
+  if(_bureauVue==="concertation") await _rendreConcertation(corps, fac);
+  else if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);
   else if(_bureauVue==="regent") await _rendreBureauRegent(corps, fac);
   else if(_bureauVue==="chef_guerre") await _rendreBureauStratege(corps, fac);
   else if(_bureauVue==="espion"){ if(typeof majBureauOmbre==="function") await majBureauOmbre(corps, fac); else corps.innerHTML=`<h3>Bureau de l'Ombre</h3><p class="itip-gris">à venir</p>`; }

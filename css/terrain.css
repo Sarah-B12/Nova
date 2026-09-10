@@ -2,10 +2,20 @@
    TERRAIN — Terrain (parcelles) et modale des structures (mine, bio-dôme, enclos).
    =========================================================== */
   /* Terrain : sous-menu + grille de parcelles */
-  .sous-menu { display:flex; gap:6px; margin-bottom:12px; border-bottom:1px solid var(--line); }
-  .sous-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
+  /* ⚠ SOUS-MENUS (Maison / Terrain de récolte, Amis / Messages / …).
+     Ils ressemblaient trop aux onglets principaux : un nouveau joueur ne
+     voyait pas qu'il changeait de NIVEAU de navigation. Ils sont désormais
+     plus petits, en capitales espacées, et en BLEU cyan — l'orange reste
+     réservé au niveau supérieur. Un liseré à gauche du menu marque le retrait. */
+  .sous-menu { display:flex; gap:4px; margin-bottom:12px; padding-left:9px;
+    border-bottom:1px solid var(--line); border-left:2px solid rgba(90,168,230,.35); }
+  .sous-lien { font-family:"Space Mono",monospace; font-weight:600; font-size:11.5px;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--sourdine);
+    background:none; border:none; border-bottom:2px solid transparent;
+    padding:5px 9px; cursor:pointer; }
   .sous-lien:hover { color:var(--texte); }
-  .sous-lien.actif { color:var(--orange-hi); border-bottom-color:var(--orange); }
+  .sous-lien.actif { color:#7cc4f5; border-bottom-color:#5aa8e6;
+    text-shadow:0 0 8px rgba(90,168,230,.55); }
   .sous-vue[hidden] { display:none; }
   /* Terrain : fond clôturé (image) ; les parcelles se posent à l'intérieur des rails. */
   .terrain-grille {

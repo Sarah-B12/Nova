@@ -73,6 +73,7 @@ function hydraterEtat(s){
        sinon le correctif ne prendrait effet qu'après la première réécriture.
        Ces trois valeurs ne sont légitimes que si elles viennent de sac_lire(). */
     lots:[], _lotsSynchro:false, equipeServeur:{}, forceCombatServeur:undefined,
+    faction:null,   // relue depuis profils.faction au chargement (bootstrap/navigation)
     competences:{...base.competences,...(s.competences||{})},
     /* ⚠ On ne restaure PAS s.jauges : o2/sante/moral sont des colonnes serveur,
        lues par chargerJaugesServeur() au démarrage. Une copie persistée

@@ -38,7 +38,25 @@
   document.head.appendChild(st);
 })();
 
-function _espInfoNom(i){ return {caisse:"Caisse","expedition_cible":"Cible d'expédition",enroles:"Nb d'enrôlés",annonce:"Annonce du Régent"}[i]||i; }
+function _espInfoNom(i){ return {caisse:"Caisse","expedition_cible":"Cible d'expédition",enroles:"Nb d'enrôlés",annonce:"Transmission du Régent"}[i]||i; }
+/* La Transmission peut faire plusieurs paragraphes : elle noierait le journal
+   et allongerait la ligne de rapport. On la replie et on la garde hors du
+   journal — le rapport d'espionnage est son seul lieu de lecture. */
+function _espEstLong(info){ return info === "annonce"; }
+
+/* Style du repli, injecté une fois. */
+(function(){
+  if(typeof document==="undefined" || document.querySelector("#esp-style")) return;
+  const st=document.createElement("style"); st.id="esp-style";
+  st.textContent = `
+    .esp-long .poste-txt{ display:block; width:100%; }
+    .esp-det{ margin-top:6px; border:1px solid var(--line); border-radius:8px; background:#0f1830; }
+    .esp-det summary{ cursor:pointer; padding:6px 10px; font-size:12px; color:var(--orange-hi,#ffb060); }
+    .esp-det[open] summary{ border-bottom:1px solid var(--line); }
+    .esp-txt{ padding:9px 11px; font-size:13px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+  `;
+  document.head.appendChild(st);
+})();
 
 async function majBureauOmbre(el, fac){
   if(!el) return;
@@ -52,7 +70,7 @@ async function majBureauOmbre(el, fac){
   if(estOmbre){
     const cibles=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
     h+=`<h4 class="gsec">Espionner une faction</h4>`;
-    h+=`<div class="reg-compose"><select id="esp-cible" class="gouv-textarea" style="padding:8px">${cibles}</select><select id="esp-info" class="gouv-textarea" style="padding:8px"><option value="caisse">Caisse</option><option value="expedition_cible">Cible d'expédition</option><option value="enroles">Nb d'enrôlés</option><option value="annonce">Annonce du Régent</option></select><button class="mini" id="esp-sonder">Sonder la cible</button><div id="esp-statut" class="itip-gris"></div><button class="mini" id="esp-hack" disabled>Lancer le hack</button></div>`;
+    h+=`<div class="reg-compose"><select id="esp-cible" class="gouv-textarea" style="padding:8px">${cibles}</select><select id="esp-info" class="gouv-textarea" style="padding:8px"><option value="caisse">Caisse</option><option value="expedition_cible">Cible d'expédition</option><option value="enroles">Nb d'enrôlés</option><option value="annonce">Transmission du Régent</option></select><button class="mini" id="esp-sonder">Sonder la cible</button><div id="esp-statut" class="itip-gris"></div><button class="mini" id="esp-hack" disabled>Lancer le hack</button></div>`;
     h+=`<p class="itip-gris" style="font-size:12px">2 tentatives/jour par faction. La difficulté monte avec la <b>Détection (👁️)</b> de la cible. Un échec peut t'envoyer en <b>prison</b> (risque réduit par ton <b>Agilité</b>).</p>`;
     h+=`<h4 class="gsec" style="margin-top:16px">Hacker le Protocole</h4>`;
     h+=`<p class="itip-gris" style="font-size:12px">Le hack se fait <b>au pied du mur du Protocole</b> (sur son anneau, via la carte) — pas depuis le bureau. 1 tentative/jour/faction (succès ou échec). Réussite → une info aléatoire (défense du jour, offensive à venir, cible, puissance) ; échec → risque de patrouille. Partagez vos infos entre factions !</p>`;
@@ -60,7 +78,15 @@ async function majBureauOmbre(el, fac){
   h+=`<h4 class="gsec" style="margin-top:16px">Rapports d'espionnage (3 jours)</h4>`;
   if(!rapports.length) h+=`<p class="vide">Aucun rapport pour l'instant.</p>`;
   else h+=rapports.map(r=>{ const cn=(typeof _expCibleNom==="function")?_expCibleNom(r.cible):r.cible; const dt=(typeof _dateHeure==="function")?_dateHeure(r.cree_le):"";
-    return `<div class="poste-ligne"><span class="poste-txt"><span class="itip-gris">${dt}</span> · <b>${cn}</b> · ${r.reussi?'<span class="or">réussi</span>':'<span style="color:#ff5257">échec</span>'} · ${_espInfoNom(r.info)}${r.reussi&&r.resultat?` · <b>${(r.resultat||"").replace(/</g,"&lt;")}</b>`:""}</span></div>`; }).join("");
+    const tete = `<span class="itip-gris">${dt}</span> · <b>${cn}</b> · ${r.reussi?'<span class="or">réussi</span>':'<span style="color:#ff5257">échec</span>'} · ${_espInfoNom(r.info)}`;
+    // Résultat long (Transmission) : replié dans un <details> plutôt qu'étalé.
+    if(r.reussi && r.resultat && _espEstLong(r.info)){
+      const rendu = (typeof _formatMur==="function") ? _formatMur(r.resultat) : (r.resultat||"").replace(/</g,"&lt;");
+      return `<div class="poste-ligne esp-long"><span class="poste-txt">${tete}
+        <details class="esp-det"><summary>Lire la transmission interceptée</summary>
+        <div class="esp-txt">${rendu}</div></details></span>`;
+    }
+    return `<div class="poste-ligne"><span class="poste-txt">${tete}${r.reussi&&r.resultat?` · <b>${(r.resultat||"").replace(/</g,"&lt;")}</b>`:""}</span></div>`; }).join("");
   h+=`<h4 class="gsec" style="margin-top:16px">Renseignements Protocole (3 jours)</h4>`;
   if(!hacks.length) h+=`<p class="vide">Aucun renseignement.</p>`;
   else h+=hacks.map(r=>{ const dt=(typeof _dateHeure==="function")?_dateHeure(r.cree_le):""; return `<div class="poste-ligne"><span class="poste-txt"><span class="itip-gris">${dt}</span> · ${r.reussi?`<span class="or">${_hpInfoNom(r.info)}</span> — <b>${(r.valeur||"").replace(/</g,"&lt;")}</b>`:'<span style="color:#ff5257">hack raté</span>'}</span></div>`; }).join("");
@@ -84,7 +110,12 @@ async function majBureauOmbre(el, fac){
       const reussi=await jeu(_det + (_contre?3:0));
       const { data:res, error } = await sb.rpc("espionner",{ p_cible:cible, p_info:info, p_reussi:reussi });
       if(error || !res || !res.ok){ if(res&&res.err==="limite") journal("Limite atteinte.","alerte"); else journal("Espionnage impossible.","alerte"); return; }
-      if(res.reussi){ if(typeof gagnerXp==="function") gagnerXp(5); journal(`Espionnage réussi — ${_espInfoNom(info)} de ${(typeof _expCibleNom==="function")?_expCibleNom(cible):cible} : ${res.resultat}`,"gain"); }
+      if(res.reussi){ if(typeof gagnerXp==="function") gagnerXp(5);
+        /* ⚠ Le texte intercepté ne va PAS au journal quand il est long : une
+           Transmission de plusieurs paragraphes y serait illisible et
+           chasserait tout le reste. On renvoie vers le rapport. */
+        if(_espEstLong(info)) journal(`Espionnage réussi — Transmission de ${(typeof _expCibleNom==="function")?_expCibleNom(cible):cible} interceptée. À lire dans les rapports.`,"gain");
+        else journal(`Espionnage réussi — ${_espInfoNom(info)} de ${(typeof _expCibleNom==="function")?_expCibleNom(cible):cible} : ${res.resultat}`,"gain"); }
       else{ journal("Espionnage raté.","alerte"); _prisonEspion(cible); }
       if(typeof majCentre==="function") majCentre();
     });
@@ -193,7 +224,26 @@ function _prisonEspion(cible){
 }
 
 /* ---------- Mini-jeu F1 : Traversée de pare-feu (mémoire de chemin) ---------- */
-function _espF1(det){
+/* ⚠ Les deux mini-jeux d'espionnage démarraient AUSSITÔT, sans expliquer la
+   règle — contrairement au vol et au hack du Protocole, qui passent par
+   _miniDemarrer (voler.js) et son écran de consigne. Un joueur découvrait le
+   jeu en le perdant. `_espConsigne` ajoute la même étape ici : on lit, on
+   clique, et alors seulement le chrono part. */
+function _espConsigne(titre, texte){
+  return new Promise(go=>{
+    const m=document.createElement("div"); m.className="modale"; m.id="esp-consigne"; m.hidden=false;
+    m.innerHTML=`<div class="membrane modale-boite"><h2>${titre}</h2>
+      <p class="itip-gris" style="margin:0 0 6px">${texte}</p>
+      <p class="itip-gris" style="margin:0 0 12px">Le compte à rebours démarre quand tu cliques.</p>
+      <button class="valider" id="esp-c-go">Jouer</button></div>`;
+    document.body.appendChild(m);
+    m.querySelector("#esp-c-go").addEventListener("click", ()=>{ m.remove(); go(); });
+  });
+}
+
+async function _espF1(det){
+  await _espConsigne("Traversée de pare-feu",
+    "Un chemin va s'illuminer case par case. Mémorise-le, puis reproduis-le dans le même ordre. Plus la cible est vigilante, plus le chemin est long et bref.");
   return new Promise(resolve=>{
     const n = det<=2?4 : det<=5?5 : 6;
     const len = det<=2?4 : det<=5?6 : 8;
@@ -229,7 +279,9 @@ function _espF1(det){
 }
 
 /* ---------- Mini-jeu F2 : Synchronisation de fréquence (timing) ---------- */
-function _espF2(det){
+async function _espF2(det){
+  await _espConsigne("Synchronisation de fréquence",
+    "Des curseurs balaient leur barre. Arrête chacun dans la zone claire en cliquant au bon moment. Plus la cible est vigilante, plus les zones sont étroites et les curseurs rapides.");
   return new Promise(resolve=>{
     const nb = det<=2?2 : det<=5?3 : 4;
     const zoneW = det<=2?22 : det<=5?16 : 12;

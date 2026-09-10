@@ -138,7 +138,7 @@ async function connecter(){
   const { error } = await seConnecter(email, mdp);
   if(error){ authErreur(_authMsg(error)); return; }
   const prof = await chargerDepuisServeur();
-  if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); if(typeof prof.credits==="number"){ etat.credits=prof.credits; if(typeof initCredits==="function") initCredits(prof.credits); } if(typeof prof.reputation==="number") etat.reputation=prof.reputation; etat.roleAdmin=prof.role_admin||null; etat.cercles=prof.cercles||{}; }
+  if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); if(typeof prof.credits==="number"){ etat.credits=prof.credits; if(typeof initCredits==="function") initCredits(prof.credits); } if(typeof prof.reputation==="number") etat.reputation=prof.reputation; etat.roleAdmin=prof.role_admin||null; etat.cercles=prof.cercles||{}; if(prof.faction) etat.faction=prof.faction; /* COLONNE : cf. bootstrap.js */ }
   else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); if(typeof _premiereFaction==="function") await _premiereFaction(f.id); await sauverSurServeur(); }
   if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();

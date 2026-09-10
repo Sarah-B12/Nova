@@ -86,6 +86,11 @@ const CLES_SERVEUR = [
   "sacDate", "coffreDate", "souteDate",  // vestiges : les dates sont serveur
   "_lotsSynchro",                    // garde-fou de majUsure : DOIT repartir à faux au démarrage
   "equipeServeur", "forceCombatServeur", // reflets de sac_lire() : recalculés à chaque appel
+  "faction",                         /* ⚠ colonne profils.faction, écrite par changer_faction() UNIQUEMENT.
+                                        Le client a cessé de la pousser (course avec la RPC) mais continuait
+                                        à la lire dans `donnees` : un joueur transféré voyait son ANCIENNE
+                                        faction sur sa fiche, la bonne dans Population. Une donnée qu'on
+                                        n'écrit plus ne doit plus être persistée non plus. */
   "avatar",                          // colonne profils.avatar, écrite par changer_apparence()
   "apparenceLe",                     // vestige : le verrou est calculé par apparence_etat()
   "jauges"                           // colonnes o2/sante/moral : lues par jauges_lire(), écrites par agir()
