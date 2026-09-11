@@ -36,7 +36,31 @@ async function sInscrire(email, mdp, pseudo){
 async function seConnecter(email, mdp){
   return await sb.auth.signInWithPassword({ email, password: mdp });
 }
-async function seDeconnecter(){ if(SERVEUR_DISPO) try{ await sb.auth.signOut(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#3"); } }
+/* ⚠ v0.60 — SESSION PERDUE. Quand le jeton ne se renouvelle pas (mobile en
+   veille, réseau coupé au mauvais moment), supabase-js repasse en ANONYME sans
+   rien dire : chaque action revenait « non_connecte », affichée comme un vague
+   « Action refusée par le serveur » — un testeur a cru que les enclos ne
+   mélangeaient pas les espèces. On tente de reprendre la session ; sinon on
+   prévient clairement, une seule fois. */
+let _deconnexionVolontaire = false, _sessionAlertee = false;
+async function seDeconnecter(){ _deconnexionVolontaire = true; if(SERVEUR_DISPO) try{ await sb.auth.signOut(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#3"); } }
+async function reprendreSession(){
+  if(!SERVEUR_DISPO) return false;
+  try{ const { data, error } = await sb.auth.refreshSession(); return !error && !!(data && data.session); }
+  catch(e){ return false; }
+}
+function alerteSessionPerdue(){
+  if(_sessionAlertee || _deconnexionVolontaire) return; _sessionAlertee = true;
+  const msg = "Ta session a expiré : recharge la page pour te reconnecter. Rien n'a été débité.";
+  if(typeof journal==="function") journal("⚠ "+msg,"alerte");
+  try{ alert(msg); }catch(e){}
+}
+if(SERVEUR_DISPO){
+  sb.auth.onAuthStateChange((ev)=>{
+    if(ev==="SIGNED_IN" || ev==="TOKEN_REFRESHED"){ _sessionAlertee = false; return; }
+    if(ev==="SIGNED_OUT" && typeof etat!=="undefined" && etat && etat.inscrit) alerteSessionPerdue();
+  });
+}
 async function sessionActuelle(){ if(!SERVEUR_DISPO) return null; const { data } = await sb.auth.getSession(); return data ? data.session : null; }
 
 /* Nom lisible de la formation (l'état stocke un objet {cle, points, ...}). */

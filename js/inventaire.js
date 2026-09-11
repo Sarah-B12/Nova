@@ -42,7 +42,7 @@ async function agirServeur(o){
        Le déplacement a son propre calcul (coutTrajet) : il n'est pas dans la liste. */
     let cout = o.cout || 0;
     if(cout > 0 && MOTIFS_ACTION.has(o.motif) && typeof aptEnergieAction === "function") cout = aptEnergieAction(cout);
-    const { data, error } = await sb.rpc("agir", {
+    const args = {
       p_cout:    cout,
       p_retirer: o.retirer || {},
       p_ajouter: o.ajouter || {},
@@ -50,7 +50,13 @@ async function agirServeur(o){
       p_tout_ou_rien: !!o.toutOuRien,
       p_jauges:  o.jauges || {},
       p_en_prison: !!o.enPrison        // réservé à l'évasion
-    });
+    };
+    let { data, error } = await sb.rpc("agir", args);
+    /* v0.60 — session perdue : agir() répond « non_connecte » AVANT tout effet,
+       on peut donc reprendre la session et rejouer l'appel une fois, sans risque. */
+    if(!error && data && data.err === "non_connecte" && typeof reprendreSession === "function" && await reprendreSession()){
+      ({ data, error } = await sb.rpc("agir", args));
+    }
     if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
     if(!data || !data.ok){
       const err = data && data.err;
@@ -64,7 +70,11 @@ async function agirServeur(o){
       }
       else if(err === "sac_plein") journal("Sac plein — fais de la place d'abord.","alerte");
       else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
-      else                       journal("Action refusée par le serveur.","alerte");
+      else if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); else journal("Session expirée — recharge la page.","alerte"); }
+      else { // le code du refus s'affiche : un retour de testeur devient diagnosticable
+        journal(`Action refusée par le serveur (${err || "réponse vide"}).`,"alerte");
+        console.warn("[agir] refus :", data, "| motif :", o.motif);
+      }
       return null;
     }
     _appliquerEtatStocks(data.etat);

@@ -136,6 +136,9 @@ async function voyager(x, y){
   // Reste dans les limites de la carte (pas de hors-image)
   x = Math.max(0, Math.min(MONDE.w, x));
   y = Math.max(0, Math.min(MONDE.h, y));
+  // Clic sur (ou tout près d') un repère ★ de quête : on va à son centre (v0.61).
+  const rq = (typeof repereQueteSous==="function") ? repereQueteSous(x, y) : null;
+  if(rq){ x = rq.x; y = rq.y; }
   // Protocole : impossible d'entrer dans le cercle -> on est projeté sur l'anneau (le trait)
   const z = ZONE_PROTOCOLE, dp = dist(x, y, z.x, z.y);
   if(dp < z.r){ const a = Math.atan2(y - z.y, x - z.x); x = z.x + Math.cos(a) * z.r; y = z.y + Math.sin(a) * z.r; }
@@ -158,14 +161,20 @@ async function voyager(x, y){
   /* ⚠ v0.58 — et elle part TOUT DE SUITE. La sauvegarde attend 2,5 s ; or agir()
      lit la position en base pour l'O₂ (air respirable en ville). Une patrouille
      juste à la sortie d'une ville voyait encore l'ancienne position : O₂ remis à 100. */
-  if(typeof sauverSurServeur==="function"){ try{ await sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "carte.js#pos"); } }
+  /* v0.61 — mais la quête et le journal ne l'ATTENDENT plus : si le réseau
+     traîne, le joueur restait sans « tu es arrivé ». Seule la patrouille, qui
+     en a besoin pour l'O₂, patiente (4 s au plus). */
+  const posEnvoyee = (typeof sauverSurServeur==="function")
+    ? Promise.race([ sauverSurServeur().catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, "carte.js#pos"); }),
+                     new Promise(r=>setTimeout(r, 4000)) ])
+    : null;
   if(etat.pas) etat.pas.deplace=true;
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
                     : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)
           + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""));
   apresAction();
   if(typeof queteArrivee==="function") queteArrivee();
-  if(dOpen>0 && typeof tenterPatrouille==="function") tenterPatrouille();
+  if(dOpen>0 && typeof tenterPatrouille==="function"){ if(posEnvoyee) await posEnvoyee; tenterPatrouille(); }
 }
 
 /* ---------- Inscription ---------- */

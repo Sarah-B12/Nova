@@ -7,8 +7,12 @@
      voyait pas qu'il changeait de NIVEAU de navigation. Ils sont désormais
      plus petits, en capitales espacées, et en BLEU cyan — l'orange reste
      réservé au niveau supérieur. Un liseré à gauche du menu marque le retrait. */
-  .sous-menu { display:flex; gap:4px; margin-bottom:12px; padding-left:9px;
+  /* ⚠ v0.62 — sans flex-wrap, les 8 onglets du hub (Terrain … Voler / Hacker)
+     sortaient du cadre sur iPhone et élargissaient toute la page. */
+  .sous-menu { display:flex; flex-wrap:wrap; gap:2px 4px; margin-bottom:12px; padding-left:9px;
     border-bottom:1px solid var(--line); border-left:2px solid rgba(90,168,230,.35); }
+  .sous-menu > button { white-space:nowrap; }
+  @media (max-width:600px){ .sous-menu .hub-lien { padding:5px 7px; font-size:13px; } }
   .sous-lien { font-family:"Space Mono",monospace; font-weight:600; font-size:11.5px;
     letter-spacing:.06em; text-transform:uppercase; color:var(--sourdine);
     background:none; border:none; border-bottom:2px solid transparent;

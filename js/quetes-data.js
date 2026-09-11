@@ -205,8 +205,8 @@ const QUETES = [
           elements:[
             "Relevé de routine 93487627. Rien à signaler sur le secteur nord.",
             "Relevé de routine 93487628. Le relais 12 émet une porteuse qui n'est pas au catalogue. Vareck demande une inspection.",
-            "Inspection faite : ce n'est pas une panne, c'est un ordre. Nous n'avons pas l'habilitation pour le lire.",
-            "Habilitations vérifiées.Demande de consigne transmise à l'autorité. En attente de réponse.",
+            "Inspection faite: ce n'est pas une panne, c'est un ordre. Nous n'avons pas l'habilitation pour le lire.",
+            "Habilitations vérifiées. Demande de consigne transmise à l'autorité. En attente de réponse.",
             "Réponse reçue. Évacuation immédiate. Ne rien emporter, ne rien éteindre.",
             "Poste fermé jusqu'à nouvel ordre. Sept noms au registre, six passages au sas."
           ],
@@ -221,7 +221,10 @@ const QUETES = [
 
       /* ---- 3. Le péage mort — PAIEMENT (non ratable) ---- */
       { indice:"Vieilles galeries du sud-ouest. Un portique qui réclame encore son dû. Prends de la monnaie.",
-        cible:{ x:820, y:500, r:80 }, leurres:[ {x:1450,y:1100,r:80}, {x:1900,y:250,r:80}, {x:1000,y:1350,r:80} ],
+        /* ⚠ v0.61 — la cible était en (820,500), dans le NORD-ouest, sur l'autre
+           filon : l'indice envoie au sud-ouest, aux « vieilles galeries » de Q1
+           (760,1320). Un joueur qui suivait l'indice ne pouvait pas trouver. */
+        cible:{ x:700, y:1260, r:80 }, leurres:[ {x:1450,y:1100,r:80}, {x:1900,y:250,r:80}, {x:1000,y:1350,r:80} ],
         image:"images/quetes/q2/3.png",
         arrivee:[
           "Le portique se dresse au milieu de nulle part, barrant une galerie qui ne mène plus à rien. Un lecteur de crédits clignote, patient, impeccablement entretenu par ses propres automatismes.",

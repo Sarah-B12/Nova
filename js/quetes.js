@@ -544,8 +544,21 @@ function queteArrivee(){
   const sur=d(e.cible.x,e.cible.y) <= (e.cible.r||70);
   if(sur && !a._sur){ a._sur=true; journal((e.arrivee?"":"Tu es arrivé au bon endroit — ")+"ouvre l'onglet Quêtes.","gain");
     if(!e.defi){ avancerQuete(); return; } sauvegarder(); rafraichirQuetes();
-  } else if(!sur && a._sur){ a._sur=false; sauvegarder(); rafraichirQuetes();
-  } else if(!sur){ for(const l of (e.leurres||[])){ if(d(l.x,l.y)<=(l.r||70)){ journal("Rien ici — fausse piste. Relis l'indice (onglet Quêtes).","alerte"); break; } } }
+  } else if(!sur){
+    if(a._sur){ a._sur=false; sauvegarder(); rafraichirQuetes(); }
+    for(const l of (e.leurres||[])){ if(d(l.x,l.y)<=(l.r||70)){ journal("Rien ici — fausse piste. Relis l'indice (onglet Quêtes).","alerte"); break; } }
+  }
+}
+
+/* v0.61 — Repère ★ sous un clic. Le cercle fait 80 u de rayon, soit une
+   douzaine de pixels sur un téléphone : un doigt le rate facilement, et le
+   joueur croyait que « les zones ne marchent pas ». Un clic dans le cercle ou
+   à moins de 50 u de son bord mène au CENTRE du repère. */
+function repereQueteSous(x, y){
+  const a=queteActive(); const e=etapeActive(); if(!a || a._resolu || !e || !e.cible) return null;
+  let best=null, bd=Infinity;
+  for(const p of [e.cible, ...(e.leurres||[])]){ const d=Math.hypot(x-p.x, y-p.y); if(d <= (p.r||70)+50 && d < bd){ bd=d; best=p; } }
+  return best;
 }
 
 /* ---------- Marqueurs de carte ---------- */
