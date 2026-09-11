@@ -58,21 +58,69 @@ function initCredits(v){ _creditsServeur = (typeof v==="number") ? v : null; }
 function marquerCredits(v){ if(typeof v==="number") _creditsServeur = v; }
 /* Applique au serveur l'écart de crédits accumulé côté client (delta), et récupère
    la valeur autoritative (qui inclut d'éventuelles ventes encaissées entre-temps). */
-async function pousserCredits(){
+/* ⚠ FILE D'ATTENTE DES CRÉDITS (v0.58). Trois défauts corrigés :
+   1. Deux pousserCredits() simultanés (sauvegarde immédiate + minuterie de
+      2,5 s + intervalle de 60 s + beforeunload) calculaient le MÊME écart
+      contre le même _creditsServeur : le serveur l'appliquait DEUX fois.
+   2. `etat.credits = data` au retour effaçait ce qui avait bougé en local
+      PENDANT l'appel (un achat, un gain) : perdu pour toujours.
+   3. Un solde renvoyé par une RPC (marché, apparence) jetait l'écart local
+      pas encore poussé.
+   Tout passe par une file (un appel à la fois) et l'écart en attente est
+   TOUJOURS reposé par-dessus la valeur serveur. */
+let _creditsFile = Promise.resolve();
+function _enFileCredits(fn){
+  const p = _creditsFile.then(fn, fn);
+  _creditsFile = p.catch(()=>{});
+  return p;
+}
+// Écart local pas encore connu du serveur.
+function _creditsEnAttente(){ return (_creditsServeur===null) ? 0 : ((etat.credits|0) - _creditsServeur); }
+/* Quand le serveur renvoie un solde : remplace `etat.credits = v; marquerCredits(v)`,
+   qui jetait l'écart en attente. */
+function appliquerSoldeServeur(v){
+  if(typeof v!=="number") return;
+  const attente = _creditsEnAttente();
+  _creditsServeur = v; etat.credits = v + attente;
+}
+/* RPC qui touche aux crédits ET renvoie le solde (clé `cle`, « solde » par défaut) :
+   exécutée DANS la file, pour qu'aucun pousserCredits() ne s'intercale entre
+   l'appel et l'application du solde (sinon l'écart en attente partirait deux fois). */
+function rpcAvecSolde(nom, args, cle){
+  return _enFileCredits(async ()=>{
+    await _pousserCreditsUneFois();
+    const r = await sb.rpc(nom, args || {});
+    const d = r && r.data;
+    if(d && d.ok && typeof d[cle||"solde"]==="number") appliquerSoldeServeur(d[cle||"solde"]);
+    return r;
+  });
+}
+async function _pousserCreditsUneFois(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
   const s = await sessionActuelle(); if(!s) return;
   if(_creditsServeur===null){ _creditsServeur = (etat.credits|0); return; }
-  const delta = (etat.credits|0) - _creditsServeur;
+  const envoye = (etat.credits|0);
+  const delta = envoye - _creditsServeur;
   if(delta===0) return;
+  const avant = _creditsServeur;
   const { data, error } = await sb.rpc("crediter", { delta });
   if(error){ console.warn("[serveur] crediter:", error.message); return; }
-  if(typeof data==="number"){ _creditsServeur = data; etat.credits = data; }
+  if(typeof data==="number"){
+    const pendant = (etat.credits|0) - envoye;     // bougé en local pendant l'appel
+    _creditsServeur = data; etat.credits = data + pendant;
+    if(delta > 0 && data < avant + delta) console.warn("[serveur] crediter : gain refusé ou partiel (plafond ?)", { delta, avant, data });
+  }
 }
-async function rechargerCredits(){
-  if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
-  const s = await sessionActuelle(); if(!s) return;
-  const { data } = await sb.from("profils").select("credits").eq("id", s.user.id).maybeSingle();
-  if(data && typeof data.credits==="number"){ etat.credits=data.credits; _creditsServeur=data.credits; if(typeof afficher==="function") afficher(); }
+function pousserCredits(){ return _enFileCredits(_pousserCreditsUneFois); }
+function rechargerCredits(){
+  return _enFileCredits(async ()=>{
+    if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
+    await _pousserCreditsUneFois();                // d'abord ce qui attend, sinon on l'effacerait
+    const s = await sessionActuelle(); if(!s) return;
+    const { data, error } = await sb.from("profils").select("credits").eq("id", s.user.id).maybeSingle();
+    if(error){ console.warn("[serveur] rechargerCredits:", error.message); return; }
+    if(data && typeof data.credits==="number"){ appliquerSoldeServeur(data.credits); if(typeof afficher==="function") afficher(); }
+  });
 }
 /* RÈGLE D'OR — une donnée qui appartient au SERVEUR ne doit avoir AUCUNE copie
    persistante côté client, ni dans `profils.donnees`, ni dans localStorage.

@@ -302,3 +302,35 @@
   /* Mention de crédits, tout en bas du site. */
   .credits-bas{ width:100%; text-align:center; margin:10px 0 0; font-size:10px;
     color:var(--texte-2,#9fb3c8); opacity:.6; letter-spacing:.3px; }
+
+
+/* ===========================================================
+   v0.59 — TÉLÉPHONES ET TABLETTES
+   Android débordait : une ligne du marché ou de la boutique (icône, nom, prix,
+   quantité −/+, bouton) ne passait jamais à la ligne, donc elle élargissait
+   toute la page et poussait les boutons hors du cadre.
+   =========================================================== */
+.panneau { min-width:0; overflow-wrap:break-word; }
+.marche-ligne, .vente-ligne { flex-wrap:wrap; }
+.marche-nom, .vente-ligne .picker-nom { min-width:0; }
+.marche-ligne .mini, .vente-ligne .mini { white-space:nowrap; }
+@media (max-width:600px){
+  .marche-ligne { gap:8px 10px; padding:9px 10px; }
+  .marche-nom, .vente-ligne .picker-nom { flex:1 1 calc(100% - 70px); }   /* nom seul à côté de l'icône, le reste passe dessous */
+  .marche-prix { min-width:0; text-align:left; }
+  .vente-ligne { gap:8px; }
+}
+/* Toute fenêtre plus haute que l'écran défile au lieu d'être coupée. */
+.modale > *, #marche-vente > *, #marche-mesventes > *, #menu-objet > * {
+  max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px); overflow-y:auto;
+}
+
+/* Légende de la défense (bureaux du gouvernement) */
+.leg-def { margin:8px 0 12px; border:1px solid var(--line); border-radius:10px 4px 10px 4px; padding:6px 10px; background:rgba(16,41,78,.35); font-size:13px; }
+.leg-def summary { cursor:pointer; color:var(--bleu); font-family:"Space Mono",monospace; font-size:12px; }
+.leg-def dl { display:grid; grid-template-columns:max-content 1fr; gap:6px 12px; margin:10px 0 4px; }
+.leg-def dt { font-weight:700; color:var(--texte); white-space:nowrap; }
+.leg-def dd { margin:0; color:var(--sourdine); line-height:1.45; }
+@media (max-width:520px){ .leg-def dl { grid-template-columns:1fr; gap:2px; } .leg-def dd { margin-bottom:8px; } }
+
+.marche-tabs { flex-wrap:wrap; }   /* v0.59 : onglets de la boutique/du marché sur petit écran */

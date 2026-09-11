@@ -59,7 +59,7 @@ document.querySelectorAll(".comm-lien").forEach(b => b.addEventListener("click",
 document.querySelector("#auth-mdp").addEventListener("keydown", e => { if(e.key==="Enter") validerAuth(); });
 
 /* ---------- Démarrage ---------- */
-construireBoutique(); construireCompetences(); construireCarte();
+construireCompetences(); construireCarte();
 (async function demarrer(){
   if(SERVEUR_DISPO){
     const session = await sessionActuelle();

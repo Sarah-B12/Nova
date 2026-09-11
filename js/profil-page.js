@@ -181,7 +181,7 @@ async function ouvrirPageProfil(nom){
     <div class="pp-haut">
       <div class="pp-portrait av-portrait">${portrait}</div>
       <div class="pp-info">
-        <div class="pp-nom">${p.nom}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
+        <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
         <p>Faction : <b>${_facNomComm(p.faction)}</b></p>
         <p>Formation : <b>${p.formation||"—"}</b></p>
@@ -255,7 +255,7 @@ async function _ppChargerMur(profilId, sel){
       const auteur=noms[r.auteur_id]||"(inconnu)";
       const monMur = moiId && (profilId===moiId);
       const peutSuppr = monMur || (typeof estAdmin==="function" && estAdmin());
-      return `<div class="mur-msg">${peutSuppr?`<button class="mur-x" data-murx="${r.id}" data-mien="${monMur?1:0}">×</button>`:""}<span class="mur-date itip-gris">${_dateHeure(r.cree_le)}</span> <button class="comm-nom" data-profil="${auteur}">${auteur}</button> <span class="mur-txt">${_formatMur(r.texte)}</span></div>`;
+      return `<div class="mur-msg">${peutSuppr?`<button class="mur-x" data-murx="${r.id}" data-mien="${monMur?1:0}">×</button>`:""}<span class="mur-date itip-gris">${_dateHeure(r.cree_le)}</span> <button class="comm-nom" data-profil="${echapper(auteur||"")}">${echapper(auteur||"?")}</button> <span class="mur-txt">${_formatMur(r.texte)}</span></div>`;
     }).join("");
     z.querySelectorAll("[data-profil]").forEach(b=>b.addEventListener("click",()=>ouvrirPageProfil(b.dataset.profil)));
     z.querySelectorAll("[data-murx]").forEach(b=>b.addEventListener("click",async()=>{ try{ if(b.dataset.mien==="1"){ await sb.from("mur").delete().eq("id",b.dataset.murx); } else { await sb.rpc("admin_suppr_mur",{p_id:Number(b.dataset.murx)}); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#3"); } _ppChargerMur(profilId, sel); }));
@@ -334,7 +334,7 @@ async function _ppJournalStaff(profilId){
         const cat = (e && e.cat) ? ` <span class="jd">[${e.cat}]</span>` : "";
         return `<div><span class="jd">${q}</span>${cat} <span${c?` style="color:${c}"`:""}>${String(txt).replace(/</g,"&lt;")}</span></div>`;
       }).join("");
-    z.innerHTML = `<h3>Journal de ${data.nom} <span class="itip-gris">(${(data.journal||[]).length} entrées, plus récentes d'abord)</span></h3>
+    z.innerHTML = `<h3>Journal de ${echapper(data.nom)} <span class="itip-gris">(${(data.journal||[]).length} entrées, plus récentes d'abord)</span></h3>
       <div class="jl">${lignes || '<p class="itip-gris">Journal vide.</p>'}</div>`;
     if(data.total > (data.journal||[]).length){
       z.insertAdjacentHTML("beforeend",
@@ -416,7 +416,7 @@ async function _ppTerrain(profilId){
       cases.push(`<div class="ppt-case plein" title="${nom}">${dedans}</div>`);
     }
     const batis = parc.filter(x=>x && x.type).length;
-    z.innerHTML = `<h3>Terrain de ${data.nom} <span class="itip-gris">(${batis}/24 parcelles bâties)</span></h3>
+    z.innerHTML = `<h3>Terrain de ${echapper(data.nom)} <span class="itip-gris">(${batis}/24 parcelles bâties)</span></h3>
       <div class="ppt-grille" data-faction="${data.faction||""}">${cases.join("")}</div>`;
     // Le fond de faction est géré par terrain.css, via l'attribut data-faction.
     const g = z.querySelector(".ppt-grille");

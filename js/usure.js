@@ -76,6 +76,27 @@ function _verbeUsure(it){ return (it && (it.cat==="plante" || it.cat==="organiqu
    qui a péri et on demande au serveur de le retirer via la RPC perimer().
    Les dates restent client (donnees) — un tricheur peut donc éviter la
    péremption, mais pas créer d'objets. À durcir avec la Phase 4 stricte. */
+/* ⚠ v0.59 — ÉQUIPEMENT USÉ = FANTÔME. L'objet n'était retiré qu'en LOCAL : il
+   restait dans `inventaire` (lieu equipe) côté serveur, comptait toujours dans
+   force_combat_serveur (expéditions) et occupait une place d'équipement.
+   On le détruit désormais côté serveur avant de l'effacer ici. */
+async function _detruireEquipeServeur(id){
+  if(typeof sb === "undefined" || !sb) return true;
+  const lots = (etat.lots||[]).filter(l => l && l.lieu==="equipe" && l.item===id && l.qte>0)
+                              .sort((a,b) => a.acquis - b.acquis);
+  if(!lots.length) return true;                    // le serveur ne le porte pas : rien à faire
+  try{
+    if(lots[0].qte === 1){
+      const { data, error } = await sb.rpc("perimer", { p_lots:[{ item:id, lieu:"equipe", acquis:lots[0].acquis }] });
+      if(error || !data || !data.ok || data.gele) return false;
+      _appliquerEtatStocks(data.etat); return true;
+    }
+    // Lot de plusieurs exemplaires (deux armes identiques) : perimer() effacerait
+    // tout le lot. On en redescend UN au sac, puis on le retire.
+    if(!await rangerServeur(id, 1, "sac", "equipe")) return false;
+    return !!await agirServeur({ retirer:{ [id]:1 }, motif:"usure_equipement" });
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#equipe"); return false; }
+}
 async function majUsure(){
   etat.equipementDate = etat.equipementDate||{};
   const now = Date.now(); let perte = false;
@@ -157,6 +178,7 @@ async function majUsure(){
     if(etat.equipementDate[slot] == null){ etat.equipementDate[slot] = now; continue; }
     if(now - etat.equipementDate[slot] > dureeVie(id)*JOUR_MS){
       const it = item(id);
+      if(!await _detruireEquipeServeur(id)) continue;   // échec : on réessaiera au prochain passage
       etat.equipement[slot] = null; delete etat.equipementDate[slot];
       journal(`${it?it.nom:id} s'est usé et a lâché.`,"alerte"); perte = true;
     }

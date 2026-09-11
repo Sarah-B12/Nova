@@ -49,6 +49,9 @@ function _espEstLong(info){ return info === "annonce"; }
   if(typeof document==="undefined" || document.querySelector("#esp-style")) return;
   const st=document.createElement("style"); st.id="esp-style";
   st.textContent = `
+    /* La ligne longue passe en colonne : le repli occupe toute la largeur au
+       lieu d'être coincé dans un item de flex horizontal. */
+    .esp-long{ flex-direction:column; align-items:stretch; }
     .esp-long .poste-txt{ display:block; width:100%; }
     .esp-det{ margin-top:6px; border:1px solid var(--line); border-radius:8px; background:#0f1830; }
     .esp-det summary{ cursor:pointer; padding:6px 10px; font-size:12px; color:var(--orange-hi,#ffb060); }
@@ -82,9 +85,15 @@ async function majBureauOmbre(el, fac){
     // Résultat long (Transmission) : replié dans un <details> plutôt qu'étalé.
     if(r.reussi && r.resultat && _espEstLong(r.info)){
       const rendu = (typeof _formatMur==="function") ? _formatMur(r.resultat) : (r.resultat||"").replace(/</g,"&lt;");
-      return `<div class="poste-ligne esp-long"><span class="poste-txt">${tete}
-        <details class="esp-det"><summary>Lire la transmission interceptée</summary>
-        <div class="esp-txt">${rendu}</div></details></span>`;
+      /* ⚠ Le </div> manquait : le HTML devenait déséquilibré et les rapports
+         suivants s'imbriquaient dans celui-ci au lieu de se suivre — d'où des
+         blocs côte à côte dans une colonne étroite. Et un <div> ne peut pas
+         vivre dans un <span> : la ligne longue utilise donc des <div>. */
+      return `<div class="poste-ligne esp-long">
+        <div class="poste-txt">${tete}
+          <details class="esp-det"><summary>Lire la transmission interceptée</summary>
+          <div class="esp-txt">${rendu}</div></details>
+        </div></div>`;
     }
     return `<div class="poste-ligne"><span class="poste-txt">${tete}${r.reussi&&r.resultat?` · <b>${(r.resultat||"").replace(/</g,"&lt;")}</b>`:""}</span></div>`; }).join("");
   h+=`<h4 class="gsec" style="margin-top:16px">Renseignements Protocole (3 jours)</h4>`;

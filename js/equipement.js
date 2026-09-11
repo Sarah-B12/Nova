@@ -60,8 +60,51 @@ const EQUIP_EFFETS = {
   fab_implant_maitre:      { force:5, agi:5, int:5 }
 };
 
+/* ---------- MUNITIONS (v0.59) ----------
+   Un objet « Munitions … ×10 » est UN CHARGEUR de 10 tirs : 1 place de sac,
+   vendu, bradé ou envoyé entier. Une arme à feu tire 1 balle par combat
+   (patrouille, défi de quête). Le chargeur entamé vit dans
+   etat.munEntamees[munition] (0..9) ; vide, on en engage un neuf pris dans le
+   SAC (retiré côté serveur). Sans munition, l'arme ne donne AUCUN bonus de
+   compétence. En expédition, le serveur exige un chargeur plein au sac et en
+   consomme un (equip_bonus.munition + trigger expedition_participant_apres).
+   ⚠ Pourquoi pas « 10 unités = 1 place » : il aurait fallu réécrire agir(),
+   ranger() et les quatre calculs de capacité, les fonctions les plus centrales
+   du jeu. Le chargeur donne les mêmes règles au joueur sans y toucher. */
+const CHARGEUR = 10;
+const MUNITION_ARME = {
+  fab_pistolet_cinetique:  "fab_munitions_cinetiques",
+  fab_pistolet_a_plasma:   "fab_munitions_a_plasma",
+  fab_fusil_a_ions:        "fab_munitions_a_ions",
+  fab_canon_a_singularite: "fab_cellule_d_energie"      // 1 cellule = 10 tirs
+};
+function munitionDe(id){ return (id && MUNITION_ARME[id]) || null; }
+function balles(mun){ return ((etat.munEntamees||{})[mun]||0) + CHARGEUR * ((etat.sac||{})[mun]||0); }
+function armeChargee(id){ const m=munitionDe(id); return !m || balles(m) > 0; }
+// Une balle par arme à feu portée. Appelée APRÈS le combat (la force a déjà été lue).
+async function consommerMunitions(){
+  if(!etat.equipement) return;
+  if(!etat.munEntamees || typeof etat.munEntamees!=="object") etat.munEntamees = {};
+  for(const slot of ["arme","arme2"]){
+    const id = etat.equipement[slot]; const m = munitionDe(id); if(!m) continue;
+    if((etat.munEntamees[m]||0) > 0) etat.munEntamees[m]--;
+    else if((etat.sac[m]||0) > 0){
+      const r = await agirServeur({ retirer:{ [m]:1 }, motif:"munitions" });
+      if(!r) continue;
+      etat.munEntamees[m] = CHARGEUR - 1;
+      journal(`Nouveau chargeur engagé : ${item(m).nom}.`);
+    } else continue;
+    if(balles(m) === 0) journal(`${item(id).nom} à vide — plus de ${item(m).nom} dans le sac : l'arme ne compte plus au combat.`,"alerte");
+  }
+  if(typeof sauvegarder==="function") sauvegarder();
+}
+
 /* ---------- Cumul des effets équipés ---------- */
-function _equipEffets(){ return Object.values(etat.equipement||{}).filter(Boolean).map(id=>EQUIP_EFFETS[id]||{}); }
+// Arme à feu sans munition : ni force ni agilité ni intelligence (le reste — poids, O₂ — demeure).
+function _equipEffets(){ return Object.values(etat.equipement||{}).filter(Boolean).map(id=>{
+  const e = EQUIP_EFFETS[id]||{};
+  return armeChargee(id) ? e : Object.assign({}, e, { force:0, agi:0, int:0 });
+}); }
 // Texte lisible des effets d'un objet (pour l'infobulle / le sélecteur).
 function effetTexte(id){
   if(id==="fab_ordinateur_de_hacking") return "Permet de hacker les patrouilles du Protocole";
@@ -74,6 +117,11 @@ function effetTexte(id){
   if(e.esquive) p.push(`+${e.esquive} % esquive`);
   if(e.double)  p.push(`+${e.double} % double trouvaille`);
   if(e.o2)      p.push(`+${e.o2} O₂/action`);
+  const m = munitionDe(id);
+  if(m && typeof item==="function" && item(m)){
+    const b = balles(m);
+    p.push(b > 0 ? `1 tir par combat — ${b} en réserve (${item(m).nom})` : `⚠ À VIDE : il faut ${item(m).nom} dans le sac`);
+  }
   return p.join(" · ");
 }
 function equipForce(){ return _equipEffets().reduce((s,e)=>s+(e.force||0),0); }

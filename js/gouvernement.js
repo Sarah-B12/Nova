@@ -138,8 +138,12 @@ async function majGouvernement(el){
   const _jeton = ++_gouvRendu;
   const _perime = () => _jeton !== _gouvRendu;
   if(!el) return;
-  const fac = etat.faction;
-  el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Chargement…</p>`;
+  /* ⚠ On affiche le gouvernement de la faction où l'on SE TROUVE, pas la
+     sienne : en visite chez Ignis, c'est le gouvernement d'Ignis qui compte.
+     Hors de toute ville (en pleine zone sauvage), on retombe sur la sienne. */
+  const ville = (typeof villeActuelle==="function") ? villeActuelle() : null;
+  const fac = ville || etat.faction;
+  const chezMoi = (fac === etat.faction);
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3><p class="vide">Serveur indisponible.</p>`; return; }
   /* ⚠ `solde = null` signifie « je n'ai PAS LE DROIT de savoir », pas « zéro ».
      La policy `caisse_voir` réserve la lecture aux membres de la faction :
@@ -151,6 +155,7 @@ async function majGouvernement(el){
   try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
   const reste = Math.max(0, 500 - dejaJour);
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
+    ${chezMoi ? "" : `<p class="itip-gris" style="margin:0 0 8px">Tu consultes le gouvernement d'une faction qui n'est pas la tienne.</p>`}
     ${_blasonFaction(fac)}
     <div class="gouv-caisse"><span>Caisse de la faction</span>${solde===null
       ? `<b class="itip-gris" title="Réservée aux membres de cette faction">— non communiqué</b>`
@@ -181,7 +186,7 @@ async function majGouvernement(el){
     if(jeSuisRegent && r.id==="regent"){ ctrl += `<button class="mini" data-transmettre="1">Transmettre la charge</button>`; }
     if(jeSuisRegent && r.id!=="regent"){ ctrl += `<button class="mini" data-nommer="${r.id}">${nom?"Changer":"Nommer"}</button>`; if(nom) ctrl += `<button class="mini danger" data-demrole="${r.id}">Démettre</button>`; }
     if(id===moiId && r.id!=="regent") ctrl += `<button class="mini danger" data-demission="${r.id}">Démissionner</button>`;
-    return `<div class="gouv-role"><span>${r.nom} : ${nom?`<button class="comm-nom" data-profil="${nom}">${nom}</button>`:'<span class="itip-gris">vacant</span>'}</span><span class="comm-btns">${ctrl}</span></div>`;
+    return `<div class="gouv-role"><span>${r.nom} : ${nom?`<button class="comm-nom" data-profil="${echapper(nom)}">${echapper(nom)}</button>`:'<span class="itip-gris">vacant</span>'}</span><span class="comm-btns">${ctrl}</span></div>`;
   }).join("");
   if(_perime()) return;
   const bloc = document.createElement("div");
@@ -559,7 +564,11 @@ function _expRapportHtml(row){
   if(r.objectif==="protocole"){
     if(r.succes){ d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.credits_par} ₡</b> par participant.${r.fragment_nom?` 🧩 Fragment récupéré : <b>${r.fragment_nom}</b> !`:""}</p>`; }
   } else if(r.succes){
-    if(r.butin) d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.butin} ₡</b> (${r.part_coffre} au coffre, ${r.part_joueurs} partagés).</p>`;
+    if(r.butin){
+      const nbp = Math.max(1, r.nb_att||1);
+      d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.butin} ₡</b> — ${r.part_coffre} au coffre, ${r.part_joueurs} partagés entre les <b>${r.nb_att} participant(s)</b>`
+        + `${(r.nb_enroles!=null && r.nb_enroles>r.nb_att)?` (sur ${r.nb_enroles} enrôlés : les absents ne touchent rien)`:""} : <b>${Math.floor(r.part_joueurs/nbp)} ₡ chacun</b>.</p>`;
+    }
     if(r.objets_touches||r.objets_detruits) d+=`<p class="itip-gris" style="font-size:12px">Défense adverse : ${r.objets_touches} objet(s) endommagé(s)${r.objets_detruits?`, <b>${r.objets_detruits} détruit(s)</b>`:""}.</p>`;
   }
   return d;
@@ -670,6 +679,19 @@ async function _rendreBureauRegent(el, fac){
     journal("Message envoyé aux Régents.","gain"); if(typeof majCentre==="function") majCentre();
   });
 }
+/* Légende détaillée des objets de défense (v0.59). Les valeurs viennent de
+   resoudre_expedition_auto (bouclier ×2,5, présence ≥ 3, riposte 5 %/pt, prison
+   6 h) et de espionnage.js (_espF1/_espF2) : à tenir à jour si ces règles changent. */
+function _legendeDefense(ouvert){
+  return `<details class="leg-def"${ouvert?" open":""}><summary>ℹ️ Comprendre la défense : 🛡️ ⚔️ 👁️ ✦</summary><dl>
+    <dt>🛡️ Défense</dt><dd>Chaque point ajoute <b>2,5</b> à la puissance de ta faction quand une expédition ennemie l'attaque. Plein effet avec <b>au moins 3 défenseurs présents</b> en ville, effet partiel en dessous, <b>aucun si personne</b> n'est là. +1 si ta faction détient le fragment du Rempart.</dd>
+    <dt>⚔️ Riposte</dt><dd>Quand un <b>Assaut</b> ennemi échoue, chaque point donne <b>5 %</b> de chance (50 % au plus) d'envoyer chaque assaillant <b>6 h en prison</b>. +1 avec le fragment de la Riposte.</dd>
+    <dt>👁️ Détection</dt><dd>Complique les mini-jeux de l'<b>Ombre</b> adverse qui espionne ta faction : 0 à 2 facile, 3 à 5 moyen, 6 et plus difficile. Le contre-espionnage ajoute +3.</dd>
+    <dt>✦ Signature</dt><dd>Objet propre à ta faction : les autres factions ne peuvent pas le fabriquer.</dd>
+    <dt>Cases</dt><dd><b>4 cases</b> de défense, un objet par type. Seuls les objets <b>placés</b> comptent ; ceux du coffre attendent. À la fabrication, l'objet va en défense s'il reste une case, sinon au coffre.</dd>
+    <dt>Usure</dt><dd>Chaque objet expire au bout de sa durée. Un <b>Sabotage</b> ou un <b>Assaut</b> ennemi réussi ronge cette durée, jusqu'à détruire l'objet.</dd>
+  </dl></details>`;
+}
 async function majBureau(el){
   if(!el) return;
   const fac = etat.faction;
@@ -685,6 +707,7 @@ async function majBureau(el){
   if(!_bureauVue || !bureaux.includes(_bureauVue)) _bureauVue = bureaux[0];
   let h="";
   if(bureaux.length>1) h += `<div class="bur-menu">`+bureaux.map(b=>`<button class="bur-lien${_bureauVue===b?" actif":""}" data-bur="${b}">${_bureauNom(b)}</button>`).join("")+`</div>`;
+  if(_bureauVue !== "concertation") h += _legendeDefense(false);   // v0.59 : même légende dans chaque bureau
   h += `<div id="bureau-corps"></div>`;
   el.innerHTML = h;
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
@@ -747,7 +770,7 @@ async function _rendreAtelier(el, fac){
   coffreDef.forEach(o=>{ h+=`<div class="coffre-case defobj" data-coffredef="${o.id}"><img src="images/items/${o.item_id}.png" class="def-img" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><span class="def-emoji" style="display:none">🛡️</span><span class="cc-j">${_joursRest(o.peremption)}j</span></div>`; });
   if(!coffre.length) h+=`<p class="vide">Coffre vide.</p>`;
   h+=`</div>`;
-  h+=`<h4 class="gsec">Fabriquer</h4><p class="itip-gris" style="margin:0 0 6px">🛡️ Défense · ⚔️ Riposte · 👁️ Détection. ✦ = signature de ta faction. L'objet va en défense s'il reste une case, sinon au coffre.</p>`;
+  h+=`<h4 class="gsec">Fabriquer</h4><p class="itip-gris" style="margin:0 0 6px">🛡️ Défense · ⚔️ Riposte · 👁️ Détection · ✦ Signature — le détail est dans « Comprendre la défense », en haut du bureau. L'objet va en défense s'il reste une case, sinon au coffre.</p>`;
   h+=defObj.map(d=>{ const rec=defRec[d.id]||[]; const ok=rec.every(r=>(compos[r.composant_id]||0)>=r.quantite);
     const recTxt=rec.map(r=>`${nomItem(r.composant_id)} <b class="${(compos[r.composant_id]||0)>=r.quantite?'or':''}">${compos[r.composant_id]||0}/${r.quantite}</b>`).join(" · ");
     return `<div class="gouv-role" style="align-items:flex-start"><span><b>${d.nom}</b>${d.faction?' <span class="itip-gris">✦</span>':''} <span class="itip-gris">🛡️${d.def} ⚔️${d.riposte} 👁️${d.detection} · ${d.peremption_jours} j</span><br><span class="itip-gris" style="font-size:12px">${recTxt}</span></span><button class="mini" data-fab="${d.id}"${ok?"":" disabled"}>Fabriquer</button></div>`;

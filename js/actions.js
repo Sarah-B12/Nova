@@ -46,7 +46,7 @@ async function resoudreCombat(opts){
      1 % de victoire — pas « difficile », nul — et perdait 53 santé, donc
      mourait en DEUX défaites. Avec 15 % de rencontre par déplacement, il
      mourait en explorant. Base relevée à 22 %, plancher à 5 %. */
-  let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf)));
+  let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + (typeof aptCombatBonusProtocole==="function" ? aptCombatBonusProtocole() : 0)));   // + Fléau du Protocole (tr4)
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(10);
@@ -69,21 +69,10 @@ async function resoudreCombat(opts){
     await agirServeur({ jauges:{ sante:-ps, moral:-pm }, motif:"combat_perdu" }); gagnerXp(3);
     journal(`La patrouille a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}.`,"alerte");
   }
+  if(typeof consommerMunitions==="function") await consommerMunitions();   // v0.59 : 1 balle par arme à feu, gagné ou perdu
   apresAction();
 }
-async function acheter(art){
-  const dehors = !enZoneFaction();
-  if(dehors && !aptBoutiquePartout()){ journal("Boutique accessible en zone de faction.","alerte"); return; }
-  const prix = dehors ? aptBoutiqueSurcout(art.prix) : art.prix;
-  if(etat.credits<prix)return;
-  if(placesLibres()<=0){journal("Sac plein.","alerte");return;}
-  // L'objet arrive côté serveur AVANT le débit : pas de crédits perdus sans objet.
-  const r = await agirServeur({ ajouter:{ [art.id]:1 }, motif:"boutique_mobile" });
-  if(!r) return;
-  if(!(r.ajoutes||{})[art.id]){ journal("Sac plein.","alerte"); return; }
-  etat.credits-=prix;
-  journal(`${art.nom} acheté (−${prix} ₡)${dehors?" (boutique mobile)":""}. Rangé dans le sac.`); apresAction();
-}
+/* acheter() supprimée (v0.58) : ancienne boutique mobile, jamais appelée. Voir boutique.js. */
 async function utiliser(art){
   const id = (typeof art==="string") ? art : art.id;
   const eff = (typeof effetConso==="function") ? effetConso(id) : null;

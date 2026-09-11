@@ -95,7 +95,7 @@ const BOUTIQUE = [
   ...GRAINES.map(g => ({ id:g.id, nom:g.nom, prix:g.prix, cat:"graines" })),
   ...BEBES.map(b => ({ id:b.id, nom:b.nom, prix:b.prix, cat:"bebes" })),
   { id:"fab_recharge_d_oxygene", nom:"Recharge d'oxygène", prix:340, cat:"conso" },
-  { id:"fab_kit_de_soin",        nom:"Kit de soin",        prix:200, cat:"conso" },
+  { id:"fab_kit_de_soin",        nom:"Kit de soin",        prix:100, cat:"conso" },   // v0.59 : 200 → 100 (provisoire)
   { id:"fab_biocarburant",       nom:"Biocarburant",       prix:460, cat:"conso" }
 ];
 const CAT_BOUTIQUE = [ { id:"graines", nom:"Graines" }, { id:"bebes", nom:"Bébés animaux" }, { id:"conso", nom:"Consommables" } ];
@@ -237,6 +237,14 @@ function lieuActuel(){ for(const l of LIEUX){ if(dist(etat.pos.x,etat.pos.y,l.x,
 function materiauMaison(){ return "cendrite"; }
 
 // Tirage d'un minerai selon sa rareté ; bonus augmente la chance des rares.
+/* Zones thermiques (v0.59) — aptitudes Ignis (ig1, ig2) et Toundra (to1, to4).
+   Cercles PROVISOIRES de 350 u autour des deux cités : à remplacer par les
+   contours réels des biomes si besoin (seul cet endroit change). */
+const ZONE_CHAUDE = { x:1225, y:325, r:350 };
+const ZONE_FROIDE = { x:1920, y:355, r:350 };
+function _dansZoneTh(z){ return !!(typeof etat!=="undefined" && etat && etat.pos && Math.hypot(etat.pos.x-z.x, etat.pos.y-z.y) <= z.r); }
+function enZoneChaude(){ return _dansZoneTh(ZONE_CHAUDE); }
+function enZoneFroide(){ return _dansZoneTh(ZONE_FROIDE); }
 function tirerMatiere(bonusRare=0){
   const pool = MINERAIS.map(m => ({ id:m.id, p: m.poids + (m.poids<20 ? bonusRare : 0) }));
   const total = pool.reduce((a,b)=>a+b.p,0);

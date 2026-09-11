@@ -47,7 +47,7 @@ function _ligneEnvoye(o){
     : `${o.quantite}× ${(typeof item==="function" && item(o.item_id)) ? item(o.item_id).nom : o.item_id}`;
   const cr = o.type==="objet" && o.montant>0 ? ` <span class="itip-gris">(contre ${o.montant} ₡)</span>` : "";
   return `<div class="poste-ligne">
-    <div><b>${quoi}</b>${cr} — pour <b>${o.aNom}</b>${o.type==="cadeau"?" (cadeau)":""}</div>
+    <div><b>${quoi}</b>${cr} — pour <b>${echapper(o.aNom||"?")}</b>${o.type==="cadeau"?" (cadeau)":""}</div>
     <div class="itip-gris" style="font-size:12px">Retour à l'expéditeur dans <b>${_resteAvant(o.echeance)}</b> si non récupéré.</div>
   </div>`;
 }
@@ -91,16 +91,16 @@ async function majPoste(){
 function _ligneRecu(o){
   const quand = (typeof _dateHeure==="function") ? _dateHeure(o.echeance) : "";
   let desc;
-  if(o.type==="credits") desc = `<b>${o.deNom}</b> t'envoie <b>${o.montant} ₡</b>`;
-  else if(o.type==="cadeau") desc = `🎁 Un <b>cadeau</b> de <b>${o.deNom}</b> (contenu caché)`;
-  else desc = `<b>${o.deNom}</b> t'envoie <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite}` + (o.montant>0?` <span class="itip-gris">contre ${o.montant} ₡</span>`:` <span class="itip-gris">(gratuit)</span>`);
+  if(o.type==="credits") desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${o.montant} ₡</b>`;
+  else if(o.type==="cadeau") desc = `🎁 Un <b>cadeau</b> de <b>${echapper(o.deNom||"?")}</b> (contenu caché)`;
+  else desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite}` + (o.montant>0?` <span class="itip-gris">contre ${o.montant} ₡</span>`:` <span class="itip-gris">(gratuit)</span>`);
   return `<div class="poste-ligne"><span class="poste-txt">${desc}<span class="itip-gris" style="display:block;font-size:11px">à récupérer avant le ${quand}</span></span><span class="comm-btns"><button class="mini" data-recup="${o.id}">${o.type==="objet"&&o.montant>0?`Récupérer (${o.montant} ₡)`:"Récupérer"}</button><button class="mini danger" data-refus="${o.id}">Refuser</button></span></div>`;
 }
 function _ligneRetour(o){
   const quand = (typeof _dateHeure==="function") ? _dateHeure(o.echeance) : "";
   let desc;
-  if(o.type==="credits") desc = `Retour de <b>${o.montant} ₡</b> (non reçus par ${o.aNom})`;
-  else desc = `Retour de <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite} (non reçu par ${o.aNom})`;
+  if(o.type==="credits") desc = `Retour de <b>${o.montant} ₡</b> (non reçus par ${echapper(o.aNom||"?")})`;
+  else desc = `Retour de <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite} (non reçu par ${echapper(o.aNom||"?")})`;
   return `<div class="poste-ligne"><span class="poste-txt">${desc}<span class="itip-gris" style="display:block;font-size:11px">à récupérer avant le ${quand}</span></span><span class="comm-btns"><button class="mini" data-recup="${o.id}">Récupérer</button></span></div>`;
 }
 
@@ -217,16 +217,19 @@ async function posteRecuperer(id){
   }
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
   if(typeof rechargerCredits==="function") await rechargerCredits();
-  if(res.type==="credits") journal(`📮 Récupéré : ${res.montant} ₡.`,"poste","social");
-  else journal(`📮 Récupéré : ${res.quantite}× ${item(res.item)?item(res.item).nom:res.item}`
+  // v0.59 : on garde une trace de QUI (expéditeur, ou destinataire pour un retour).
+  const deQui = (o.statut==="retour") ? ` (retour de ton envoi à ${o.aNom})` : ` de ${o.deNom}`;
+  if(res.type==="credits") journal(`📮 Récupéré${deQui} : ${res.montant} ₡.`,"poste","social");
+  else journal(`📮 Récupéré${deQui} : ${res.quantite}× ${item(res.item)?item(res.item).nom:res.item}`
     + (res.paye?` (payé ${res.paye} ₡)`:"") + (res.partiel?" — le reste attend, sac plein":"") + ".","poste","social");
   apresAction(); majPoste();
 }
 
 async function posteRefuser(id){
+  const o=_posteCache.find(x=>String(x.id)===String(id));
   const { data:res, error } = await sb.rpc("poste_refuser", { p_id: Number(id) });
   if(error || !res || !res.ok){ journal("Refus impossible.","alerte"); }
-  else journal("📮 Envoi refusé — il retourne à l'expéditeur.","poste","social");
+  else journal(`📮 Envoi${o?` de ${o.deNom}`:""} refusé — il retourne à l'expéditeur.`,"poste","social");
   majPoste();
 }
 

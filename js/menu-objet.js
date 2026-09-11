@@ -104,14 +104,24 @@ async function braderObjet(id, qte){
   const v=valeurBrade(id); if(v==null) return;
   const dispo = etat.sac[id]||0; if(dispo<=0) return;
   const n = Math.max(1, Math.min(dispo, parseInt(qte,10)||1));
-  const gain=Math.max(1, Math.round(v/2)) * n;
-  /* Les objets partent côté serveur AVANT que les crédits n'arrivent : pas de
-     gain sans perte. Le retrait est FIFO (inv_retirer) : les lots les plus
-     anciens, donc les plus proches de la péremption, s'en vont en premier. */
-  if(!await agirServeur({ retirer:{ [id]:n }, motif:"brader" })) return;
-  etat.credits += gain;
+  /* ⚠ v0.58 — BRADE SERVEUR. Avant : agir() retirait l'objet, puis le gain
+     partait par crediter(), plafonné à 2 000 ₡ par appel. Au-delà (drones,
+     cockpit blindé, vaisseau maître, ou 30 lingots d'un coup), le serveur
+     REFUSAIT le gain en silence : objet détruit, zéro crédit. La RPC brader()
+     retire et paie dans la même transaction, au prix de la table prix_brade
+     (copie serveur de valeurBrade()/2 — à resynchroniser si PRIX_ITEM change). */
+  const { data:res, error } = await rpcAvecSolde("brader", { p_item:id, p_qte:n });
+  if(error || !res || !res.ok){
+    const e = res && res.err;
+    if(e==="manque")          journal("Tu n'as plus assez de cet objet dans le sac.","alerte");
+    else if(e==="invendable") journal("Cet objet ne se brade pas.","alerte");
+    else if(e==="prison")     journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
+    else                      journal("Brade refusée par le serveur.","alerte");
+    return;
+  }
+  if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
   if(etat.pas) etat.pas.vendu=true;
-  journal(`${item(id).nom}${n>1?` ×${n}`:""} bradé — +${gain} ₡.`,"gain");
+  journal(`${item(id).nom}${n>1?` ×${n}`:""} bradé — +${res.gain} ₡.`,"gain");
   apresAction();
 }
 

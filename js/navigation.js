@@ -11,12 +11,13 @@ function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="c
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
   const ville=villeActuelle(); const chezSoi = ville===etat.faction;
-  const dispo={ terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, boutique:!!ville, voler:!!ville,
+  const dispo={ terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville,
+    boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
     quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler"].find(h=>dispo[h]);
+    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler"].find(h=>dispo[h] && (ville || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
     if(prem) changerHub(prem); else montrerHub("vide");
   } else {
     changerHub(cur);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)
@@ -98,12 +99,17 @@ async function _attribuerFaction(){
   }
   return FACTIONS[alea(0, FACTIONS.length-1)];      // repli : au hasard
 }
+/* ⚠ v0.58 — Le pseudo n'était pas filtré : « <img onerror=…> » passait, puis
+   s'injectait dans le HTML des AUTRES joueurs (amis, annonces, marché, mur,
+   console staff). Même règle côté serveur (contrainte profils_nom_sain). */
+const PSEUDO_RE = /^[\p{L}\p{N}][\p{L}\p{N} ._-]{2,19}$/u;
 async function inscrire(){
   if(!SERVEUR_DISPO){ authErreur("Serveur indisponible."); return; }
   const pseudo=(document.querySelector("#auth-pseudo").value||"").trim();
   const email=(document.querySelector("#auth-email").value||"").trim();
   const mdp=document.querySelector("#auth-mdp").value||"";
   if(!pseudo){ authErreur("Choisis un pseudo."); return; }
+  if(!PSEUDO_RE.test(pseudo)){ authErreur("Pseudo : 3 à 20 caractères — lettres, chiffres, espace, point, tiret ou tiret bas, en commençant par une lettre ou un chiffre."); return; }
   if(!email || !mdp){ authErreur("E-mail et mot de passe requis."); return; }
   if(mdp.length<6){ authErreur("Mot de passe : 6 caractères minimum."); return; }
   const mdp2=(document.querySelector("#auth-mdp2")||{}).value||"";

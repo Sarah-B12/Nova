@@ -99,7 +99,13 @@ async function droneRecolte(p){
   // arrose ce qui pousse (et n'a pas déjà été arrosé aujourd'hui)
   p.cases.forEach(c=>{ if(c && c.croissance<PLANT_MAX && !memeJour(c.arrose)){ c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now(); } });
   // récolte ce qui est mûr
-  for(let i=0;i<p.cases.length;i++){ const c=p.cases[i]; if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0; const res = await agirServeur({ ajouter:{ [c.plante]:nb }, motif:"drone_recolte" }); pr = res ? ((res.ajoutes||{})[c.plante]||0) : 0; if(pr>0) journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; } }
+  for(let i=0;i<p.cases.length;i++){ const c=p.cases[i]; if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0;
+    /* ⚠ v0.59 — sac plein : la case était vidée quand même, la récolte perdue.
+       La plante attend désormais sur pied ; un seul avertissement par case. */
+    if(placesLibres() < nb){ if(!c._attente){ c._attente=true; journal(`Drone de récolte : sac plein, ${plante(c.plante).nom} laissée sur pied (${nb} places nécessaires).`,"alerte"); } continue; }
+    const res = await agirServeur({ ajouter:{ [c.plante]:nb }, motif:"drone_recolte", toutOuRien:true });
+    pr = res ? ((res.ajoutes||{})[c.plante]||0) : 0;
+    if(pr>0){ journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; } } }
 }
 async function droneElevage(p){
   let fed=0;

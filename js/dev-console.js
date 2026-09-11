@@ -403,7 +403,7 @@ async function _devChargerStaff(){
     const { data } = await sb.rpc("admin_liste_staff");
     const rows=data||[];
     if(!rows.length){ z.innerHTML=`<p class="dev-note">Aucun staff pour l'instant.</p>`; return; }
-    z.innerHTML = rows.map(r=>`<div class="dev-champ" style="margin:3px 0"><span style="flex:1"><b>${r.nom}</b> · <span class="dev-dim">${r.role_admin}</span></span><button class="mini" data-demettre="${r.id}">Démettre</button></div>`).join("");
+    z.innerHTML = rows.map(r=>`<div class="dev-champ" style="margin:3px 0"><span style="flex:1"><b>${echapper(r.nom)}</b> · <span class="dev-dim">${r.role_admin}</span></span><button class="mini" data-demettre="${r.id}">Démettre</button></div>`).join("");
     z.querySelectorAll("[data-demettre]").forEach(b=>b.addEventListener("click",async()=>{
       if(!confirm("Démettre ce membre du staff (repasse joueur normal) ?")) return;
       const { data:res, error } = await sb.rpc("admin_definir_role",{ p_profil:b.dataset.demettre, p_role:null });
@@ -419,7 +419,7 @@ async function _devChargerLog(){
     const rows=data||[]; const ids=new Set(); rows.forEach(r=>{ if(r.acteur)ids.add(r.acteur); if(r.cible)ids.add(r.cible); });
     const noms={}; if(ids.size){ const {data:pubs}=await sb.from("profils_publics").select("id,nom").in("id",[...ids]); for(const p of (pubs||[])) noms[p.id]=p.nom; }
     if(!rows.length){ z.innerHTML=`<p class="dev-note">Aucune action enregistrée.</p>`; return; }
-    z.innerHTML = rows.map(r=>`<div class="dev-note" style="margin:3px 0"><b style="color:#ff8a3d">${noms[r.acteur]||"?"}</b> · ${r.action}${r.cible?` → ${noms[r.cible]||"?"}`:""}${r.detail?` <span class="dev-dim">(${r.detail})</span>`:""} <span class="dev-dim">${new Date(r.cree_le).toLocaleString("fr-FR")}</span></div>`).join("");
+    z.innerHTML = rows.map(r=>`<div class="dev-note" style="margin:3px 0"><b style="color:#ff8a3d">${echapper(noms[r.acteur]||"?")}</b> · ${r.action}${r.cible?` → ${echapper(noms[r.cible]||"?")}`:""}${r.detail?` <span class="dev-dim">(${echapper(r.detail)})</span>`:""} <span class="dev-dim">${new Date(r.cree_le).toLocaleString("fr-FR")}</span></div>`).join("");
   }catch(e){ z.innerHTML=`<p class="dev-note">Journal indisponible.</p>`; }
 }
 function monterDev(){
@@ -498,7 +498,7 @@ async function devChercherJoueur(){
   if(!l.length){ z.innerHTML = `<p class="vide">Aucun compte pour « ${q.replace(/</g,"&lt;")} ».</p>`; return; }
   if(l.length === 1){ _devAfficherFiche(l[0]); return; }
   z.innerHTML = `<p class="dev-note">${l.length} résultats :</p>` +
-    l.map((p,i)=>`<button class="mini" data-fiche="${i}" style="margin:2px">${p.nom} <span class="dev-note">(${p.faction||"—"})</span></button>`).join("");
+    l.map((p,i)=>`<button class="mini" data-fiche="${i}" style="margin:2px">${echapper(p.nom)} <span class="dev-note">(${p.faction||"—"})</span></button>`).join("");
   z.querySelectorAll("[data-fiche]").forEach(b=>b.addEventListener("click",()=>_devAfficherFiche(l[+b.dataset.fiche])));
 }
 
@@ -516,7 +516,7 @@ function _devAfficherFiche(p){
 
   z.innerHTML = `
     <div class="dev-bloc">
-      <h4>${p.nom} <span class="dev-note" style="float:right">${p.faction||"—"} · Niv ${p.niveau} · ${p.role_admin||"joueur"}</span></h4>
+      <h4>${echapper(p.nom)} <span class="dev-note" style="float:right">${p.faction||"—"} · Niv ${p.niveau} · ${p.role_admin||"joueur"}</span></h4>
       <table class="dev-fiche">
         <tr><td>Crédits</td><td><b>${p.credits} ₡</b></td><td>Énergie</td><td><b>${p.energie} %</b></td></tr>
         <tr><td>Santé</td><td><b>${p.sante} %</b></td><td>Moral</td><td><b>${p.moral} %</b></td></tr>
@@ -526,7 +526,7 @@ function _devAfficherFiche(p){
         <tr><td>Réputation</td><td><b>${p.reputation}</b></td><td>Gouvernement</td><td><b>${p.role_gouv||"—"}</b></td></tr>
         <tr><td>Permis vaisseau</td><td>${oui(p.permis_vaisseau)}</td><td>Vaisseau</td><td>${p.vaisseau||"—"}</td></tr>
         <tr><td>Compte créé</td><td colspan="3">${dh(p.cree_le)} · dernière activité ${dh(p.derniere_activite)}</td></tr>
-        <tr><td>E-mail</td><td colspan="3" class="dev-note">${p.email||"—"}</td></tr>
+        <tr><td>E-mail</td><td colspan="3" class="dev-note">${echapper(p.email||"—")}</td></tr>
         <tr><td>État</td><td colspan="3">${etatTxt}</td></tr>
       </table>
     </div>

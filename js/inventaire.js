@@ -33,12 +33,17 @@ function _appliquerEtatStocks(e){
 }
 
 // Action atomique. Renvoie la réponse du serveur, ou null si refusée.
+const MOTIFS_ACTION = new Set(["mine","batir","planter","arroser","recolte","elever","nourrir","tonte","chantier","vol"]);
 async function agirServeur(o){
   o = o || {};
   if(typeof sb === "undefined"){ journal("Serveur indisponible.","alerte"); return null; }
   try{
+    /* v0.59 — Endurance (sv4) et zones thermiques s'appliquent aux ACTIONS.
+       Le déplacement a son propre calcul (coutTrajet) : il n'est pas dans la liste. */
+    let cout = o.cout || 0;
+    if(cout > 0 && MOTIFS_ACTION.has(o.motif) && typeof aptEnergieAction === "function") cout = aptEnergieAction(cout);
     const { data, error } = await sb.rpc("agir", {
-      p_cout:    o.cout    || 0,
+      p_cout:    cout,
       p_retirer: o.retirer || {},
       p_ajouter: o.ajouter || {},
       p_motif:   o.motif   || null,
@@ -252,6 +257,8 @@ async function chargerJaugesServeur(){
       if(!data || !data.ok) throw new Error("jauges_lire : réponse inutilisable");
       etat.jauges = etat.jauges || {};
       etat.jauges.o2 = data.o2; etat.jauges.sante = data.sante; etat.jauges.moral = data.moral;
+      // v0.58 : l'énergie venait de `donnees` au chargement (copie client périmée).
+      if(typeof data.energie === "number"){ etat.energie = data.energie; etat.energieMaj = Date.now(); }
       etat._jaugesEchec = false;
       return data;
     }catch(e){

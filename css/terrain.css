@@ -78,3 +78,19 @@
 
   /* Liste de choix (planter / élever) : défilante pour ne pas déborder */
   .choix-liste { display:flex; flex-direction:column; gap:8px; max-height:min(46vh,340px); overflow-y:auto; padding-right:4px; }
+
+
+/* v0.59 — TABLETTE EN PAYSAGE. La fenêtre d'une structure (4 grandes cases
+   carrées + les boutons Arroser/Récolter dessous) dépassait la hauteur de
+   l'écran ; le cadre est plafonné à 94 % de la hauteur SANS défilement, donc
+   les boutons étaient coupés et inaccessibles. Le contenu défile désormais, et
+   en paysage bas les 4 cases tiennent sur une ligne. */
+.cadre-struct { overflow:hidden; }
+#struct-corps { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+@media (orientation:landscape) and (max-height:820px){
+  .modale-carte { padding:8px; }
+  .cadre-carte { max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); }
+  .cadre-struct { max-width:680px; }
+  .struct-grille { grid-template-columns:repeat(4,1fr); gap:8px; }
+  .struct-ic { max-width:80px; }
+}

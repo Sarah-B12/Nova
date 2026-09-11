@@ -124,18 +124,18 @@ function _ligneJoueur(j, o){
   let btns="";
   if(o.recherche){
     if(j.nom===etat.nom) btns=`<span class="itip-gris">c'est toi</span>`;
-    else if(etat.bloques.includes(j.nom)) btns=`<button class="mini" data-debloq="${j.nom}">Débloquer</button>`;
+    else if(etat.bloques.includes(j.nom)) btns=`<button class="mini" data-debloq="${echapper(j.nom)}">Débloquer</button>`;
     else {
       const et=_etatRelation(j.id);
       if(et==="ami") btns=`<span class="itip-gris">déjà ami</span>`;
       else if(et==="envoyee") btns=`<span class="itip-gris">demande envoyée</span>`;
-      else if(et==="recue") btns=`<button class="mini" data-accept="${j.nom}">Accepter</button><button class="mini danger" data-refuse="${j.nom}">Refuser</button>`;
-      else btns=`<button class="mini" data-demande="${j.nom}">Ajouter</button><button class="mini danger" data-bloq="${j.nom}">Bloquer</button>`;
+      else if(et==="recue") btns=`<button class="mini" data-accept="${echapper(j.nom)}">Accepter</button><button class="mini danger" data-refuse="${echapper(j.nom)}">Refuser</button>`;
+      else btns=`<button class="mini" data-demande="${echapper(j.nom)}">Ajouter</button><button class="mini danger" data-bloq="${echapper(j.nom)}">Bloquer</button>`;
     }
   } else if(o.ami){
-    btns=`<button class="mini danger" data-retire="${j.nom}">Retirer</button>`;
+    btns=`<button class="mini danger" data-retire="${echapper(j.nom)}">Retirer</button>`;
   }
-  return `<div class="comm-ligne">${dot}<button class="comm-nom" data-profil="${j.nom}">${j.nom}</button>${infos}<span class="comm-btns">${btns}</span></div>`;
+  return `<div class="comm-ligne">${dot}<button class="comm-nom" data-profil="${echapper(j.nom)}">${echapper(j.nom)}</button>${infos}<span class="comm-btns">${btns}</span></div>`;
 }
 async function brancherAmis(z){
   const bc=z.querySelector("#ami-chercher"), qi=z.querySelector("#ami-q");
@@ -162,14 +162,14 @@ async function _majListesAmis(){
   let h="";
   if(recues.length){
     h+=`<h4 class="comm-titre">Demandes reçues (${recues.length})</h4>`;
-    for(const j of recues) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><button class="comm-nom" data-profil="${j.nom}">${j.nom}</button><span class="comm-btns"><button class="mini" data-accept="${j.nom}">Accepter</button><button class="mini danger" data-refuse="${j.nom}">Refuser</button></span></div>`;
+    for(const j of recues) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><button class="comm-nom" data-profil="${echapper(j.nom)}">${echapper(j.nom)}</button><span class="comm-btns"><button class="mini" data-accept="${echapper(j.nom)}">Accepter</button><button class="mini danger" data-refuse="${echapper(j.nom)}">Refuser</button></span></div>`;
   }
   h+=`<h4 class="comm-titre">Mes amis (${amis.length})</h4>`;
   if(!amis.length) h+=`<p class="vide">Aucun ami confirmé. Cherche un joueur, ouvre son profil, envoie une demande.</p>`;
   for(const j of amis) h+=_ligneJoueur(j, { ami:true });
   if(envoyees.length){
     h+=`<h4 class="comm-titre">Demandes envoyées (${envoyees.length})</h4>`;
-    for(const j of envoyees) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><span class="comm-nom" style="cursor:default">${j.nom}</span><span class="comm-btns"><span class="itip-gris">en attente</span> <button class="mini danger" data-annule="${j.nom}">Annuler</button></span></div>`;
+    for(const j of envoyees) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><span class="comm-nom" style="cursor:default">${echapper(j.nom)}</span><span class="comm-btns"><span class="itip-gris">en attente</span> <button class="mini danger" data-annule="${echapper(j.nom)}">Annuler</button></span></div>`;
   }
   if(etat.bloques.length){
     h+=`<h4 class="comm-titre">Bloqués (${etat.bloques.length})</h4>`;
@@ -565,7 +565,7 @@ function _carteAnnonce(a){
   return `<div class="annonce-carte${a.moi?" moi":""}">
     <div class="annonce-obj">${(a.objet||"(sans objet)").replace(/</g,"&lt;")}</div>
     <div class="annonce-txt">${(a.texte||"").replace(/</g,"&lt;")}</div>
-    <div class="annonce-sign">— <button class="comm-nom" data-profil="${a.auteur}">${a.auteur}</button>${fac?` · ${fac}`:""}${a.moi?` <button class="annonce-suppr" data-suppr="${a.id}">supprimer</button>`:""}${(!a.moi && typeof estAdmin==="function" && estAdmin())?` <button class="annonce-suppr" data-admann="${a.id}" style="color:#ff5257">✕ modérer</button>`:""}</div>
+    <div class="annonce-sign">— <button class="comm-nom" data-profil="${echapper(a.auteur||"")}">${echapper(a.auteur||"?")}</button>${fac?` · ${fac}`:""}${a.moi?` <button class="annonce-suppr" data-suppr="${a.id}">supprimer</button>`:""}${(!a.moi && typeof estAdmin==="function" && estAdmin())?` <button class="annonce-suppr" data-admann="${a.id}" style="color:#ff5257">✕ modérer</button>`:""}</div>
   </div>`;
 }
 function brancherAnnonces(z){

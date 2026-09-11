@@ -67,7 +67,11 @@
   .terrain-loin { margin:0 0 12px; padding:9px 12px; font-size:13px; line-height:1.45;
     color:#ffb060; background:rgba(255,138,61,.08);
     border:1px solid rgba(255,138,61,.45); border-radius:10px 3px 10px 3px; }
-  .statut-haut .jauge.energie { width:200px; margin:0; }
+  .statut-haut .jauge.energie, .statut-haut .jauge.o2h { width:200px; margin:0; }
+  /* Jauge d'O₂ en tête (v0.59) : même gabarit que l'énergie, teinte froide. */
+  .jauge.o2h .jauge-tete { color:#8fd8ff; }
+  .jauge.o2h:not(.critique) .remplissage { background:linear-gradient(90deg,#2a7fb8,#5ad0f0); box-shadow:0 0 14px rgba(90,200,240,.5); }
+  @media (max-width:620px){ .statut-haut .jauge.energie, .statut-haut .jauge.o2h { width:calc(50% - 8px); min-width:130px; } }
   @media (max-width:620px){ header { justify-content:center; } .marque { text-align:center; width:100%; } .statut-haut { justify-content:center; } }
   .layout { display:block; }
   h1 { font-weight:700; letter-spacing:.10em; font-size:clamp(26px,6vw,40px); margin:4px 0; color:var(--orange); text-shadow:0 0 14px rgba(255,138,61,.5); animation:respire 5s ease-in-out infinite; }

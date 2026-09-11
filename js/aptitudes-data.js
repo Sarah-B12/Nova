@@ -27,7 +27,7 @@ const APT_TRONC = [
     { id:"pr4", nom:"Sac renforcé",    effet:"+15 places de sac (50 → 65)." }
   ]},
   { id:"artisan", nom:"Artisan", noeuds:[
-    { id:"ar1", nom:"Récup d'atelier",   effet:"20 % de chance de ne pas consommer 1 ingrédient (le moins cher)." },
+    { id:"ar1", nom:"Récup d'atelier",   effet:"20 % de chance de récupérer 1 unité de l'ingrédient le plus abondant de la recette." },
     { id:"ar2", nom:"Production en série",effet:"10 % de chance de fabriquer 2 objets pour 1." },
     { id:"ar3", nom:"Apprentissage",     effet:"+1 point de formation bonus par objet fabriqué." },
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
@@ -36,11 +36,11 @@ const APT_TRONC = [
     { id:"tr1", nom:"Instinct de combat", effet:"+chance de victoire au combat." },
     { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
-    { id:"tr4", nom:"Fléau du Protocole", effet:"+dégâts et contribution contre le Protocole.", deblocage:true }
+    { id:"tr4", nom:"Fléau du Protocole", effet:"Contre le Protocole : +10 % de victoire et +25 % de butin en patrouille ; force ×1,25 en expédition contre lui.", deblocage:true }
   ]},
   { id:"ombre", nom:"Ombre", noeuds:[
     { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
-    { id:"om2", nom:"Repérage",   effet:"Exploration : −10 % énergie et −10 % O₂ ; gains de caches/ferraille +25 %." },
+    { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'énergie et d'O₂ ; butin de patrouille +25 %." },
     { id:"om3", nom:"Pas léger",  effet:"Coût énergie de déplacement −20 %." },
     { id:"om4", nom:"Intrusion",  effet:"Améliore le piratage des patrouilles du Protocole ; ouvrira la posture vol/hack sur les joueurs (PvP à venir).", deblocage:true }
   ]}
@@ -49,8 +49,8 @@ const APT_TRONC = [
 /* ---------- Branches de faction (une seule visible : la sienne) ---------- */
 const APT_FACTIONS = {
   ignis: { nom:"Ignis — Forge & Feu", noeuds:[
-    { id:"ig1", nom:"Sang de magma", effet:"Coûts énergie/O₂ −15 % en zones chaudes/volcaniques." },
-    { id:"ig2", nom:"Fournaise",     effet:"En zone chaude/volcanique, minage et combat rapportent +25 %." },
+    { id:"ig1", nom:"Sang de magma", effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone chaude (autour de la Forge)." },
+    { id:"ig2", nom:"Fournaise",     effet:"En zone chaude : minage +25 % et butin de patrouille +25 %." },
     { id:"ig3", nom:"Combustion",    effet:"Attaques enflammées : +dégâts / +chance au combat.", deblocage:true },
     { id:"ig4", nom:"Cœur de forge", effet:"Toute arme équipée gagne un bonus permanent ; +10 % butin de combat en attendant.", deblocage:true }
   ]},
@@ -61,10 +61,10 @@ const APT_FACTIONS = {
     { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60).", deblocage:true }
   ]},
   toundra: { nom:"La Toundra — Givre & Endurance", noeuds:[
-    { id:"to1", nom:"Isolation",       effet:"Coûts énergie/O₂ −15 % en zones froides ; +chance de Givrite." },
+    { id:"to1", nom:"Isolation",       effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone froide ; +chance de Givrite au minage." },
     { id:"to2", nom:"Trempe",          effet:"Dégâts subis en défaite −10 %." },
-    { id:"to3", nom:"Réserves d'hiver",effet:"+1 place de maison par niveau (stockage accru)." },
-    { id:"to4", nom:"Veine de cristal",effet:"Faible chance (~5 %) de Cristal de Nyx en minant en zone froide.", deblocage:true }
+    { id:"to3", nom:"Réserves d'hiver",effet:"+2 places de coffre par palier de maison (stockage accru)." },
+    { id:"to4", nom:"Veine de cristal",effet:"5 % de chance d'extraire un Cristal de Nyx à chaque minage en zone froide.", deblocage:true }
   ]},
   rouage: { nom:"Le Rouage — Machines & Récup", noeuds:[
     { id:"ro1", nom:"Réparateur", effet:"Mines +30 % de réserve." },
@@ -74,8 +74,8 @@ const APT_FACTIONS = {
   ]},
   nomades: { nom:"Les Nomades — Route & Négoce", noeuds:[
     { id:"no1", nom:"Boutique mobile",effet:"Achat à la boutique depuis n'importe où (+10 % de surcoût).", deblocage:true },
-    { id:"no2", nom:"Marchand",       effet:"La commission de mise en vente au marché (10 % de la valeur) est réduite de moitié pour toi (5 %)." },
-    { id:"no3", nom:"Négociant",      effet:"+15 % de crédits sur toutes les actions rémunératrices." },
+    { id:"no2", nom:"Marchand",       effet:"Taxe de mise en vente au marché réduite de moitié : 5 % au lieu de 10 % (4 % avec le Fragment du négoce)." },
+    { id:"no3", nom:"Négociant",      effet:"+15 % de crédits sur les butins, les récompenses de quête et la brade." },
     { id:"no4", nom:"Voyageur",       effet:"Coût énergie de déplacement −20 %." }
   ]}
 };

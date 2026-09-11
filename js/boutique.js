@@ -31,10 +31,16 @@ function _boutiqueMsg(txt){
   clearTimeout(_boutiqueMsgTimer);
   _boutiqueMsgTimer = setTimeout(()=>{ if(z) z.style.display = "none"; }, 4000);
 }
+/* Boutique mobile (aptitude no1) : hors d'une ville, achat possible à +10 %.
+   ⚠ L'ancienne boutique (actions.js acheter / rendu.js construireBoutique)
+   visait un #boutique qui n'existait plus : l'aptitude ne faisait rien. */
+function _boutiqueDehors(){ return !(typeof villeActuelle==="function" && villeActuelle()); }
+function _prixBoutique(a){ return (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix; }
 function renderBoutique(){
   const z = document.querySelector("#boutique-vue"); if(!z) return;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
   html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
+  if(_boutiqueDehors()) html += `<p class="vide" style="margin:0 0 10px">🧳 <b>Boutique mobile</b> — hors d'une ville, +10 % sur chaque article.</p>`;
   html += `<div class="marche-tabs">` + CAT_BOUTIQUE.map(c=>`<button class="marche-tab${c.id===boutiqueTab?" actif":""}" data-bcat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
   html += `<div class="marche-liste">`;
   const arts = BOUTIQUE.filter(a=>a.cat===boutiqueTab);
@@ -53,7 +59,7 @@ function renderBoutique(){
     }
     html += `<div class="marche-ligne" data-item="${a.id}"><span class="marche-ic">${iconeItem(a.id)}</span>`
       + `<span class="marche-nom">${a.nom}<span class="qte">${sous}</span></span>`
-      + `<span class="marche-prix">${a.prix} ₡</span>`
+      + `<span class="marche-prix">${_prixBoutique(a)} ₡</span>`
       + `<span class="bq-qte"><button class="mini" data-bq="-1" data-id="${a.id}">−</button>`
       + `<input type="number" class="bq-champ" id="bq-${a.id}" min="1" value="1" inputmode="numeric">`
       + `<button class="mini" data-bq="1" data-id="${a.id}">+</button></span>`
@@ -75,10 +81,13 @@ function renderBoutique(){
    le journal annonce ensuite ce qui est réellement entré. */
 async function acheterBoutique(id){
   const a = BOUTIQUE.find(x=>x.id===id); if(!a) return;
+  const dehors = _boutiqueDehors();
+  if(dehors && !(typeof aptBoutiquePartout==="function" && aptBoutiquePartout())){ journal("La Boutique n'est accessible qu'en ville.","alerte"); _boutiqueMsg("Rejoins une ville pour acheter."); return; }
+  const prix = _prixBoutique(a);
   const champ = document.querySelector(`#bq-${id}`);
   let n = Math.max(1, parseInt(champ ? champ.value : 1, 10) || 1);
 
-  const parCredits = Math.floor((etat.credits||0) / a.prix);
+  const parCredits = Math.floor((etat.credits||0) / prix);
   if(parCredits < 1){ journal("Crédits insuffisants.","alerte"); _boutiqueMsg("Crédits insuffisants."); return; }
   const parPlace = placesLibres();
   if(parPlace < 1){ journal("Sac plein.","alerte"); _boutiqueMsg("Sac plein — fais de la place avant d'acheter."); return; }
@@ -87,11 +96,11 @@ async function acheterBoutique(id){
   if(nn < n) _boutiqueMsg(`Réduit à ${nn} : ${parCredits < n ? "crédits" : "place"} insuffisant${parCredits < n ? "s" : "e"}.`);
 
   // Les objets arrivent côté serveur AVANT le débit : pas de crédits perdus sans objet.
-  const r = await agirServeur({ ajouter:{ [id]:nn }, motif:"boutique" });
+  const r = await agirServeur({ ajouter:{ [id]:nn }, motif: dehors ? "boutique_mobile" : "boutique" });
   if(!r) return;
   const recu = (r.ajoutes||{})[id] || 0;
   if(!recu){ journal("Sac plein.","alerte"); _boutiqueMsg("Sac plein — fais de la place avant d'acheter."); return; }
-  etat.credits -= a.prix * recu;
-  journal(`Boutique : ${a.nom}${recu>1?` ×${recu}`:""} acheté — ${a.prix * recu} ₡.`,"gain");
+  etat.credits -= prix * recu;
+  journal(`Boutique${dehors?" mobile":""} : ${a.nom}${recu>1?` ×${recu}`:""} acheté — ${prix * recu} ₡.`,"gain");
   apresAction(); renderBoutique();
 }

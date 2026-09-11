@@ -153,13 +153,16 @@ function demolir(i){
 async function recolterMine(i){
   if(_refusTerrain()) return;
   const p=etat.terrain.parcelles[i]; const stock=p.stock||0; const rmax=p.max||MINE_MAX;
-  const lot=aptStructureLot(alea(3,6));
+  const lot=aptMineLot(aptStructureLot(alea(3,6)));   // Fournaise (ig2) en zone chaude
   const n=Math.min(lot, stock, placesLibres());
   if(n<=0){ journal(stock<=0?"Mine épuisée — démolis-la puis reconstruis-en une.":"Sac plein.","alerte"); return; }
-  const gains={}; for(let k=0;k<n;k++){ const m=tirerMatiere(aptBonusRare(0)); gains[m]=(gains[m]||0)+1; }
+  const gains={}; for(let k=0;k<n;k++){ const m=aptGivriteForcee() ? "givrite" : tirerMatiere(aptBonusRare(0)); gains[m]=(gains[m]||0)+1; }
+  const cristal = aptVeineCristal();                    // Veine de cristal (to4) : hors réserve de la mine
+  if(cristal) gains.cristal = (gains.cristal||0) + 1;
   const r=await agirServeur({ cout:COUT_TERRAIN.miner, ajouter:gains, motif:"mine" });
   if(!r) return;
-  const pr=Object.values(r.ajoutes||{}).reduce((a,b)=>a+b,0);
+  const pr=Object.entries(r.ajoutes||{}).filter(([k])=>k!=="cristal").reduce((a,[,b])=>a+b,0);
+  if(cristal && (r.ajoutes||{}).cristal) journal("Veine de cristal : +1 Cristal de Nyx !","gain");
   p.stock=Math.max(0,stock-pr);
   gagnerXp(3);
   journal(`Mine : +${pr} minerai(s). Réserve : ${p.stock}/${rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
@@ -199,7 +202,11 @@ async function recolterCase(ci){
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance<PLANT_MAX){ journal("Pas encore mûr.","alerte"); return; }
   const rr=aptBiodomeRecolte(); const nb=aptStructureLot(alea(rr.min,rr.max));
-  const res=await agirServeur({ cout:COUT_TERRAIN.recolter, ajouter:{ [c.plante]:nb }, motif:"recolte" });
+  /* ⚠ v0.59 — sac plein : la récolte partait quand même, la case était vidée et
+     ce qui ne tenait pas était PERDU. On refuse avant, et « tout ou rien »
+     côté serveur (rien n'est débité si ça ne tient pas). */
+  if(placesLibres() < nb){ journal(`Sac trop plein pour récolter : il faut ${nb} places (tu en as ${Math.max(0,placesLibres())}).`,"alerte"); return; }
+  const res=await agirServeur({ cout:COUT_TERRAIN.recolter, ajouter:{ [c.plante]:nb }, motif:"recolte", toutOuRien:true });
   if(!res) return;
   const pr=(res.ajoutes||{})[c.plante]||0;
   const nom=plante(c.plante).nom; p.cases[ci]=null;
@@ -233,7 +240,10 @@ async function tondreCase(ci){
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
   if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   const nb=aptStructureLot(alea(2,3)+aptTonteBonus());
-  const res=await agirServeur({ cout:COUT_TERRAIN.tondre, ajouter:{ [a.produit]:nb }, motif:"tonte" });
+  /* ⚠ v0.59 — sac plein : la tonte comptait pour la journée, l'énergie partait,
+     et rien n'arrivait dans le sac. On refuse avant, sans rien débiter. */
+  if(placesLibres() < nb){ journal(`Sac trop plein pour tondre : il faut ${nb} places (tu en as ${Math.max(0,placesLibres())}).`,"alerte"); return; }
+  const res=await agirServeur({ cout:COUT_TERRAIN.tondre, ajouter:{ [a.produit]:nb }, motif:"tonte", toutOuRien:true });
   if(!res) return;
   const pr=(res.ajoutes||{})[a.produit]||0;
   c.tontes++; c.tonte=Date.now();

@@ -84,7 +84,7 @@ function coutTrajet(x, y){
   return {
     dOpen,
     coutE: dOpen>0 ? aptEnergieDeplacement(Math.max(1, Math.round(dOpen/PAS)))   : 0,
-    coutO: dOpen>0 ? coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))               : 0
+    coutO: dOpen>0 ? aptO2Deplacement(coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))) : 0
   };
 }
 
@@ -98,7 +98,7 @@ function _apercuCout(x, y){
   else if(c.dOpen <= 0) h = `<span class="ap-ok">Trajet gratuit</span>`;
   else {
     const manqueE = (etat.energie|0) < c.coutE;
-    const manqueO = (etat.jauges && (etat.jauges.o2|0) < c.coutO);
+    const manqueO = (etat.jauges && (etat.jauges.o2|0) <= c.coutO);   // même règle que voyager()
     h = `<span class="${manqueE?"ap-ko":"ap-ok"}">−${c.coutE} énergie</span>`
       + `<span class="${manqueO?"ap-ko":"ap-ok"}">−${c.coutO} O₂</span>`
       + (manqueE||manqueO ? `<span class="ap-ko">insuffisant</span>` : "");
@@ -145,11 +145,20 @@ async function voyager(x, y){
   const c = coutTrajet(x, y);
   if(!c) return;                                   // trop court (< 6 u) ou position inconnue
   const dOpen = c.dOpen, coutE = c.coutE, coutO = c.coutO;
+  /* ⚠ v0.58 — l'aperçu annonçait « insuffisant » mais rien n'arrêtait le trajet :
+     agir() amenait l'O₂ à 0 et le joueur MOURAIT en route, d'un seul clic. */
+  if(coutO > 0 && etat.jauges && coutO >= (etat.jauges.o2|0)){
+    journal(`Pas assez d'O₂ pour ce trajet (−${coutO}, il t'en reste ${etat.jauges.o2|0}) : tu suffoquerais en route. Avance par étapes ou recharge ton oxygène.`,"alerte"); return;
+  }
   if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
   // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.
   etat.pos={ x:Math.round(x), y:Math.round(y) };
   // La position part au serveur : elle décide de la présence au combat.
   if(typeof sauvegarder==="function") sauvegarder();
+  /* ⚠ v0.58 — et elle part TOUT DE SUITE. La sauvegarde attend 2,5 s ; or agir()
+     lit la position en base pour l'O₂ (air respirable en ville). Une patrouille
+     juste à la sortie d'une ville voyait encore l'ancienne position : O₂ remis à 100. */
+  if(typeof sauverSurServeur==="function"){ try{ await sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "carte.js#pos"); } }
   if(etat.pas) etat.pas.deplace=true;
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
                     : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)

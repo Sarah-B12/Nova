@@ -66,9 +66,6 @@ function afficher(){
   if(!etat.pos) etat.pos = posDefaut();
   const enFaction = !!enZoneFaction();
 
-  const boutiqueOk = enFaction || aptBoutiquePartout();
-  for (const a of CONSOMMABLES) { const b=document.querySelector(`#achat-${a.id}`); if(!b) continue; const prix=enFaction?a.prix:aptBoutiqueSurcout(a.prix); const ok=boutiqueOk && etat.credits>=prix; b.disabled=!ok; b.querySelector(".cout").classList.toggle("ok",ok); }
-  const noteC = document.querySelector("#comptoir-note"); if(noteC) noteC.textContent = enFaction ? "" : (aptBoutiquePartout() ? "Boutique mobile : +10 % hors zone de faction." : "Accessible seulement en zone de faction.");
 
   // Pause + énergie + ZONE : ce qui est possible dépend d'où tu es.
   document.querySelector("#banniere-pause").hidden = !etat.enPause;
@@ -106,7 +103,8 @@ function majJaugesSeules(){
     je.querySelector(".remplissage").style.width=e+"%"; }
   if(etat.jauges){ majJauge("o2",etat.jauges.o2); majJauge("sante",etat.jauges.sante); majJauge("moral",etat.jauges.moral); }
 }
-function majJauge(cle, v){ const bloc=document.querySelector(`#jauge-${cle}`); const val=Math.round(v); bloc.querySelector(".val").textContent=val; bloc.querySelector(".remplissage").style.width=val+"%"; bloc.classList.toggle("critique", val<=25); }
+function _majJaugeEl(bloc, v){ if(!bloc) return; const val=Math.round(v); bloc.querySelector(".val").textContent=val; bloc.querySelector(".remplissage").style.width=val+"%"; bloc.classList.toggle("critique", val<=25); }
+function majJauge(cle, v){ _majJaugeEl(document.querySelector(`#jauge-${cle}`), v); if(cle==="o2") _majJaugeEl(document.querySelector("#jauge-o2-haut"), v); }   // O₂ aussi en tête (v0.59)
 
 /* ---------- Sac (grille de 50 places) ---------- */
 /* --- Infobulle d'objet au survol : effets, valeur de marché, durée de vie --- */
@@ -238,7 +236,7 @@ async function publierMur(){
   c.value=""; if(typeof _ppChargerMur==="function") _ppChargerMur(s.user.id, "#mur-liste");
 }
 
-function construireBoutique(){ const z=document.querySelector("#boutique"); if(!z) return; for(const art of CONSOMMABLES){ const b=document.createElement("button"); b.className="achat"; b.id=`achat-${art.id}`; b.dataset.item=art.id; b.innerHTML=`<span>${art.nom}</span><span class="cout">${art.prix} ₡</span>`; b.addEventListener("click",()=>acheter(art)); b.addEventListener("mouseenter",()=>{ if(typeof montrerItemTip==="function") montrerItemTip(b, art.id); }); b.addEventListener("mouseleave",()=>{ if(typeof cacherItemTip==="function") cacherItemTip(); }); z.appendChild(b); } }
+/* construireBoutique() supprimée (v0.58) : visait un #boutique disparu. La boutique vit dans boutique.js. */
 /* Détail des bonus de compétence : un « +3 » à côté du nom, dont l'infobulle
    dit d'où il vient. Les sources sont lues à leur origine (EQUIP_EFFETS pour
    chaque pièce équipée) — on ne recopie aucun chiffre, sinon l'affichage
@@ -251,6 +249,7 @@ function _sourcesBonus(comp){
   const eq = (typeof etat!=="undefined" && etat.equipement) ? etat.equipement : {};
   for(const emplacement in eq){
     const id = eq[emplacement]; if(!id) continue;
+    if(typeof armeChargee==="function" && !armeChargee(id)) continue;   // arme à feu vide : aucun bonus
     const e = (typeof EQUIP_EFFETS!=="undefined") ? EQUIP_EFFETS[id] : null;
     const v = e && e[cle]; if(!v) continue;
     const nom = (typeof item==="function" && item(id)) ? item(id).nom : id;

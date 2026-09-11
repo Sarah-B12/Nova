@@ -20,6 +20,14 @@
      images/quetes/<questid>/<n>.png   → ambiance de l'étape n (ex. images/quetes/q1/1.png).
    Monde : 2400 × 1600. Coordonnées approximatives, à ajuster.
    =========================================================== */
+/* ⚠ v0.58 — LA CADENCE DU PÉRIMÈTRE. Q3 (corolles) et Q5 (allumage de la
+   navette) disent reproduire LA MÊME séquence, mais le moteur tirait une suite
+   au hasard à chaque partie : l'« écho long de l'arc » n'existait pas. Et Q5
+   était un défi `memoire` SANS info, question ni réponse — impossible à
+   réussir, donc Q5 bloquée pour tout le monde. Indices des symboles ◤◥◣◢.
+   Ne pas changer sans relire Q3, Q4 et Q5. */
+const CADENCE_PERIMETRE = [0, 2, 1, 3, 2];
+
 const QUETES = [
   {
     id:"q1",
@@ -153,7 +161,7 @@ const QUETES = [
     intro:[
       "Sorn ne lève pas les yeux de son établi quand tu pousses la porte. Il démonte le même connecteur depuis un moment, et le remonte, et le redémonte.",
       "« Le truc, à l'anneau. Ce qu'il t'a sorti. » Il repose son tournevis, très lentement. « Un ordre qui tourne encore. Ça veut dire que quelqu'un l'a signé, et que personne ne l'a jamais annulé. »",
-      "« Je veux savoir qui. » Il te regarde enfin, et pour une fois il n'y a aucune moquerie dedans. « Trois endroits. Tu me rapportes ce que tu trouves, et tu poses pas de questions. Marché ? »"
+      "« Je veux savoir qui. » Il te regarde enfin, et pour une fois il n'y a aucune moquerie dedans. « Trois endroits. Tu me rapportes ce que tu trouves, et tu poses pas de questions. Marché conclu ? »"
     ],
     etapes:[
 
@@ -195,12 +203,12 @@ const QUETES = [
           texte:["Six entrées de journal flottent à l'écran, dispersées par trois siècles de mémoire corrompue. La console refuse d'ouvrir la fiche d'équipe tant que la chronologie n'est pas rétablie."],
           consigne:"Remets les entrées dans l'ordre où elles ont été écrites.",
           elements:[
-            "Relevé de routine. Rien à signaler sur le secteur nord.",
-            "Le relais 12 émet une porteuse qui n'est pas au catalogue. Vareck demande une inspection.",
+            "Relevé de routine 93487627. Rien à signaler sur le secteur nord.",
+            "Relevé de routine 93487628. Le relais 12 émet une porteuse qui n'est pas au catalogue. Vareck demande une inspection.",
             "Inspection faite : ce n'est pas une panne, c'est un ordre. Nous n'avons pas l'habilitation pour le lire.",
-            "Demande de consigne transmise à l'autorité. En attente de réponse.",
+            "Habilitations vérifiées.Demande de consigne transmise à l'autorité. En attente de réponse.",
             "Réponse reçue. Évacuation immédiate. Ne rien emporter, ne rien éteindre.",
-            "Poste fermé. Sept noms au registre, six passages au sas."
+            "Poste fermé jusqu'à nouvel ordre. Sept noms au registre, six passages au sas."
           ],
           reussite:[
             "La console valide et affiche la fiche complète de l'équipe. Ton regard s'arrête à la deuxième ligne.",
@@ -305,8 +313,8 @@ const QUETES = [
         /* ⚠ Cette séquence EST le rythme du périmètre — le cycle d'appel que le
            Protocole rejoue depuis trois siècles. Le joueur la reproduit ici
            sans le savoir, la reconnaît en Q4 et l'exécute de ses mains en Q5
-           (défi `memoire`). Ne pas la traiter comme un Simon Says décoratif. */
-        defi:{ type:"sequence", longueur:5,
+           (défi `sequence`, même CADENCE_PERIMETRE). Ne pas la traiter comme un Simon Says décoratif. */
+        defi:{ type:"sequence", longueur:5, cadence:CADENCE_PERIMETRE,
           texte:["Les corolles s'illuminent l'une après l'autre, puis s'éteignent. Reproduis la séquence."],
           reussite:[
             "Le motif se répète, identique, à la seconde près. Ce n'est pas une plante qui pousse : c'est une plante qui bat la mesure.",
@@ -540,7 +548,7 @@ const QUETES = [
             "Tu remontes les bras chargés. La navette, elle, n'a pas bougé d'un millimètre depuis trois cents ans."
           ] } },
 
-      /* ---- 3. Le réveil — MÉMOIRE (ratable) ---- */
+      /* ---- 3. Le réveil — SÉQUENCE (ratable) ---- */
       { indice:"Retourne au quai et monte à bord. Elle va te demander de répéter sa séquence d'allumage — c'est sa façon de vérifier qu'elle a un équipage.",
         cible:{ x:600, y:480, r:80 }, leurres:[ {x:1350,y:700,r:80}, {x:1850,y:1000,r:80}, {x:950,y:1300,r:80} ],
         image:"images/quetes/q5/3.png",
@@ -551,7 +559,7 @@ const QUETES = [
         /* ⚠ C'est la MÊME cadence que les corolles de Q3 et que l'appel vu à
            l'étape 2 : le joueur exécute de ses mains le geste que le Protocole
            répète dans le vide depuis trois siècles. Écho long de l'arc. */
-        defi:{ type:"memoire",
+        defi:{ type:"sequence", longueur:5, cadence:CADENCE_PERIMETRE,
           texte:["VÉRIFICATION D'ÉQUIPAGE. RÉPÉTEZ LA SÉQUENCE D'ALLUMAGE."],
           reussite:[
             "Tes doigts la connaissent avant toi. C'est la cadence des corolles, celle du quai, celle qu'ils battent en bas depuis trois cents ans — la navette et les fleurs et les hommes suivent tous la même horloge, et tu viens de la reproduire sans y penser.",

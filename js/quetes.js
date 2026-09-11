@@ -84,7 +84,7 @@ function abandonnerQuete(){
 }
 async function avancerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id);
-  a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false;
+  a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[];
   if(a.etape >= q.etapes.length){ await terminerQuete(); }
   else { const e=etapeActive(); journal("Étape suivante"+(e&&e.indice?` : « ${e.indice} »`:"")+".","gain"); sauvegarder(); }
   rafraichirQuetes();
@@ -105,13 +105,14 @@ async function avancerQuete(){
 let _avanceEnChaine = false;
 async function terminerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id); const r=q.recompense||{};
-  if(r.credits) etat.credits += r.credits;
+  const gainQ = r.credits ? ((typeof aptCredits==="function") ? aptCredits(r.credits) : r.credits) : 0;   // Négociant (no3)
+  if(gainQ) etat.credits += gainQ;
   if(r.objets && Object.keys(r.objets).length) await agirServeur({ ajouter:r.objets, motif:"quete_recompense" });
   if(r.pa && typeof gagnerPA==="function") gagnerPA(r.pa);
   if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
   queteEtat().done.push(a.id); queteEtat().active=null;
-  const parts=[]; if(r.credits) parts.push(`+${r.credits} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(r.pa) parts.push(`+${r.pa} PA`);
+  const parts=[]; if(gainQ) parts.push(`+${gainQ} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(r.pa) parts.push(`+${r.pa} PA`);
   if(r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
   if(r.flags && r.flags.permisVaisseau) parts.push("🚀 Permis de vaisseau obtenu !");
   journal(`Quête « ${q.nom} » accomplie ! ${parts.join(", ")}`.trim(),"gain");
@@ -120,7 +121,7 @@ async function terminerQuete(){
 
 /* ---------- Réussite / échec partagés ---------- */
 function reussirDefi(){ const a=queteActive(); if(!a) return; a._resolu=true; a._echecLe=0; a._attenteLe=0; sauvegarder(); rafraichirQuetes(); }
-function echouerDefi(msg){ const a=queteActive(); if(!a) return; a._echecLe=Date.now(); a._memVue=false; journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
+function echouerDefi(msg){ const a=queteActive(); if(!a) return; a._echecLe=Date.now(); a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
 
 /* ---------- Modules de défi : rendu ---------- */
 function _defiHTML(d){
@@ -207,9 +208,10 @@ function _htmlLivraison(d){
 function _wireLivraison(z,d){
   const b=z.querySelector("#q-liv-btn"); if(!b) return;
   b.addEventListener("click", async ()=>{ const objs=d.objets||{};
-    if(!Object.keys(objs).every(id=>(etat.sac[id]||0)>=objs[id])){ journal("Il te manque des objets.","alerte"); return; }
+    if(b.disabled) return; b.disabled=true;     // ⚠ double clic = livraison payée deux fois
+    if(!Object.keys(objs).every(id=>(etat.sac[id]||0)>=objs[id])){ journal("Il te manque des objets.","alerte"); b.disabled=false; return; }
     // Un seul appel : tous les objets vérifiés côté serveur avant qu'un seul ne parte.
-    if(!await agirServeur({ retirer:objs, motif:"quete_livraison" })) return;
+    if(!await agirServeur({ retirer:objs, motif:"quete_livraison" })){ b.disabled=false; return; }
     journal("Livraison effectuée.","gain"); reussirDefi(); });
 }
 
@@ -220,7 +222,7 @@ function _htmlPaiement(d){ const cout=d.cout||0, ok=etat.credits>=cout;
     ${ok?"":`<p class="vide">Crédits insuffisants (${etat.credits}/${cout}).</p>`}</div>`;
 }
 function _wirePaiement(z,d){ const b=z.querySelector("#q-pay-btn"); if(!b) return;
-  b.addEventListener("click",()=>{ const cout=d.cout||0; if(etat.credits<cout){ journal("Crédits insuffisants.","alerte"); return; } etat.credits-=cout; journal(`Payé ${cout} ₡.`,"gain"); reussirDefi(); }); }
+  b.addEventListener("click",()=>{ if(b.disabled) return; b.disabled=true; const cout=d.cout||0; if(etat.credits<cout){ b.disabled=false; journal("Crédits insuffisants.","alerte"); return; } etat.credits-=cout; journal(`Payé ${cout} ₡.`,"gain"); reussirDefi(); }); }
 
 /* choix (embranchement de Cercle) : options avec coût + deltas de réputation de Cercle. Définitif. */
 function _coutQ_ok(cout){ if(!cout) return true;
@@ -234,14 +236,15 @@ function _coutQ_ok(cout){ if(!cout) return true;
 async function _payerCoutQ(cout){ if(!cout) return true;
   const objets = {}; let energie = 0; const jauges = {};
   for(const k in cout){ const q=cout[k];
-    if(k==="credits") etat.credits-=q;
+    if(k==="credits") continue;                        // débités APRÈS le serveur, plus bas
     else if(k==="energie") energie += q;                 // débitée par le serveur
     else if(k==="sante") jauges.sante = (jauges.sante||0) - q;      // appliquée par le serveur
     else objets[k] = (objets[k]||0) + q;                 // objets : retirés côté serveur
   }
   if(energie > 0 || Object.keys(objets).length || Object.keys(jauges).length){
-    return !!await agirServeur({ cout:energie, retirer:objets, jauges, motif:"quete_choix" });
+    if(!await agirServeur({ cout:energie, retirer:objets, jauges, motif:"quete_choix" })) return false;
   }
+  if(cout.credits) etat.credits -= cout.credits;
   return true;
 }
 function _coutTexteQ(cout){ if(!cout) return ""; const p=[];
@@ -282,8 +285,12 @@ function _htmlChoix(d){
 function _wireChoix(z,d){
   z.querySelectorAll("[data-choix]").forEach(b=>b.addEventListener("click", async ()=>{
     const o=(d.options||[])[parseInt(b.dataset.choix,10)]; if(!o) return;
-    if(!_coutQ_ok(o.cout)){ journal("Ressources insuffisantes pour ce choix.","alerte"); return; }
-    if(!await _payerCoutQ(o.cout)) return;
+    // ⚠ Double clic = coût payé et Cercle crédité deux fois : on gèle TOUS les choix.
+    const tous=[...z.querySelectorAll("[data-choix]")]; if(tous.some(x=>x.dataset.pris)) return;
+    tous.forEach(x=>{ x.dataset.pris="1"; x.disabled=true; });
+    const liberer=()=>tous.forEach(x=>{ delete x.dataset.pris; x.disabled=false; });
+    if(!_coutQ_ok(o.cout)){ journal("Ressources insuffisantes pour ce choix.","alerte"); liberer(); return; }
+    if(!await _payerCoutQ(o.cout)){ liberer(); return; }
     await _appliquerCerclesQ(o.cercles);
     // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
     if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
@@ -323,7 +330,9 @@ function _htmlCombat(d){
 function _wireCombat(z,d){
   const b=z.querySelector("#q-cbt-btn"); if(!b) return;
   b.addEventListener("click", async ()=>{
+    if(b.disabled) return; b.disabled=true;     // ⚠ double clic = deux combats, Cercle crédité deux fois
     const st=_combatStats(); const p=d.puissance||30;
+    if(typeof consommerMunitions==="function") await consommerMunitions();   // la force est lue AVANT
     if(st.val < p*0.7){
       const perte=Math.round(8+Math.random()*10);
       await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
@@ -446,20 +455,31 @@ function _htmlCadenas(d){
 }
 function _wireCadenas(z,d){
   const L=d.longueur||4, syms=d.symboles||["●","■","▲","◆","★","⬢"], maxE=d.essais||8;
-  const secret=Array.from({length:L},()=>syms[Math.floor(Math.random()*syms.length)]);
-  let essai=0; const cpt=z.querySelector("#q-cad-cpt"), hist=z.querySelector("#q-cad-hist");
-  const maj=()=>{ cpt.textContent=`Essai ${essai+1}/${maxE}`; }; maj();
+  const a=queteActive(); if(!a) return;
+  /* ⚠ v0.58 — le code secret et le compteur étaient recréés à CHAQUE rendu :
+     changer d'onglet ou recharger donnait un nouveau code et 8 essais neufs
+     (verrou journalier contournable), et un rafraîchissement accidentel
+     effaçait la progression. Tout vit désormais dans la quête active. */
+  if(!Array.isArray(a._cadSecret) || a._cadSecret.length!==L){
+    a._cadSecret = Array.from({length:L},()=>syms[Math.floor(Math.random()*syms.length)]);
+    a._cadEssais = 0; a._cadHist = []; sauvegarder();
+  }
+  const secret=a._cadSecret; if(!Array.isArray(a._cadHist)) a._cadHist=[];
+  const cpt=z.querySelector("#q-cad-cpt"), hist=z.querySelector("#q-cad-hist");
+  const ligneHist=(h)=>{ const l=document.createElement("div"); l.className="q-cad-ligne";
+    l.innerHTML=`<span class="q-cad-code">${h.g.join(" ")}</span><span class="itip-gris">✔ ${h.bien} bien placé(s) · ~ ${h.pres} présent(s)</span>`; hist.prepend(l); };
+  a._cadHist.forEach(ligneHist);
+  const maj=()=>{ cpt.textContent=`Essai ${(a._cadEssais||0)+1}/${maxE}`; }; maj();
   z.querySelector("#q-cad-go").addEventListener("click",()=>{
     const g=[...z.querySelectorAll(".q-cad-slot")].map(s=>s.value);
     if(g.some(v=>!v)){ journal("Choisis un symbole pour chaque case.","alerte"); return; }
     let bien=0; const sc=secret.slice(), gc=g.slice();
     for(let i=0;i<L;i++){ if(gc[i]===sc[i]){ bien++; sc[i]=null; gc[i]=null; } }
     let pres=0; for(let i=0;i<L;i++){ if(gc[i]){ const j=sc.indexOf(gc[i]); if(j>=0){ pres++; sc[j]=null; } } }
-    const ligne=document.createElement("div"); ligne.className="q-cad-ligne";
-    ligne.innerHTML=`<span class="q-cad-code">${g.join(" ")}</span><span class="itip-gris">✔ ${bien} bien placé(s) · ~ ${pres} présent(s)</span>`;
-    hist.prepend(ligne);
+    const h={ g, bien, pres }; a._cadHist.push(h); ligneHist(h);
     if(bien===L){ journal("Code trouvé !","gain"); reussirDefi(); return; }
-    essai++; if(essai>=maxE){ echouerDefi("Trop d'essais — le sas se bloque. Reviens demain."); return; } maj();
+    a._cadEssais=(a._cadEssais||0)+1; sauvegarder();
+    if(a._cadEssais>=maxE){ echouerDefi("Trop d'essais — le sas se bloque. Reviens demain."); return; } maj();
   });
 }
 
@@ -480,7 +500,7 @@ function _wireSequence(z,d){
   function flash(i){ const p=pads[i]; if(!p) return; p.classList.add("actif"); const t=setTimeout(()=>p.classList.remove("actif"),380); _queteTO.push(t); }
   function jouerSeq(){ jouable=false; etat.textContent="Regarde…"; let k=0;
     (function next(){ if(k>=seq.length){ jouable=true; etat.textContent="À toi !"; return; } flash(seq[k]); k++; const t=setTimeout(next,620); _queteTO.push(t); })(); }
-  function tour(){ seq.push(Math.floor(Math.random()*n)); pos=0; const t=setTimeout(jouerSeq,500); _queteTO.push(t); }
+  function tour(){ seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,500); _queteTO.push(t); }
   pads.forEach((p,i)=>p.addEventListener("click",()=>{
     if(!jouable) return; flash(i);
     if(i!==seq[pos]){ jouable=false; echouerDefi("Séquence ratée — la console se verrouille. Reviens demain."); return; }
@@ -575,7 +595,7 @@ function majQueteHub(){
     const dernier=(a.etape>=q.etapes.length-1);
     html+=`<button class="mini" id="quete-continuer" style="margin-top:6px">${dernier?"Terminer la quête":"Continuer →"}</button>`;
     z.innerHTML=html;
-    const bc=z.querySelector("#quete-continuer"); if(bc) bc.addEventListener("click",avancerQuete);
+    const bc=z.querySelector("#quete-continuer"); if(bc) bc.addEventListener("click",()=>{ if(bc.disabled) return; bc.disabled=true; avancerQuete(); });   // ⚠ double clic = étape sautée
     return;
   }
 

@@ -17,9 +17,22 @@ function _apt(id){ return typeof aptPris === "function" && aptPris(id); }
 function capaciteSac(){ return SAC_MAX + (_apt("pr4") ? 15 : 0); }              // Sac renforcé +15
 
 /* ---------- Énergie ---------- */
-function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }                                  // Endurance −15 %
+/* Sang de magma (ig1) / Isolation (to1) : −15 % en zone chaude / froide. */
+function aptZoneThermique(){
+  const chaud = _apt("ig1") && typeof enZoneChaude==="function" && enZoneChaude();
+  const froid = _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide();
+  return (chaud || froid) ? 0.85 : 1;
+}
+/* ⚠ v0.59 — Endurance (sv4) n'était appliquée qu'à l'AFFICHAGE : les actions
+   débitaient COUT_TERRAIN brut. agirServeur() l'applique désormais aux motifs
+   d'action (voir MOTIFS_ACTION, inventaire.js). */
+function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique())); }                                  // Endurance −15 %
 function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om2") ? 0.9 : 1))); }        // Endurance + Repérage
-function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8; if(_apt("no4")) m *= 0.8; return Math.max(1, Math.round(cout * m)); } // Pas léger + Voyageur (multiplicatif)
+function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8; if(_apt("no4")) m *= 0.8;
+  if(_apt("om2")) m *= 0.9; if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique();
+  return Math.max(1, Math.round(cout * m)); }   // Pas léger · Voyageur · Repérage · Endurance · zones (multiplicatif)
+/* O₂ d'un déplacement à découvert : Repérage (om2) −10 %, zones thermiques −15 %. */
+function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique())); }
 function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)
 
 /* ---------- Oxygène ---------- */
@@ -53,7 +66,12 @@ function regenPassif(){
 /* ---------- Crédits ---------- */
 function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1)); }                                        // Négociant +15 %
 function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * (_apt("om2") ? 1.25 : 1)); }        // + Repérage +25 %
-function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25; if(_apt("ig4")) m *= 1.10; return Math.round(g * m); } // Négociant + Pillage + Cœur de forge
+function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25; if(_apt("ig4")) m *= 1.10;
+  if(_apt("tr4")) m *= 1.25;                                                        // Fléau du Protocole (les patrouilles SONT le Protocole)
+  if(_apt("om2")) m *= 1.25;                                                        // Repérage
+  if(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) m *= 1.25;  // Fournaise
+  return Math.round(g * m); }
+function aptCombatBonusProtocole(){ return _apt("tr4") ? 0.10 : 0; }               // Fléau : +10 points de victoire en patrouille
 
 /* ---------- Combat ---------- */
 function aptCombatFcReduc(){ return (_apt("tr1") ? 2 : 0) + (_apt("ig3") ? 2 : 0); }                              // Instinct + Combustion (↑ chance)
@@ -62,6 +80,11 @@ function aptCombatDegats(d){ let m = 1; if(_apt("tr2")) m *= 0.7; if(_apt("to2")
 
 /* ---------- Minerai / rareté ---------- */
 function aptBonusRare(base){ return base + (_apt("pr3") ? 8 : 0); }                                               // Œil du mineur
+
+/* ---------- Minage en zone thermique (v0.59) ---------- */
+function aptMineLot(n){ return (_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? Math.round(n * 1.25) : n; }   // Fournaise +25 %
+function aptGivriteForcee(){ return _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.15; }    // Isolation : +Givrite
+function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.05; }     // Veine de cristal
 
 /* ---------- Soin (consommables) ---------- */
 function aptSoin(soin){ return Math.round(soin * (_apt("cu1") ? 1.3 : 1)); }                                      // Autarcie +30 %

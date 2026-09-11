@@ -112,7 +112,7 @@ async function _validerAvatar(){
   }
 
   etat.avatar = a;
-  if(typeof data.credits==="number"){ etat.credits = data.credits; if(typeof marquerCredits==="function") marquerCredits(data.credits); }
+  if(typeof data.credits==="number" && typeof appliquerSoldeServeur==="function") appliquerSoldeServeur(data.credits);
   journal(data.gratuit ? "Apparence enregistrée." : `Apparence modifiée pour ${data.cout} ₡.`, "gain");
   _avModal().hidden=true; _avBrouillon=null; _avObligatoire=false;
   if(typeof majAvatar==="function") majAvatar();

@@ -93,11 +93,11 @@ async function renderMarche(){
     const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
     const detail = lots.length > 1
       ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ · moy ${p.moy||"?"} ₡`
-      : `${o.quantite} en vente · ${o.vendeurNom} · moy ${p.moy||"?"} ₡`;
+      : `${o.quantite} en vente · ${echapper(o.vendeurNom||"?")} · moy ${p.moy||"?"} ₡`;
     html += `<div class="marche-ligne" data-item="${iid}"><span class="marche-ic">${iconeItem(iid)}</span>`
       + `<span class="marche-nom">${item(iid).nom}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
-      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${o.vendeurNom}">Acheter${o.quantite>1?` ×${o.quantite}`:""}</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
+      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")}">Acheter${o.quantite>1?` ×${o.quantite}`:""}</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
   html += `</div>`;
   z.innerHTML = html;
@@ -114,7 +114,7 @@ async function acheterOffre(offreId){
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
   if(typeof estVaisseau==="function" && estVaisseau(o.item_id) && !etat.permisVaisseau){ journal("Achat de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
   if(placesLibres() < 1){ journal("Sac plein.","alerte"); return; }
-  const { data:res, error } = await sb.rpc("acheter_offre", { offre: Number(offreId) });
+  const { data:res, error } = await rpcAvecSolde("acheter_offre", { offre: Number(offreId) });
   if(error || !res || !res.ok){
     const err=res&&res.err;
     if(err==="fonds") journal("Crédits insuffisants.","alerte");
@@ -126,7 +126,7 @@ async function acheterOffre(offreId){
   }
   // L'objet est livré DANS la transaction serveur : on ne fait qu'appliquer l'état renvoyé.
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
-  etat.credits = res.solde; if(typeof marquerCredits==="function") marquerCredits(res.solde);
+  // Solde déjà appliqué par rpcAvecSolde (écart local en attente conservé).
   journal(`Acheté : ${res.quantite}× ${item(res.item).nom} — ${res.cout} ₡.`,"gain");
   apresAction(); renderMarche();
 }
@@ -154,15 +154,15 @@ async function mettreEnVente(id, prix, qte){
   qte  = Math.max(1, Math.min(dispo, Math.floor(qte||1)));
   prix = Math.max(p.min, Math.min(p.max, Math.round(prix||p.moy)));
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
-  const { data:res, error } = await sb.rpc("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix });
+  const { data:res, error } = await rpcAvecSolde("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix });
   if(error || !res || !res.ok){
-    if(res && res.err==="taxe") journal(`Taxe de ${res.taxe} ₡ (10 %) — crédits insuffisants.`,"alerte");
+    if(res && res.err==="taxe") journal(`Taxe de ${res.taxe} ₡ — crédits insuffisants.`,"alerte");
     else if(res && res.err==="manque") journal(`Tu ne possèdes que ${res.possede}× cet objet.`,"alerte");
     else journal("Mise en vente impossible.","alerte");
     return;
   }
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
-  etat.credits = res.solde; if(typeof marquerCredits==="function") marquerCredits(res.solde); if(etat.pas) etat.pas.vendu=true;
+  if(etat.pas) etat.pas.vendu=true;   // solde déjà appliqué par rpcAvecSolde
   journal(`Mis en vente à ${FACTIONS.find(f=>f.id===faction).nom} : ${qte}× ${item(id).nom} à ${prix} ₡ (taxe ${res.taxe} ₡).`,"gain");
   apresAction(); renderMarche(); ouvrirVente();
 }
@@ -193,7 +193,7 @@ function ouvrirVente(){
   const m = document.querySelector("#marche-vente");
   const vendables = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && PRIX_ITEM[a.id]);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>Mettre en vente — ${FACTIONS.find(f=>f.id===faction).nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
-  html += `<p class="vide" style="margin:0 0 8px"><b>Taxe : 10 % du prix total</b>, prélevée à la mise en vente (non remboursée). L'objet quitte ton sac.</p>`;
+  html += `<p class="vide" style="margin:0 0 8px"><b>Taxe : ${(typeof aptPris==="function" && aptPris("no2")) ? "5 % du prix total (Marchand)" : "10 % du prix total"}</b>, prélevée à la mise en vente (non remboursée). L'objet quitte ton sac.</p>`;
   if(!vendables.length) html += `<p class="vide">Aucun objet vendable dans ton sac.</p>`;
   for(const it of vendables){ const pr=PRIX_ITEM[it.id]; const dispo=etat.sac[it.id];
     html += `<div class="vente-ligne" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span>`
