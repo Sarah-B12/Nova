@@ -44,8 +44,14 @@ function _categoriser(t){
   if(/\bami\b|amis|message|annonce|\bmur\b|demande d'ami|bloqu[ée]|débloqu/.test(s)) return "social";
   return "systeme";
 }
+/* v0.75 — le journal reste en texte : les emojis (🏪 📮 ⚔️…) juraient avec le
+   reste de l'interface. Ce filet attrape aussi ceux qui viennent du SERVEUR
+   (événements hors ligne) sans qu'il faille repasser du SQL. */
+const _RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{1F1E6}-\u{1F1FF}]/gu;
+function sansEmoji(t){ return String(t).replace(_RE_EMOJI, "").replace(/\s{2,}/g, " ").trim(); }
 function journal(t, type="", cat=null){
   if(!etat.journal) etat.journal=[];
+  t = sansEmoji(t);
   /* ⚠ Entrées identiques qui se suivent : on incrémente un compteur au lieu
      d'empiler. Acheter dix graines produisait dix lignes rigoureusement
      semblables, qui noyaient le reste du journal. */

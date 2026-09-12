@@ -106,7 +106,7 @@ let formationApercu = null;     // clé de la formation prévisualisée (avant d
 
 function changerCentre(c){
   centreVue = c;
-  document.querySelectorAll("#hub-centre .lien-carte").forEach(b => b.classList.toggle("actif", b.dataset.centre===c));
+  document.querySelectorAll("#hub-centre .sous-lien").forEach(b => b.classList.toggle("actif", b.dataset.centre===c));
   majCentre();
 }
 function majCentre(){
@@ -119,7 +119,7 @@ function majCentre(){
   // dernier résultat, l'onglet s'affichait puis disparaissait — un clignotement
   // à chaque changement d'onglet du Centre. On applique donc d'abord ce qu'on
   // sait déjà, et la requête ne fait plus que confirmer ou corriger.
-  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>{
+  document.querySelectorAll("#hub-centre .sous-lien").forEach(b=>{
     const c = b.dataset.centre;
     let cache = masque[c];
     if(c === "bureau" && !cache) cache = (etat._aRoleGouv === false);   // undefined = on ne sait pas encore
@@ -134,7 +134,7 @@ function majCentre(){
   }
   if(!masque.annonce && typeof majPastillesCentre==="function") majPastillesCentre();
   if(masque[centreVue]) centreVue = "gouvernement";
-  document.querySelectorAll("#hub-centre .lien-carte").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
+  document.querySelectorAll("#hub-centre .sous-lien").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
   if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }

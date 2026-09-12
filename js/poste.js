@@ -7,8 +7,8 @@
 (function(){ if(document.querySelector("#poste-style")) return;
   const st=document.createElement("style"); st.id="poste-style";
   st.textContent=`
-    .poste-onglets{ display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
-    .poste-onglets .lien-carte{ flex:0 0 auto; min-width:130px; }
+    /* v0.76 : mêmes onglets que Terrain et Le Centre (.sous-menu/.sous-lien,
+       définis dans css/terrain.css) — plus de style propre à la Poste. */
     .poste-ligne{ display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid var(--line); border-radius:8px; padding:9px 11px; margin:6px 0; }
     .poste-txt{ flex:1; }
     .poste-envoi{ display:flex; flex-direction:column; gap:9px; max-width:460px; }
@@ -76,7 +76,7 @@ async function majPoste(){
   const envoyes= _posteCache.filter(o=>o.statut==="attente" && o.de_id===_posteMonId);
   let h = _posteBanniere();
   h += `<p class="itip-gris" style="margin:0 0 10px">Le destinataire a <b>3 jours</b> pour récupérer ou refuser. Sinon, l'envoi <b>retourne à l'expéditeur</b> (3 jours de plus pour le récupérer). Passé ce délai, tout est <b>supprimé</b>. La taxe n'est jamais remboursée.</p>`;
-  h += `<div class="poste-onglets"><button class="lien-carte${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte (${recus.length+retours.length})</button><button class="lien-carte${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button></div>`;
+  h += `<div class="sous-menu"><button class="sous-lien${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte${(recus.length+retours.length)?` (${recus.length+retours.length})`:""}</button><button class="sous-lien${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button></div>`;
   if(posteVue==="envoyer"){ h += _vueEnvoyer(); }
   else {
     if(!recus.length && !retours.length) h += `<p class="vide">Ta boîte est vide.</p>`;

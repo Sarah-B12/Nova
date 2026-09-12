@@ -382,26 +382,58 @@ function _wireAttente(z,d){
 }
 
 /* piratage (ratable : barre + zone verte, manches qui rétrécissent) */
+/* ⚠ v0.74 — PIRATAGE REJOUABLE ET LISIBLE. Trois défauts se cumulaient :
+   · le curseur balayait la piste en 1 400 ms (71 %/s) ; à la 3ᵉ manche la zone
+     ne faisait plus que 18 %, soit une fenêtre de 252 ms. Or entre le moment
+     où l'œil voit le curseur dans le vert et celui où le clic est traité, il
+     s'écoule 150 à 250 ms : le curseur avait déjà parcouru 10 à 18 %. Il
+     fallait donc ANTICIPER, ce que rien n'indiquait — d'où l'impression
+     d'avoir cliqué au bon endroit et d'échouer quand même ;
+   · la moindre erreur bloquait l'étape pour la JOURNÉE entière ;
+   · aucun retour ne distinguait « raté de peu » de « complètement à côté ».
+   Correctifs : vitesse 2 200 ms, une erreur tolérée, et l'écart est annoncé. */
+const PIR_VIES = 2;   // nombre de tentatives avant le verrou journalier
 function _htmlPiratage(d){
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Clique STOP quand le curseur est dans la zone verte — ${d.manches||3} manches, un seul essai.</p>
+    <p class="quete-indice">Clique STOP quand le curseur est dans la zone verte — ${d.manches||3} manches d'affilée. Il te faut un peu d'avance : le curseur continue pendant que tu cliques.</p>
     <div class="q-pir-piste"><div class="q-pir-zone" id="q-pir-zone"></div><div class="q-pir-curseur" id="q-pir-curseur"></div></div>
-    <div class="quete-rep"><span id="q-pir-manche" class="itip-gris"></span><button class="mini" id="q-pir-stop">STOP</button></div></div>`;
+    <div class="quete-rep"><span id="q-pir-manche" class="itip-gris"></span><button class="mini" id="q-pir-stop">STOP</button></div>
+    <p class="vide" id="q-pir-msg" style="margin:6px 0 0"></p></div>`;
 }
 function _wirePiratage(z,d){
-  const manches=d.manches||3, vitesse=d.vitesse||1400;
-  const zone=z.querySelector("#q-pir-zone"), cur=z.querySelector("#q-pir-curseur"), lbl=z.querySelector("#q-pir-manche");
-  let round=0, pos=0, dir=1, gp=0, gw=0;
-  function setup(){ gw=Math.max(9, 34-round*8); gp=Math.random()*(100-gw); zone.style.left=gp+"%"; zone.style.width=gw+"%"; lbl.textContent=`Manche ${round+1}/${manches}`; }
+  const manches=d.manches||3, vitesse=d.vitesse||2200;
+  const zone=z.querySelector("#q-pir-zone"), cur=z.querySelector("#q-pir-curseur"),
+        lbl=z.querySelector("#q-pir-manche"), msg=z.querySelector("#q-pir-msg");
+  let round=0, pos=0, dir=1, gp=0, gw=0, vies=PIR_VIES;
+  function setup(){
+    gw=Math.max(12, 34-round*7); gp=Math.random()*(100-gw);
+    zone.style.left=gp+"%"; zone.style.width=gw+"%";
+    lbl.textContent=`Manche ${round+1}/${manches}${vies<PIR_VIES?" · dernière chance":""}`;
+  }
   setup();
   const stepPx=100/(vitesse/20);
   if(_queteTimer) clearInterval(_queteTimer);
   _queteTimer=setInterval(()=>{ pos+=dir*stepPx; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} cur.style.left=pos+"%"; },20);
   z.querySelector("#q-pir-stop").addEventListener("click",()=>{
-    if(pos>=gp && pos<=gp+gw){ round++;
-      if(round>=manches){ clearInterval(_queteTimer); _queteTimer=null; journal("Sécurité contournée !","gain"); reussirDefi(); }
-      else setup();
-    } else { clearInterval(_queteTimer); _queteTimer=null; echouerDefi("Raté — l'alarme se déclenche. Reviens tenter demain."); }
+    if(!_queteTimer) return;                       // épreuve déjà terminée
+    if(pos>=gp && pos<=gp+gw){
+      round++;
+      if(round>=manches){ clearInterval(_queteTimer); _queteTimer=null; journal("Sécurité contournée !","gain"); reussirDefi(); return; }
+      msg.textContent="Verrou ouvert. Suivant.";
+      setup(); return;
+    }
+    // Manqué : on dit de combien, et dans quel sens.
+    const ecart = (pos < gp) ? (gp - pos) : (pos - gp - gw);
+    const sens  = (pos < gp) ? "trop tôt" : "trop tard";
+    vies--;
+    if(vies > 0){
+      round = 0;                                   // on reprend la séquence du début
+      msg.textContent = `Manqué de ${Math.round(ecart)} % — ${sens}. Il te reste une tentative : reprends depuis la première manche.`;
+      journal(`Piratage manqué de peu (${sens}) — une tentative restante.`,"alerte");
+      setup(); return;
+    }
+    clearInterval(_queteTimer); _queteTimer=null;
+    echouerDefi(`Raté de ${Math.round(ecart)} % (${sens}) — l'alarme se déclenche. Reviens tenter demain.`);
   });
 }
 

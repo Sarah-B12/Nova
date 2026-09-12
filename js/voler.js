@@ -511,22 +511,31 @@ async function syncPrison(){
     else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
 }
+/* ⚠ v0.76 — ON NE VOYAIT AUCUN PRISONNIER. La vue lisait villeActuelle() : hors
+   d'une ville, fid valait null et la liste était vide ; et il n'y avait aucun
+   moyen de consulter la prison d'une AUTRE faction. Un sélecteur permet
+   désormais de choisir la faction (par défaut : la ville où l'on est, sinon la
+   sienne). La lecture passe par la RPC prison_liste, car la table `prison`
+   n'est pas lisible directement pour les autres factions. */
+let _prisonFac = null;
 async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   _hackStyle();
-  const fid=(typeof villeActuelle==="function")?villeActuelle():null;
+  const ici=(typeof villeActuelle==="function")?villeActuelle():null;
+  const fid = _prisonFac || ici || etat.faction;
   el.innerHTML=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3><p class="vide">Chargement…</p>`;
   let prisonniers=[];
-  try{ const { data } = await sb.from("prison").select("*").eq("faction",fid).gt("jusqua",new Date().toISOString());
-    const rows=data||[]; const ids=rows.map(r=>r.profil_id);
-    const noms={}; if(ids.length){ const { data:pubs } = await sb.from("profils_publics").select("id,nom").in("id",ids); for(const p of (pubs||[])) noms[p.id]=p.nom; }
-    prisonniers=rows.map(r=>({ id:r.profil_id, nom:noms[r.profil_id]||"(?)", reste:new Date(r.jusqua)-Date.now() }));
+  try{ const { data } = await sb.rpc("prison_liste", { p_faction: fid });
+    prisonniers = (data||[]).map(r=>({ id:r.profil_id, nom:r.nom||"(?)", reste:new Date(r.jusqua)-Date.now() }));
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#3"); }
   const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
-  const estRegent = roles.includes("regent") && fid===etat.faction;
+  const estRegent = roles.includes("regent") && fid===etat.faction;   // Régent de SA propre faction, où qu'il soit
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;
+  const opts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).map(f=>`<option value="${f.id}"${f.id===fid?" selected":""}>${f.nom}</option>`).join("");
   let html=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3>
-    <p class="vide">Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier.</p>`;
+    <div class="actions" style="margin:0 0 8px"><label class="itip-gris">Voir la prison de&nbsp;
+      <select id="prison-fac" class="gouv-textarea" style="padding:4px 8px;width:auto">${opts}</select></label></div>
+    <p class="vide">Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier — depuis n'importe où.</p>`;
   if(!prisonniers.length) html+=`<p class="vide">Personne en prison ici.</p>`;
   else{
     html+=`<div class="prison-liste">`;
@@ -541,6 +550,7 @@ async function majPrison(el){
   }
   if(enPrison()) html+=`<div style="margin-top:10px"><button class="mini" id="prison-evasion">Tenter une évasion (−10% énergie)</button> <span class="itip-gris">Chance selon Agilité + Intelligence. Échec → tu restes.</span></div>`;
   el.innerHTML=html;
+  const pf=el.querySelector("#prison-fac"); if(pf) pf.addEventListener("change",()=>{ _prisonFac=pf.value; majPrison(el); });
   const pe=el.querySelector("#prison-evasion"); if(pe) pe.addEventListener("click", tenterEvasion);
   el.querySelectorAll("[data-gracier]").forEach(b=>b.addEventListener("click", async()=>{
     const { data:res, error } = await sb.rpc("gracier",{ p_profil:b.dataset.gracier });

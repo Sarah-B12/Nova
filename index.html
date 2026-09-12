@@ -83,6 +83,7 @@
   <div class="cadre-carte cadre-struct">
     <div class="barre-carte">
       <div class="titre-carte" id="struct-titre">Structure</div>
+      <span id="struct-sac" class="sac-jauge-slot"></span>
       <button class="mini" id="struct-fermer">Fermer ✕</button>
     </div>
     <div id="struct-corps"></div>
@@ -148,7 +149,6 @@
             </div>
             <div class="fiche-stats">
               <div class="vitaux">
-                <div class="jauge" id="jauge-o2"><div class="jauge-tete"><span>Oxygène</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
                 <div class="jauge" id="jauge-sante"><div class="jauge-tete"><span>Santé</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
                 <div class="jauge" id="jauge-moral"><div class="jauge-tete"><span>Moral</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
               </div>
@@ -225,18 +225,17 @@
         </div>
 
         <div class="hub-vue" id="hub-centre" hidden>
-          <div class="corps-carte">
-            <div class="menu-carte">
-              <button class="lien-carte actif" data-centre="formations">Formations</button>
-              <button class="lien-carte" data-centre="gouvernement">Gouvernement</button>
-              <button class="lien-carte" data-centre="annonce">Transmission</button>
-              <button class="lien-carte" data-centre="votes">Élections</button>
-              <button class="lien-carte" data-centre="bureau">Bureau</button>
-              <button class="lien-carte" data-centre="guerres">Expéditions</button>
-              <button class="lien-carte" data-centre="prison">Prison</button>
-            </div>
-            <div class="vue-carte" id="centre-corps"></div>
+          <!-- v0.76 : mêmes onglets que Terrain (horizontaux, soulignés, capitales bleues). -->
+          <div class="sous-menu" id="centre-nav">
+            <button class="sous-lien actif" data-centre="formations">Formations</button>
+            <button class="sous-lien" data-centre="gouvernement">Gouvernement</button>
+            <button class="sous-lien" data-centre="annonce">Transmission</button>
+            <button class="sous-lien" data-centre="votes">Élections</button>
+            <button class="sous-lien" data-centre="bureau">Bureau</button>
+            <button class="sous-lien" data-centre="guerres">Expéditions</button>
+            <button class="sous-lien" data-centre="prison">Prison</button>
           </div>
+          <div id="centre-corps"></div>
         </div>
         <div class="hub-vue" id="hub-poste" hidden><h3>La Poste</h3><div id="poste-vue"></div></div>
         <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><div id="marche-vue"></div></div>
@@ -270,13 +269,13 @@
 
       <!-- COMM -->
       <section class="panneau membrane" data-panneau="comm">
-        <h2>Communication</h2>
+        <h2>Relais</h2>
         <div class="sous-menu" id="comm-nav">
-          <button class="comm-lien actif" data-comm="amis">Amis</button>
-          <button class="comm-lien" data-comm="messages">Messages</button>
-          <button class="comm-lien" data-comm="annonces">Annonces</button>
-          <button class="comm-lien" data-comm="population">Population</button>
-          <button class="comm-lien" data-comm="carnet">Carnet</button>
+          <button class="sous-lien actif comm-lien" data-comm="amis">Amis</button>
+          <button class="sous-lien comm-lien" data-comm="messages">Messages</button>
+          <button class="sous-lien comm-lien" data-comm="annonces">Annonces</button>
+          <button class="sous-lien comm-lien" data-comm="population">Population</button>
+          <button class="sous-lien comm-lien" data-comm="carnet">Carnet</button>
         </div>
         <div id="comm-vue"></div>
       </section>

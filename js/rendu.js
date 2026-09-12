@@ -104,7 +104,7 @@ function majJaugesSeules(){
   if(etat.jauges){ majJauge("o2",etat.jauges.o2); majJauge("sante",etat.jauges.sante); majJauge("moral",etat.jauges.moral); }
 }
 function _majJaugeEl(bloc, v){ if(!bloc) return; const val=Math.round(v); bloc.querySelector(".val").textContent=val; bloc.querySelector(".remplissage").style.width=val+"%"; bloc.classList.toggle("critique", val<=25); }
-function majJauge(cle, v){ _majJaugeEl(document.querySelector(`#jauge-${cle}`), v); if(cle==="o2") _majJaugeEl(document.querySelector("#jauge-o2-haut"), v); }   // O₂ aussi en tête (v0.59)
+function majJauge(cle, v){ _majJaugeEl(document.querySelector(`#jauge-${cle}`), v); if(cle==="o2") _majJaugeEl(document.querySelector("#jauge-o2-haut"), v); }   // #jauge-o2 retiré de la fiche en v0.75 : _majJaugeEl ignore un élément absent   // O₂ aussi en tête (v0.59)
 
 /* ---------- Sac (grille de 50 places) ---------- */
 /* --- Infobulle d'objet au survol : effets, valeur de marché, durée de vie --- */

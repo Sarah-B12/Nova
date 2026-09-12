@@ -98,3 +98,22 @@
   .struct-grille { grid-template-columns:repeat(4,1fr); gap:8px; }
   .struct-ic { max-width:80px; }
 }
+
+/* v0.75 — place restante du sac, dans la barre des fenêtres de structure. */
+.sac-jauge-slot { margin-left:auto; margin-right:10px; }
+.sac-jauge { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine);
+  border:1px solid var(--line); border-radius:4px; padding:2px 8px; white-space:nowrap; }
+.sac-jauge.bas   { color:#ffb37a; border-color:rgba(255,179,122,.5); }
+.sac-jauge.plein { color:#ff6b6b; border-color:rgba(255,107,107,.6); font-weight:700; }
+
+/* v0.76 — Le Centre et La Poste réutilisent .sous-menu/.sous-lien. Deux
+   ajustements pour eux : les pastilles de notification « (1) » doivent tenir
+   sans casser l'alignement, et l'onglet masqué (Bureau, hors gouvernement)
+   ne doit pas laisser de trou. */
+.sous-lien .sous-badge { font-size:10px; color:var(--orange-hi); margin-left:4px; vertical-align:super; }
+.sous-lien[style*="display: none"] { display:none !important; }
+#centre-nav, #hub-poste .sous-menu { margin-bottom:14px; }
+@media (max-width:600px){
+  .sous-menu { gap:0 2px; }
+  .sous-lien { padding:5px 7px; font-size:11px; letter-spacing:.04em; }
+}

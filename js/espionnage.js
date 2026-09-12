@@ -147,7 +147,7 @@ async function hackerProtocoleDepuisCarte(){
   if(res.reussi && typeof gagnerXp==="function") gagnerXp(8);
   if(res.reussi){
     const L=hpLecture(res.info, res.valeur);
-    journal(`${L.icone} ${L.titre}${L.chiffre?` (${L.chiffre})`:""} — ${L.phrase} À transmettre au Stratège.`,"gain");
+    journal(`${L.titre}${L.chiffre?` (${L.chiffre})`:""} — ${L.phrase} À transmettre au Stratège.`,"gain");
   }
   else{ journal("Hack du Protocole raté ! Une patrouille rôde…","alerte"); if(Math.random()<0.7 && typeof ouvrirPatrouille==="function") ouvrirPatrouille(); }
 }

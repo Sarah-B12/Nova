@@ -594,7 +594,7 @@ async function _expResoudre(){
   const on=noms[res.objectif]||"Assaut";
   if(res.raison==="aucun_participant"){ journal("Personne n'a participé : l'expédition échoue.","alerte"); }
   else if(res.objectif==="protocole"){
-    if(res.succes){ journal(`Assaut du Protocole RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`🧩 Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
+    if(res.succes){ journal(`Assaut du Protocole RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
     else journal(`Assaut du Protocole ÉCHOUÉ (${res.p_att} vs ${res.p_def}). Le Protocole a résisté.`,"alerte");
   }
   else if(res.succes){

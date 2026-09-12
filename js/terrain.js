@@ -265,12 +265,22 @@ async function tondreCase(ci){
 // --- Modale d'une structure (mine / bio-dôme / enclos) ---
 function ouvrirStruct(i){ structSel=i; structCaseSel=null; const m=document.querySelector("#modale-struct"); if(m) m.classList.add("ouverte"); majStruct(); }
 function fermerStruct(){ const m=document.querySelector("#modale-struct"); if(m) m.classList.remove("ouverte"); structSel=null; structCaseSel=null; afficher(); }
+/* v0.75 — « 12/50 » dans les fenêtres de la mine et de l'atelier : on voyait
+   trop tard que le sac était plein. */
+function texteSac(){
+  const cap   = (typeof capaciteSac==="function") ? capaciteSac() : 50;
+  const libre = (typeof placesLibres==="function") ? Math.max(0, placesLibres()) : cap;
+  const uti   = cap - libre;
+  return `<span class="sac-jauge${libre<=0?" plein":(libre<=5?" bas":"")}">Sac : ${uti}/${cap}${libre>0?` · ${libre} place${libre>1?"s":""} libre${libre>1?"s":""}`:" · PLEIN"}</span>`;
+}
 function majStruct(){
   const m=document.querySelector("#modale-struct"); if(!m) return;
   const p = structSel!=null ? etat.terrain.parcelles[structSel] : null;
   if(!p){ m.classList.remove("ouverte"); return; }
   const foT = (p.type==="atelier" && etat.formation) ? " — "+FORMATIONS[etat.formation.cle].nom : (p.type==="mine"?` — ${p.stock||0}/${p.max||MINE_MAX}`:"");
   document.querySelector("#struct-titre").textContent = STRUCTURES[p.type].nom + foT;
+  // v0.75 : la place restante du sac, visible dès l'ouverture (mine, atelier, tout).
+  const js=document.querySelector("#struct-sac"); if(js) js.innerHTML = texteSac();
   const corps=document.querySelector("#struct-corps"); corps.innerHTML="";
   if(p.type==="atelier"){ renderAtelier(corps); return; }
   if(p.type==="hangar"){ renderHangar(corps); return; }

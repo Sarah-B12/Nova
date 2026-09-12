@@ -52,7 +52,7 @@ async function reprendreSession(){
 function alerteSessionPerdue(){
   if(_sessionAlertee || _deconnexionVolontaire) return; _sessionAlertee = true;
   const msg = "Ta session a expiré : recharge la page pour te reconnecter. Rien n'a été débité.";
-  if(typeof journal==="function") journal("⚠ "+msg,"alerte");
+  if(typeof journal==="function") journal(msg,"alerte");
   try{ alert(msg); }catch(e){}
 }
 if(SERVEUR_DISPO){
@@ -285,7 +285,7 @@ async function _sauverMaintenantInterne(){
     console.warn("[serveur] sauvegarde refusée : version plus récente en base (rev serveur", res.rev, "> locale", _rev, ")");
     if(!_conflitSignale){
       _conflitSignale = true;
-      if(typeof journal==="function") journal("⚠ Ta partie est ouverte ailleurs (autre navigateur ou appareil) et a avancé de son côté. Recharge la page pour récupérer la version à jour — cet onglet n'enregistre plus, pour ne rien effacer.","alerte");
+      if(typeof journal==="function") journal("Ta partie est ouverte ailleurs (autre navigateur ou appareil) et a avancé de son côté. Recharge la page pour récupérer la version à jour — cet onglet n'enregistre plus, pour ne rien effacer.","alerte");
       try{ alert("Nova Epic est ouvert sur un autre appareil ou navigateur, avec une partie plus avancée.\n\nRecharge cette page pour reprendre la bonne version. Tant que tu ne l'as pas fait, cet onglet n'enregistre plus (c'est ce qui évite d'effacer ta progression)."); }catch(e){}
     }
     return;

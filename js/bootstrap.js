@@ -28,7 +28,7 @@ const _bOrbF=document.querySelector("#orbite-fermer");
 if(_bOrbF) _bOrbF.addEventListener("click", fermerOrbite);
 document.querySelector("#carte-fermer").addEventListener("click", fermerCarte);
 document.querySelectorAll(".hub-lien").forEach(b => b.addEventListener("click", ()=>changerHub(b.dataset.hub)));
-document.querySelectorAll("#hub-centre .lien-carte").forEach(b => b.addEventListener("click", ()=>changerCentre(b.dataset.centre)));
+document.querySelectorAll("#hub-centre .sous-lien").forEach(b => b.addEventListener("click", ()=>changerCentre(b.dataset.centre)));
 document.querySelectorAll(".sous-lien").forEach(b => b.addEventListener("click", ()=>{
   document.querySelectorAll(".sous-lien").forEach(x=>x.classList.toggle("actif", x===b));
   document.querySelector("#sous-maison").hidden = b.dataset.sous!=="maison";
