@@ -87,6 +87,20 @@ async function chargerDepuisServeur(){
    client recharge au lieu d'écraser. */
 let _rev = 0;
 let _conflitSignale = false;
+/* ⚠ v0.70 — FAUX CONFLIT AU RECHARGEMENT. En quittant la page (Ctrl+R inclus),
+   le filet envoie une dernière sauvegarde : le serveur passe en révision N+1.
+   Mais la page rechargée avait déjà lu la révision N — elle arrivait donc
+   « en retard » et déclenchait l'alerte, sans qu'aucun autre appareil ne soit
+   en cause. On identifie donc chaque NAVIGATEUR par un jeton durable, gardé en
+   localStorage : si le dernier à avoir écrit est ce même navigateur, ce n'est
+   pas un conflit — on adopte simplement la révision et on continue. */
+const _SID = (function(){
+  try{
+    let v = localStorage.getItem("nova_sid");
+    if(!v){ v = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("nova_sid", v); }
+    return v;
+  }catch(e){ return "sid-" + Math.random().toString(36).slice(2); }
+})();
 let _creditsServeur = null;
 function initCredits(v){ _creditsServeur = (typeof v==="number") ? v : null; }
 function marquerCredits(v){ if(typeof v==="number") _creditsServeur = v; }
@@ -196,7 +210,29 @@ async function _premiereFaction(fid){
   if(error) console.warn("[serveur] attribution faction ÉCHEC:", error.message);
 }
 
-async function sauverSurServeur(){
+/* ⚠ v0.70 — FAUX CONFLIT « partie ouverte ailleurs ». Depuis la v0.65, une
+   dizaine d'endroits déclenchent une sauvegarde (chaque action de terrain, le
+   déplacement, visibilitychange, la minuterie de 2,5 s…). RIEN ne les
+   empêchait de partir EN MÊME TEMPS : deux sauvegardes lisaient la même
+   révision 5, la première écrivait 6, et la seconde se voyait refusée — le
+   joueur recevait l'alerte alors qu'il était seul, un seul onglet ouvert.
+   C'est très visible sur la carte : voyager() sauvegarde ET appelle
+   sauvegarder(), qui en planifie une deuxième.
+   Les sauvegardes passent donc par une FILE : une à la fois, chacune lisant la
+   révision laissée par la précédente. Une seule est mise en attente (l'état est
+   global : la dernière contient déjà tout). */
+let _sauveFile = Promise.resolve();
+let _sauveEnAttente = null;
+function sauverSurServeur(){
+  if(!SERVEUR_DISPO || !etat || !etat.inscrit) return Promise.resolve();
+  if(_sauveEnAttente) return _sauveEnAttente;       // déjà une en attente : elle emportera nos changements
+  _sauveEnAttente = _sauveFile.then(_sauverMaintenantInterne, _sauverMaintenantInterne)
+                              .then(r=>{ _sauveEnAttente=null; return r; },
+                                    e=>{ _sauveEnAttente=null; throw e; });
+  _sauveFile = _sauveEnAttente.catch(()=>{});
+  return _sauveEnAttente;
+}
+async function _sauverMaintenantInterne(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
   await pousserCredits();
   const s = await sessionActuelle();
@@ -227,8 +263,16 @@ async function sauverSurServeur(){
     // re-sauvegardait. On les retire de la sauvegarde (le serveur fait foi).
     donnees: _etatSansStocks()
   };
-  const { data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev });
+  let { data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev, p_sid: _SID });
   if(error){ console.warn("[serveur] sauvegarde ÉCHEC:", error.message); return; }
+  /* Même navigateur que le dernier écrivain (même _SID) : ce n'est pas une
+     autre partie, seulement une de NOS sauvegardes arrivée entre-temps. On
+     adopte sa révision et on rejoue, sans alerter le joueur. */
+  if(res && res.err === "conflit" && res.sid && res.sid === _SID){
+    _rev = Number(res.rev) || _rev;
+    ({ data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev, p_sid: _SID }));
+    if(error){ console.warn("[serveur] sauvegarde ÉCHEC (2e essai):", error.message); return; }
+  }
   if(res && res.ok){
     _rev = Number(res.rev) || (_rev + 1); _conflitSignale = false;
     _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
@@ -265,7 +309,7 @@ function planifierSauveServeur(){
 async function sauverMaintenant(){
   if(!SERVEUR_DISPO) return false;
   clearTimeout(_sauveTimer);
-  try{ await sauverSurServeur(); return true; }
+  try{ await sauverSurServeur(); return true; }   // passe par la file (v0.70)
   catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#sauverMaintenant"); return false; }
 }
 /* ===========================================================
@@ -301,7 +345,12 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) batteme
    ⚠ v0.65 — beforeunload ne se déclenche PAS de façon fiable sur mobile (on
    change d'application, on verrouille l'écran). visibilitychange + pagehide
    sont les seuls signaux fiables sur iOS et Android. */
-function _filetSauvegarde(){ if(SERVEUR_DISPO && etat && etat.inscrit){ clearTimeout(_sauveTimer); sauverSurServeur(); if(typeof pousserCredits==="function") pousserCredits(); } }
+let _filetFait = false;
+function _filetSauvegarde(){
+  // pagehide ET visibilitychange se déclenchent tous deux en quittant : une seule fois suffit.
+  if(_filetFait) return; _filetFait = true; setTimeout(()=>{ _filetFait = false; }, 1500);
+  if(SERVEUR_DISPO && etat && etat.inscrit){ clearTimeout(_sauveTimer); sauverSurServeur(); if(typeof pousserCredits==="function") pousserCredits(); }
+}
 window.addEventListener("beforeunload", _filetSauvegarde);
 window.addEventListener("pagehide", _filetSauvegarde);
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden) _filetSauvegarde(); });

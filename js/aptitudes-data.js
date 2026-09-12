@@ -33,7 +33,7 @@ const APT_TRONC = [
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
   ]},
   { id:"traqueur", nom:"Traqueur", noeuds:[
-    { id:"tr1", nom:"Instinct de combat", effet:"+chance de victoire au combat." },
+    { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles." },
     { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
     { id:"tr4", nom:"Fléau du Protocole", effet:"Contre le Protocole : +10 % de victoire et +25 % de butin en patrouille ; force ×1,25 en expédition contre lui.", deblocage:true }
@@ -51,7 +51,7 @@ const APT_FACTIONS = {
   ignis: { nom:"Ignis — Forge & Feu", noeuds:[
     { id:"ig1", nom:"Sang de magma", effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone chaude (autour de la Forge)." },
     { id:"ig2", nom:"Fournaise",     effet:"En zone chaude : minage +25 % et butin de patrouille +25 %." },
-    { id:"ig3", nom:"Combustion",    effet:"Attaques enflammées : +dégâts / +chance au combat.", deblocage:true },
+    { id:"ig3", nom:"Combustion",    effet:"+6 points de chance de victoire contre les patrouilles.", deblocage:true },
     { id:"ig4", nom:"Cœur de forge", effet:"Toute arme équipée gagne un bonus permanent ; +10 % butin de combat en attendant.", deblocage:true }
   ]},
   cultivateurs: { nom:"Le Rhizome — Symbiose & Bio", noeuds:[

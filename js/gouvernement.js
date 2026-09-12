@@ -648,7 +648,9 @@ async function syncEffetsCombat(){
       evs.forEach(ev=>{ if(!ev || !ev.texte) return;
         const cat = ev.cat || "combat";
         const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
-        journal(ev.texte, ton, cat==="alerte" ? "combat" : cat); });
+        // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.
+        const onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
+        journal(ev.texte, ton, onglet); });
       if(typeof sauvegarder==="function") sauvegarder();
     }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }

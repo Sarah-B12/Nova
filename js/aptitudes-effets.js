@@ -74,7 +74,18 @@ function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m 
 function aptCombatBonusProtocole(){ return _apt("tr4") ? 0.10 : 0; }               // Fléau : +10 points de victoire en patrouille
 
 /* ---------- Combat ---------- */
-function aptCombatFcReduc(){ return (_apt("tr1") ? 2 : 0) + (_apt("ig3") ? 2 : 0); }                              // Instinct + Combustion (↑ chance)
+/* ⚠ v0.71 — « Instinct de combat » (tr1) et « Combustion » (ig3) ne retiraient
+   que 2 à la dureté de la patrouille. Or la chance de victoire vaut
+   0,22 + 0,0042×(Force − dureté) : 2 points de dureté ne valent que
+   +0,84 POINT de victoire. Une aptitude payée un PA ne se voyait donc pas —
+   23,7 % de victoire sans elle, 24,5 % avec. Elles agissent maintenant
+   directement sur la chance de victoire (voir aptCombatBonusVictoire). */
+function aptCombatFcReduc(){ return 0; }
+/* Bonus de victoire en patrouille, en points de pourcentage. */
+function aptCombatBonusVictoire(){
+  return (_apt("tr1") ? 0.08 : 0)      // Instinct de combat : +8 points
+       + (_apt("ig3") ? 0.06 : 0);     // Combustion        : +6 points
+}
 function aptCombatDegats(d){ let m = 1; if(_apt("tr2")) m *= 0.7; if(_apt("to2")) m *= 0.9; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Cuirasse + Trempe + Métabolisme
 // (Discrétion agit désormais sur le taux de patrouille dans patrouille.js — voir chancePatrouille().)
 

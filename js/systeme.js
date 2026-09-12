@@ -22,7 +22,8 @@ function depenserEnergie(cout){
 const JOURNAL_CATS = [
   {id:"tout",nom:"Tout"}, {id:"systeme",nom:"Système"}, {id:"quete",nom:"Quêtes"},
   {id:"minage",nom:"Minage"}, {id:"agri",nom:"Agri./élevage"}, {id:"combat",nom:"Combats"},
-  {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"}
+  {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"},
+  {id:"poste",nom:"La Poste"}          // v0.69 : séparé du social — colis, envois, retours, refus
 ];
 const JOURNAL_MAX = 300;
 const JOURNAL_RETENTION = 2*86400000;         // 2 jours réels (indépendant de JOUR_MS)
@@ -38,6 +39,8 @@ function _categoriser(t){
   if(/min[ée]|minage|minerai|filon|extra|foreuse|for[ée]|gisement|foraouse/.test(s)) return "minage";
   if(/récolt|plant[ée]|sem[ée]|bio-dôme|biodome|serre|animal|élevage|elevage|nourri|enclos|troupeau|traite|tonte|fourrage/.test(s)) return "agri";
   if(/vendu|achet[ée]|achat|brad[ée]|march[ée]|commission|crédit|₡|revend|boutique|permis/.test(s)) return "eco";
+  // La Poste avant « social » : « message » et « envoi » se ressemblent trop.
+  if(/poste|colis|envoi|envoy[ée]|exp[ée]diteur|destinataire|paquet|courrier|contre-remboursement/.test(s)) return "poste";
   if(/\bami\b|amis|message|annonce|\bmur\b|demande d'ami|bloqu[ée]|débloqu/.test(s)) return "social";
   return "systeme";
 }

@@ -46,7 +46,9 @@ async function resoudreCombat(opts){
      1 % de victoire — pas « difficile », nul — et perdait 53 santé, donc
      mourait en DEUX défaites. Avec 15 % de rencontre par déplacement, il
      mourait en explorant. Base relevée à 22 %, plancher à 5 %. */
-  let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + (typeof aptCombatBonusProtocole==="function" ? aptCombatBonusProtocole() : 0)));   // + Fléau du Protocole (tr4)
+  const bonusApt = (typeof aptCombatBonusVictoire==="function" ? aptCombatBonusVictoire() : 0)      // Instinct (tr1) + Combustion (ig3)
+                 + (typeof aptCombatBonusProtocole==="function" ? aptCombatBonusProtocole() : 0);   // Fléau du Protocole (tr4)
+  let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + bonusApt));
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(10);
