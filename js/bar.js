@@ -146,13 +146,29 @@ async function majBar(el){
   if(!fid){ el.innerHTML=`<h3 style="margin:2px 0">Le bar</h3><p class="vide">Il n'y a pas de bar en pleine nature. Rejoins une ville.</p>`; return; }
   el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Chargement…</p>`;
 
+  /* ⚠ v0.78 — le catalogue passe par une RPC. La lecture directe de la table
+     revenait VIDE (droit SELECT absent sur une table créée par script), et la
+     page n'affichait aucune boisson sans dire pourquoi. */
   if(!_barCatalogue){
-    try{ const { data } = await sb.from("bar_boissons").select("*").order("prix"); _barCatalogue=data||[]; }
-    catch(e){ if(typeof _catchLog==="function") _catchLog(e, "bar.js#cat"); _barCatalogue=[]; }
+    try{
+      const { data, error } = await sb.rpc("bar_catalogue");
+      if(error) throw error;
+      _barCatalogue = Array.isArray(data) ? data : [];
+    }catch(e){
+      if(typeof _catchLog==="function") _catchLog(e, "bar.js#cat");
+      console.warn("[bar] catalogue illisible :", e && e.message);
+      _barCatalogue = null;
+      el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Le bar est fermé : le catalogue n'a pas pu être chargé. Réessaie dans un instant.</p>`;
+      return;
+    }
   }
   await boissonCharger();
 
-  const dispo=_barCatalogue.filter(b=>!b.faction || b.faction===fid);
+  const dispo=(_barCatalogue||[]).filter(b=>!b.faction || b.faction===fid);
+  if(!dispo.length){
+    el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Aucune boisson au comptoir. Si cela persiste, le catalogue du serveur est vide.</p>`;
+    return;
+  }
   const reste=boissonResteMs();
   let h=`<h3 style="margin:2px 0">${barNom(fid)}</h3>`;
   h+=`<img class="bar-banniere" src="images/bar/${fid}.png" alt="" onerror="this.remove()">`;

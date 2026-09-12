@@ -16,7 +16,11 @@ const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx 
 const ITEM_HACK = "fab_ordinateur_de_hacking";
 const PATROUILLE_DROPS = ["fab_composant_simple","fab_circuit_imprime","fab_cablage","voltane","silite"];
 
-function chancePatrouille(){ return (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX; }
+function chancePatrouille(){
+  const base = (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX;
+  const m = (typeof boissonMod==="function") ? boissonMod("patrouille", 1) : 1;   // v0.79 : Poussière de route / Le coup du départ
+  return Math.max(0, Math.min(0.6, base * m));
+}
 // L'Ordinateur de hacking doit être ÉQUIPÉ (en main) pour pouvoir hacker.
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }
 

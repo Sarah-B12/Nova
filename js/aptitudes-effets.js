@@ -26,13 +26,17 @@ function aptZoneThermique(){
 /* ⚠ v0.59 — Endurance (sv4) n'était appliquée qu'à l'AFFICHAGE : les actions
    débitaient COUT_TERRAIN brut. agirServeur() l'applique désormais aux motifs
    d'action (voir MOTIFS_ACTION, inventaire.js). */
-function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique())); }                                  // Endurance −15 %
+/* v0.79 — chaque effet de boisson passe par ces mêmes fonctions : un seul
+   point de branchement par effet, comme pour les aptitudes. `_boi` vaut 1
+   (neutre) tant qu'aucune boisson n'est active. */
+function _boi(cle){ return (typeof boissonMod==="function") ? boissonMod(cle, 1) : 1; }
+function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique() * _boi("energie_cout"))); }                                  // Endurance −15 %
 function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om2") ? 0.9 : 1))); }        // Endurance + Repérage
 function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8; if(_apt("no4")) m *= 0.8;
-  if(_apt("om2")) m *= 0.9; if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique();
+  if(_apt("om2")) m *= 0.9; if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");
   return Math.max(1, Math.round(cout * m)); }   // Pas léger · Voyageur · Repérage · Endurance · zones (multiplicatif)
 /* O₂ d'un déplacement à découvert : Repérage (om2) −10 %, zones thermiques −15 %. */
-function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique())); }
+function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique() * _boi("o2_cout"))); }
 function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)
 
 /* ---------- Oxygène ---------- */
@@ -64,12 +68,13 @@ function regenPassif(){
 }
 
 /* ---------- Crédits ---------- */
-function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1)); }                                        // Négociant +15 %
+function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * _boi("credits")); }                                        // Négociant +15 %
 function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * (_apt("om2") ? 1.25 : 1)); }        // + Repérage +25 %
 function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25; if(_apt("ig4")) m *= 1.10;
   if(_apt("tr4")) m *= 1.25;                                                        // Fléau du Protocole (les patrouilles SONT le Protocole)
   if(_apt("om2")) m *= 1.25;                                                        // Repérage
   if(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) m *= 1.25;  // Fournaise
+  m *= _boi("butin");
   return Math.round(g * m); }
 function aptCombatBonusProtocole(){ return _apt("tr4") ? 0.10 : 0; }               // Fléau : +10 points de victoire en patrouille
 
@@ -93,7 +98,8 @@ function aptCombatDegats(d){ let m = 1; if(_apt("tr2")) m *= 0.7; if(_apt("to2")
 function aptBonusRare(base){ return base + (_apt("pr3") ? 8 : 0); }                                               // Œil du mineur
 
 /* ---------- Minage en zone thermique (v0.59) ---------- */
-function aptMineLot(n){ return (_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? Math.round(n * 1.25) : n; }   // Fournaise +25 %
+function aptMineLot(n){ const m=(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? 1.25 : 1;
+  return Math.max(1, Math.round(n * m * _boi("mine"))); }                                                          // Fournaise +25 % · boisson
 function aptGivriteForcee(){ return _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.15; }    // Isolation : +Givrite
 function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.05; }     // Veine de cristal
 
@@ -116,9 +122,10 @@ function aptMineReserve(base){ let m = 1; if(_apt("pr1")) m *= 1.5; if(_apt("ro1
 function aptCoutStructure(prix){ return Math.round(prix * (_apt("ro2") ? 0.75 : 1)); }                             // Chantier −25 %
 function aptRecyclageTaux(){ return _apt("ro3") ? 0.5 : 0; }                                                       // Recyclage : 50 % remboursé
 function aptStructureLot(n){ return Math.round(n * (_apt("ro4") ? 1.5 : 1)); }                                     // Surrégime +50 % (mine, bio-dôme, enclos)
-function aptBiodomeRecolte(){ return _apt("cu2") ? { min:7, max:11 } : { min:5, max:9 }; }                          // Verger
+function aptBiodomeRecolte(){ const b=_apt("cu2") ? { min:7, max:11 } : { min:5, max:9 }; const m=_boi("recolte");
+  return { min:Math.max(1,Math.round(b.min*m)), max:Math.max(1,Math.round(b.max*m)) }; }                            // Verger · boisson
 function aptCroissance(base){ return Math.round(base * (_apt("pr2") ? 1.25 : 1)); }                                 // Cultures vivaces : +25 % croissance
-function aptTonteBonus(){ return _apt("pr2") ? 1 : 0; }                                                            // Cultures vivaces : +1 produit à la tonte
+function aptTonteBonus(){ const m=_boi("recolte"); return (_apt("pr2") ? 1 : 0) + (m>1 ? Math.round((m-1)*4) : (m<1 ? -1 : 0)); }                                                            // Cultures vivaces : +1 produit à la tonte
 
 /* ---------- Atelier (fabrication) ---------- */
 function aptFabSkip(){ return _apt("ar1"); }             // Récup d'atelier : 20 % de ne pas consommer l'ingrédient le moins coûteux

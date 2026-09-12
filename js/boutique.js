@@ -35,7 +35,11 @@ function _boutiqueMsg(txt){
    ⚠ L'ancienne boutique (actions.js acheter / rendu.js construireBoutique)
    visait un #boutique qui n'existait plus : l'aptitude ne faisait rien. */
 function _boutiqueDehors(){ return !(typeof villeActuelle==="function" && villeActuelle()); }
-function _prixBoutique(a){ return (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix; }
+function _prixBoutique(a){
+  const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix;
+  const m = (typeof boissonMod==="function") ? boissonMod("boutique", 1) : 1;   // v0.79 : « Mémoire courte » −20 %
+  return Math.max(1, Math.round(base * m));
+}
 function renderBoutique(){
   const z = document.querySelector("#boutique-vue"); if(!z) return;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
