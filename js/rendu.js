@@ -89,6 +89,7 @@ function afficher(){
   document.querySelector("#desc-vue").innerHTML = renduDescription(etat.description);
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
   if(typeof majAptitudes==="function") majAptitudes();
+  if(typeof majBoissonFiche==="function") majBoissonFiche();   // v0.77
 }
 /* Rafraîchissement LÉGER : uniquement les jauges qui bougent avec le temps.
    afficher() reconstruit une douzaine de panneaux (sac, terrain, mur, quêtes…),

@@ -117,6 +117,7 @@ async function syncApresConnexion(){
      de 60 s, ou en ouvrant Le Centre. Qui rouvrait le jeu 2 min et le refermait
      ne voyait jamais ce qui s'était passé. On les relève à la connexion. */
   if(typeof syncEffetsCombat==="function") t.push(syncEffetsCombat());
+  if(typeof boissonCharger==="function")  t.push(boissonCharger());        // v0.77 : effet de boisson en cours
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause

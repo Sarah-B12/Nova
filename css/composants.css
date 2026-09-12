@@ -341,3 +341,7 @@
 .picker-usure.usure-critique { color:#ff6b6b; font-weight:700; }
 .equip-slot.usure-basse { box-shadow:0 0 0 2px rgba(255,179,122,.5) inset; }
 .equip-slot.usure-critique { box-shadow:0 0 0 2px rgba(255,107,107,.65) inset; }
+
+/* v0.77 — ligne « boisson en cours » sur sa propre fiche (voir js/bar.js pour
+   la bulle au survol ; ici seulement l'emplacement). */
+.fiche-boisson { margin:8px 0 2px; }

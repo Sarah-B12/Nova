@@ -137,6 +137,7 @@ function majCentre(){
   document.querySelectorAll("#hub-centre .sous-lien").forEach(b=>b.classList.toggle("actif", b.dataset.centre===centreVue));
   el.innerHTML = "";
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
+  if(centreVue==="bar"){ if(typeof majBar==="function") majBar(el); return; }
   if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }
   if(centreVue==="gouvernement"){ if(typeof majGouvernement==="function") majGouvernement(el); return; }
   if(centreVue==="annonce"){ if(typeof majAnnonceFaction==="function") majAnnonceFaction(el); return; }

@@ -152,6 +152,8 @@
                 <div class="jauge" id="jauge-sante"><div class="jauge-tete"><span>Santé</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
                 <div class="jauge" id="jauge-moral"><div class="jauge-tete"><span>Moral</span><span class="val">100</span></div><div class="piste"><div class="remplissage"></div></div></div>
               </div>
+              <!-- v0.77 : boisson en cours — uniquement sur SA fiche, jamais sur le profil visité. -->
+              <div id="fiche-boisson" class="fiche-boisson" hidden></div>
               <div class="fiche-comp">
                 <div class="comp-tete">Compétences <span class="pts" id="pts-libres"></span></div>
                 <div id="competences"></div>
@@ -233,6 +235,7 @@
             <button class="sous-lien" data-centre="votes">Élections</button>
             <button class="sous-lien" data-centre="bureau">Bureau</button>
             <button class="sous-lien" data-centre="guerres">Expéditions</button>
+            <button class="sous-lien" data-centre="bar">Bar</button>
             <button class="sous-lien" data-centre="prison">Prison</button>
           </div>
           <div id="centre-corps"></div>
@@ -347,6 +350,7 @@
 <script src="js/poste.js"></script>
 <script src="js/gouvernement.js"></script>
 <script src="js/espionnage.js"></script>
+<script src="js/bar.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/bootstrap.js"></script>
 <script src="js/dev-console.js"></script>
