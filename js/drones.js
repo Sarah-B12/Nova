@@ -23,7 +23,7 @@ async function placerDrone(si, type){
   if(!await agirServeur({ retirer:{ [iid]:1 }, motif:"drone_poser" })) return;
   p.drones[si] = { type, cible:null, maj:0, pose:Date.now() };   // pose = date d'usure
   journal(`${nomDrone(type)} installé dans le hangar. Assigne-lui une parcelle.`,"gain");
-  apresAction(); majStruct();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant(); majStruct();
 }
 function assignerDrone(si, idx){
   const p = etat.terrain.parcelles[structSel]; const dr = p && p.drones[si]; if(!dr) return;
@@ -31,7 +31,7 @@ function assignerDrone(si, idx){
   if(!cible || cible.type !== cibleTypeDrone(dr.type)) return;
   dr.cible = idx; dr.maj = 0;   // agira dès le prochain rafraîchissement
   journal(`${nomDrone(dr.type)} assigné à la parcelle ${idx+1}.`,"gain");
-  apresAction(); majStruct();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant(); majStruct();
 }
 async function retirerDrone(si){
   const p = etat.terrain.parcelles[structSel]; const dr = p && p.drones[si]; if(!dr) return;
@@ -40,7 +40,7 @@ async function retirerDrone(si){
   if(rr && (rr.ajoutes||{})[iid]) journal(`${nomDrone(dr.type)} retiré (rangé dans le sac).`,"alerte");
   else journal(`${nomDrone(dr.type)} détruit (sac plein).`,"alerte");
   p.drones[si] = null;
-  apresAction(); majStruct();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant(); majStruct();
 }
 
 /* ---------- Rendu de la vue hangar (#struct-corps) ---------- */

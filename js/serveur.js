@@ -75,8 +75,18 @@ async function chargerDepuisServeur(){
   const s = await sessionActuelle(); if(!s) return null;
   const { data, error } = await sb.from("profils").select("*").eq("id", s.user.id).maybeSingle();
   if(error){ console.warn("[serveur] chargement:", error.message); return null; }
+  _rev = (data && data.donnees && Number(data.donnees._rev)) || 0;   // v0.65 : point de départ du compteur anti-écrasement
   return data;   // ligne { id, nom, faction, ..., donnees } OU null si aucun profil
 }
+/* ⚠ v0.65 — ÉCRASEMENT ENTRE APPAREILS. La sauvegarde écrivait `donnees` en
+   entier, sans jamais regarder ce qu'il y avait déjà. Deux navigateurs ouverts
+   (un PC laissé allumé, un téléphone) : le dernier à écrire gagnait, même avec
+   un état vieux de plusieurs heures. C'est ce qui a « dé-terminé » une quête
+   déjà finie. Chaque sauvegarde porte maintenant un numéro de révision ; le
+   serveur refuse celles qui arrivent en retard (RPC sauver_profil), et le
+   client recharge au lieu d'écraser. */
+let _rev = 0;
+let _conflitSignale = false;
 let _creditsServeur = null;
 function initCredits(v){ _creditsServeur = (typeof v==="number") ? v : null; }
 function marquerCredits(v){ if(typeof v==="number") _creditsServeur = v; }
@@ -217,10 +227,26 @@ async function sauverSurServeur(){
     // re-sauvegardait. On les retire de la sauvegarde (le serveur fait foi).
     donnees: _etatSansStocks()
   };
-  const { error } = await sb.from("profils").update(maj).eq("id", s.user.id);
-  if(error) console.warn("[serveur] sauvegarde ÉCHEC:", error.message);
-  else { console.log("[serveur] sauvegarde OK — credits=" + (etat.credits|0) + ", faction=" + (etat.faction||"—"));
-         _presenceDer = Date.now(); }   // elle écrit derniere_activite : inutile de doubler
+  const { data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev });
+  if(error){ console.warn("[serveur] sauvegarde ÉCHEC:", error.message); return; }
+  if(res && res.ok){
+    _rev = Number(res.rev) || (_rev + 1); _conflitSignale = false;
+    _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
+    return;
+  }
+  if(res && res.err === "conflit"){
+    /* Une autre session a écrit depuis notre dernier chargement : on N'ÉCRASE
+       PAS. On prévient, une seule fois, et on invite à recharger — la version
+       du serveur est la bonne, la nôtre est périmée. */
+    console.warn("[serveur] sauvegarde refusée : version plus récente en base (rev serveur", res.rev, "> locale", _rev, ")");
+    if(!_conflitSignale){
+      _conflitSignale = true;
+      if(typeof journal==="function") journal("⚠ Ta partie est ouverte ailleurs (autre navigateur ou appareil) et a avancé de son côté. Recharge la page pour récupérer la version à jour — cet onglet n'enregistre plus, pour ne rien effacer.","alerte");
+      try{ alert("Nova Epic est ouvert sur un autre appareil ou navigateur, avec une partie plus avancée.\n\nRecharge cette page pour reprendre la bonne version. Tant que tu ne l'as pas fait, cet onglet n'enregistre plus (c'est ce qui évite d'effacer ta progression)."); }catch(e){}
+    }
+    return;
+  }
+  console.warn("[serveur] sauvegarde refusée :", res);
 }
 
 /* Sauvegarde serveur « débounce » : appelée par sauvegarder(), max 1 écriture toutes ~2,5 s. */
@@ -229,6 +255,18 @@ function planifierSauveServeur(){
   if(!SERVEUR_DISPO) return;
   clearTimeout(_sauveTimer);
   _sauveTimer = setTimeout(sauverSurServeur, 2500);
+}
+/* ⚠ v0.65 — SAUVEGARDE IMMÉDIATE. Le terrain n'existait qu'en mémoire pendant
+   2,5 s avant de partir au serveur. Sur téléphone, fermer l'onglet ou changer
+   d'application dans cet intervalle perdait l'action : beforeunload ne se
+   déclenche pas de façon fiable sur mobile. Un bâtiment payé disparaissait
+   donc « pendant la nuit », en réalité au rechargement suivant.
+   À utiliser pour tout ce qui coûte cher et ne se refait pas. */
+async function sauverMaintenant(){
+  if(!SERVEUR_DISPO) return false;
+  clearTimeout(_sauveTimer);
+  try{ await sauverSurServeur(); return true; }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#sauverMaintenant"); return false; }
 }
 /* ===========================================================
    PRÉSENCE — battement de cœur.
@@ -259,5 +297,11 @@ async function battementPresence(){
 setInterval(battementPresence, PRESENCE_MS);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) battementPresence(); });
 
-/* Filet : pousse la dernière version en quittant la page (meilleur effort). */
-window.addEventListener("beforeunload", () => { if(SERVEUR_DISPO && etat && etat.inscrit) sauverSurServeur(); });
+/* Filet : pousse la dernière version en quittant la page (meilleur effort).
+   ⚠ v0.65 — beforeunload ne se déclenche PAS de façon fiable sur mobile (on
+   change d'application, on verrouille l'écran). visibilitychange + pagehide
+   sont les seuls signaux fiables sur iOS et Android. */
+function _filetSauvegarde(){ if(SERVEUR_DISPO && etat && etat.inscrit){ clearTimeout(_sauveTimer); sauverSurServeur(); if(typeof pousserCredits==="function") pousserCredits(); } }
+window.addEventListener("beforeunload", _filetSauvegarde);
+window.addEventListener("pagehide", _filetSauvegarde);
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) _filetSauvegarde(); });

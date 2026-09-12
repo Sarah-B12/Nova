@@ -38,14 +38,14 @@ function placerMaison(i){
   etat.maison.chantier = { cible:1, depose:{}, travail:0 };
   etat.terrain.parcelles[i] = { type:"maison" };
   journal(`Emplacement du logement posé. Construis ta ${nomPalier(1)} dans le sous-onglet Maison.`,"gain");
-  apresAction();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 function agrandirMaison(){
   const m=etat.maison;
   if(m.chantier){ journal("Un chantier est déjà en cours.","alerte"); return; }
   if(m.palier>=5){ journal("Palier maximum atteint.","alerte"); return; }
   m.chantier = { cible:m.palier+1, depose:{}, travail:0 };
-  journal(`Chantier lancé : ${nomPalier(m.chantier.cible)}.`,"gain"); apresAction();
+  journal(`Chantier lancé : ${nomPalier(m.chantier.cible)}.`,"gain"); apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function deposerMat(matId){
   const c=etat.maison.chantier; if(!c) return;
@@ -53,7 +53,7 @@ async function deposerMat(matId){
   if(dej>=besoin){ journal("Déjà assez de cette matière.","alerte"); return; }
   if((etat.sac[matId]||0)<=0){ journal("Tu n'as pas cette matière dans ton sac.","alerte"); return; }
   if(!await agirServeur({ retirer:{ [matId]:1 }, motif:"chantier" })) return;
-  c.depose[matId]=dej+1; apresAction();
+  c.depose[matId]=dej+1; apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function travaillerMaison(){
   const c=etat.maison.chantier; if(!c) return;
@@ -67,28 +67,28 @@ async function travaillerMaison(){
     etat.maison.palier=c.cible; etat.maison.chantier=null;
     journal(`${nomPalier(etat.maison.palier)} construite ! Rangement : ${capaciteMaison()} places.`,"gain");
   } else journal(`Travaux : ${c.travail}/${total}.`);
-  apresAction();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 function demolirMaison(){
   if(itemsCoffre()>0){ journal("Vide d'abord ton rangement avant de démolir.","alerte"); return; }
   if(!confirm("Démolir ton logement ? La parcelle sera libérée.")) return;
   if(etat.maison.plot!=null) etat.terrain.parcelles[etat.maison.plot]=null;
   etat.maison={ palier:0, plot:null, chantier:null };
-  journal("Logement démoli.","alerte"); apresAction();
+  journal("Logement démoli.","alerte"); apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function deposerObjet(id){
   if(!etat.sac[id]) return;
   const ts = etat.sacDate && etat.sacDate[id];
   if(!await rangerServeur(id, 1, "coffre", "sac")) return;
   if(typeof reporterDate==="function"){ etat.coffreDate=etat.coffreDate||{}; reporterDate(etat.coffreDate,id,ts||Date.now()); }
-  apresAction();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function retirerObjet(id){
   if(!etat.coffre[id]) return;
   const ts = etat.coffreDate && etat.coffreDate[id];
   if(!await rangerServeur(id, 1, "sac", "coffre")) return;
   if(typeof reporterDate==="function"){ etat.sacDate=etat.sacDate||{}; reporterDate(etat.sacDate,id,ts||Date.now()); }
-  apresAction();
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 
 /* ---------- Rendu de la vue Maison (#sous-maison) ---------- */

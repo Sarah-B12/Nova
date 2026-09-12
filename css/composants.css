@@ -334,3 +334,10 @@
 @media (max-width:520px){ .leg-def dl { grid-template-columns:1fr; gap:2px; } .leg-def dd { margin-bottom:8px; } }
 
 .marche-tabs { flex-wrap:wrap; }   /* v0.59 : onglets de la boutique/du marché sur petit écran */
+
+/* v0.64 — usure de l'équipement porté (onglet Équipement). */
+.picker-usure { display:block; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); margin-top:2px; }
+.picker-usure.usure-basse { color:#ffb37a; }
+.picker-usure.usure-critique { color:#ff6b6b; font-weight:700; }
+.equip-slot.usure-basse { box-shadow:0 0 0 2px rgba(255,179,122,.5) inset; }
+.equip-slot.usure-critique { box-shadow:0 0 0 2px rgba(255,107,107,.65) inset; }

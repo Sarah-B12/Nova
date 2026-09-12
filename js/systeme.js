@@ -83,7 +83,9 @@ function _bulleStyle(){
       border-left:3px solid var(--sourdine,#8b95a8); border-radius:10px 4px 10px 4px;
       color:var(--texte,#dfe8f2); font-size:13px; line-height:1.4; padding:9px 12px;
       box-shadow:0 6px 22px rgba(0,0,0,.5); animation:bulle-in .18s ease-out;
-      pointer-events:auto; cursor:default; }
+      pointer-events:auto; cursor:pointer; }
+    .bulle:hover{ border-color:var(--orange,#ff8a3d); }
+    .bulle::after{ content:"×"; float:right; margin-left:10px; color:var(--sourdine,#8b95a8); font-weight:700; }
     .bulle.gain{ border-left-color:#8bd450; }
     .bulle.alerte{ border-left-color:#ff8a3d; }
     .bulle.poste{ border-left-color:#6cc8ff; }
@@ -120,6 +122,9 @@ function _bulle(t, type){
   const b = document.createElement("div");
   b.className = "bulle " + (type || "");
   b.textContent = t;
+  b.title = "Cliquer pour fermer";
+  // v0.66 : un clic la fait disparaître (elle masquait parfois un bouton).
+  b.addEventListener("click", ()=>_bulleFermer(b, true));
   z.appendChild(b);
   _bulleDer = t; _bulleDerEl = b; _bulleDerN = 1;
 
@@ -127,6 +132,12 @@ function _bulle(t, type){
   b._t = setTimeout(()=>_bulleFermer(b), BULLE_MS);
 }
 
+/* v0.66 — les bulles suivaient le joueur d'un écran à l'autre et se
+   superposaient aux boutons. On vide la pile à chaque changement de vue. */
+function fermerToutesBulles(){
+  const z=document.querySelector("#bulles"); if(!z) return;
+  [...z.children].forEach(b=>_bulleFermer(b, true));
+}
 function _bulleFermer(b, tout_de_suite){
   if(!b || !b.parentNode) return;
   clearTimeout(b._t);

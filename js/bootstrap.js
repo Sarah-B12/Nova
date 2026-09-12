@@ -87,6 +87,16 @@ setInterval(() => { if(etat.inscrit && typeof compterPoste==="function") compter
 setInterval(() => { if(etat.inscrit && typeof compterAnnonce==="function") compterAnnonce(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof syncPrison==="function") syncPrison(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof syncEffetsCombat==="function") syncEffetsCombat(); }, 60000);
+/* v0.66 — le sac ne se relisait qu'au CHARGEMENT : un objet offert par la
+   console du staff, ou tout ajout venu du serveur, n'apparaissait qu'après un
+   rafraîchissement manuel. On relit périodiquement (sac_lire est peu coûteux),
+   et dès que l'onglet revient au premier plan. */
+setInterval(() => { if(etat.inscrit && typeof chargerStocksServeur==="function") chargerStocksServeur(); }, 60000);
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden || !etat.inscrit) return;
+  if(typeof chargerStocksServeur==="function") chargerStocksServeur();
+  if(typeof rechargerCredits==="function")     rechargerCredits();
+});
 /* Phase 4 : stocks, jauges, pause et mort appartiennent au serveur.
    ⚠ Ce bloc ne tournait qu'au CHARGEMENT DE LA PAGE, et sortait aussitôt si
    le joueur n'était pas encore connecté (`etat.inscrit` faux). Quand on se
@@ -102,6 +112,11 @@ async function syncApresConnexion(){
   if(typeof chargerJaugesServeur==="function") t.push(chargerJaugesServeur());   // jauges serveur
   if(typeof _syncPause==="function") t.push(_syncPause());                        // état de pause serveur
   if(typeof syncMort==="function")   t.push(syncMort());                          // couloir de la mort
+  /* ⚠ v0.63 — les comptes rendus déposés par le serveur pendant l'absence
+     (colis reçus, ventes, expéditions…) n'étaient relevés que par la minuterie
+     de 60 s, ou en ouvrant Le Centre. Qui rouvrait le jeu 2 min et le refermait
+     ne voyait jamais ce qui s'était passé. On les relève à la connexion. */
+  if(typeof syncEffetsCombat==="function") t.push(syncEffetsCombat());
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause

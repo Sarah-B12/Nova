@@ -268,7 +268,10 @@ const QUETES = [
     id:"q3",
     nom:"La fleur qui n'aurait pas dû",
     donneur:"Adaya",
-    donneurLieu:"Serre du Rhizome",
+    /* ⚠ v0.67 — « Serre du Rhizome » était faux : la quête se prend au comptoir
+       de SA PROPRE cité, quelle que soit la faction du joueur. Adaya y vient,
+       puis emmène le joueur à sa serre (étape 1, cible = Le Rhizome). */
+    donneurLieu:"Comptoir",
     // Première quête sans Sorn : Adaya porte le nom de la 3e ligne du registre
     // de Q2. ⚠ CANON v2 — elle n'est PAS un témoin (trois siècles) mais une
     // DESCENDANTE. Sa mémoire de famille dit « on était dehors et on est
@@ -279,16 +282,20 @@ const QUETES = [
     // Gains SEULEMENT (pas de malus tant que les joueurs n'ont rien accumulé).
     // Le moteur gère pourtant les valeurs négatives : à envisager plus tard.
     intro:[
-      "La vieille femme t'attend sous la verrière, les mains dans un bac de terreau noir. Elle ne se retourne pas tout de suite.",
+      /* ⚠ v0.67 — l'intro se passait « sous la verrière » alors qu'on prend la quête
+       au comptoir de sa propre cité : Adaya vient au comptoir, et c'est l'étape 1
+       qui emmène le joueur à sa serre, au Rhizome. */
+    "La vieille femme t'attend au comptoir, un bocal serré contre elle et de la terre noire encore sous les ongles. Elle ne se retourne pas tout de suite.",
       "« Adaya. » Elle s'essuie enfin les paumes. « On m'a dit qu'un bleu était allé fouiller un registre d'équipe au nord-ouest. Un registre où il y a mon nom, figure-toi. Troisième ligne. Trois cents ans avant moi, mais c'est le même. »",
       "Elle te laisse encaisser, puis désigne du menton un bocal posé sur l'établi : une tige pâle, luminescente, qui pulse doucement dans son bouillon.",
       "« Ça, ça pousse le long de l'ancien périmètre. Exactement le long. Sur une terre où rien ne prend depuis trois siècles. » Elle te regarde. « J'aimerais comprendre avant de mourir. Tu m'aides ? »",
-      "Elle t'accroche une oreillette au col — la même camelote que celle de Sorn, en mieux entretenue. « Je te guide. Je serai précise sur le pourquoi, approximative sur le où. La carte date d'avant. »"
+      "« Mais pas ici. » Elle rassemble son bocal dans un linge. « Mon matériel est au Rhizome, sous verrière. Rejoins-moi là-bas : on monte le bain d'analyse, et après seulement tu iras dehors. »",
+    "Elle t'accroche une oreillette au col — la même camelote que celle de Sorn, en mieux entretenue. « Je te guide. Je serai précise sur le pourquoi, approximative sur le où. La carte date d'avant. »"
     ],
     etapes:[
 
       /* ---- 1. La serre obstinée — LIVRAISON (non ratable) ---- */
-      { indice:"Reste au vert, chez nous, dans les cultures : il me manque de quoi monter un bain d'analyse. Fouille les serres du secteur.",
+      { indice:"Rejoins-moi au Rhizome, sous la grande verrière — c'est là qu'est mon matériel. Apporte de quoi monter le bain d'analyse.",
         cible:{ x:1250, y:770, r:90 }, leurres:[ {x:1900,y:400,r:80}, {x:700,y:1250,r:80}, {x:1500,y:150,r:80} ],
         image:"images/quetes/q3/1.png",
         arrivee:[
@@ -361,7 +368,9 @@ const QUETES = [
           "Adaya travaille sans un mot pendant que la centrifugeuse hurle. Dehors, la nuit tombe sur les serres.",
           "« Deux heures, au moins. Assieds-toi, ou va faire un tour. Je t'appelle. »"
         ],
-        defi:{ type:"attente", duree:60000,
+        // ⚠ v0.66 : 60000 ms = 1 min (valeur de test oubliée). L'analyse de la
+        // centrifugeuse dure 2 h — le joueur peut s'éloigner et revenir.
+        defi:{ type:"attente", duree:2*3600*1000,
           texte:["La centrifugeuse tourne. Rien à faire qu'attendre — tu peux t'éloigner et revenir."],
           reussite:[
             "« La plante n'est pas d'ici. » Adaya pose ses lunettes. « Enfin — elle n'est pas d'ici comme le reste n'est pas d'ici. Elle est arrivée avec nous. Elle a juste mieux tenu le coup. »",

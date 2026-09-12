@@ -98,7 +98,12 @@ async function majBureauOmbre(el, fac){
     return `<div class="poste-ligne"><span class="poste-txt">${tete}${r.reussi&&r.resultat?` · <b>${(r.resultat||"").replace(/</g,"&lt;")}</b>`:""}</span></div>`; }).join("");
   h+=`<h4 class="gsec" style="margin-top:16px">Renseignements Protocole (3 jours)</h4>`;
   if(!hacks.length) h+=`<p class="vide">Aucun renseignement.</p>`;
-  else h+=hacks.map(r=>{ const dt=(typeof _dateHeure==="function")?_dateHeure(r.cree_le):""; return `<div class="poste-ligne"><span class="poste-txt"><span class="itip-gris">${dt}</span> · ${r.reussi?`<span class="or">${_hpInfoNom(r.info)}</span> — <b>${(r.valeur||"").replace(/</g,"&lt;")}</b>`:'<span style="color:#ff5257">hack raté</span>'}</span></div>`; }).join("");
+  else h+=hacks.map(r=>{
+    const dt=(typeof _dateHeure==="function")?_dateHeure(r.cree_le):"";
+    if(!r.reussi) return `<div class="poste-ligne"><span class="poste-txt"><span class="itip-gris">${dt}</span> · <span style="color:#ff5257">Tentative ratée</span></span></div>`;
+    const L=hpLecture(r.info, r.valeur);   // v0.68 : même lecture en clair que dans le journal
+    return `<div class="poste-ligne"><span class="poste-txt"><span class="itip-gris">${dt}</span> · <span class="or">${L.icone} ${L.titre}</span>${L.chiffre?` <span class="itip-gris">(${L.chiffre})</span>`:""}<br><span class="itip-gris">${L.phrase}</span></span></div>`;
+  }).join("");
   el.innerHTML=h;
 
   if(estOmbre){
@@ -140,10 +145,69 @@ async function hackerProtocoleDepuisCarte(){
   const { data:res, error } = await sb.rpc("hacker_protocole",{ p_reussi:reussi });
   if(error || !res || !res.ok){ if(res&&res.err==="limite") journal("Déjà tenté aujourd'hui.","alerte"); else journal("Hack impossible.","alerte"); return; }
   if(res.reussi && typeof gagnerXp==="function") gagnerXp(8);
-  if(res.reussi) journal(`Hack réussi — ${_hpInfoNom(res.info)} : ${res.valeur}`,"gain");
+  if(res.reussi){
+    const L=hpLecture(res.info, res.valeur);
+    journal(`${L.icone} ${L.titre}${L.chiffre?` (${L.chiffre})`:""} — ${L.phrase} À transmettre au Stratège.`,"gain");
+  }
   else{ journal("Hack du Protocole raté ! Une patrouille rôde…","alerte"); if(Math.random()<0.7 && typeof ouvrirPatrouille==="function") ouvrirPatrouille(); }
 }
 function _hpInfoNom(i){ return {defense:"Défense du jour",menace:"Offensive",cible:"Cible probable",puissance:"Puissance"}[i]||i; }
+
+/* ⚠ v0.68 — LIRE LE RENSEIGNEMENT. « Défense du jour : 78 » ne disait rien :
+   aucune échelle, aucun conseil. On traduit en clair, en gardant le chiffre
+   pour qui veut comparer d'un jour à l'autre.
+   BARÈMES RÉELS (à tenir à jour si le serveur change) :
+   · protocole_defense() = 40 + (hash % 41) → TOUJOURS entre 40 et 80.
+     (resoudre_expedition_auto y ajoute ensuite nb_attaquants×3, plafond 150.)
+   · puissance ∈ faible | moyenne | forte | très forte (nova_protocole_planifier)
+   · menace : offensive à ~1-5 jours, ou aucune ce jour-là. */
+const HP_DEF_MIN = 40, HP_DEF_MAX = 80;
+function _hpFacNom(id){
+  const f=(typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id);
+  return f ? f.nom : (id||"—");
+}
+/* → { icone, titre, phrase, chiffre } ; chiffre vide si l'info n'est pas chiffrée. */
+function hpLecture(info, valeur){
+  const v=String(valeur==null?"":valeur);
+  if(info==="defense"){
+    const n=parseInt(v,10);
+    if(isNaN(n)) return { icone:"🛡️", titre:"Défense du jour", phrase:v, chiffre:"" };
+    const p=(n-HP_DEF_MIN)/(HP_DEF_MAX-HP_DEF_MIN);        // 0 = au plus bas, 1 = au plus haut
+    let titre, phrase;
+    if(p<0.25){      titre="Le mur est mal tenu";        phrase="Les relèves se font attendre, des portiques restent ouverts. C'est le meilleur jour du moment pour un assaut."; }
+    else if(p<0.5){  titre="Garde ordinaire";           phrase="Rien d'inhabituel. Une expédition nombreuse peut passer."; }
+    else if(p<0.75){ titre="Le Protocole est sur ses gardes"; phrase="Les patrouilles sont doublées : il faudra du monde et de bons équipements."; }
+    else{            titre="Le périmètre est verrouillé"; phrase="Tout est tenu, relève après relève. Un assaut aujourd'hui serait un massacre — mieux vaut attendre."; }
+    return { icone:"🛡️", titre, phrase, chiffre:`défense ${n}/${HP_DEF_MAX}` };
+  }
+  if(info==="puissance"){
+    const k=v.toLowerCase();
+    if(k==="—"||!k)              return { icone:"⚔️", titre:"Rien en préparation", phrase:"Les ateliers du Protocole sont silencieux.", chiffre:"" };
+    if(k.indexOf("très")===0)    return { icone:"⚔️", titre:"Le Protocole arme tout ce qu'il a", phrase:"Ce qui se prépare est hors de proportion. La faction visée doit remplir ses quatre cases de défense et rappeler tout le monde en ville.", chiffre:"puissance très forte" };
+    if(k==="forte")              return { icone:"⚔️", titre:"Le Protocole prépare de puissantes armes", phrase:"L'offensive sera lourde. Défenses en place et défenseurs présents, sans quoi la caisse y passera.", chiffre:"puissance forte" };
+    if(k==="moyenne")            return { icone:"⚔️", titre:"Une offensive ordinaire se prépare", phrase:"Des défenses en place et trois défenseurs présents suffisent à tenir.", chiffre:"puissance moyenne" };
+    return { icone:"⚔️", titre:"Coup de sonde", phrase:"Peu de moyens engagés. Une défense même légère devrait suffire.", chiffre:"puissance faible" };
+  }
+  if(info==="menace"){
+    const m=v.match(/~?\s*(\d+)\s*j/);
+    if(!m) return { icone:"📡", titre:"Aucune offensive détectée", phrase:"Les relais ne portent aucun ordre de sortie aujourd'hui. Le répit ne dure jamais longtemps.", chiffre:"" };
+    const j=parseInt(m[1],10);
+    return { icone:"📡", titre: j<=1 ? "Une offensive part demain" : "Une offensive se prépare",
+      phrase: j<=1 ? "Il ne reste plus le temps de fabriquer : place ce que tu as déjà en réserve, et rassemble les défenseurs en ville."
+                   : "Il reste de quoi fabriquer des objets de défense et les placer sur les quatre cases.",
+      chiffre:`dans ~${j} j` };
+  }
+  if(info==="cible"){
+    if(v==="—"||!v) return { icone:"🎯", titre:"Aucune cible désignée", phrase:"Les registres du Protocole n'appellent aucun secteur aujourd'hui.", chiffre:"" };
+    const nom=_hpFacNom(v);
+    const moi=(typeof etat!=="undefined" && etat && etat.faction===v);
+    return { icone:"🎯", titre: moi ? `C'EST NOUS qu'ils viennent chercher` : `Ils marchent sur ${nom}`,
+      phrase: moi ? "Notre secteur figure sur leurs relevés. Défenses en place, membres rappelés en ville : la présence compte autant que le matériel."
+                  : `Leurs registres appellent ${nom}. À nous de voir si on prévient la régence — ou si on en profite.`,
+      chiffre:`cible : ${nom}` };
+  }
+  return { icone:"📄", titre:_hpInfoNom(info), phrase:v, chiffre:"" };
+}
 function _lancerHackProto(){ const j=[_hackP1,_hackP2,_hackP3]; return j[Math.floor(Math.random()*j.length)](); }
 function _hackP1(){
   return new Promise(resolve=>{

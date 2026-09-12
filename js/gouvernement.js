@@ -13,6 +13,9 @@
     .gouv-don input:focus{ outline:none; border-color:var(--orange,#ff8a3d); }
     .gouv-role{ display:flex; justify-content:space-between; align-items:center; border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:5px 0; }
     .bur-menu{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+    .reg-prive{ font-family:"Space Mono",monospace; font-size:11px; color:#ffb37a; border:1px solid rgba(255,150,80,.45); border-radius:4px; padding:1px 6px; }
+    .reg-tous{ font-family:"Space Mono",monospace; font-size:11px; color:#8fd8ff; border:1px solid rgba(90,168,230,.4); border-radius:4px; padding:1px 6px; }
+    .poste-ligne.reg-envoye{ border-left:3px solid rgba(255,150,80,.5); }
     .bur-lien{ padding:5px 12px; border-radius:8px 3px 8px 3px; background:rgba(16,40,37,.7); color:var(--sourdine); border:1px solid var(--line); cursor:pointer; }
     .bur-lien.actif{ color:var(--orange-hi,#ffb060); border-color:var(--orange,#ff8a3d); }
     .def-slots{ display:flex; gap:10px; margin:6px 0 12px; }
@@ -178,8 +181,13 @@ async function majGouvernement(el){
   const gouv = await _chargerGouvernement(fac);
   const s2 = await sessionActuelle(); const moiId = s2?s2.user.id:null;
   const jeSuisRegent = gouv.parRole["regent"] && gouv.parRole["regent"]===moiId;
+  /* v0.64 — « vacant » n'a de sens que chez soi : chez les autres, c'est un
+     renseignement militaire (la Toundra n'a pas de Stratège) qu'on ne donne
+     pas. Ailleurs, un poste vide est simplement masqué.
+     (chezMoi est déjà calculé plus haut dans cette fonction.) */
   const rolesHtml = GOUV_ROLES.map(r=>{
     const id=gouv.parRole[r.id]; const nom=id?(gouv.noms[id]||"(?)"):null;
+    if(!nom && !chezMoi) return "";
     let ctrl="";
     /* Le Régent peut transmettre sa charge — RPC à part, car il y perd son
        pouvoir et le poste ne peut pas rester vacant. */
@@ -190,7 +198,8 @@ async function majGouvernement(el){
   }).join("");
   if(_perime()) return;
   const bloc = document.createElement("div");
-  bloc.innerHTML = `<h4 class="gsec" style="margin-top:16px">Gouvernement</h4>${rolesHtml}${jeSuisRegent?'<p class="itip-gris" style="margin-top:6px">Tu es Régent : tu peux nommer ou démettre les autres rôles.</p>':""}`;
+  const aucunRole = !rolesHtml.trim();
+  bloc.innerHTML = `<h4 class="gsec" style="margin-top:16px">Gouvernement</h4>${aucunRole?'<p class="vide">Aucun rôle connu pour cette faction.</p>':rolesHtml}${jeSuisRegent?'<p class="itip-gris" style="margin-top:6px">Tu es Régent : tu peux nommer ou démettre les autres rôles.</p>':""}`;
   el.appendChild(bloc);
   bloc.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   bloc.querySelectorAll("[data-nommer]").forEach(b=>b.addEventListener("click",()=>_regentNommer(b.dataset.nommer)));
@@ -634,7 +643,12 @@ async function syncEffetsCombat(){
   // Comptes rendus déposés par le serveur (expéditions résolues hors ligne).
   try{ const { data:evs } = await sb.rpc("consommer_evenements");
     if(Array.isArray(evs) && evs.length){
-      evs.forEach(ev=>{ if(ev && ev.texte) journal(ev.texte, "alerte", ev.cat||"combat"); });
+      /* v0.63 — tout arrivait en rouge « alerte », y compris « colis reçu » ou
+         « ta vente est partie ». Le ton suit la catégorie déposée par le serveur. */
+      evs.forEach(ev=>{ if(!ev || !ev.texte) return;
+        const cat = ev.cat || "combat";
+        const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
+        journal(ev.texte, ton, cat==="alerte" ? "combat" : cat); });
       if(typeof sauvegarder==="function") sauvegarder();
     }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
@@ -650,15 +664,26 @@ async function _rendreBureauRegent(el, fac){
   el.innerHTML = `<p class="vide">Chargement…</p>`;
   let annonce=""; try{ const { data } = await sb.from("annonce_faction").select("texte").eq("faction",fac).maybeSingle(); if(data) annonce=data.texte||""; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#14"); }
   let msgs=[]; try{ await sb.rpc("regent_purge"); const { data } = await sb.from("regent_messages").select("*").order("cree_le",{ascending:false}).limit(50); msgs=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#15"); }
-  const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">${f.nom}</option>`).join("");
+  const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">🔒 Privé — régence de ${f.nom}</option>`).join("");
   const facNom=id=>((typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id)||{}).nom||id;
   let h=`<h3>Bureau du Régent</h3>`;
   h+=`<h4 class="gsec">Annonce officielle (vue par tes membres)</h4>`;
   h+=`<div class="mur-outils" id="reg-ann-outils"></div><textarea id="reg-annonce" class="gouv-textarea" rows="3" placeholder="Message à ta faction…">${((_regForm.annonce!=null?_regForm.annonce:(annonce||""))).replace(/</g,"&lt;")}</textarea><div><button class="mini" id="reg-ann-pub">Publier l'annonce</button></div>`;
   h+=`<h4 class="gsec" style="margin-top:16px">Messagerie entre Régents</h4>`;
-  h+=`<div class="reg-compose"><select id="reg-dest" class="gouv-textarea" style="padding:8px"><option value="">Tous les Régents</option>${facOpts}</select><textarea id="reg-msg" class="gouv-textarea" rows="2" placeholder="Ton message aux Régents…">${(_regForm.msg||"").replace(/</g,"&lt;")}</textarea><button class="mini" id="reg-envoyer">Envoyer</button></div>`;
+  h+=`<div class="reg-compose"><select id="reg-dest" class="gouv-textarea" style="padding:8px"><option value="">📣 Comm à TOUS les Régents (les 5 factions la voient)</option>${facOpts}</select><p class="itip-gris" style="margin:2px 0 6px;font-size:12px">Choisir une faction = message <b>privé</b> : seule sa régence le lit, et il reste dans ton historique. Ton nom est joint dans les deux cas.</p><textarea id="reg-msg" class="gouv-textarea" rows="2" placeholder="Ton message aux Régents…">${(_regForm.msg||"").replace(/</g,"&lt;")}</textarea><button class="mini" id="reg-envoyer">Envoyer</button></div>`;
   if(!msgs.length) h+=`<p class="vide">Aucun message pour l'instant.</p>`;
-  else h+=msgs.map(m=>{ const dest=m.a_faction?("à "+facNom(m.a_faction)):"à tous"; return `<div class="poste-ligne"><span class="poste-txt"><b>${facNom(m.de_faction)}</b> <span class="itip-gris">${dest} · ${(typeof _dateHeure==="function")?_dateHeure(m.cree_le):""}</span><br>${(typeof _formatMur==="function")?_formatMur(m.texte):(m.texte||"").replace(/</g,"&lt;")}</span></div>`; }).join("");
+  /* v0.62 — un message privé ne se distinguait pas d'une comm à tous les
+     Régents, et l'expéditeur ne voyait pas ses propres envois. On affiche
+     l'émetteur nommé, le sens (reçu / envoyé) et un bandeau « PRIVÉ ». */
+  else h+=msgs.map(m=>{
+    const prive=!!m.a_faction, envoye=(m.de_faction===fac);
+    const corps=(typeof _formatMur==="function")?_formatMur(m.texte):(m.texte||"").replace(/</g,"&lt;");
+    const qui=m.auteur_nom ? `${echapper(m.auteur_nom)} <span class="itip-gris">(${facNom(m.de_faction)})</span>` : facNom(m.de_faction);
+    const etiq=prive
+      ? `<span class="reg-prive">🔒 PRIVÉ ${envoye?("→ "+facNom(m.a_faction)):"— pour ta régence seule"}</span>`
+      : `<span class="reg-tous">📣 à tous les Régents</span>`;
+    return `<div class="poste-ligne${envoye?" reg-envoye":""}"><span class="poste-txt"><b>${qui}</b> ${etiq} <span class="itip-gris">· ${(typeof _dateHeure==="function")?_dateHeure(m.cree_le):""}${envoye?" · envoyé par ta régence":""}</span><br>${corps}</span></div>`;
+  }).join("");
   el.innerHTML=h;
   if(typeof _remplirBarreMur==="function"){ _remplirBarreMur("#reg-ann-outils"); if(typeof _brancherOutilsMur==="function") _brancherOutilsMur("#reg-annonce","#reg-ann-outils"); }
   _brouillon(el, "#reg-annonce", "annonce", _regForm, "input");
@@ -676,7 +701,8 @@ async function _rendreBureauRegent(el, fac){
     _regForm.msg="";
     const { data:res, error } = await sb.rpc("regent_envoyer",{ p_a_faction:dest, p_texte:t });
     if(error || !res || !res.ok){ journal("Envoi impossible.","alerte"); return; }
-    journal("Message envoyé aux Régents.","gain"); if(typeof majCentre==="function") majCentre();
+    journal(dest ? `Message privé envoyé à la régence de ${facNom(dest)}.` : "Comm envoyée à tous les Régents.","gain");
+    if(typeof majCentre==="function") majCentre();
   });
 }
 /* Légende détaillée des objets de défense (v0.59). Les valeurs viennent de

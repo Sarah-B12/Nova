@@ -243,6 +243,11 @@ async function compterPoste(){
   const n=count||0;
   const b=document.querySelector('#hub-nav [data-hub="poste"]');
   if(b) b.innerHTML = "La Poste" + (n>0?` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700">${n}</span>`:"");
-  if(_postePrec>=0 && n>_postePrec) journal("📮 Tu as du courrier à La Poste !","poste","social");
+  /* ⚠ v0.63 — au premier passage _postePrec valait -1 : un colis arrivé
+     pendant l'absence n'était JAMAIS annoncé. Et le message ne disait ni de qui
+     ni quoi. Le détail vient maintenant des événements serveur (déclencheur
+     poste_evenement) ; ici on ne garde qu'un rappel s'il reste du courrier. */
+  if(_postePrec < 0){ if(n > 0) journal(`📮 ${n} envoi(s) t'attendent à La Poste.`,"poste","social"); }
+  else if(n > _postePrec) journal("📮 Tu as du courrier à La Poste !","poste","social");
   _postePrec=n;
 }

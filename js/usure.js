@@ -175,8 +175,10 @@ async function majUsure(){
   // Équipement porté (s'use au temps aussi)
   if(etat.equipement) for(const slot of Object.keys(etat.equipement)){
     const id = etat.equipement[slot]; if(!id) continue;
-    if(etat.equipementDate[slot] == null){ etat.equipementDate[slot] = now; continue; }
-    if(now - etat.equipementDate[slot] > dureeVie(id)*JOUR_MS){
+    // v0.64 : date du LOT (serveur) plutôt que l'heure du dernier équipement.
+    const t0 = (typeof dateEquipe==="function") ? dateEquipe(slot) : (etat.equipementDate||{})[slot];
+    if(t0 == null){ etat.equipementDate[slot] = now; continue; }
+    if(now - t0 > dureeVie(id)*JOUR_MS){
       const it = item(id);
       if(!await _detruireEquipeServeur(id)) continue;   // échec : on réessaiera au prochain passage
       etat.equipement[slot] = null; delete etat.equipementDate[slot];

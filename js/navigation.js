@@ -3,6 +3,8 @@
    =========================================================== */
 
 function montrerHub(h){
+  // v0.66 : les bulles ne suivent plus le joueur d'un écran à l'autre.
+  if(typeof fermerToutesBulles==="function") fermerToutesBulles();
   document.querySelectorAll(".hub-vue").forEach(el => el.hidden = (el.id !== "hub-"+h));
   document.querySelectorAll(".hub-lien").forEach(b => b.classList.toggle("actif", b.dataset.hub===h));
 }

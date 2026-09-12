@@ -7,7 +7,9 @@ const STRUCTURES = {
   // ⚠ `desc` = ce que le bâtiment PRODUIT (affiché sous le nom, ligne ~277),
   //    pas son coût. À tenir aligné sur PLANTES et ANIMAUX dans data.js.
   biodome: { nom:"Bio-dôme", prix:200, desc:"Sylve, Sporelle, Nectine, Ferragave" },
-  enclos:  { nom:"Enclos",   prix:250, desc:"Filaine, Cuir, Biofibre, Protéines" },
+  // v0.65 : on nomme les BÊTES qu'on y met (comme le bio-dôme nomme les plantes),
+  // pas ce qu'elles produisent — c'est la bête qu'on achète et qu'on place.
+  enclos:  { nom:"Enclos",   prix:250, desc:"Cuprin, Cuirasson, Toisard, Nourrin" },
   atelier: { nom:"Atelier",  prix:300, desc:"fabriquer les objets de ta formation" },
   hangar:  { nom:"Hangar à drones", prix:350, desc:"automatise un bio-dôme ou un enclos" }
 };
@@ -137,6 +139,7 @@ async function batirParcelle(type){
   else return;
   etat.terrain.parcelles[plotSel]=p;
   journal(`${s.nom} bâti (−${prix} ₡).`,"gain"); apresAction();
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();   // v0.65 : 200 ₡ ne doivent pas tenir à 2,5 s de minuterie
 }
 function demolir(i){
   if(_refusTerrain()) return;
@@ -147,6 +150,7 @@ function demolir(i){
   if(remb>0){ etat.credits+=remb; journal(`Structure démolie. Recyclage : +${remb} ₡.`,"gain"); }
   else journal("Structure démolie.","alerte");
   apresAction();
+  if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
@@ -166,7 +170,7 @@ async function recolterMine(i){
   p.stock=Math.max(0,stock-pr);
   gagnerXp(3);
   journal(`Mine : +${pr} minerai(s). Réserve : ${p.stock}/${rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
-  apresAction(); majStruct();
+  apresAction(); _sauveTerrain(); majStruct();
 }
 
 // --- BIO-DÔME : 4 cases · planter → arroser 1×/jour → récolter (5-9) ---
@@ -187,7 +191,7 @@ async function poserPlante(ci, plId){ if(_refusTerrain()) return; const p=etat.t
   if(!await assurerDansSac(gr,1)){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
   const res=await agirServeur({ cout:COUT_TERRAIN.planter, retirer:{ [gr]:1 }, motif:"planter" });
   if(!res) return;
-  p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); majStruct(); }
+  p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
 async function arroserCase(ci){
   if(_refusTerrain()) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
@@ -195,7 +199,7 @@ async function arroserCase(ci){
   if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   if(!await agirServeur({ cout:COUT_TERRAIN.arroser, motif:"arroser" })) return;
   c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now();
-  journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); majStruct();
+  journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 async function recolterCase(ci){
   if(_refusTerrain()) return;
@@ -211,16 +215,21 @@ async function recolterCase(ci){
   const pr=(res.ajoutes||{})[c.plante]||0;
   const nom=plante(c.plante).nom; p.cases[ci]=null;
   gagnerXp(2);
-  journal(`Récolte : +${pr} ${nom}.`+(pr<nb?" (sac plein)":""),"gain"); apresAction(); majStruct();
+  journal(`Récolte : +${pr} ${nom}.`+(pr<nb?" (sac plein)":""),"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 
 // --- ENCLOS : 4 cases · élever → nourrir (plante du sac) → tondre 1×/jour ×7 → retraite ---
+/* v0.65 — les actes de terrain qui engagent des ressources partent tout de
+   suite : sur mobile, la minuterie de 2,5 s ne survit pas à un changement
+   d'application. On ne fait PAS ça pour les actions purement cosmétiques ni
+   pour les rendus, afin de ne pas multiplier les écritures. */
+function _sauveTerrain(){ if(typeof sauverMaintenant==="function") sauverMaintenant(); }
 async function poserAnimal(ci, anId){ if(_refusTerrain()) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const bb=bebeDe(anId);
   if(!await assurerDansSac(bb,1)){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
   const res=await agirServeur({ cout:COUT_TERRAIN.elever, retirer:{ [bb]:1 }, motif:"elever" });
   if(!res) return;
-  p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); majStruct(); }
+  p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
 function plantesDuSac(){ return etat.sacOrdre.filter(id=>{ const it=item(id); return it&&it.cat==="plante"&&(etat.sac[id]||0)>0; }); }
 async function nourrirCase(ci){
   if(_refusTerrain()) return;
@@ -231,7 +240,7 @@ async function nourrirCase(ci){
   const res=await agirServeur({ cout:COUT_TERRAIN.nourrir, retirer:{ ferragave:1 }, motif:"nourrir" });
   if(!res) return;
   c.repas++;
-  journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); majStruct();
+  journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 async function tondreCase(ci){
   if(_refusTerrain()) return;
@@ -250,7 +259,7 @@ async function tondreCase(ci){
   let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${c.tontes}/${TONTES_MAX}.`;
   if(c.tontes>=TONTES_MAX){ p.cases[ci]=null; msg+=` Le ${a.nom} a pris sa retraite.`; }
   gagnerXp(2);
-  journal(msg,"gain"); apresAction(); majStruct();
+  journal(msg,"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 
 // --- Modale d'une structure (mine / bio-dôme / enclos) ---

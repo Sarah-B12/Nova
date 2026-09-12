@@ -140,7 +140,7 @@ async function _ppChargerJauges(id){
       <span class="pp-jbar"><i class="${cls}" style="width:${Math.max(0,Math.min(100,v))}%"></i></span>
       <b>${Math.round(v)}%</b></div>`;
   z.innerHTML = `<div class="pp-jauges">
-      ${barre("O₂", d.o2, "j-o2")}
+      ${/* v0.59 : l'O₂ a sa jauge permanente dans l'en-tête — inutile de la répéter ici. */""}
       ${barre("Santé", d.sante, "j-sante")}
       ${barre("Moral", d.moral, "j-moral")}
     </div>`;

@@ -99,6 +99,36 @@ async function consommerMunitions(){
   if(typeof sauvegarder==="function") sauvegarder();
 }
 
+/* ⚠ v0.64 — L'ÉQUIPEMENT VIEILLIT COMME LE RESTE. Avant, il s'usait depuis
+   etat.equipementDate[slot], remis à zéro à CHAQUE fois qu'on l'équipait :
+   déséquiper puis rééquiper rendait une pièce éternelle, et un objet vieux de
+   20 jours acheté au marché repartait à neuf une fois porté. On lit désormais
+   la date du lot (lieu « equipe »), que le serveur conserve à travers ranger()
+   — la même que pour le sac, le coffre et la soute. equipementDate ne sert plus
+   que de secours en mode local (sans serveur). */
+function dateEquipe(slot){
+  const id = etat.equipement && etat.equipement[slot]; if(!id) return null;
+  if(typeof lotsDe === "function"){
+    const l = lotsDe(id, "equipe").sort((a,b)=>a.acquis-b.acquis)[0];
+    if(l) return l.acquis;
+  }
+  const t0 = etat.equipementDate && etat.equipementDate[slot];
+  return (t0 == null) ? null : t0;
+}
+function joursRestantsEquipe(slot){
+  const id = etat.equipement && etat.equipement[slot]; if(!id) return null;
+  const t0 = dateEquipe(slot);
+  if(t0 == null || typeof dureeVie !== "function" || typeof JOUR_MS === "undefined") return null;
+  return Math.max(0, (t0 + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS);
+}
+function texteUsureEquipe(slot){
+  const j = joursRestantsEquipe(slot); if(j == null) return "";
+  if(j < 1){  const h = Math.max(1, Math.round(j*24)); return `⚠ se casse dans ${h} h`; }
+  const n = Math.floor(j);
+  return `${n} jour${n>1?"s":""} avant rupture`;
+}
+function _classeUsure(slot){ const j=joursRestantsEquipe(slot); return (j!=null && j<1) ? " usure-critique" : ((j!=null && j<3) ? " usure-basse" : ""); }
+
 /* ---------- Cumul des effets équipés ---------- */
 // Arme à feu sans munition : ni force ni agilité ni intelligence (le reste — poids, O₂ — demeure).
 function _equipEffets(){ return Object.values(etat.equipement||{}).filter(Boolean).map(id=>{
@@ -181,7 +211,8 @@ function majEquipement(){
   for(const s of EQUIP_SLOTS){
     const id = etat.equipement[s.id];
     const bloque = (s.cat==="arme" && !id && armeSlotBloque(s.id));
-    html += `<div class="equip-slot${id?" plein":""}${bloque?" bloque":""}" data-slot="${s.id}" style="left:${s.x}%;top:${s.y}%" title="${bloque?"Occupé par une arme à deux mains":s.nom+(id?" : "+item(id).nom+" — "+effetTexte(id):"")}">`
+    const us = id ? texteUsureEquipe(s.id) : "";
+    html += `<div class="equip-slot${id?" plein":""}${bloque?" bloque":""}${id?_classeUsure(s.id):""}" data-slot="${s.id}" style="left:${s.x}%;top:${s.y}%" title="${bloque?"Occupé par une arme à deux mains":s.nom+(id?" : "+item(id).nom+" — "+effetTexte(id)+(us?" — "+us:""):"")}">`
       + (id ? `<span class="icone">${iconeItem(id)}</span>` : `<span class="equip-lbl">${bloque?"2 mains":s.nom}</span>`)
       + `</div>`;
   }
@@ -210,7 +241,7 @@ function ouvrirPicker(slot){
   const dispo = TOUS_ITEMS.filter(a => (etat.sac[a.id]||0)>0 && slotEquip(a.id)===s.cat);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>${s.nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
   if(equipe){
-    html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
+    html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span><span class="picker-usure${_classeUsure(slot)}">⏳ ${texteUsureEquipe(slot)||"usure inconnue"}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
   }
   if(dispo.length){
     for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;

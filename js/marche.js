@@ -92,12 +92,16 @@ async function renderMarche(){
     const p = PRIX_ITEM[iid] || {};
     const cls = o.prix < p.moy ? "prix-bas" : (o.prix > p.moy ? "prix-haut" : "prix-moyen");
     const detail = lots.length > 1
-      ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ · moy ${p.moy||"?"} ₡`
-      : `${o.quantite} en vente · ${echapper(o.vendeurNom||"?")} · moy ${p.moy||"?"} ₡`;
+      /* v0.64 — le bouton affichait « Acheter ×40 » alors qu'acheter_offre ne
+         vend QU'UNE unité : on croyait devoir prendre tout le lot. Le stock
+         disponible reste ici, le bouton dit « Acheter 1 », et le prix est à
+         l'unité. */
+      ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ l'unité · moy ${p.moy||"?"} ₡`
+      : `${o.quantite} en vente par ${echapper(o.vendeurNom||"?")} · ${o.prix} ₡ l'unité · moy ${p.moy||"?"} ₡`;
     html += `<div class="marche-ligne" data-item="${iid}"><span class="marche-ic">${iconeItem(iid)}</span>`
       + `<span class="marche-nom">${item(iid).nom}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
-      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")}">Acheter${o.quantite>1?` ×${o.quantite}`:""}</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
+      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
   html += `</div>`;
   z.innerHTML = html;

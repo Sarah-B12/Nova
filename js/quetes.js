@@ -85,6 +85,7 @@ function abandonnerQuete(){
 async function avancerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id);
   a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[];
+  if(typeof sauverMaintenant==="function") sauverMaintenant();   // v0.65 : une étape franchie ne doit pas tenir à 2,5 s de minuterie
   if(a.etape >= q.etapes.length){ await terminerQuete(); }
   else { const e=etapeActive(); journal("Étape suivante"+(e&&e.indice?` : « ${e.indice} »`:"")+".","gain"); sauvegarder(); }
   rafraichirQuetes();
@@ -112,6 +113,7 @@ async function terminerQuete(){
   if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
   queteEtat().done.push(a.id); queteEtat().active=null;
+  if(typeof sauverMaintenant==="function") sauverMaintenant();   // v0.65 : une quête terminée part TOUT DE SUITE au serveur
   const parts=[]; if(gainQ) parts.push(`+${gainQ} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(r.pa) parts.push(`+${r.pa} PA`);
   if(r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
   if(r.flags && r.flags.permisVaisseau) parts.push("🚀 Permis de vaisseau obtenu !");
@@ -274,10 +276,14 @@ async function _appliquerCerclesQ(cercles){ if(!cercles) return;
 }
 function _htmlChoix(d){
   const opts=(d.options||[]).map((o,i)=>{
-    const ok=_coutQ_ok(o.cout); const ct=_coutTexteQ(o.cout); const ef=_cerclesTexteQ(o.cercles);
+    /* ⚠ v0.66 — le gain de Cercle (« +5 Assembleurs ») n'est PLUS annoncé :
+       le joueur choisissait le camp le plus rentable au lieu de choisir ce
+       qu'il pensait juste. La conséquence se découvre après coup, dans le
+       journal. (_cerclesTexteQ sert encore ailleurs.) */
+    const ok=_coutQ_ok(o.cout); const ct=_coutTexteQ(o.cout);
     return `<div style="border:1px solid var(--line);border-radius:8px;padding:8px 10px">
       <button class="mini" data-choix="${i}" ${ok?"":"disabled"}>${o.texte}</button>
-      <div class="quete-indice" style="margin-top:4px">${ct?`Coût : <b>${ct}</b>. `:""}${ef}${ok?"":' <span style="color:#ff5257">— ressources manquantes</span>'}</div>
+      <div class="quete-indice" style="margin-top:4px">${ct?`Coût : <b>${ct}</b>. `:""}${ok?"":'<span style="color:#ff5257">— ressources manquantes</span>'}</div>
     </div>`;
   }).join("");
   return `<div class="quete-etape">${_par(d.texte)}<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">${opts}</div></div>`;
@@ -292,6 +298,8 @@ function _wireChoix(z,d){
     if(!_coutQ_ok(o.cout)){ journal("Ressources insuffisantes pour ce choix.","alerte"); liberer(); return; }
     if(!await _payerCoutQ(o.cout)){ liberer(); return; }
     await _appliquerCerclesQ(o.cercles);
+    const ef=_cerclesTexteQ(o.cercles);   // annoncé seulement une fois le choix fait
+    if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","social");
     // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
     if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
     journal(o.journal || "Ton choix est scellé.","gain");
@@ -580,10 +588,17 @@ function majQueteHub(){
   const enFac=_enFaction();
   // Donneur : lu sur la quête active (défaut = Vieux Sorn). L'image se déduit du
   // champ donneurImg, sinon d'un nom de fichier dérivé du donneur.
-  const _qa0=queteActive(); const _qd0=_qa0?queteData(_qa0.id):null;
+  /* ⚠ v0.67 — la bannière ne lisait QUE la quête active : avant d'accepter, on
+     voyait encore le donneur de la quête précédente (Sorn au lieu d'Adaya), et
+     il fallait recharger pour que ça change. On prend la quête active si elle
+     existe, sinon celle qu'on est en train de PROPOSER. */
+  const _qa0=queteActive(); const _qd0=_qa0 ? queteData(_qa0.id) : queteProchaine();
   const _dNom=(_qd0&&_qd0.donneur)||"Vieux Sorn";
   const _dImg=(_qd0&&_qd0.donneurImg)||("images/quetes/"+_dNom.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")+".png");
+  /* Le lieu affiché est celui où l'on PREND la quête : le comptoir de sa
+     propre cité. Un donneur peut ensuite emmener le joueur ailleurs, mais la
+     bannière ne doit pas annoncer un lieu où le joueur n'est pas. */
   const _dLieu=(_qd0&&_qd0.donneurLieu)||"Comptoir";
   const banniere = enFac ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
   const a=queteActive();
