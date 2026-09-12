@@ -4,12 +4,23 @@
    Rangement (storage) croissant. Progression stricte (palier N-1 requis).
    Les Nomades ont les mêmes paliers, sous des noms de tentes.
    =========================================================== */
+/* ⚠ v0.72 — PALIERS REVUS. Avant : tout en matières brutes, une Villa à
+   ~250 ₡ (moins cher qu'un drone), puis un Palace à ~7 900 ₡ d'un seul bond à
+   cause des 3 Cristaux de Nyx. Aucun objet fabriqué n'intervenait : l'atelier
+   et les quatre formations ne servaient à rien pour se loger.
+   Désormais : trajectoire longue et régulière, et les paliers 3 à 5 réclament
+   des INTERMÉDIAIRES DES QUATRE MÉTIERS — donc du commerce entre joueurs.
+   `travail` (nombre d'actions à −3 % d'énergie) est désormais explicite : il ne
+   se déduit plus du nombre de matières, sinon les recettes à base
+   d'intermédiaires, moins nombreuses, auraient fait BAISSER l'effort.
+   Coût marché indicatif : 86 / 207 / 971 / 3 014 / 15 000 ₡ (cumul ~19 300 ₡).
+   ⚠ Aligner MAISON_PALIERS sur PRIX_ITEM si l'économie change. */
 const MAISON_PALIERS = [
-  { nom:"Cabane",        storage:5,  recette:{ sylve:5, biofibre:3 } },
-  { nom:"Petite maison", storage:10, recette:{ cendrite:8, sylve:5, biofibre:3 } },
-  { nom:"Maison",        storage:18, recette:{ cendrite:12, voltane:6, filaine:5, biofibre:4 } },
-  { nom:"Villa",         storage:28, recette:{ cendrite:15, voltane:10, silite:6, cuir:5, filaine:4 } },
-  { nom:"Palace",        storage:40, recette:{ cendrite:20, voltane:12, silite:10, givrite:5, cristal:3, cuir:6 } }
+  { nom:"Cabane",        storage:5,  travail:8,   recette:{ sylve:6, biofibre:4, cendrite:4 } },
+  { nom:"Petite maison", storage:10, travail:20,  recette:{ cendrite:10, sylve:8, fab_panneau_de_sylve:3, fab_fil:2 } },
+  { nom:"Maison",        storage:18, travail:40,  recette:{ fab_lingot_de_cendrite:6, fab_panneau_de_sylve:6, fab_panneau_renforce:3, fab_plaque_de_coque:3, fab_fil:4, cuir:6 } },
+  { nom:"Villa",         storage:28, travail:70,  recette:{ fab_panneau_composite:5, fab_plaque_de_coque:6, fab_cablage:4, fab_biofil_renforce:4, fab_servomoteur:2, fab_lingot_de_givrite:4 } },
+  { nom:"Palace",        storage:40, travail:110, recette:{ fab_panneau_composite:8, fab_coque_blindee:4, fab_supraconducteur:2, fab_lingot_de_givrite:4, fab_combinaison_pressurisee:1, fab_noyau_de_calcul:1, fab_biofil_renforce:6, cristal:2 } }
 ];
 const MAISON_NOMS_NOMADES = ["Tente", "Tente équipée", "Grande tente", "Chapiteau", "Tente de luxe"];
 const MAISON_IMG_STD = ["cabane","petite_maison","maison","villa","palace"];
@@ -21,7 +32,10 @@ function imgMaison(p){ if(p<1||p>5) return null; return `images/maisons/${(estNo
 function nomPalier(n){ if(n<1||n>5) return "—"; return estNomade() ? MAISON_NOMS_NOMADES[n-1] : MAISON_PALIERS[n-1].nom; }
 function recetteMaison(n){ return (MAISON_PALIERS[n-1]||{}).recette || null; }
 function storageMaison(n){ return (MAISON_PALIERS[n-1]||{}).storage || 0; }
-function travailTotal(n){ const r=recetteMaison(n); return r ? Object.values(r).reduce((a,b)=>a+b,0) : 0; }
+function travailTotal(n){
+  const p = MAISON_PALIERS[n-1]; if(!p) return 0;
+  return p.travail || Object.values(p.recette).reduce((a,b)=>a+b,0);   // `travail` explicite depuis la v0.72
+}
 function itemsCoffre(){ return Object.values(etat.coffre).reduce((a,b)=>a+b,0); }
 function capaciteMaison(){
   const p = etat.maison.palier||0; if(p<=0) return 0;
@@ -47,13 +61,27 @@ function agrandirMaison(){
   m.chantier = { cible:m.palier+1, depose:{}, travail:0 };
   journal(`Chantier lancé : ${nomPalier(m.chantier.cible)}.`,"gain"); apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
-async function deposerMat(matId){
+/* v0.72 — on dépose TOUT ce qu'on peut d'un coup (les paliers demandent
+   jusqu'à 8 unités : un clic par unité était intenable), et le coffre compte
+   quand on est chez soi, comme à l'atelier. */
+async function deposerMat(matId, tout){
   const c=etat.maison.chantier; if(!c) return;
   const r=recetteMaison(c.cible); const besoin=r[matId]||0; const dej=c.depose[matId]||0;
-  if(dej>=besoin){ journal("Déjà assez de cette matière.","alerte"); return; }
-  if((etat.sac[matId]||0)<=0){ journal("Tu n'as pas cette matière dans ton sac.","alerte"); return; }
-  if(!await agirServeur({ retirer:{ [matId]:1 }, motif:"chantier" })) return;
-  c.depose[matId]=dej+1; apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  const reste = besoin - dej;
+  if(reste<=0){ journal("Déjà assez de cette matière.","alerte"); return; }
+  const auSac = etat.sac[matId]||0;
+  const auCoffre = (typeof coffreAccessible==="function" && coffreAccessible()) ? (etat.coffre[matId]||0) : 0;
+  let n = tout ? Math.min(reste, auSac + auCoffre) : Math.min(1, auSac + auCoffre);
+  if(n<=0){ journal(`Tu n'as pas de ${item(matId).nom}${auCoffre?"":" dans ton sac"}.`,"alerte"); return; }
+  // Ce qui manque au sac remonte d'abord du coffre.
+  const manque = n - auSac;
+  if(manque>0 && !await rangerServeur(matId, manque, "sac", "coffre")){
+    journal(`Impossible de sortir ${manque}× ${item(matId).nom} du coffre.`,"alerte"); return;
+  }
+  if(!await agirServeur({ retirer:{ [matId]:n }, motif:"chantier", toutOuRien:true })) return;
+  c.depose[matId]=dej+n;
+  journal(`Chantier : ${n}× ${item(matId).nom} déposé${n>1?"s":""} (${c.depose[matId]}/${besoin}).`);
+  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function travaillerMaison(){
   const c=etat.maison.chantier; if(!c) return;
@@ -106,9 +134,12 @@ function majMaison(){
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;
-    html += `<p class="vide">Dépose les matières, puis fournis le travail (1 matière déposée = 1 action, ${TRAVAIL_ENERGIE} % d'énergie chacune).</p><div class="recette-liste">`;
-    for(const mid in r){ const dej=c.depose[mid]||0, bes=r[mid], has=etat.sac[mid]||0, plein=dej>=bes;
-      html += `<div class="recette-ligne ok"><span class="recette-seuil">${dej}/${bes}</span><span class="recette-corps"><b class="recette-nom">${item(mid).nom}</b><span class="recette-ing">dans le sac : ${has}</span></span><button class="mini" data-dep="${mid}" ${(plein||has<=0)?"disabled":""}>Déposer</button></div>`;
+    html += `<p class="vide">Dépose les matières, puis fournis le travail — <b>${total} actions</b> à ${TRAVAIL_ENERGIE} % d'énergie (soit ${total*TRAVAIL_ENERGIE} % en tout). Chaque matière déposée débloque une action. ${(typeof coffreAccessible==="function" && coffreAccessible())?"Ton coffre compte (🏠).":"Hors de ta ville : seul le sac compte."}</p><div class="recette-liste">`;
+    for(const mid in r){ const dej=c.depose[mid]||0, bes=r[mid], plein=dej>=bes;
+      const auSac=etat.sac[mid]||0;
+      const auCof=(typeof coffreAccessible==="function" && coffreAccessible()) ? (etat.coffre[mid]||0) : 0;
+      const has=auSac+auCof;
+      html += `<div class="recette-ligne ok"><span class="recette-seuil">${dej}/${bes}</span><span class="recette-corps"><b class="recette-nom">${item(mid).nom}</b><span class="recette-ing">disponible : ${auSac}${auCof?` +${auCof} 🏠`:""}</span></span><button class="mini" data-dep="${mid}" ${(plein||has<=0)?"disabled":""}>Déposer ${Math.min(bes-dej, has)>1?`×${Math.min(bes-dej, has)}`:""}</button></div>`;
     }
     html += `</div>`;
     const dispoTravail = deposeTotal(c) - c.travail;
@@ -131,7 +162,7 @@ function majMaison(){
   }
   z.innerHTML=_RB+html;
 
-  z.querySelectorAll("[data-dep]").forEach(b=>b.addEventListener("click",()=>deposerMat(b.dataset.dep)));
+  z.querySelectorAll("[data-dep]").forEach(b=>b.addEventListener("click",()=>deposerMat(b.dataset.dep, true)));   // v0.72 : tout ce qui manque, d'un coup
   const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", travaillerMaison);
   const ba=z.querySelector("#maison-agrandir"); if(ba) ba.addEventListener("click", agrandirMaison);
   const bd=z.querySelector("#maison-demolir"); if(bd) bd.addEventListener("click", demolirMaison);

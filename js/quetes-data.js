@@ -178,7 +178,13 @@ const QUETES = [
            l'épreuve de Q4 : le joueur les manipule ici sans les comprendre et
            en apprend le sens deux quêtes plus tard. Rétroactivement, ce cadenas
            devient un indice. Ne pas les changer sans changer Q4. */
-        defi:{ type:"cadenas", longueur:3, symboles:["⛨","⌁","⚑","⛔"], essais:8,
+        /* ⚠ v0.73 — CES QUATRE SYMBOLES SONT CEUX DE Q4. Le cadenas du poste (Q2) se
+             manipule « à l'aveugle » ; en Q4, le joueur apprend leur sens. Les
+             deux listes doivent rester IDENTIQUES, sans quoi le texte d'arrivée
+             de Q4 (« quatre d'entre eux te sont familiers ») devient faux.
+             ⛨ et ⛔ ont été remplacés : ils s'affichaient en emoji couleur sur
+             iOS et Android, alors que le reste du jeu est en trait. */
+        defi:{ type:"cadenas", longueur:3, symboles:["▣","⌁","⚑","⊘"], essais:8,
           texte:["Trois logements, quatre glyphes possibles. Le sas te dira, à chaque tentative, combien sont bien placés."],
           reussite:[
             "Le sas cède avec un soupir d'air comprimé vieux de trois cents ans. À l'intérieur : un établi, des outils rangés au carré, une combinaison pliée sur un tabouret. Quelqu'un est parti d'ici en pensant revenir.",
@@ -418,12 +424,12 @@ const QUETES = [
           texte:["Six panneaux de service, six glyphes du Protocole. Rends à chacun son sens."],
           consigne:"Associe chaque pictogramme à sa signification.",
           paires:[
-            { picto:"⛨", glyphe:"ΛΞ", sens:"Périmètre" },
+            { picto:"▣", glyphe:"ΛΞ", sens:"Périmètre" },
             { picto:"⌁", glyphe:"ΘΘ", sens:"Alimentation" },
             { picto:"⚑", glyphe:"ΨΔ", sens:"Point de rassemblement" },
-            { picto:"⏱", glyphe:"ΞΞ", sens:"Départ programmé" },
-            { picto:"⚕", glyphe:"ΦΛ", sens:"Poste médical" },
-            { picto:"⛔", glyphe:"ΔΔ", sens:"Accès restreint" }
+            { picto:"◷", glyphe:"ΞΞ", sens:"Départ programmé" },
+            { picto:"✚", glyphe:"ΦΛ", sens:"Poste médical" },
+            { picto:"⊘", glyphe:"ΔΔ", sens:"Accès restreint" }
           ],
           distracteurs:["Zone de forage","Réfectoire","Quarantaine"],
           reussite:[

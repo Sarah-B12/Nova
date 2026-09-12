@@ -671,7 +671,16 @@ function _queteStyle(){
     .q-pir-curseur{ position:absolute; top:0; bottom:0; width:3px; background:var(--orange-hi,#ffb060); left:0; }
     .q-gly-grille{ display:flex; flex-wrap:wrap; gap:10px; margin:8px 0; }
     .q-gly-carte{ display:flex; flex-direction:column; align-items:center; gap:5px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:rgba(16,41,78,.4); min-width:92px; }
-    .q-gly-pic{ font-size:22px; line-height:1; } .q-gly-pic img{ width:32px; height:32px; object-fit:contain; }
+    /* ⚠ v0.73 — sans font-family explicite, iOS et Android substituent une
+       police EMOJI COULEUR à certains symboles (⛨ ⛔ ⏱ ⚕ devenaient des
+       pastilles rouges et bleues, hors du style du jeu). La pile ci-dessous
+       impose des polices de SYMBOLES monochromes ; variation-selector-15
+       (text) via font-variant-emoji finit le travail sur Safari récent. */
+    .q-gly-pic, .q-cad-slot, .q-cad-code{
+      font-family:"Segoe UI Symbol","Apple Symbols","Noto Sans Symbols 2",
+                  "DejaVu Sans","Arial Unicode MS",sans-serif;
+      font-variant-emoji:text; }
+    .q-gly-pic{ font-size:26px; line-height:1; color:var(--texte); } .q-gly-pic img{ width:32px; height:32px; object-fit:contain; }
     .q-gly-sym{ font-size:30px; color:var(--bleu); line-height:1; } .q-gly-sym img{ width:36px; height:36px; object-fit:contain; }
     .q-gly-sel{ background:#0f1830; border:1px solid var(--line); border-radius:6px; color:var(--texte); padding:4px 6px; font-family:inherit; font-size:12px; max-width:110px; }
     .q-cad-slots,.q-seq-pads{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }

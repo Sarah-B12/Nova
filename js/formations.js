@@ -236,6 +236,40 @@ function abandonnerFormation(){
 
 const CAP_RECETTE = 10;   // points max qu'une même recette peut rapporter (= 1 palier ; on progresse en variant)
 
+/* ⚠ v0.72 — LE COFFRE COMPTE À L'ATELIER. Il fallait remonter soi-même chaque
+   ingrédient du coffre au sac avant de fabriquer : pénible, et incompréhensible
+   quand on est chez soi, à deux pas de son propre rangement. Le coffre est
+   donc pris en compte — mais SEULEMENT dans sa ville de faction, là où se
+   trouve le logement (un coffre ne suit pas son propriétaire).
+   La fabrication elle-même n'a pas changé : ranger() remonte d'abord ce qui
+   manque, puis agir() consomme depuis le sac, en tout-ou-rien. */
+function coffreAccessible(){
+  return (typeof villeActuelle==="function") ? (villeActuelle() === etat.faction) : false;
+}
+// Quantité utilisable d'un ingrédient : sac, plus coffre si l'on est chez soi.
+function dispoFab(id){
+  if(!id) return 0;
+  return (etat.sac[id]||0) + (coffreAccessible() ? (etat.coffre[id]||0) : 0);
+}
+/* Remonte au sac ce qui manque, pris dans le coffre. Rend false si le compte
+   n'y est pas (ou si le sac est trop plein pour accueillir les ingrédients). */
+async function _remonterDuCoffre(ings, qtes){
+  if(!coffreAccessible()) return true;
+  for(let i=0;i<ings.length;i++){
+    const id=ings[i].id; if(!id) continue;
+    const besoin = qtes[i] - (etat.sac[id]||0);
+    if(besoin <= 0) continue;
+    const auCoffre = etat.coffre[id]||0;
+    if(auCoffre < besoin) return false;                       // vérifié avant, filet de sécurité
+    if(!await rangerServeur(id, besoin, "sac", "coffre")){
+      journal(`Impossible de sortir ${besoin}× ${item(id).nom} du coffre (sac trop plein ?).`,"alerte");
+      return false;
+    }
+    journal(`${besoin}× ${item(id).nom} sorti(s) du coffre.`);
+  }
+  return true;
+}
+
 // Points gagnés par fabrication selon la difficulté de l'objet.
 // De base 1 point ; les armes, vaisseaux, armures et pièces maîtresses en rapportent plus.
 function ptsFab(nom){
@@ -342,7 +376,13 @@ async function fabriquer(seuil){
     ings.forEach((g,i)=>{ if(g.id && item(g.id).type==="matiere" && qtes[i]>1 && (bi<0 || qtes[i]>qtes[bi])) bi=i; });
     if(bi>=0) qtes[bi] -= 1;
   }
-  for(let i=0;i<ings.length;i++){ if((etat.sac[ings[i].id]||0) < qtes[i]){ journal(`Il manque ${qtes[i]}× ${item(ings[i].id).nom}.`, "alerte"); return; } }
+  for(let i=0;i<ings.length;i++){
+    if(dispoFab(ings[i].id) < qtes[i]){
+      journal(`Il manque ${qtes[i] - dispoFab(ings[i].id)}× ${item(ings[i].id).nom}${coffreAccessible()?" (sac + coffre)":""}.`, "alerte"); return;
+    }
+  }
+  // Ce qui dort dans le coffre remonte au sac avant la fabrication.
+  if(!await _remonterDuCoffre(ings, qtes)) return;
 
   const pid = PROD_PAR_NOM[normNom(nom)].id;
   if(typeof estVaisseau==="function" && estVaisseau(pid) && !etat.permisVaisseau){ journal("Assemblage de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
@@ -395,14 +435,18 @@ function renderAtelier(corps){
     if(f.points < seuil){ if(prochaine === null) prochaine = [seuil, nom]; return; }   // masque les verrouillées
     const ings = parseIngredients(ingTxt);
     const inconnu = ings.some(g => g.id === null);
-    const manque  = ings.some(g => g.id === null || (etat.sac[g.id]||0) < g.qte);
+    const manque  = ings.some(g => g.id === null || dispoFab(g.id) < g.qte);
     const epuise  = (f.fait[seuil]||0) >= CAP_RECETTE;
 
     const ingHtml = ings.map(g => {
       const nomAff = g.id ? item(g.id).nom : g.nom;
-      const poss   = g.id ? (etat.sac[g.id]||0) : 0;
+      const auSac  = g.id ? (etat.sac[g.id]||0) : 0;
+      const auCof  = (g.id && coffreAccessible()) ? (etat.coffre[g.id]||0) : 0;
+      const poss   = auSac + auCof;
       const ok     = g.id && poss >= g.qte;
-      return `<span class="ing-tag ${ok ? "ok" : "ko"}">${nomAff} ×${g.qte} <small>(${g.id ? poss : "?"})</small></span>`;
+      // « (2 +3 🏠) » : 2 dans le sac, 3 de plus dans le coffre.
+      const detail = g.id ? (auCof>0 ? `${auSac} +${auCof} 🏠` : String(auSac)) : "?";
+      return `<span class="ing-tag ${ok ? "ok" : "ko"}">${nomAff} ×${g.qte} <small>(${detail})</small></span>`;
     }).join(" ");
 
     const l = document.createElement("div"); l.className = "recette-ligne ok";
