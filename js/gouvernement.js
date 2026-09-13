@@ -619,7 +619,10 @@ async function syncEffetsCombat(){
       // data.energie est NÉGATIF (coût). L'appliquer en local ne servait à rien :
       // le serveur détient l'énergie et écrasait au premier appel suivant.
       if(data.energie < 0) await agirServeur({ cout: -data.energie, motif:"campagne" });
-      journal(`Effort de campagne : ${data.energie} % d'énergie.`,"alerte");
+      /* ⚠ v0.89 — plus de ligne « Effort de campagne » : le compte rendu de
+         bataille (table `evenements`, écrit par resoudre_expedition_auto)
+         annonce DÉJÀ la perte d'énergie. Le joueur la lisait deux ou trois
+         fois de suite. Le débit, lui, a bien lieu ci-dessus. */
       if(typeof sauvegarder==="function") sauvegarder();
     }
     if(data && (data.sante||data.moral)){

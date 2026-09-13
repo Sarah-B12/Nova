@@ -130,7 +130,8 @@ function majBoutonOrbite(){
     b.querySelector("span").textContent = enEcart() ? `Carte de ${ECART_NOM}` : `Partir pour ${ECART_NOM}`;
     const cs=coutSaut();
     const c=b.querySelector(".cout");
-    if(c) c.textContent = enEcart() ? "tu y es" : (cs ? `${cs.litres} L · ${cs.energie} %` : "en vaisseau");
+    if(c) c.textContent = enEcart() ? "tu y es"
+      : (cs ? `${cs.litres} L carburant · ${cs.energie} % énergie` : "en vaisseau");
   }
   // La carte de Silène n'a pas de sens depuis l'orbite.
   const bc=document.querySelector("#ouvrir-carte");
@@ -199,6 +200,15 @@ function majOrbite(){
     ESPACE_LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
     ESPACE_LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
   }
+  /* v0.88 — marqueur du joueur, comme sur Silène (carte.js) : sans lui, on ne
+     sait pas où l'on est dans le secteur. Dessiné EN DERNIER, donc au-dessus. */
+  if(etat.posEspace && !_placementActif){
+    const col = (FACTIONS.find(f=>f.id===etat.faction)||{}).couleur || "#ff9a44";   // même source que carte.js
+    const px = etat.posEspace.x, py = etat.posEspace.y;
+    html += `<circle cx="${px}" cy="${py}" r="34" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="2"/>`
+          + `<circle cx="${px}" cy="${py}" r="17" fill="#0a1730" stroke="${col}" stroke-width="4"/>`
+          + `<circle cx="${px}" cy="${py}" r="7" fill="${col}"/>`;
+  }
   svg.innerHTML = html;
 
   svg.querySelectorAll("[data-lieu]").forEach(g=>{
@@ -220,7 +230,7 @@ function majOrbite(){
   const br=document.querySelector("#orbite-retour");
   if(br){ br.hidden = !enEcart(); br.style.display = enEcart() ? "" : "none";
     const cs=coutSaut();
-    if(enEcart() && cs){ br.textContent = `Redescendre sur Silène (${cs.litres} L · ${cs.energie} %)`;
+    if(enEcart() && cs){ br.textContent = `Redescendre sur Silène — ${cs.litres} L carburant, ${cs.energie} % énergie`;
       br.title = `Il te reste ${Math.round(etat.carburant||0)}/${cs.reservoir} L.`; } }
 
   const nav=document.querySelector("#orbite-vaisseau");

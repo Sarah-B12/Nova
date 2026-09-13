@@ -175,7 +175,7 @@ function _majTaxe(z){
      base ne porte donc que sur les OBJETS (taxe calculée par _taxeObjet, puis
      transmise). Pour l'étendre aux crédits, il faudra passer par le SQL. */
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0; el.innerHTML=`Coût total : <b>${m + Math.ceil(0.10*m)} ₡</b> (${m} + taxe ${Math.ceil(0.10*m)} ₡).`; }
-  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (10 % du prix de base).`; }
+  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (${Math.round(tauxPoste()*100)} % du prix de base).`; }
 }
 
 async function posteEnvoyer(){
