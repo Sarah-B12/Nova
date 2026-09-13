@@ -29,3 +29,17 @@
   .carte-jauges { display:flex; gap:16px; font-family:"Space Mono",monospace; font-size:13px; color:var(--sourdine); white-space:nowrap; }
   .carte-jauges .cj b { color:#6fd08a; font-size:14px; }
   .carte-jauges .cj.bas b { color:var(--coral,#ff6b6b); }
+
+  /* v0.82 — fenêtre « Distances et coûts ». */
+  .dist-depuis { display:grid; gap:6px; }
+  .dist-ligne { display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+    background:rgba(16,41,78,.35); border:1px solid var(--line); border-radius:8px 3px 8px 3px; padding:7px 11px; }
+  .dist-ligne span { font-family:"Space Mono",monospace; font-size:13px; color:var(--orange-hi); white-space:nowrap; }
+  .dist-ligne.ko span { color:#ff6b6b; }
+  .dist-grille-boite { overflow-x:auto; }
+  .dist-grille { border-collapse:collapse; width:100%; font-size:13px; }
+  .dist-grille th, .dist-grille td { border:1px solid var(--line); padding:6px 9px; text-align:center; white-space:nowrap; }
+  .dist-grille th { color:var(--sourdine); font-family:"Exo 2",sans-serif; font-weight:600; }
+  .dist-grille td { font-family:"Space Mono",monospace; color:var(--orange-hi); }
+  .dist-grille td.vide-c { background:rgba(255,255,255,.02); }
+  @media (max-width:600px){ .dist-grille th, .dist-grille td { padding:5px 6px; font-size:12px; } }

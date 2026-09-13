@@ -12,19 +12,9 @@
    `forme` par `img:"images/orbite/station.png"` et adapter _destHtml().
    =========================================================== */
 
-const ORBITE_FOND = "images/carte_espace_1.png";
+/* Le fond et les dimensions vivent dans js/espace-data.js (ESPACE_FOND, ESPACE_MONDE). */
 
-const DESTINATIONS = [
-  { id:"station",    nom:"Station MAAR-7",       x:1750, y:420,  r:110,
-    forme:"station",   usage:"Quêtes et rencontres",
-    desc:"Une station de rotation encore alimentée. Quelqu'un y répond." },
-  { id:"asteroides", nom:"Champ d'astéroïdes",   x:620,  y:1080, r:130,
-    forme:"asteroides", usage:"Minage",
-    desc:"Roches lentes et riches. Le minerai y vaut ce qu'il coûte à remonter." },
-  { id:"anneau",     nom:"Orbite de l'anneau",   x:1180, y:760,  r:120,
-    forme:"anneau",    usage:"Observation",
-    desc:"L'anneau du Protocole, vu d'en haut. Il ne réagit pas. Pas encore." }
-];
+/* DESTINATIONS supprimé en v0.83 : remplacé par ESPACE_LIEUX (js/espace-data.js). */
 
 /* Conditions d'accès */
 function orbiteDebloquee(){ return etat.espace1===true && !!etat.vaisseau; }
@@ -38,43 +28,54 @@ function majBoutonOrbite(){
   b.style.display = ok ? "" : "none";
 }
 
-function _destHtml(d){
-  const c = { station:"#8bd450", asteroides:"#ff8a3d", anneau:"#b06cff" }[d.forme] || "#9fb3c8";
-  let forme = "";
-  if(d.forme==="station"){
-    forme = `<rect x="${d.x-34}" y="${d.y-10}" width="68" height="20" rx="4" fill="${c}33" stroke="${c}" stroke-width="2"/>
-             <circle cx="${d.x}" cy="${d.y}" r="14" fill="${c}55" stroke="${c}" stroke-width="2"/>`;
-  } else if(d.forme==="asteroides"){
-    forme = `<circle cx="${d.x-26}" cy="${d.y+12}" r="13" fill="${c}44" stroke="${c}" stroke-width="2"/>
-             <circle cx="${d.x+8}"  cy="${d.y-14}" r="19" fill="${c}44" stroke="${c}" stroke-width="2"/>
-             <circle cx="${d.x+30}" cy="${d.y+16}" r="10" fill="${c}44" stroke="${c}" stroke-width="2"/>`;
-  } else {
-    forme = `<ellipse cx="${d.x}" cy="${d.y}" rx="40" ry="14" fill="none" stroke="${c}" stroke-width="3"/>
-             <ellipse cx="${d.x}" cy="${d.y}" rx="22" ry="8"  fill="none" stroke="${c}" stroke-width="2"/>`;
+/* ⚠ v0.83 — les destinations dessinées « à la main » (rectangles, cercles)
+   sont remplacées par les IMAGES de js/espace-data.js. Le décor n'est pas
+   cliquable, le leurre l'est mais ne mène à rien. */
+function _espaceHtml(l){
+  const clic = (l.type !== "decor");
+  const r = espaceRayon(l);
+  const demi = l.t/2;
+  let h = `<g class="orb-lieu${clic?" cliquable":""}${(_placementSel&&_placementSel.id===l.id)?" sel":""}"`
+        + (clic ? ` data-lieu="${l.id}" style="cursor:pointer"` : ` style="pointer-events:none"`)
+        + (_placementActif ? ` data-plac="${l.id}"` : ``) + `>`;
+  if(_placementActif){
+    h += `<circle cx="${l.x}" cy="${l.y}" r="${r}" fill="none" stroke="#ff8a3d" stroke-opacity=".5" stroke-dasharray="6 6"/>`;
   }
-  return `<g class="orb-dest" data-dest="${d.id}" style="cursor:pointer">
-      <circle cx="${d.x}" cy="${d.y}" r="${d.r}" fill="${c}11" stroke="${c}66" stroke-width="2" stroke-dasharray="6 6"/>
-      ${forme}
-      <text x="${d.x}" y="${d.y + d.r + 26}" text-anchor="middle" class="vlabel" style="fill:${c}">${d.nom}</text>
-    </g>`;
+  h += `<image href="images/espace/${l.img}" x="${l.x-demi}" y="${l.y-demi*(l.t?1:1)}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
+  if(l.nom) h += `<text x="${l.x}" y="${l.y + demi + 26}" text-anchor="middle" class="vlabel">${l.nom}</text>`;
+  return h + `</g>`;
 }
 
 function majOrbite(){
   const svg=document.querySelector("#carte-orbite"); if(!svg) return;
-  svg.setAttribute("viewBox",`0 0 ${MONDE.w} ${MONDE.h}`);
+  svg.setAttribute("viewBox",`0 0 ${ESPACE_MONDE.w} ${ESPACE_MONDE.h}`);
   svg.setAttribute("preserveAspectRatio","xMidYMid meet");
-  let html = `<image href="${ORBITE_FOND}" x="0" y="0" width="${MONDE.w}" height="${MONDE.h}" preserveAspectRatio="none"/>`;
-  DESTINATIONS.forEach(d=>{ html += _destHtml(d); });
+
+  const barre=document.querySelector("#orbite-barre-plac");
+  if(barre) barre.innerHTML = (typeof placementBarreHtml==="function") ? placementBarreHtml() : "";
+
+  let html = `<image href="${ESPACE_FOND}" x="0" y="0" width="${ESPACE_MONDE.w}" height="${ESPACE_MONDE.h}" preserveAspectRatio="none"/>`;
+  if(typeof placementGrilleHtml==="function") html += placementGrilleHtml();
+  // Décor d'abord : les lieux passent au-dessus.
+  ESPACE_LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
+  ESPACE_LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
   svg.innerHTML = html;
 
-  svg.querySelectorAll(".orb-dest").forEach(g=>{
+  svg.querySelectorAll("[data-lieu]").forEach(g=>{
     g.addEventListener("click", ()=>{
-      const d = DESTINATIONS.find(x=>x.id===g.dataset.dest); if(!d) return;
-      const z=document.querySelector("#orbite-info");
-      if(z) z.innerHTML = `<b>${d.nom}</b> — ${d.usage}.<br><span class="itip-gris">${d.desc}</span><br>
-        <span class="itip-gris">Destination pas encore accessible : contenu à venir.</span>`;
+      if(_placementActif) return;                 // en placement, le clic sert à glisser
+      const l = espaceLieu(g.dataset.lieu); if(!l) return;
+      const z=document.querySelector("#orbite-info"); if(!z) return;
+      if(l.verrou){
+        z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
+        return;
+      }
+      z.innerHTML = `<b>${l.nom}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>
+        <span class="itip-gris">Déplacement spatial à venir : le carburant n'est pas encore consommé.</span>`;
     });
   });
+
+  if(typeof placementBrancher==="function") placementBrancher(svg);
 
   const nav=document.querySelector("#orbite-vaisseau");
   if(nav){ const v=(typeof vaisseauActif==="function")?vaisseauActif():null;

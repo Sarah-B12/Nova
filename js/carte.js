@@ -12,7 +12,6 @@ const PAS_O2 = 80;                      // unités par 1 O₂ (déplacement à d
 // Cercle (ville ou lieu) contenant un point, ou null. Le Protocole n'est pas une zone d'abri.
 function cercleContenant(p){
   for(const fid in VILLES){ const v=VILLES[fid]; if(dist(p.x,p.y,v.x,v.y) < v.r) return v; }
-  for(const l of LIEUX){ if(dist(p.x,p.y,l.x,l.y) < l.r) return l; }
   return null;
 }
 function bordVers(c, vers){ const a=Math.atan2(vers.y-c.y, vers.x-c.x); return { x:c.x+Math.cos(a)*c.r, y:c.y+Math.sin(a)*c.r }; }
@@ -26,8 +25,6 @@ function distanceOuverte(a, b){
   if(dx*sx + dy*sy <= 0) return 0;                              // cercles jointifs/recouvrants
   return Math.min(dist(ea.x,ea.y,eb.x,eb.y), dist(a.x,a.y,b.x,b.y));
 }
-const COUL_LIEU = { mine:"var(--orange)", chasse:"var(--coral)", quete:"var(--bleu)" };
-const GLYPHE_LIEU = { mine:"◆", chasse:"◎", quete:"★" };
 
 function construireCarte(){
   const svg=document.querySelector("#carte");
@@ -45,9 +42,16 @@ function construireCarte(){
     <text x="${ZONE_PROTOCOLE.x}" y="${ZONE_PROTOCOLE.y + ZONE_PROTOCOLE.r + 38}" text-anchor="middle" class="vlabel" style="fill:#b9a0f0">Le Protocole</text></g>`;
   html += `<g id="avatar"></g>`;
   svg.innerHTML = html;
-  // Clic n'importe où = se déplacer vers ces coordonnées (matrice = précis à toute échelle).
+  /* ⚠ v0.82 — CLIC HORS DE L'IMAGE. La carte fait 2400×1600 et
+     preserveAspectRatio la centre SANS la déformer : dans une fenêtre plus
+     large, il reste deux bandes vides à gauche et à droite, À L'INTÉRIEUR du
+     SVG. L'écoute portait sur le SVG entier : cliquer dans le vide renvoyait
+     des coordonnées valides (bornées au monde) et le voyage partait — d'où
+     des déplacements vers le bord sans l'avoir voulu. On refuse désormais
+     tout point hors des limites réelles du monde. */
   svg.addEventListener("click", e => {
     const p = _carteCoord(svg, e); if(!p) return;
+    if(!_dansLaCarte(p)) return;
     voyager(p.x, p.y);
   });
 
@@ -58,6 +62,7 @@ function construireCarte(){
      survol, l'aperçu s'affiche alors au premier contact avant le clic. */
   svg.addEventListener("pointermove", e => {
     const p = _carteCoord(svg, e); if(!p) return;
+    if(!_dansLaCarte(p)){ _apercuCout(null); return; }
     _apercuCout(p.x, p.y);
   });
   svg.addEventListener("pointerleave", () => _apercuCout(null));
@@ -88,6 +93,9 @@ function coutTrajet(x, y){
   };
 }
 
+/* Le point est-il sur l'image, et non dans une bande vide du SVG ? */
+function _dansLaCarte(p){ return p && p.x >= 0 && p.y >= 0 && p.x <= MONDE.w && p.y <= MONDE.h; }
+
 let _apercuDer = "";
 function _apercuCout(x, y){
   const z = document.querySelector("#carte-apercu"); if(!z) return;
@@ -105,6 +113,62 @@ function _apercuCout(x, y){
   }
   if(h !== _apercuDer){ _apercuDer = h; z.innerHTML = h; }   // évite de réécrire à chaque pixel
 }
+/* ===========================================================
+   DISTANCES (v0.82) — le coût des trajets, sans survol.
+   Deux tableaux : depuis TA position (ce qui sert à décider), puis la grille
+   entre cités (fixe). Les chiffres passent par coutTrajet(), donc ils tiennent
+   compte des aptitudes ET de la boisson en cours : afficher un barème brut
+   mentirait à un Nomade qui a investi dans Voyageur.
+   ⚠ Valeurs pour un trajet DIRECT : contourner l'anneau du Protocole coûte
+   davantage, et coutTrajet() le reflète depuis ta position. */
+function _coutEntre(a, b){
+  const memo = etat.pos;
+  etat.pos = { x:a.x, y:a.y };
+  const c = coutTrajet(b.x, b.y);
+  etat.pos = memo;
+  return c || { coutE:0, coutO:0 };
+}
+function _cellCout(c){
+  return c.coutE<=0 ? `<span class="itip-gris">—</span>`
+                    : `${c.coutE} %<span class="itip-gris"> · ${c.coutO} O₂</span>`;
+}
+function ouvrirDistances(){
+  const z=document.querySelector("#modale-distances"); if(!z) return;
+  const ids=Object.keys(VILLES);
+  const nom=id=>((FACTIONS.find(f=>f.id===id)||{}).nom)||id;
+
+  // (a) depuis la position actuelle
+  let h=`<h4 class="gsec">Depuis ta position</h4><div class="dist-depuis">`;
+  const depuis=ids.map(id=>({ id, c:coutTrajet(VILLES[id].x, VILLES[id].y) }))
+                  .sort((a,b)=>((a.c&&a.c.coutE)||0)-((b.c&&b.c.coutE)||0));
+  for(const d of depuis){
+    const c=d.c||{coutE:0,coutO:0};
+    const trop=(etat.energie|0) < c.coutE || (etat.jauges && (etat.jauges.o2|0) <= c.coutO);
+    h+=`<div class="dist-ligne${trop?" ko":""}"><b>${nom(d.id)}</b><span>${c.coutE<=0?"tu y es":`${c.coutE} % · ${c.coutO} O₂`}</span></div>`;
+  }
+  h+=`</div>`;
+
+  // (b) grille entre cités
+  h+=`<h4 class="gsec" style="margin-top:16px">Entre les cités</h4>
+      <div class="dist-grille-boite"><table class="dist-grille"><tr><th></th>${ids.slice(0,-1).map(i=>`<th>${nom(i)}</th>`).join("")}</tr>`;
+  for(let r=1;r<ids.length;r++){
+    h+=`<tr><th>${nom(ids[r])}</th>`;
+    for(let c=0;c<ids.length-1;c++){
+      h+= c<r ? `<td>${_cellCout(_coutEntre(VILLES[ids[c]], VILLES[ids[r]]))}</td>` : `<td class="vide-c"></td>`;
+    }
+    h+=`</tr>`;
+  }
+  h+=`</table></div>
+      <p class="vide" style="margin:10px 0 0">Énergie et O₂ pour un trajet <b>direct</b>, <b>avec tes aptitudes et ta boisson en cours</b>. Contourner l'anneau du Protocole coûte davantage.</p>`;
+
+  z.querySelector("#distances-corps").innerHTML=h;
+  z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
+}
+function fermerDistances(){
+  const z=document.querySelector("#modale-distances"); if(!z) return;
+  z.classList.remove("ouverte"); z.setAttribute("aria-hidden","true");
+}
+
 function majCarte(){
   if(!etat.pos || etat.pos.x===undefined) etat.pos=posDefaut();
   const ce=document.querySelector("#carte-energie"); if(ce){ const e=Math.floor(etat.energie); ce.textContent=e; document.querySelector("#cj-energie").classList.toggle("bas", e<20); }
@@ -112,14 +176,13 @@ function majCarte(){
   const av=document.querySelector("#avatar");
   if(av){ const col=(FACTIONS.find(f=>f.id===etat.faction)||{}).couleur||"#ff9a44";
     av.innerHTML=`<circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="6" fill="${col}"/>`; }
-  const ville=villeActuelle(); const lieu=lieuActuel(); let t;
+  const ville=villeActuelle(); let t;
   /* ⚠ « Repos et comptoir disponibles » retiré : ces deux services n'existent
      plus. Et « Tu es à Les Nomades » était bancal — les noms de faction
      portent leur article, on n'en met donc pas devant. */
   if(ville){ const fc=FACTIONS.find(f=>f.id===ville); t=`<b style="color:${fc.couleur}">${fc.nom}</b> <span style="color:var(--sourdine)">— ta zone de faction.</span>`; }
   else if(surAnneauProtocole()){ t=`<b style="color:#b9a0f0">Anneau du Protocole.</b> <span style="color:var(--sourdine)">L'Ombre de ta faction peut hacker le Protocole ici. On ne peut pas entrer dans la zone.</span>`; }
   else { t=`Zone sauvage.`;
-    if(lieu){ if(lieu.type==="mine") t+=` <span style="color:var(--orange)">Filon riche.</span>`; if(lieu.type==="chasse") t+=` <span style="color:var(--coral)">Terrain de chasse.</span>`; if(lieu.type==="quete") t+=` <span style="color:var(--bleu)">Étape de quête (bientôt).</span>`; }
     /* Mention retirée : le minage/la chasse ne se font plus n'importe où en
        zone sauvage, seulement sur un `lieu` (filon, terrain de chasse), déjà
        signalé juste au-dessus. */ }

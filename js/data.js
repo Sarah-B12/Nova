@@ -218,12 +218,11 @@ const VILLES = {
 // Zone de l'antagoniste : entrée interdite ; on ne peut que toucher l'ANNEAU (pour hacker/espionner).
 const ZONE_PROTOCOLE = { x:450, y:1042, r:115 };
 const TOL_PROTOCOLE  = 70;   // tolérance (unités monde) pour être considéré « sur l'anneau »
-// Lieux spéciaux dans la nature (rayon d'effet plus petit).
-const LIEUX = [
-  { type:"mine",   x:820,  y:500,  r:60 }, { type:"mine",   x:1660, y:700,  r:60 }, { type:"mine",   x:720,  y:1280, r:60 },
-  { type:"chasse", x:1560, y:470,  r:60 }, { type:"chasse", x:560,  y:640,  r:60 }, { type:"chasse", x:1520, y:1290, r:60 },
-  { type:"quete",  x:980,  y:1010, r:60 }, { type:"quete",  x:1640, y:930,  r:60 }
-];
+/* ⚠ v0.82 — LIEUX SUPPRIMÉ. Les points extérieurs (mines, terrains de chasse,
+   étapes de quête à coordonnées fixes) avaient été retirés de la CARTE, mais
+   la liste vivait encore ici : `lieuActuel()` les détectait toujours et la
+   barre d'état annonçait « Filon riche » sur un endroit invisible. Les cibles
+   de quête ont leurs propres coordonnées dans quetes-data.js. */
 
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
 function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x, y:v.y}; }
@@ -232,8 +231,6 @@ function villeActuelle(){ if(!etat.pos) return null; for(const fid in VILLES){ c
 function enZoneFaction(){ return villeActuelle(); }
 // Vrai si le joueur est sur l'anneau du Protocole (à TOL près) — servira au hack/espionnage.
 function surAnneauProtocole(){ if(!etat.pos) return false; return Math.abs(dist(etat.pos.x,etat.pos.y,ZONE_PROTOCOLE.x,ZONE_PROTOCOLE.y) - ZONE_PROTOCOLE.r) <= TOL_PROTOCOLE; }
-// Lieu spécial dont on est dans le rayon (ou null).
-function lieuActuel(){ for(const l of LIEUX){ if(dist(etat.pos.x,etat.pos.y,l.x,l.y)<=l.r) return l; } return null; }
 function materiauMaison(){ return "cendrite"; }
 
 // Tirage d'un minerai selon sa rareté ; bonus augmente la chance des rares.

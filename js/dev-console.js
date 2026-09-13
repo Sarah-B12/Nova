@@ -259,6 +259,7 @@ function majDev(){
     <div class="dev-actions">
       <button class="mini" id="dev-pause">${etat.enPause?"Réactiver":"Mettre en pause"}</button>
       <button class="mini" id="dev-permis">${etat.permisVaisseau?"Retirer permis vaisseau":"Accorder permis vaisseau"}</button>
+      <button class="mini" id="dev-placement">Placement carte spatiale</button>
       <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
       <button class="mini" id="dev-prison">Libérer de prison</button>
       <button class="mini" id="dev-journal-vider">Vider le journal</button>
@@ -271,6 +272,13 @@ function majDev(){
     </div>`;
     const bp=av.querySelector("#dev-pause"); if(bp) bp.addEventListener("click", devPause);
     const bpv=av.querySelector("#dev-permis"); if(bpv) bpv.addEventListener("click", devPermis);
+    // v0.83 : outil d'édition de FICHIER (js/espace-data.js), pas une fonctionnalité de jeu.
+    const bpl=av.querySelector("#dev-placement");
+    if(bpl) bpl.addEventListener("click", ()=>{
+      if(typeof placementBasculer!=="function"){ journal("Mode placement indisponible.","alerte"); return; }
+      fermerDev(); if(typeof ouvrirOrbite==="function") ouvrirOrbite();
+      placementBasculer();
+    });
     const ben=av.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
     const bpr=av.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);
     const bjv=av.querySelector("#dev-journal-vider"); if(bjv) bjv.addEventListener("click", devViderJournal);

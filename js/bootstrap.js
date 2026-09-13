@@ -27,6 +27,10 @@ if(_bOrb) _bOrb.addEventListener("click", ouvrirOrbite);
 const _bOrbF=document.querySelector("#orbite-fermer");
 if(_bOrbF) _bOrbF.addEventListener("click", fermerOrbite);
 document.querySelector("#carte-fermer").addEventListener("click", fermerCarte);
+// v0.82 : coût des trajets sans survol (écrans tactiles).
+document.querySelector("#carte-distances").addEventListener("click", ouvrirDistances);
+document.querySelector("#distances-fermer").addEventListener("click", fermerDistances);
+document.querySelector("#modale-distances").addEventListener("click", e => { if(e.target.id === "modale-distances") fermerDistances(); });
 document.querySelectorAll(".hub-lien").forEach(b => b.addEventListener("click", ()=>changerHub(b.dataset.hub)));
 document.querySelectorAll("#hub-centre .sous-lien").forEach(b => b.addEventListener("click", ()=>changerCentre(b.dataset.centre)));
 document.querySelectorAll(".sous-lien").forEach(b => b.addEventListener("click", ()=>{
