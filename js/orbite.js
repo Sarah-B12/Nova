@@ -41,8 +41,18 @@ function _espaceHtml(l){
   if(_placementActif){
     h += `<circle cx="${l.x}" cy="${l.y}" r="${r}" fill="none" stroke="#ff8a3d" stroke-opacity=".5" stroke-dasharray="6 6"/>`;
   }
-  h += `<image href="images/espace/${l.img}" x="${l.x-demi}" y="${l.y-demi*(l.t?1:1)}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
-  if(l.nom) h += `<text x="${l.x}" y="${l.y + demi + 26}" text-anchor="middle" class="vlabel">${l.nom}</text>`;
+  h += `<image href="images/espace/${l.img}" x="${l.x-demi}" y="${l.y-demi}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
+  /* ⚠ v0.84 — ZONE DE SAISIE. Une image de 109 u est minuscule à l'écran : on
+     n'arrivait ni à la sélectionner ni à la déplacer. Ce carré invisible, d'au
+     moins 160 u, se superpose à l'objet et reçoit les clics. En jeu, il sert
+     aussi de cible pour les petits lieux, au doigt comme à la souris. */
+  const zone = Math.max(l.t, 160), zd = zone/2;
+  h += `<rect x="${l.x-zd}" y="${l.y-zd}" width="${zone}" height="${zone}" fill="transparent"${_placementActif?' stroke="#5aa8e6" stroke-opacity=".25"':''}/>`;
+  /* Le nom ne s'affiche plus sur la carte (les images parlent d'elles-mêmes) :
+     il apparaît au clic, dans le bandeau sous la carte. En placement, on le
+     montre pour se repérer. */
+  if(l.nom && _placementActif)
+    h += `<text x="${l.x}" y="${l.y + zd + 22}" text-anchor="middle" class="vlabel" style="opacity:.65">${l.nom}</text>`;
   return h + `</g>`;
 }
 

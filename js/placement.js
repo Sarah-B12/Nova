@@ -12,7 +12,6 @@
 
    Raccourcis pendant le placement :
      glisser        déplacer l'objet
-     molette        agrandir / réduire (pas de 5 unités)
      touche G       afficher ou masquer la grille (200 u)
      touche Échap   quitter le mode
    =========================================================== */
@@ -64,7 +63,7 @@ function placementBarreHtml(){
   return `<div class="plac-barre">
       <b>MODE PLACEMENT</b>
       <span class="plac-sel" id="plac-nom">— aucun objet sélectionné —</span>
-      <span class="itip-gris">glisser = déplacer · molette = taille · G = grille · Échap = quitter</span>
+      <span class="itip-gris">glisser = déplacer · G = grille · Échap = quitter</span>
       <button class="mini" id="plac-copier">Copier le bloc</button>
       <button class="mini" id="plac-quitter">Quitter</button>
     </div><textarea id="plac-sortie" readonly placeholder="Clique « Copier le bloc » : le contenu à coller dans js/espace-data.js apparaîtra ici."></textarea>`;
@@ -117,12 +116,10 @@ function placementBrancher(svg){
   });
   svg.addEventListener("pointerup", ()=>{ glisse=null; });
 
-  svg.addEventListener("wheel", e=>{
-    if(!_placementSel) return;
-    e.preventDefault();
-    _placementSel.t = Math.max(30, Math.min(600, _placementSel.t + (e.deltaY<0 ? 5 : -5)));
-    majOrbite(); maj();
-  }, { passive:false });
+  /* ⚠ v0.84 — MOLETTE RETIRÉE. Les images sont déjà aux dimensions voulues :
+     `t` vaut la taille native × 1,5625 (le fond fait 1536 px pour 2400 unités
+     monde). Redimensionner ici n'avait aucun intérêt et bloquait le
+     défilement de la page. Pour changer une taille, éditer `t` à la main. */
 
   const bc=document.querySelector("#plac-copier");
   if(bc) bc.addEventListener("click", ()=>{
