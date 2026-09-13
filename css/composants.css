@@ -345,3 +345,8 @@
 /* v0.77 — ligne « boisson en cours » sur sa propre fiche (voir js/bar.js pour
    la bulle au survol ; ici seulement l'emplacement). */
 .fiche-boisson { margin:8px 0 2px; }
+
+/* v0.87 — « Carte de Silène » et « Partir pour L'Écart » côte à côte. */
+.cartes-paire { display:flex; gap:8px; margin-bottom:8px; }
+.cartes-paire .action { flex:1 1 0; margin-bottom:0; min-width:0; }
+@media (max-width:520px){ .cartes-paire { flex-direction:column; } }

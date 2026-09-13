@@ -14,6 +14,11 @@ function nouvelEtat(){
     competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
     vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
+    /* v0.86 — secteur : "silene" | "ecart" (voir orbite.js). ⚠ Valeur PAR
+       DÉFAUT uniquement : ne JAMAIS la répéter dans hydraterEtat, qui
+       écraserait alors le secteur relu du serveur — le joueur redescendait sur
+       Silène à chaque rechargement, carburant déjà dépensé. */
+    secteur:"silene", posEspace:null,
     /* ⚠ Défauts alignés sur ceux des COLONNES profils.o2/sante/moral (100 chacune).
        Ils valaient 90/100/80 : un nouveau joueur voyait 90 % d'O₂ et 80 % de moral
        à l'inscription, avant que chargerJaugesServeur() ne rétablisse les vrais 100.
@@ -77,7 +82,6 @@ function hydraterEtat(s){
        encore `_lotsSynchro:true` et une liste de lots figée : on les neutralise ici,
        sinon le correctif ne prendrait effet qu'après la première réécriture.
        Ces trois valeurs ne sont légitimes que si elles viennent de sac_lire(). */
-    secteur:"silene", posEspace:null,          // v0.86 : "silene" | "ecart" (voir orbite.js)
     lots:[], _lotsSynchro:false, equipeServeur:{}, forceCombatServeur:undefined,
     faction:null,   // relue depuis profils.faction au chargement (bootstrap/navigation)
     competences:{...base.competences,...(s.competences||{})},

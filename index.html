@@ -200,8 +200,12 @@
       <section class="panneau membrane" data-panneau="planete">
         <div class="banniere" id="banniere-pause" hidden>⏸ Personnage en pause — reprends-le dans les Paramètres.</div>
         <div id="pas-encart" class="pas-encart" hidden></div>
-        <button class="action" id="ouvrir-carte" style="margin-bottom:8px"><span>Carte de Silène</span><span class="cout">se déplacer</span></button>
-        <button class="action" id="ouvrir-orbite" style="margin-bottom:8px; display:none" hidden><span>Partir pour L'Écart</span><span class="cout">en vaisseau</span></button>
+  <!-- v0.87 : les deux cartes côte à côte. .cartes-paire les met sur une
+       ligne et les fait passer l'une sous l'autre sur petit écran. -->
+  <div class="cartes-paire">
+        <button class="action" id="ouvrir-carte"><span>Carte de Silène</span><span class="cout">se déplacer</span></button>
+        <button class="action" id="ouvrir-orbite" style="display:none" hidden><span>Partir pour L'Écart</span><span class="cout">en vaisseau</span></button>
+  </div>
         <p id="region-info" style="margin:0 0 12px; font-size:14px"></p>
 
         <div class="sous-menu" id="hub-nav">
