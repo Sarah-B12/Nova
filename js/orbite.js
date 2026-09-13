@@ -32,7 +32,10 @@ function majBoutonOrbite(){
    sont remplacées par les IMAGES de js/espace-data.js. Le décor n'est pas
    cliquable, le leurre l'est mais ne mène à rien. */
 function _espaceHtml(l){
-  const clic = (l.type !== "decor");
+  /* ⚠ v0.85 — en PLACEMENT, tout doit s'attraper, décor compris : `decor` porte
+     pointer-events:none pour le jeu, ce qui le rendait aussi indéplaçable dans
+     l'outil (astéroïdes, satellites, petites planètes). */
+  const clic = (l.type !== "decor") || _placementActif;
   const r = espaceRayon(l);
   const demi = l.t/2;
   let h = `<g class="orb-lieu${clic?" cliquable":""}${(_placementSel&&_placementSel.id===l.id)?" sel":""}"`
@@ -48,11 +51,10 @@ function _espaceHtml(l){
      aussi de cible pour les petits lieux, au doigt comme à la souris. */
   const zone = Math.max(l.t, 160), zd = zone/2;
   h += `<rect x="${l.x-zd}" y="${l.y-zd}" width="${zone}" height="${zone}" fill="transparent"${_placementActif?' stroke="#5aa8e6" stroke-opacity=".25"':''}/>`;
-  /* Le nom ne s'affiche plus sur la carte (les images parlent d'elles-mêmes) :
-     il apparaît au clic, dans le bandeau sous la carte. En placement, on le
-     montre pour se repérer. */
-  if(l.nom && _placementActif)
-    h += `<text x="${l.x}" y="${l.y + zd + 22}" text-anchor="middle" class="vlabel" style="opacity:.65">${l.nom}</text>`;
+  /* ⚠ v0.85 — AUCUNE étiquette sur la carte, même en placement : les images se
+     suffisent, et les textes se chevauchaient. Le nom de l'objet sélectionné
+     s'affiche dans la barre du mode placement ; en jeu, il apparaît au clic
+     dans le bandeau sous la carte. */
   return h + `</g>`;
 }
 
@@ -66,9 +68,16 @@ function majOrbite(){
 
   let html = `<image href="${ESPACE_FOND}" x="0" y="0" width="${ESPACE_MONDE.w}" height="${ESPACE_MONDE.h}" preserveAspectRatio="none"/>`;
   if(typeof placementGrilleHtml==="function") html += placementGrilleHtml();
-  // Décor d'abord : les lieux passent au-dessus.
-  ESPACE_LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
-  ESPACE_LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
+  if(_placementActif){
+    /* ⚠ v0.85 — en placement, TOUT est attrapable : on dessine du plus grand au
+       plus petit, pour qu'une grosse zone de saisie ne recouvre jamais un petit
+       objet (une planète de 406 u cachait l'astéroïde voisin). */
+    ESPACE_LIEUX.slice().sort((a,b)=>b.t-a.t).forEach(l=>{ html += _espaceHtml(l); });
+  } else {
+    // En jeu : décor d'abord, les lieux passent au-dessus.
+    ESPACE_LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
+    ESPACE_LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
+  }
   svg.innerHTML = html;
 
   svg.querySelectorAll("[data-lieu]").forEach(g=>{
