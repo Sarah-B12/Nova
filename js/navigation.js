@@ -13,13 +13,19 @@ function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="c
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
   const ville=villeActuelle(); const chezSoi = ville===etat.faction;
-  const dispo={ terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville,
-    boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
-    quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
+  /* v0.87 — LA BASE DE L'ÉCART réutilise les mêmes hubs, avec sa propre liste :
+     ni terrain, ni marché, ni vol. Le Centre y est réduit au gouvernement
+     (voir formations.js) : pas de bureaux, pas d'expéditions. */
+  const base = (typeof surBase==="function") && surBase();
+  const dispo = base
+    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true }
+    : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville,
+        boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
+        quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler"].find(h=>dispo[h] && (ville || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
     if(prem) changerHub(prem); else montrerHub("vide");
   } else {
     changerHub(cur);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)

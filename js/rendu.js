@@ -5,9 +5,9 @@
 // Renvoie la raison (texte) pour laquelle une action est indisponible, ou "" si elle est possible.
 function raisonAction(a){
   if(etat.enPause) return "Personnage en pause — réactive-le dans l'onglet Paramètres.";
-  const enFaction = !!enZoneFaction();
+  const enFaction = !!enZoneFaction() || ((typeof surBase==="function") && surBase());
   if(a==="reposer"){
-    if(!enFaction) return "Le repos se fait en zone de faction : rejoins une ville sur la carte.";
+    if(!enFaction) return "Le repos se fait en ville, ou à l'auberge de la base.";
     if(memeJour(etat.reposLe)) return "Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.";
     if(etat.jauges.sante>=70 && etat.jauges.moral>=70) return "Inutile : le repos plafonne à 70 % (achète un kit/ration pour monter plus haut).";
     return "";

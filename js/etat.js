@@ -77,6 +77,7 @@ function hydraterEtat(s){
        encore `_lotsSynchro:true` et une liste de lots figée : on les neutralise ici,
        sinon le correctif ne prendrait effet qu'après la première réécriture.
        Ces trois valeurs ne sont légitimes que si elles viennent de sac_lire(). */
+    secteur:"silene", posEspace:null,          // v0.86 : "silene" | "ecart" (voir orbite.js)
     lots:[], _lotsSynchro:false, equipeServeur:{}, forceCombatServeur:undefined,
     faction:null,   // relue depuis profils.faction au chargement (bootstrap/navigation)
     competences:{...base.competences,...(s.competences||{})},

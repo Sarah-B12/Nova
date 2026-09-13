@@ -75,6 +75,8 @@ async function majPoste(){
   const retours= _posteCache.filter(o=>o.statut==="retour"  && o.de_id===_posteMonId);
   const envoyes= _posteCache.filter(o=>o.statut==="attente" && o.de_id===_posteMonId);
   let h = _posteBanniere();
+  if((typeof surBase==="function") && surBase())
+    h += `<p class="vide" style="border-left:3px solid var(--orange);padding-left:10px">Poste de la Base de l'Écart : tout part en vaisseau. La taxe sur les <b>objets</b> est de <b>25 %</b> au lieu de 10 %.</p>`;
   h += `<p class="itip-gris" style="margin:0 0 10px">Le destinataire a <b>3 jours</b> pour récupérer ou refuser. Sinon, l'envoi <b>retourne à l'expéditeur</b> (3 jours de plus pour le récupérer). Passé ce délai, tout est <b>supprimé</b>. La taxe n'est jamais remboursée.</p>`;
   h += `<div class="sous-menu"><button class="sous-lien${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte${(recus.length+retours.length)?` (${recus.length+retours.length})`:""}</button><button class="sous-lien${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button></div>`;
   if(posteVue==="envoyer"){ h += _vueEnvoyer(); }
@@ -160,9 +162,18 @@ function _posteBornerQte(z, id){
   return q;
 }
 
-function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(0.10*(p.moy||0)*qte):0; }
+/* v0.87 — depuis la Base de l'Écart, tout transite par un vaisseau : la taxe
+   passe de 10 % à 25 %. Une seule constante, reprise par l'affichage ET par
+   l'envoi, pour qu'ils ne divergent jamais. */
+function tauxPoste(){ return ((typeof surBase==="function") && surBase()) ? 0.25 : 0.10; }
+function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(tauxPoste()*(p.moy||0)*qte):0; }
 function _majTaxe(z){
   const t=_posteTypeChoisi(z); const el=z.querySelector("#poste-taxe"); if(!el) return;
+  /* ⚠ v0.87 — les CRÉDITS gardent 10 %. Pour un envoi de crédits le client
+     transmet p_taxe:0 : c'est poste_envoyer qui taxe, et elle ne connaît pas
+     le secteur. Afficher 25 % ici mentirait au joueur. La majoration de la
+     base ne porte donc que sur les OBJETS (taxe calculée par _taxeObjet, puis
+     transmise). Pour l'étendre aux crédits, il faudra passer par le SQL. */
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0; el.innerHTML=`Coût total : <b>${m + Math.ceil(0.10*m)} ₡</b> (${m} + taxe ${Math.ceil(0.10*m)} ₡).`; }
   else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (10 % du prix de base).`; }
 }

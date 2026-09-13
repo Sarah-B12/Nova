@@ -34,7 +34,16 @@ function _boutiqueMsg(txt){
 /* Boutique mobile (aptitude no1) : hors d'une ville, achat possible à +10 %.
    ⚠ L'ancienne boutique (actions.js acheter / rendu.js construireBoutique)
    visait un #boutique qui n'existait plus : l'aptitude ne faisait rien. */
-function _boutiqueDehors(){ return !(typeof villeActuelle==="function" && villeActuelle()); }
+/* v0.87 — deux comptoirs : celui des cités (BOUTIQUE) et celui de la base
+   (BASE_BOUTIQUE). Ils partagent tout le rendu ; seuls le catalogue, les
+   onglets et le titre changent. */
+function _surBaseBoutique(){ return (typeof surBase==="function") && surBase(); }
+function _catalogueBoutique(){ return _surBaseBoutique() ? BASE_BOUTIQUE : BOUTIQUE; }
+function _catsBoutique(){ return _surBaseBoutique() ? CAT_BASE_BOUTIQUE : CAT_BOUTIQUE; }
+function _boutiqueDehors(){
+  if(_surBaseBoutique()) return false;                       // la base EST un comptoir
+  return !(typeof villeActuelle==="function" && villeActuelle());
+}
 function _prixBoutique(a){
   const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix;
   const m = (typeof boissonMod==="function") ? boissonMod("boutique", 1) : 1;   // v0.79 : « Mémoire courte » −20 %
@@ -42,12 +51,20 @@ function _prixBoutique(a){
 }
 function renderBoutique(){
   const z = document.querySelector("#boutique-vue"); if(!z) return;
+  /* ⚠ Les deux comptoirs n'ont pas les mêmes catégories : « graines » n'existe
+     pas sur la base. Sans ce repli, la liste s'affichait VIDE après un
+     décollage, sans rien expliquer. */
+  if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
-  html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
-  if(_boutiqueDehors()) html += `<p class="vide" style="margin:0 0 10px">🧳 <b>Boutique mobile</b> — hors d'une ville, +10 % sur chaque article.</p>`;
-  html += `<div class="marche-tabs">` + CAT_BOUTIQUE.map(c=>`<button class="marche-tab${c.id===boutiqueTab?" actif":""}" data-bcat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
+  if(_surBaseBoutique()){
+    html += `<p class="vide" style="margin:0 0 10px">Comptoir de la Base de l'Écart — <b>oxygène, soins et carburant</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
+  } else {
+    html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
+    if(_boutiqueDehors()) html += `<p class="vide" style="margin:0 0 10px"><b>Boutique mobile</b> — hors d'une ville, +10 % sur chaque article.</p>`;
+  }
+  html += `<div class="marche-tabs">` + _catsBoutique().map(c=>`<button class="marche-tab${c.id===boutiqueTab?" actif":""}" data-bcat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
   html += `<div class="marche-liste">`;
-  const arts = BOUTIQUE.filter(a=>a.cat===boutiqueTab);
+  const arts = _catalogueBoutique().filter(a=>a.cat===boutiqueTab);
   if(!arts.length) html += `<p class="vide">Rien ici.</p>`;
   for(const a of arts){
     let sous = "";
@@ -84,7 +101,7 @@ function renderBoutique(){
    place restante dans le sac : mieux vaut acheter moins que refuser tout, et
    le journal annonce ensuite ce qui est réellement entré. */
 async function acheterBoutique(id){
-  const a = BOUTIQUE.find(x=>x.id===id); if(!a) return;
+  const a = _catalogueBoutique().find(x=>x.id===id); if(!a) return;
   const dehors = _boutiqueDehors();
   if(dehors && !(typeof aptBoutiquePartout==="function" && aptBoutiquePartout())){ journal("La Boutique n'est accessible qu'en ville.","alerte"); _boutiqueMsg("Rejoins une ville pour acheter."); return; }
   const prix = _prixBoutique(a);

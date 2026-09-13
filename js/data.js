@@ -100,6 +100,19 @@ const BOUTIQUE = [
 ];
 const CAT_BOUTIQUE = [ { id:"graines", nom:"Graines" }, { id:"bebes", nom:"Bébés animaux" }, { id:"conso", nom:"Consommables" } ];
 
+/* ---- Comptoir de la Base de l'Écart (v0.87) ----
+   Ni graines ni bêtes : là-haut on vend de quoi TENIR et REPARTIR. Les prix
+   sont volontairement lourds — acheter aux Biotech ou au marché d'une faction
+   doit rester le bon calcul. Le comptoir est le filet, pas la solution. */
+const BASE_BOUTIQUE = [
+  { id:"fab_recharge_d_oxygene",   nom:"Recharge d'oxygène",   prix:520,  cat:"survie" },
+  { id:"fab_tank_a_oxygene",       nom:"Tank à oxygène",       prix:1250, cat:"survie" },
+  { id:"fab_kit_de_soin",          nom:"Kit de soin",          prix:260,  cat:"survie" },
+  { id:"fab_biocarburant",         nom:"Biocarburant",         prix:320,  cat:"carburant" },
+  { id:"fab_biocarburant_raffine", nom:"Biocarburant raffiné", prix:1400, cat:"carburant" }
+];
+const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" } ];
+
 const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
@@ -227,7 +240,15 @@ const TOL_PROTOCOLE  = 70;   // tolérance (unités monde) pour être considér�
 function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
 function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x, y:v.y}; }
 // Ville dont on est dans le rayon (ou null).
-function villeActuelle(){ if(!etat.pos) return null; for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; } return null; }
+/* ⚠ v0.87 — `etat.pos` n'est PAS modifié au décollage : sans ce garde-fou, un
+   joueur parti à l'Écart resterait « dans sa ville » pour tout le client
+   (repos, marché, terrain…). Même règle que dans_zone_faction côté serveur. */
+function villeActuelle(){
+  if(typeof enEcart==="function" && enEcart()) return null;
+  if(!etat.pos) return null;
+  for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; }
+  return null;
+}
 function enZoneFaction(){ return villeActuelle(); }
 // Vrai si le joueur est sur l'anneau du Protocole (à TOL près) — servira au hack/espionnage.
 function surAnneauProtocole(){ if(!etat.pos) return false; return Math.abs(dist(etat.pos.x,etat.pos.y,ZONE_PROTOCOLE.x,ZONE_PROTOCOLE.y) - ZONE_PROTOCOLE.r) <= TOL_PROTOCOLE; }

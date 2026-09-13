@@ -25,64 +25,59 @@
      usage  une ligne, affichée au clic
      desc   deux lignes d'ambiance
      verrou null, ou l'identifiant d'une condition (ex. "q15" pour le trou noir)
+     halo   couleur CSS d'un liseré lumineux (facultatif), pour les lieux
+            qu'on doit retrouver d'un coup d'œil
    =========================================================== */
 
 const ESPACE_MONDE = { w: 2400, h: 1600 };
 const ESPACE_FOND  = "images/carte_espace_1.png";
 
-/* ⚠ Positions PROVISOIRES : réparties pour ne pas se chevaucher, à replacer
-   avec le mode placement. Seuls x, y et t sont censés bouger. */
+/* Positions posées au mode placement (console dev → Placement carte spatiale).
+   Pour les rejouer : ouvrir le mode, glisser, « Copier le bloc », coller ici. */
 const ESPACE_LIEUX = [
-  /* ---- Points d'ancrage ---- */
-  { id:"base",        nom:"Base de l'Écart",      img:"base1.png",              x:1180, y:800,  t:312, type:"lieu",
-    usage:"Auberge · Boutique · Poste · Quêtes",
-    desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
-  { id:"planete_chaude", nom:"Braisier",           img:"planete_chaude_1.png",   x:1900, y:1180, t:312, type:"lieu",
-    usage:"Descente au sol · zone chaude",
-    desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },
-  { id:"planete_froide", nom:"Le Suaire",          img:"planete_froide_1.png",   x:480,  y:420,  t:312, type:"lieu",
-    usage:"Descente au sol · zone froide",
-    desc:"Blanche jusqu'à l'horizon. Rien n'y bouge, et c'est le problème." },
-  { id:"planete_bleue",  nom:"Halde",              img:"planete_bleue.png",      x:700,  y:1220, t:312, type:"lieu",
-    usage:"À venir",
-    desc:"Une lune la suit de près, comme si elle n'osait pas s'éloigner." },
-  { id:"planete_cassee", nom:"Ce qu'il en reste",  img:"planete_cassee.png",     x:1680, y:340,  t:406, type:"lieu",
-    usage:"À venir",
-    desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
-  { id:"etoile",         nom:"Iode",               img:"etoile_violet_iodes.png",x:2120, y:700,  t:312, type:"decor",
+  /* halo : liseré lumineux autour de l'objet (les images sombres se perdent
+     sur un fond d'étoiles). Valeur = couleur CSS. Réservé aux lieux qui
+     doivent SE REPÉRER : la base d'abord. */
+  { id:"base", nom:"Base de l'Écart", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
+    usage:"Auberge · Boutique · Poste · Quêtes", desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
+  { id:"planete_chaude", nom:"Braisier", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
+    usage:"Descente au sol · zone chaude", desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },
+  { id:"planete_froide", nom:"Le Suaire", img:"planete_froide_1.png", x:203, y:967, t:312, type:"lieu",
+    usage:"Descente au sol · zone froide", desc:"Blanche jusqu'à l'horizon. Rien n'y bouge, et c'est le problème." },
+  { id:"planete_bleue", nom:"Halde", img:"planete_bleue.png", x:1093, y:316, t:312, type:"lieu",
+    usage:"À venir", desc:"Une lune la suit de près, comme si elle n'osait pas s'éloigner." },
+  { id:"planete_cassee", nom:"Ce qu'il en reste", img:"planete_cassee.png", x:2150, y:864, t:406, type:"lieu",
+    usage:"À venir", desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
+  { id:"etoile", nom:"Iode", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
     usage:"", desc:"" },
-
-  /* ---- Le trou noir : la carte suivante, plus tard ---- */
-  { id:"trou_noir",   nom:"La Gorge",              img:"trou_noir_bleu.png",     x:220,  y:840,  t:312, type:"lieu", verrou:"q15",
-    usage:"Verrouillé",
-    desc:"Elle avale la lumière sans un bruit. Personne n'en est revenu pour le raconter." },
-
-  /* ---- Le portail : LEURRE. Il ne mène nulle part, et c'est voulu. ---- */
-  { id:"portail",     nom:"L'Arche",               img:"portail.png",            x:1420, y:1320, t:344, type:"leurre",
-    usage:"Inerte",
-    desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
-
-  /* ---- Petits lieux ---- */
-  { id:"epave",       nom:"L'épave",               img:"ruine_vaisseau.png",     x:960,  y:480,  t:133, type:"lieu",
-    usage:"Fouille",
-    desc:"Une coque éventrée, dérivant depuis trop longtemps pour qu'on sache d'où." },
-  { id:"antenne",     nom:"Relais orphelin",       img:"antene.png",             x:1560, y:980,  t:312, type:"lieu",
-    usage:"Écoute",
-    desc:"Il émet encore. Vers quoi, c'est une autre question." },
-  { id:"satellite1",  nom:"Sonde muette",          img:"satellite1.png",         x:1340, y:560,  t:109,  type:"decor", usage:"", desc:"" },
-  { id:"satellite2",  nom:null,                    img:"satellite2.png",         x:2020, y:1420, t:156, type:"decor", usage:"", desc:"" },
-
-  /* ---- Astéroïdes et décor ---- */
-  { id:"asteroides",  nom:"Champ d'astéroïdes",    img:"cailloux_grands.png",    x:820,  y:900,  t:203, type:"lieu",
-    usage:"Minage",
-    desc:"Roches lentes et riches. Le minerai y vaut ce qu'il coûte à remonter." },
-  { id:"cailloux2",   nom:null,                    img:"cailloux_petits.png",    x:1020, y:1080, t:312, type:"decor", usage:"", desc:"" },
-  { id:"asteroide_v", nom:null,                    img:"asteroide_vert.png",     x:600,  y:760,  t:156,  type:"decor", usage:"", desc:"" },
-  { id:"comete",      nom:null,                    img:"comete_bleue.png",       x:1780, y:1560, t:156, type:"decor", usage:"", desc:"" },
-  { id:"anneaux_b",   nom:null,                    img:"planete_anneaux_bleu.png",x:380, y:1480, t:141, type:"decor", usage:"", desc:"" },
-  { id:"pp_vert",     nom:null,                    img:"petite_planete_vert.png",x:2240, y:1100, t:109,  type:"decor", usage:"", desc:"" },
-  { id:"pp_violet",   nom:null,                    img:"petite_planete_violet.png",x:160, y:180, t:109,  type:"decor", usage:"", desc:"" }
+  { id:"trou_noir", nom:"La Gorge", img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"q15",
+    usage:"Verrouillé", desc:"Elle avale la lumière sans un bruit. Personne n'en est revenu pour le raconter." },
+  { id:"portail", nom:"L'Arche", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
+    usage:"Inerte", desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
+  { id:"epave", nom:"L'épave", img:"ruine_vaisseau.png", x:747, y:1270, t:133, type:"lieu",
+    usage:"Fouille", desc:"Une coque éventrée, dérivant depuis trop longtemps pour qu'on sache d'où." },
+  { id:"antenne", nom:"Relais orphelin", img:"antene.png", x:1253, y:118, t:312, type:"lieu",
+    usage:"Écoute", desc:"Il émet encore. Vers quoi, c'est une autre question." },
+  { id:"satellite1", nom:"Sonde muette", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
+    usage:"", desc:"" },
+  { id:"satellite2", nom:null, img:"satellite2.png", x:668, y:142, t:156, type:"decor",
+    usage:"", desc:"" },
+  { id:"asteroides", nom:"Champ d'astéroïdes", img:"cailloux_grands.png", x:2113, y:1393, t:203, type:"lieu",
+    usage:"Minage", desc:"Roches lentes et riches. Le minerai y vaut ce qu'il coûte à remonter." },
+  { id:"cailloux2", nom:null, img:"cailloux_petits.png", x:325, y:273, t:312, type:"decor",
+    usage:"", desc:"" },
+  { id:"asteroide_v", nom:null, img:"asteroide_vert.png", x:1154, y:1490, t:156, type:"decor",
+    usage:"", desc:"" },
+  { id:"comete", nom:null, img:"comete_bleue.png", x:306, y:457, t:156, type:"decor",
+    usage:"", desc:"" },
+  { id:"anneaux_b", nom:null, img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
+    usage:"", desc:"" },
+  { id:"pp_vert", nom:null, img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
+    usage:"", desc:"" },
+  { id:"pp_violet", nom:null, img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
+    usage:"", desc:"" }
 ];
+
 
 function espaceLieu(id){ return ESPACE_LIEUX.find(l => l.id === id) || null; }
 function espaceRayon(l){ return l.r || Math.round(l.t/2) + 20; }

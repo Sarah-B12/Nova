@@ -111,10 +111,19 @@ function changerCentre(c){
 }
 function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
-  const chezSoi = (typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true;
-  // ⚠ `annonce` est masquée hors de sa faction : on ne lit pas les nouvelles
-  //    des autres, même en visitant leur ville.
-  const masque = { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi, annonce:!chezSoi };
+  const base = (typeof surBase==="function") && surBase();
+  const chezSoi = base ? true                       // à l'Écart, on consulte SA faction
+                       : ((typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true);
+  /* ⚠ `annonce` est masquée hors de sa faction : on ne lit pas les nouvelles
+     des autres, même en visitant leur ville.
+     ⚠ v0.87 — SUR LA BASE, le Centre est réduit à ce qui relève du citoyen :
+     voir son gouvernement, voter, lire la transmission du Régent. Pas
+     d'atelier ni de formations (institutions de faction), pas de bureaux ni
+     d'expéditions (on ne commande pas depuis l'orbite), pas de prison ni de
+     bar tant qu'il n'a pas été déplacé. */
+  const masque = base
+    ? { formations:true, bureau:true, guerres:true, prison:true, bar:true, votes:false, annonce:false, gouvernement:false }
+    : { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi, annonce:!chezSoi };
   // ⚠ Bureau : la vérification des rôles est ASYNCHRONE. Sans le souvenir du
   // dernier résultat, l'onglet s'affichait puis disparaissait — un clignotement
   // à chaque changement d'onglet du Centre. On applique donc d'abord ce qu'on
@@ -125,7 +134,7 @@ function majCentre(){
     if(c === "bureau" && !cache) cache = (etat._aRoleGouv === false);   // undefined = on ne sait pas encore
     b.style.display = cache ? "none" : "";
   });
-  if(!masque.bureau && typeof _chargerMesRolesGouv==="function"){
+  if(!base && !masque.bureau && typeof _chargerMesRolesGouv==="function"){
     _chargerMesRolesGouv().then(roles=>{
       etat._aRoleGouv = roles.length > 0;
       const b=document.querySelector('#hub-centre [data-centre="bureau"]');

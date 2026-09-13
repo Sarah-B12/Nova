@@ -246,6 +246,10 @@ async function _sauverMaintenantInterne(){
     // l'attribution initiale — traitée par _premiereFaction() ci-dessous.
     formation: _nomFormation(),
     mur_public: (etat.murOuvertA==='tous'),
+    /* v0.86 : le secteur est une POSITION, au même titre que pos_x/pos_y.
+       C'est lui qui dit au serveur qu'un joueur parti en orbite n'est plus
+       dans sa zone de faction (O₂, expéditions) — voir dans_zone_faction. */
+    secteur: (etat.secteur === "ecart") ? "ecart" : "silene",
     /* ⚠ `niveau` N'EST PLUS POUSSÉ ici. niveau_monter() ne recharge l'énergie
        que si le niveau déclaré dépasse celui en base ; or cette sauvegarde
        écrivait la colonne de son côté, et quand elle arrivait la première la

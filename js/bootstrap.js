@@ -22,8 +22,11 @@ document.querySelectorAll("button.action[data-action]").forEach(b => b.addEventL
 // Les boutons « Sauvegarder » et « Réinitialiser » ont été retirés :
 // la sauvegarde est automatique, et la réinitialisation effaçait la partie.
 document.querySelector("#ouvrir-carte").addEventListener("click", ouvrirCarte);
+/* v0.86 : le bouton EMBARQUE (et ouvre la carte si l'on est déjà là-haut). */
 const _bOrb=document.querySelector("#ouvrir-orbite");
-if(_bOrb) _bOrb.addEventListener("click", ouvrirOrbite);
+if(_bOrb) _bOrb.addEventListener("click", partirVersEcart);
+const _bRet=document.querySelector("#orbite-retour");
+if(_bRet) _bRet.addEventListener("click", revenirVersSilene);
 const _bOrbF=document.querySelector("#orbite-fermer");
 if(_bOrbF) _bOrbF.addEventListener("click", fermerOrbite);
 document.querySelector("#carte-fermer").addEventListener("click", fermerCarte);
