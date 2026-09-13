@@ -82,8 +82,10 @@ function majOrbite(){
     nav.textContent = v ? `À bord : ${v.nom}` : "Aucun vaisseau"; }
 }
 
-function ouvrirOrbite(){
-  if(!orbiteDebloquee()){
+/* p_forcer : réservé au mode placement (outil de dev), qui doit pouvoir
+   ouvrir la carte sans posséder ni vaisseau ni route. */
+function ouvrirOrbite(p_forcer){
+  if(!p_forcer && !orbiteDebloquee()){
     journal(etat.espace1 ? "Il te faut un vaisseau pour rejoindre l'orbite." : "Tu ne connais pas encore de route vers l'orbite.","alerte");
     return;
   }

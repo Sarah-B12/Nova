@@ -129,6 +129,9 @@ async function devFactionBloc(){
   if(typeof majParametres==="function") majParametres(); afficher(); majDev();
 }
 function devPermis(){ etat.permisVaisseau = !etat.permisVaisseau; journal(`[DEV] permis de vaisseau ${etat.permisVaisseau?"accordé":"retiré"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
+/* v0.83 — `espace1` est un drapeau DISTINCT du vaisseau (récompense de Q5) :
+   sans lui, le bouton Orbite reste caché même avec un vaisseau équipé. */
+function devEspace1(){ etat.espace1 = !etat.espace1; journal(`[DEV] route vers l'orbite ${etat.espace1?"ouverte":"fermée"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
 function _devRafraichirQuetes(){ if(typeof rafraichirQuetes==="function") rafraichirQuetes(); else if(typeof afficher==="function") afficher(); }
 function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={done:[],active:null}); q.done=(q.done||[]).filter(x=>x!==id); if(q.active&&q.active.id===id) q.active=null; journal(`[DEV] quête ${id} réinitialisée.`,"gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
 function devResetQuetes(){ etat.quetes={done:[],active:null}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
@@ -259,6 +262,7 @@ function majDev(){
     <div class="dev-actions">
       <button class="mini" id="dev-pause">${etat.enPause?"Réactiver":"Mettre en pause"}</button>
       <button class="mini" id="dev-permis">${etat.permisVaisseau?"Retirer permis vaisseau":"Accorder permis vaisseau"}</button>
+      <button class="mini" id="dev-espace1">${etat.espace1?"Fermer la route de l'orbite":"Ouvrir la route de l'orbite"}</button>
       <button class="mini" id="dev-placement">Placement carte spatiale</button>
       <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
       <button class="mini" id="dev-prison">Libérer de prison</button>
@@ -273,10 +277,12 @@ function majDev(){
     const bp=av.querySelector("#dev-pause"); if(bp) bp.addEventListener("click", devPause);
     const bpv=av.querySelector("#dev-permis"); if(bpv) bpv.addEventListener("click", devPermis);
     // v0.83 : outil d'édition de FICHIER (js/espace-data.js), pas une fonctionnalité de jeu.
+    const be1=av.querySelector("#dev-espace1"); if(be1) be1.addEventListener("click", devEspace1);
     const bpl=av.querySelector("#dev-placement");
     if(bpl) bpl.addEventListener("click", ()=>{
       if(typeof placementBasculer!=="function"){ journal("Mode placement indisponible.","alerte"); return; }
-      fermerDev(); if(typeof ouvrirOrbite==="function") ouvrirOrbite();
+      fermerDev();
+      if(typeof ouvrirOrbite==="function") ouvrirOrbite(true);   // true = forcer : outil de dev
       placementBasculer();
     });
     const ben=av.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
