@@ -586,37 +586,55 @@ const QUETES = [
           ] } },
 
       /* ---- 4. Le rôle d'équipage — CHOIX (narratif + Cercles) ---- */
-      { indice:"Reste à bord. Elle va te demander un cap. Réfléchis avant de répondre — c'est le genre de question qu'on te pose une fois.",
+      /* ⚠ v0.91 — ce choix portait sur un CAP (autre station / astéroïdes /
+         orbite de l'anneau). Il était démenti dans la minute : le premier vol
+         dépose toujours le joueur à la base. Ce n'est pas le choix qu'il fallait
+         retirer mais la PROMESSE — la navette n'a qu'une destination enregistrée
+         depuis trois siècles, et c'est l'Écart. Le joueur remplit donc un MOTIF
+         DE ROTATION : une case de formulaire, pour une administration morte.
+         Le cap verrouillé s'affiche sous son nom AREPO (LORE_Corporation §4) :
+         ça explique mécaniquement l'atterrissage imposé et ça sème l'écart
+         officiel/courant sans qu'aucun personnage ait à l'expliquer (règle R2). */
+      { indice:"Reste à bord. Elle va te demander de justifier la rotation. Réfléchis avant de répondre — c'est le genre de question qu'on te pose une fois.",
         cible:{ x:600, y:480, r:80 }, leurres:[ {x:1500,y:1250,r:80}, {x:2000,y:600,r:80}, {x:1100,y:250,r:80} ],
         image:"images/quetes/q5/4.png",
         arrivee:[
           "RÔLE D'ÉQUIPAGE — POSTE VACANT. INSCRIPTION ACCEPTÉE. La navette vient de t'enregistrer sans cérémonie, comme elle l'aurait fait il y a trois cents ans.",
-          "CAP DE ROTATION — SAISIE REQUISE.",
+          "CAP DE ROTATION — VERROUILLÉ. DESTINATION : RELAIS NIELLE-1.",
+          "Elle ne te demande pas où aller. Elle le sait depuis trois siècles, et ça n'a jamais changé. Ce qu'elle veut, c'est la case d'à côté.",
+          "MOTIF DE ROTATION — SAISIE REQUISE.",
           "Derrière toi, Sorn s'est approché du sas. Tu l'entends poser la main sur le lecteur d'identité."
         ],
         defi:{ type:"choix",
-          texte:["Trois caps s'affichent. Aucun n'est recommandé — la machine n'a pas d'avis là-dessus non plus."],
+          texte:["Trois motifs s'affichent. Aucun n'est recommandé — la machine n'a pas d'avis là-dessus non plus. Personne ne lira jamais ta réponse."],
           options:[
-            { texte:"Une autre station. Si celle-ci s'appelle MAAR-3, les autres existent quelque part.",
+            { texte:"RELÈVE TECHNIQUE. Une machine de trois cents ans qui marche encore : tu veux savoir comment elle est faite.",
               cercles:{ assembleurs:5 },
-              journal:"Cap enregistré : les autres stations." },
-            { texte:"Le champ d'astéroïdes. Ce qui se mine là-haut vaut cher ici.",
+              journal:"Motif de rotation : relève technique." },
+            { texte:"TRANSPORT DE FRET. Ce qui se ramasse là-haut vaut cher ici, et tu comptes bien le redescendre.",
               cercles:{ eclats:5 },
-              journal:"Cap enregistré : le champ d'astéroïdes." },
-            { texte:"L'orbite de l'anneau. Le voir enfin d'en haut.",
+              journal:"Motif de rotation : transport de fret." },
+            { texte:"RECONNAISSANCE. Voir l'anneau d'en haut, une bonne fois, et noter ce qu'il y a autour.",
               cercles:{ veilleurs:5 },
-              journal:"Cap enregistré : l'orbite de l'anneau." }
+              journal:"Motif de rotation : reconnaissance." }
           ],
           reussite:[
-            "CAP ENREGISTRÉ. ROTATION EN ATTENTE DE DÉPART.",
+            "MOTIF ENREGISTRÉ. ROTATION EN ATTENTE DE DÉPART. DESTINATION : RELAIS NIELLE-1.",
+            "Le nom ne te dit rien. Il est écrit là comme une évidence, dans la typographie soignée d'une entreprise qui classait des mondes.",
             "Derrière toi, le lecteur d'identité émet un bip bref. SORN, E. — IDENTITÉ RADIÉE. ACCÈS REFUSÉ. NE PAS RÉINTÉGRER.",
             "Ce n'est pas lui qu'on refuse. C'est un nom, sur un registre qu'aucun vivant n'a signé, tenu par une administration morte depuis trois siècles. La machine ne fait pas la différence. Elle n'a jamais eu à la faire.",
             "Sorn retire sa main sans un mot. Il hoche la tête, une fois, comme on valide un calcul dont on connaissait déjà le résultat.",
             "« Bon. » Il redescend la passerelle. « J'ai des relais à réparer, moi. »",
-            "Il ne se retourne pas. Sur la console, le mot manuscrit est toujours scotché là : « pour la dernière rotation ». Ce n'était pas la dernière."
+            "Il ne se retourne pas. Sur la console, le mot manuscrit est toujours scotché là : « pour la dernière rotation ». Ce n'était pas la dernière.",
+            "ÉTAT DE COQUE : DÉGRADÉ. STOCKS D'ENTRETIEN : ÉPUISÉS. AUTONOMIE DE SERVICE ESTIMÉE : 10 JOURS.",
+            "Elle t'emmènera là-haut. Elle ne t'y gardera pas. D'ici là, il faudra t'en payer une vraie — ou apprendre à en construire une."
           ] } }
     ],
-    recompense:{ credits:800, xp:120, pa:2, flags:{ permisVaisseau:true, espace1:true } }
+    /* ⚠ v0.91 — le permis seul obligeait à attendre qu'un Constructeur mette un
+       vaisseau au marché. La Navette de réserve débloque le vol TOUT DE SUITE,
+       et disparaît en dix jours : le métier de Constructeur garde sa clientèle,
+       et le joueur découvre l'orbite avant de devoir payer. */
+    recompense:{ credits:800, xp:120, pa:2, objets:{ navette_reserve:1 }, flags:{ permisVaisseau:true, espace1:true } }
   }
 
   // Quête finale de la carte Silène : Q5 accorde le permis de vaisseau + ouvre l'espace (flag espace1).

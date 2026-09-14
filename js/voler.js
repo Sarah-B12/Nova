@@ -41,8 +41,8 @@ function genererCible(){
   return { nom, ageJ:Math.floor(Math.random()*130), credits:250+Math.floor(Math.random()*4500), sac, dejaVole:Math.random()<0.15 };
 }
 function _cibleProtegee(c){
-  if(c.ageJ < IMMUNITE_JOURS){ journal(`${c.nom} est un nouveau venu (protégé < ${IMMUNITE_JOURS} j). Tu renonces.`,"alerte"); return true; }
-  if(c.dejaVole){ journal(`${c.nom} a déjà été délesté aujourd'hui — sur ses gardes. Tu renonces.`,"alerte"); return true; }
+  if(c.ageJ < IMMUNITE_JOURS){ journal(`${c.nom} est un nouveau venu (protégé < ${IMMUNITE_JOURS} j). Tu renonces.`,"alerte","vol"); return true; }
+  if(c.dejaVole){ journal(`${c.nom} a déjà été délesté aujourd'hui — sur ses gardes. Tu renonces.`,"alerte","vol"); return true; }
   return false;
 }
 function _piocherObjets(sac, cap, agi){
@@ -67,18 +67,18 @@ async function tenterVoler(){
   if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniVol(
     async ()=>{ const butin=_piocherObjets(c.sac, VOL_CAP_OBJETS, agiliteEffective());
-      if(!butin.length) journal(`Tu fouilles ${c.nom} mais repars les mains vides.`,"alerte");
+      if(!butin.length) journal(`Tu fouilles ${c.nom} mais repars les mains vides.`,"alerte","vol");
       else {
         const gains={}; for(const [id,n] of butin){ gains[id]=(gains[id]||0)+n; }
         const r = await agirServeur({ ajouter:gains, motif:"vol" });
         const pris = r ? (r.ajoutes||{}) : {};
         const liste = Object.keys(pris).map(id=>`${pris[id]}× ${item(id)?item(id).nom:id}`).join(", ");
-        if(liste) journal(`Vol réussi sur ${c.nom} : ${liste}.`+(r&&r.sac_plein?" (sac plein)":""),"gain");
-        else journal(`Vol réussi sur ${c.nom}, mais ton sac est plein.`,"alerte");
+        if(liste) journal(`Vol réussi sur ${c.nom} : ${liste}.`+(r&&r.sac_plein?" (sac plein)":""),"gain","vol");
+        else journal(`Vol réussi sur ${c.nom}, mais ton sac est plein.`,"alerte","vol");
       }
       apresAction(); majVoler(); },
-    ()=>{ journal(`Échec ! ${c.nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte");
-      if(Math.random()<0.45){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte"); }
+    ()=>{ journal(`Échec ! ${c.nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte","vol");
+      if(Math.random()<0.45){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte","vol"); }
       apresAction(); majVoler(); }
   );
 }
@@ -91,9 +91,9 @@ async function tenterHacker(){
   if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniHack(
     ()=>{ const pct=Math.min(VOL_CAP_CREDITS, 0.12 + intelligenceEffective()/1000); const gain=Math.min(VOL_CAP_ABS, Math.floor(c.credits*pct));
-      etat.credits+=gain; journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. (Son journal ne verra qu'« un anonyme ».)`,"gain"); apresAction(); majVoler(); },
-    ()=>{ journal(`Hack échoué sur ${c.nom}. (Son journal : « un anonyme a tenté de me pirater ».)`,"alerte");
-      if(Math.random()<0.20){ _emprisonner(); journal("Ta trace a été remontée : prison.","alerte"); } apresAction(); majVoler(); }
+      etat.credits+=gain; journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. (Son journal ne verra qu'« un anonyme ».)`,"gain","vol"); apresAction(); majVoler(); },
+    ()=>{ journal(`Hack échoué sur ${c.nom}. (Son journal : « un anonyme a tenté de me pirater ».)`,"alerte","vol");
+      if(Math.random()<0.20){ _emprisonner(); journal("Ta trace a été remontée : prison.","alerte","vol"); } apresAction(); majVoler(); }
   );
 }
 
@@ -359,7 +359,10 @@ function _miniMastermind(m){
     board.innerHTML=h; bV.disabled=guess.length!==N;
   }
   render();
-  _hackChrono(m, 58000 + Math.round((typeof agiliteEffective==="function"?agiliteEffective():0)*30));
+  /* v0.91 — 58 s pour huit essais laissaient 7 s par coup, déduction comprise :
+     le seul mini-jeu où il faut RÉFLÉCHIR était aussi le plus pressé. 95 s, et
+     l'Agilité pèse plus (40 ms/pt au lieu de 30). */
+  _hackChrono(m, 95000 + Math.round((typeof agiliteEffective==="function"?agiliteEffective():0)*40));
 }
 /* Faisceaux laser — guider l'intrus (souris/doigt) du sas à la sortie sans toucher les rayons. Jeu de VOL. */
 function _miniLaser(m){
@@ -495,9 +498,9 @@ async function tenterEvasion(){
   if(Math.random() < p){
     etat.prisonJusqua=0; etat.prisonFaction=null;
     if(typeof sb!=="undefined"&&sb) sb.rpc("liberer_moi").catch(()=>{});
-    journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain");
+    journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain","vol");
   } else {
-    journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte");
+    journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte","vol");
   }
   if(typeof sauvegarder==="function") sauvegarder();
   if(typeof afficher==="function") afficher();

@@ -58,12 +58,27 @@ const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","
    PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
    23 h ne bloque donc plus toute la journée du lendemain. Repli sur l'ancien
    calcul si terrain.js n'est pas chargé, ou en mode test accéléré. */
+/* ⚠ v0.91 — EXPLOIT CORRIGÉ. Le verrou vivait dans `active._echecLe`, or
+   `abandonnerQuete()` remet `active` à null : abandonner puis ré-accepter la
+   quête effaçait la pénalité. Il vit désormais dans `quetes.verrous`, hors de
+   la quête active, indexé par « quête:étape » — l'abandon n'y touche pas.
+   Les clés périmées sont nettoyées à la lecture pour ne pas gonfler `donnees`. */
+function _verrous(){ const q=queteEtat(); if(!q.verrous || typeof q.verrous!=="object") q.verrous={}; return q.verrous; }
+function _cleVerrou(a){ return a ? `${a.id}:${a.etape}` : null; }
+function _purgerVerrous(){
+  const v=_verrous(); const perime = t => (typeof memeJour==="function") ? !memeJour(t) : (Date.now()-t >= _jourMs());
+  for(const k in v){ if(!v[k] || perime(v[k])) delete v[k]; }
+}
 function queteVerrou(){ const a=queteActive(); const e=etapeActive();
-  if(!a || !e || !e.defi || !DEFIS_UNTRY.has(e.defi.type) || !a._echecLe) return 0;
+  if(!a || !e || !e.defi || !DEFIS_UNTRY.has(e.defi.type)) return 0;
+  _purgerVerrous();
+  // `a._echecLe` reste lu en secours : parties commencées avant la v0.91.
+  const t = _verrous()[_cleVerrou(a)] || a._echecLe || 0;
+  if(!t) return 0;
   if(typeof memeJour === "function" && typeof msAvantResetJeu === "function"){
-    return memeJour(a._echecLe) ? msAvantResetJeu() : 0;
+    return memeJour(t) ? msAvantResetJeu() : 0;
   }
-  const r=_jourMs()-(Date.now()-a._echecLe); return r>0?r:0; }
+  const r=_jourMs()-(Date.now()-t); return r>0?r:0; }
 
 let _queteTimer = null; let _queteTO = [];   // animation/compte à rebours + timeouts
 function _clearQ(){ if(_queteTimer){ clearInterval(_queteTimer); _queteTimer=null; } _queteTO.forEach(clearTimeout); _queteTO=[]; }
@@ -78,7 +93,8 @@ function accepterQuete(id){
 }
 function abandonnerQuete(){
   if(!queteActive()) return;
-  if(!confirm("Abandonner la quête en cours ? Tu pourras la reprendre depuis le début.")) return;
+  // v0.91 : le message ne promet plus une remise à zéro complète — les verrous restent.
+  if(!confirm("Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué jusqu'à minuit.")) return;
   queteEtat().active=null; journal("Quête abandonnée.","alerte");
   sauvegarder(); rafraichirQuetes();
 }
@@ -109,6 +125,10 @@ async function terminerQuete(){
   const gainQ = r.credits ? ((typeof aptCredits==="function") ? aptCredits(r.credits) : r.credits) : 0;   // Négociant (no3)
   if(gainQ) etat.credits += gainQ;
   if(r.objets && Object.keys(r.objets).length) await agirServeur({ ajouter:r.objets, motif:"quete_recompense" });
+  /* v0.91 — la Navette de réserve démarre son compte à rebours À LA REMISE,
+     pas à l'équipement : dix jours, qu'on s'en serve ou non. */
+  if(r.objets && r.objets[typeof NAVETTE_CADEAU!=="undefined" ? NAVETTE_CADEAU : "navette_reserve"]
+     && typeof navetteCadeauPosee==="function") navetteCadeauPosee();
   if(r.pa && typeof gagnerPA==="function") gagnerPA(r.pa);
   if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
@@ -122,8 +142,14 @@ async function terminerQuete(){
 }
 
 /* ---------- Réussite / échec partagés ---------- */
-function reussirDefi(){ const a=queteActive(); if(!a) return; a._resolu=true; a._echecLe=0; a._attenteLe=0; sauvegarder(); rafraichirQuetes(); }
-function echouerDefi(msg){ const a=queteActive(); if(!a) return; a._echecLe=Date.now(); a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
+function reussirDefi(){ const a=queteActive(); if(!a) return; a._resolu=true; a._echecLe=0; a._attenteLe=0;
+  delete _verrous()[_cleVerrou(a)];
+  sauvegarder(); rafraichirQuetes(); }
+function echouerDefi(msg){ const a=queteActive(); if(!a) return;
+  a._echecLe=Date.now();
+  _verrous()[_cleVerrou(a)] = Date.now();   // v0.91 : le verrou survit à l'abandon
+  a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[];
+  journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
 
 /* ---------- Modules de défi : rendu ---------- */
 function _defiHTML(d){

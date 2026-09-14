@@ -16,7 +16,8 @@ const DUREE_VIE_ITEM = {
   // (o2 / kit / ration boutique retirés — remplacés par les fab_ Biotech)
   fab_biogel:8, fab_ration_chaude:5, fab_recharge_d_oxygene:20, fab_kit_de_soin:14, fab_boite_de_soin:10,
   fab_biocarburant:10, fab_biocarburant_raffine:12, fab_stimulant:8, fab_antidote:8,
-  fab_tank_a_oxygene:22, fab_combinaison_pressurisee:22, fab_biofil_renforce:20
+  fab_tank_a_oxygene:22, fab_combinaison_pressurisee:22, fab_biofil_renforce:20,
+  navette_reserve:10                                                 // v0.91 : cadeau de Q5, trois cents ans au compteur
   // lingots, composants, armes, armures, implants, pièces et vaisseaux : 30 j (défaut)
 };
 function dureeVie(id){
@@ -28,6 +29,18 @@ function dureeVie(id){
 // On prend le lot le PLUS ANCIEN : c'est lui qui partira en premier, et c'est
 // aussi lui que les retraits consomment d'abord (FIFO).
 function joursRestants(id, lieu){
+  /* v0.91 — la Navette de réserve ne se compte pas par lot : son échéance est
+     absolue, sinon un aller-retour par le sac lui rendrait dix jours neufs. */
+  if(id === "navette_reserve" && etat.navetteFin){
+    return Math.max(0, Math.ceil((etat.navetteFin - Date.now())/JOUR_MS));
+  }
+  /* v0.91 — un vaisseau au sac affichait l'âge de son LOT, remis à neuf par un
+     aller-retour à l'équipement. On lit la garde d'âge (vaisseau.js), qui est
+     la seule mémoire de son usure réelle. */
+  if(typeof estVaisseau==="function" && estVaisseau(id) && typeof ageVaisseau==="function"){
+    const t0 = ageVaisseau(id);
+    if(t0 != null) return Math.max(0, Math.ceil((t0 + dureeVie(id)*JOUR_MS - Date.now())/JOUR_MS));
+  }
   if(typeof joursRestantsLot === "function"){
     const j = joursRestantsLot(id, lieu||"sac");
     if(j != null) return j;
@@ -121,7 +134,16 @@ async function majUsure(){
     if(l.lieu === "equipe") continue;   // l'équipement porté s'use à part (etat.equipementDate)
     const dv = (typeof dureeVie==="function") ? dureeVie(l.item) : null;
     if(dv == null) continue;
-    if(now - l.acquis > dv * JOUR_MS){
+    /* v0.91 — le lot d'un vaisseau rangé porte la date du jour où il est sorti
+       de l'équipement, pas celle de sa sortie d'usine : on juge sur la garde
+       d'âge, sinon un aller-retour à l'équipement le rendait immortel AU SAC
+       aussi. Même chose pour la Navette de réserve et son échéance absolue. */
+    let ref = l.acquis;
+    if(l.item === "navette_reserve" && etat.navetteFin) ref = etat.navetteFin - dv*JOUR_MS;
+    else if(typeof estVaisseau==="function" && estVaisseau(l.item) && typeof ageVaisseau==="function"){
+      const t0 = ageVaisseau(l.item); if(t0 != null) ref = t0;
+    }
+    if(now - ref > dv * JOUR_MS){
       const it = (typeof item==="function") ? item(l.item) : null;
       const ou = l.lieu==="coffre" ? " (rangement de la maison)" : (l.lieu==="soute" ? " (soute du vaisseau)" : " et a disparu du sac");
       // ⚠ Le message n'est PAS écrit ici : on l'écrira seulement si le serveur
@@ -185,6 +207,20 @@ async function majUsure(){
       journal(`${it?it.nom:id} s'est usé et a lâché.`,"alerte"); perte = true;
     }
   }
+  /* v0.91 — Navette de réserve : échéance absolue. Les exemplaires qui traînent
+     au sac, au coffre ou dans une soute partent en même temps que l'échéance,
+     quelle que soit la date de leur lot. Le modèle équipé, lui, est antidaté à
+     l'équipement et tombe tout seul dans le bloc ci-dessous. */
+  if(etat.navetteFin && now >= etat.navetteFin){
+    const ranges = (etat.lots||[]).filter(l => l && l.item==="navette_reserve" && l.qte>0)
+      .map(l => ({ item:l.item, lieu:l.lieu, acquis:l.acquis }));
+    if(ranges.length && typeof sb !== "undefined"){
+      try{ const { data } = await sb.rpc("perimer", { p_lots: ranges });
+           if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#navette"); }
+      journal("La Navette de réserve s'est désagrégée : trois cents ans, ça finit par se voir.","alerte");
+    }
+    if(etat.vaisseau !== "navette_reserve") etat.navetteFin = 0;
+  }
   // Vaisseau équipé (la coque s'use aussi : sinon la formation Constructeur ne sert qu'une fois)
   if(etat.vaisseau){
     if(etat.vaisseauDate == null){ etat.vaisseauDate = now; }
@@ -202,9 +238,16 @@ async function majUsure(){
         try{ const { data } = await sb.rpc("perimer", { p_lots: restants });
              if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#1"); }
       }
+      const etaitCadeau = (etat.vaisseau === "navette_reserve");
+      if(etat.vaisseauAge) delete etat.vaisseauAge[etat.vaisseau];
       etat.vaisseau = null; etat.vaisseauDate = null;
-      journal(`${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
+      if(etaitCadeau) etat.navetteFin = 0;   // v0.91 : l'échéance a joué, on la referme
+      journal(etaitCadeau
+        ? "La Navette de réserve a rendu l'âme — dix jours, c'était ce qu'elle avait à donner. Soute vidée dans le sac (ce qui tenait)."
+        : `${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
     }
   }
+  // v0.91 : un modèle dont plus aucun exemplaire n'existe perd sa garde d'âge.
+  if(typeof purgerAgesVaisseaux==="function") purgerAgesVaisseaux();
   if(perte && typeof sauvegarder=="function") sauvegarder();
 }

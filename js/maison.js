@@ -88,11 +88,17 @@ async function deposerMat(matId, tout){
 async function travaillerMaison(){
   const c=etat.maison.chantier; if(!c) return;
   if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
-  const dispo = deposeTotal(c) - c.travail;
+  const total=travailTotal(c.cible);
+  /* ⚠ v0.91 — « Travaux : 9/8 ». Le travail disponible se comptait sur le
+     TOTAL DÉPOSÉ, qui dépasse le nombre d'actions requises dès qu'une recette
+     demande plus de 8 unités. On pouvait donc travailler au-delà du compte,
+     en payant l'énergie pour rien. Le travail est maintenant plafonné. */
+  if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
+  const dispo = Math.min(total, deposeTotal(c)) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
   if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
   c.travail++;
-  const total=travailTotal(c.cible); const r=recetteMaison(c.cible);
+  const r=recetteMaison(c.cible);
   const toutDepose = Object.keys(r).every(k=>(c.depose[k]||0)>=r[k]);
   if(toutDepose && c.travail>=total){
     etat.maison.palier=c.cible; etat.maison.chantier=null;
@@ -136,9 +142,6 @@ function majMaison(){
     return;
   }
   let html="";
-  /* v0.91 — logement abîmé par le Protocole : bandeau en tête, chantier gelé.
-     Le RANGEMENT reste accessible (décision : on ne coupe pas le coffre). */
-  if(typeof blocArretMaison==="function") html += blocArretMaison();
   const vimg = imgMaison(m.palier);
   if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt=""></div>`;
   if(m.chantier){
@@ -152,7 +155,7 @@ function majMaison(){
       html += `<div class="recette-ligne ok"><span class="recette-seuil">${dej}/${bes}</span><span class="recette-corps"><b class="recette-nom">${item(mid).nom}</b><span class="recette-ing">disponible : ${auSac}${auCof?` +${auCof} 🏠`:""}</span></span><button class="mini" data-dep="${mid}" ${(plein||has<=0)?"disabled":""}>Déposer ${Math.min(bes-dej, has)>1?`×${Math.min(bes-dej, has)}`:""}</button></div>`;
     }
     html += `</div>`;
-    const dispoTravail = deposeTotal(c) - c.travail;
+    const dispoTravail = Math.min(total, deposeTotal(c)) - c.travail;   // v0.91 : plafonné
     html += `<div class="form-progress" style="margin-top:10px"><div class="form-progress-tete"><span>Travaux</span><span>${c.travail}/${total}</span></div><div class="form-barre"><div class="form-remplissage" style="width:${Math.round(c.travail/(total||1)*100)}%"></div></div></div>`;
     html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${(dispoTravail<=0||etat.energie<TRAVAIL_ENERGIE)?"disabled":""}><span>Travailler</span><span class="cout">−${TRAVAIL_ENERGIE} % én. · ${Math.max(0,dispoTravail)} à faire</span></button></div>`;
     html += `<div class="actions" style="margin-top:8px"><button class="mini danger" id="maison-demolir">Annuler / Démolir</button></div>`;
@@ -170,7 +173,9 @@ function majMaison(){
       <div class="sous-carte" style="margin:0"><h3>À déposer (sac)</h3><div id="depot-liste"></div></div>
     </div>`;
   }
-  z.innerHTML=_RB+html;
+  /* v0.91 — logement abîmé : bandeau AVANT tout le reste, bouton Réparer
+     compris. Le chantier est gelé ; le RANGEMENT, lui, reste accessible. */
+  z.innerHTML=((typeof blocArretMaison==="function") ? blocArretMaison() : "") + _RB + html;
 
   z.querySelectorAll("[data-dep]").forEach(b=>b.addEventListener("click",()=>deposerMat(b.dataset.dep, true)));   // v0.72 : tout ce qui manque, d'un coup
   const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", travaillerMaison);

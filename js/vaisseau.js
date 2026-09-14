@@ -14,9 +14,82 @@ const VAISSEAUX = {
   fab_vaisseau_cargo:  { nom:"Vaisseau Cargo",  soute:20, img:"images/vaisseaux/vaisseau_cargo.png",  carb:"fab_biocarburant_raffine", reservoir:200, conso:6, energie:2, pv:260 },
   fab_vaisseau_maitre: { nom:"Vaisseau maître", soute:10, img:"images/vaisseaux/vaisseau_maitre.png", carb:"fab_biocarburant_raffine", reservoir:100, conso:3, energie:3, pv:340 }
 };
+/* ===========================================================
+   NAVETTE DE RÉSERVE — cadeau de fin de Q5 (v0.91)
+   Celle du quai, vieille de trois cents ans. Elle permet de monter TOUT DE
+   SUITE, sans attendre qu'un Constructeur en mette une au marché — mais elle
+   tombe en poussière au bout de dix jours, ce qui laisse le métier vivant.
+   ⚠ Ni fabricable (pas de préfixe `fab_`, aucune recette) ni vendable
+   (aucune entrée dans PRIX_ITEM : le marché ne propose que ce qui a un prix).
+   ⚠ Coque plus faible que la Navette légère : ce n'est pas un vaisseau neuf.
+   =========================================================== */
+const NAVETTE_CADEAU = "navette_reserve";
+const NAVETTE_CADEAU_JOURS = 10;
+VAISSEAUX[NAVETTE_CADEAU] = { nom:"Navette de réserve", soute:5, img:"images/vaisseaux/navette_legere.png",
+                              carb:"fab_biocarburant", reservoir:40, conso:1, energie:1, pv:90, cadeau:true };
+if(typeof TOUS_ITEMS !== "undefined" && !TOUS_ITEMS.some(i => i.id === NAVETTE_CADEAU)){
+  TOUS_ITEMS.push({ id:NAVETTE_CADEAU, nom:"Navette de réserve", type:"fabrique", cat:"fabrique" });
+  if(typeof IMG_ITEM !== "undefined") IMG_ITEM[NAVETTE_CADEAU] = "images/items/navette_legere.png";
+}
+/* Échéance ABSOLUE, posée à la fin de Q5 et jamais remise à zéro.
+   ⚠ Sans elle, déséquiper puis rééquiper relancerait dix jours à chaque fois
+   (`vaisseauDate` repart à maintenant, et le retour au sac crée un lot neuf) :
+   le cadeau deviendrait un vaisseau gratuit et éternel. */
+function navetteCadeauPosee(){
+  if(!etat.navetteFin) etat.navetteFin = Date.now() + NAVETTE_CADEAU_JOURS*86400000;
+  return etat.navetteFin;
+}
+function navetteCadeauJours(){
+  if(!etat.navetteFin) return null;
+  return Math.max(0, Math.ceil((etat.navetteFin - Date.now())/86400000));
+}
+
 // Litres apportés par une unité de carburant, lors d'un plein.
 const CARBURANT_LITRES = { fab_biocarburant:20, fab_biocarburant_raffine:60 };
 function estVaisseau(id){ return !!VAISSEAUX[id]; }
+
+/* ===========================================================
+   ÂGE RÉEL D'UN VAISSEAU (v0.91 — correction)
+   ⚠ Contrairement à l'équipement (corrigé en v0.64), équiper un vaisseau ne le
+   DÉPLACE pas vers un lieu serveur : il est RETIRÉ de l'inventaire, et recréé
+   neuf au déséquipement. Il n'existe donc aucun lot dont lire la date, et le
+   compteur d'usure repartait à zéro — deux fois :
+     · déséquiper / rééquiper rendait n'importe quel vaisseau éternel ;
+     · un vaisseau acheté vieux de 25 jours au marché repartait à 30 une fois porté.
+   On garde donc l'âge nous-mêmes, dans `etat.vaisseauAge`, indexé par modèle.
+   ⚠ Limite assumée : deux exemplaires du MÊME modèle d'âges différents sont
+   confondus — on retient le plus ancien. Le cas est rare et joue contre le
+   joueur, ce qui est le bon sens de l'erreur. L'entrée est effacée dès qu'il ne
+   reste plus aucun exemplaire du modèle (vente, péremption) : un rachat repart
+   donc bien à neuf. */
+function ageVaisseau(id){
+  if(!estVaisseau(id)) return null;
+  const garde = etat.vaisseauAge && etat.vaisseauAge[id];
+  let plusVieux = (typeof garde === "number") ? garde : null;
+  // Lots serveur (sac, coffre, soute) : on prend la date la plus ancienne.
+  (etat.lots||[]).forEach(l => {
+    if(l && l.item===id && l.qte>0 && typeof l.acquis==="number"){
+      if(plusVieux==null || l.acquis < plusVieux) plusVieux = l.acquis;
+    }
+  });
+  return plusVieux;
+}
+function _noterAgeVaisseau(id, ts){
+  if(!estVaisseau(id) || typeof ts !== "number") return;
+  etat.vaisseauAge = etat.vaisseauAge || {};
+  const a = etat.vaisseauAge[id];
+  etat.vaisseauAge[id] = (typeof a==="number") ? Math.min(a, ts) : ts;
+}
+/* Un modèle dont il ne reste aucun exemplaire (vendu, périmé, posté) perd sa
+   garde d'âge : sinon un rachat hériterait de l'âge de l'ancien. */
+function purgerAgesVaisseaux(){
+  if(!etat.vaisseauAge) return;
+  for(const id in etat.vaisseauAge){
+    if(etat.vaisseau === id) continue;
+    const reste = (etat.lots||[]).some(l => l && l.item===id && l.qte>0);
+    if(!reste) delete etat.vaisseauAge[id];
+  }
+}
 function vaisseauActif(){ return etat.vaisseau ? VAISSEAUX[etat.vaisseau] : null; }
 function capaciteSoute(){ const v=vaisseauActif(); return v ? v.soute : 0; }
 function itemsSoute(){ return Object.values(etat.soute||{}).reduce((a,b)=>a+b,0); }
@@ -35,7 +108,14 @@ async function equiperVaisseau(id){
   }
   // Le vaisseau quitte le sac et devient équipé : un seul appel, tout ou rien.
   if(!await agirServeur({ retirer:{ [id]:1 }, motif:"vaisseau_equiper" })) return;
-  etat.vaisseau=id; etat.vaisseauDate=Date.now();
+  etat.vaisseau=id;
+  /* ⚠ L'âge SUIT le vaisseau : on reprend la date du lot d'où il sort, pas
+     l'instant présent. La Navette de réserve, elle, est antidatée pour retomber
+     sur son échéance absolue. */
+  etat.vaisseauDate = (id===NAVETTE_CADEAU && etat.navetteFin)
+    ? (etat.navetteFin - dureeVie(id)*86400000)
+    : (ageVaisseau(id) || Date.now());
+  _noterAgeVaisseau(id, etat.vaisseauDate);
   etat.carburant = Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);   // le réservoir peut être plus petit
   journal(`${VAISSEAUX[id].nom} équipé. Soute : ${VAISSEAUX[id].soute} places.`,"gain");
   apresAction(); majVaisseau();
@@ -46,6 +126,9 @@ async function desequiperVaisseau(){
   const id=etat.vaisseau;
   const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"vaisseau_desequiper" });
   if(!r || !(r.ajoutes||{})[id]){ journal("Sac plein.","alerte"); return; }
+  // ⚠ Le lot qui revient au sac porte la date du jour : la garde d'âge est la
+  //   seule mémoire de l'usure réelle. On l'écrit AVANT d'oublier vaisseauDate.
+  _noterAgeVaisseau(id, etat.vaisseauDate || Date.now());
   etat.vaisseau=null; etat.vaisseauDate=null;
   journal(`${VAISSEAUX[id].nom} rangé dans le sac.`);
   apresAction(); majVaisseau();

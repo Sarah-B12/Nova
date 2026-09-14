@@ -13,7 +13,7 @@ function nouvelEtat(){
     credits:0, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
-    vaisseau:null, vaisseauDate:null, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
+    vaisseau:null, vaisseauDate:null, vaisseauAge:{}, navetteFin:0, carburant:0, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
     /* v0.86 — secteur : "silene" | "ecart" (voir orbite.js). ⚠ Valeur PAR
        DÉFAUT uniquement : ne JAMAIS la répéter dans hydraterEtat, qui
        écraserait alors le secteur relu du serveur — le joueur redescendait sur
@@ -93,7 +93,12 @@ function hydraterEtat(s){
     soute:{...(s.soute||{})}, souteDate:{...(s.souteDate||{})},
     maison:{ palier:0, plot:null, chantier:null, ...(s.maison&&typeof s.maison.palier==="number" ? s.maison : {}) }, mur:(s.mur||[]),
     aptitudes:{...base.aptitudes, ...(s.aptitudes||{})},
-    quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null },
+    /* ⚠ `quetes` est reconstruit champ par champ : tout champ non listé ici est
+       PERDU au rechargement. `verrous` (v0.91) doit donc y figurer, sinon la
+       pénalité d'échec s'effacerait à chaque F5 — l'exploit corrigé reviendrait
+       par la fenêtre. */
+    quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null,
+             verrous:(s.quetes&&s.quetes.verrous&&typeof s.quetes.verrous==="object")?s.quetes.verrous:{} },
     terrain:{ parcelles: normaliserParcelles(s.terrain) },
     creeLe: s.creeLe || Date.now(),
     energie: (typeof s.energie==="number" ? s.energie : 100),

@@ -137,20 +137,40 @@ async function reparerStructure(plot){
 /* ===========================================================
    AFFICHAGE
    =========================================================== */
-/* Jauge sur la tuile du terrain. Rien tant que la structure est intacte :
-   une barre pleine sur 24 parcelles ferait du bruit pour rien. */
-function barreIntegrite(plot){
+/* Pastille d'intégrité sur la tuile du terrain, avec bulle au survol.
+   ⚠ Pas de barre de vie : sur une tuile de 60 px elle était illisible, et une
+   jauge pleine sur 24 parcelles aurait fait du bruit pour rien. Un point de
+   couleur, et le détail seulement quand on le cherche. Sur mobile (pas de
+   survol), l'information reste accessible en ouvrant la structure. */
+function _niveauIntegrite(v){ return v >= 75 ? "n1" : (v >= 25 ? "n2" : "n3"); }
+function _nomStructure(plot){
+  const p = etat.terrain.parcelles[plot]; if(!p) return "Structure";
+  if(p.type==="maison") return "Logement";
+  return (typeof STRUCTURES!=="undefined" && STRUCTURES[p.type]) ? STRUCTURES[p.type].nom : "Structure";
+}
+function marqueIntegrite(plot){
   const v = integriteDe(plot);
   if(v >= 100) return "";
-  const cls = v <= 0 ? "hs" : (v <= 50 ? "bas" : "");
+  const niv = _niveauIntegrite(v);
+  const etatTxt = v <= 0
+    ? "À l'arrêt — ne produit plus rien."
+    : (v <= 25 ? "Très abîmée — un coup de plus et elle s'arrête." : "Abîmée — fonctionne encore.");
   const badge = v <= 0 ? `<span class="badge-hs">à l'arrêt</span>` : "";
-  return `${badge}<span class="plot-integrite ${cls}" title="Intégrité ${v} %"><i style="width:${Math.max(2,v)}%"></i></span>`;
+  return `${badge}<span class="ip-sig ${niv}"><i></i><span class="ip-bulle">
+      <b>${_nomStructure(plot)}</b><br>Intégrité <b>${v} %</b><br>
+      <span class="ip-etat">${etatTxt}</span><br>
+      Réparation : ${texteCoutReparation(plot)}</span></span>`;
 }
-/* Mention discrète en tête de la fenêtre de structure (à côté du sac). */
+/* En-tête de la fenêtre de structure : la mention ET le bouton de réparation.
+   ⚠ Le bouton est ici pour TOUS les niveaux de dégâts, pas seulement à 0 % —
+   sinon une structure à 75 % n'avait aucun moyen d'être réparée. */
 function noteIntegrite(plot){
   const v = integriteDe(plot);
-  if(v >= 100 || v <= 0) return "";      // à 0 %, c'est le panneau d'arrêt qui parle
-  return `<span class="integrite-note">Intégrité ${v} %</span>`;
+  if(v >= 100) return "";
+  const manque = _manqueReparation(plot);
+  const dispo = manque.length ? ` title="Il te manque ${manque.join(", ")}"` : ` title="Réparation : ${texteCoutReparation(plot)}"`;
+  return `<span class="integrite-note ${_niveauIntegrite(v)}">Intégrité ${v} %</span>`
+       + `<button class="mini" id="struct-reparer"${dispo} ${manque.length?"disabled":""} style="margin-left:6px">Réparer</button>`;
 }
 
 function _phraseContenu(p){

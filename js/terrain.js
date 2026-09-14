@@ -295,7 +295,14 @@ function majStruct(){
   document.querySelector("#struct-titre").textContent = STRUCTURES[p.type].nom + foT;
   // v0.75 : la place restante du sac, visible dès l'ouverture (mine, atelier, tout).
   const js=document.querySelector("#struct-sac");
-  if(js) js.innerHTML = texteSac() + ((typeof noteIntegrite==="function") ? noteIntegrite(structSel) : "");
+  if(js){
+    js.innerHTML = texteSac() + ((typeof noteIntegrite==="function") ? noteIntegrite(structSel) : "");
+    /* v0.91 — le bouton vit dans l'EN-TÊTE et non dans le corps : chaque type
+       de structure rend son corps à sa façon (la mine et l'atelier écrasent
+       `innerHTML`), un bouton posé là serait effacé par le premier rendu. */
+    const br = js.querySelector("#struct-reparer");
+    if(br) br.addEventListener("click", ()=>reparerStructure(structSel));
+  }
   const corps=document.querySelector("#struct-corps"); corps.innerHTML="";
   /* v0.91 — structure à l'arrêt : un seul écran, avant tout le reste. C'est le
      point de passage unique de TOUTES les fenêtres de structure (mine, atelier,
@@ -402,8 +409,8 @@ function majRecolte(){
       }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); if(p) ouvrirStruct(i); });
     }
-    // v0.91 : jauge d'intégrité, affichée seulement si la structure est abîmée.
-    if(p && typeof barreIntegrite==="function") cell.insertAdjacentHTML("beforeend", barreIntegrite(i));
+    // v0.91 : pastille d'intégrité (+ bulle au survol), seulement si abîmée.
+    if(p && typeof marqueIntegrite==="function") cell.insertAdjacentHTML("beforeend", marqueIntegrite(i));
     g.appendChild(cell);
   });
   const pa=document.querySelector("#plot-actions"); if(!pa) return; pa.innerHTML="";
