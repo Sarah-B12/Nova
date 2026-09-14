@@ -85,15 +85,31 @@ function ecranMort(){
       try{
         const { data } = await sb.rpc("ressusciter");
         if(!data || !data.ok){ journal("Résurrection impossible.","alerte"); b.disabled = false; return; }
-        // On se réaligne entièrement sur le serveur : position, jauges, crédits.
+        /* On se réaligne entièrement sur le serveur : position, jauges, crédits.
+           ⚠ v0.91 — mourir à l'Écart ne fait PAS redescendre : sinon se laisser
+           mourir serait le moyen le moins cher de rentrer, sans carburant ni
+           énergie. Le serveur renvoie alors `pos:null` et on ne touche ni à
+           `etat.pos` ni à `etat.secteur` ; on se réveille à la base, vaisseau
+           intact, et on redescend par ses propres moyens. */
         if(data.pos && typeof data.pos.x === "number") etat.pos = { x:data.pos.x, y:data.pos.y };
+        const enOrbite = (data.secteur && data.secteur !== "silene");
+        if(enOrbite){
+          const b = (typeof espaceLieu==="function") ? espaceLieu("base") : null;
+          if(b) etat.posEspace = { x:b.x, y:b.y };
+        }
         if(typeof rechargerCredits === "function") await rechargerCredits();
         if(typeof chargerJaugesServeur === "function") await chargerJaugesServeur();
         if(typeof chargerStocksServeur === "function") await chargerStocksServeur();
         _mortInfo = { ok:true, mort:false };
         majEcranMort();
-        journal(`Évacuation d'urgence : tu reprends conscience chez toi. −${data.perte} ₡ de frais médicaux.`,"alerte");
+        journal(enOrbite
+          ? `Tu reprends conscience à l'infirmerie de la base. Personne ne te redescendra : ton vaisseau t'attend. −${data.perte} ₡ de frais médicaux.`
+          : `Évacuation d'urgence : tu reprends conscience chez toi. −${data.perte} ₡ de frais médicaux.`,"alerte");
         if(typeof sauvegarder === "function") sauvegarder();
+        /* v0.91 — le vaisseau a pu rendre l'âme pendant que le joueur était
+           mort : il se réveillerait à la base sans moyen d'en repartir. Le
+           secours joue maintenant, après le réveil, jamais avant. */
+        if(typeof secoursOrbite === "function") await secoursOrbite();
         if(typeof afficher === "function") afficher();
       }catch(e){ journal("Résurrection impossible — réessaie.","alerte"); b.disabled = false; }
     });

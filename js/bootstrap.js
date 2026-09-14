@@ -29,6 +29,10 @@ const _bRet=document.querySelector("#orbite-retour");
 if(_bRet) _bRet.addEventListener("click", revenirVersSilene);
 const _bOrbF=document.querySelector("#orbite-fermer");
 if(_bOrbF) _bOrbF.addEventListener("click", fermerOrbite);
+/* v0.91 — même rôle que « Distances » sur Silène : lire les coûts sans survoler
+   (indispensable sur écran tactile, où il n'y a pas de survol du tout). */
+const _bOrbD=document.querySelector("#orbite-distances");
+if(_bOrbD) _bOrbD.addEventListener("click", ouvrirDistancesEspace);
 document.querySelector("#carte-fermer").addEventListener("click", fermerCarte);
 // v0.82 : coût des trajets sans survol (écrans tactiles).
 document.querySelector("#carte-distances").addEventListener("click", ouvrirDistances);
@@ -104,6 +108,10 @@ document.addEventListener("visibilitychange", ()=>{
   if(typeof chargerStocksServeur==="function") chargerStocksServeur();
   if(typeof rechargerCredits==="function")     rechargerCredits();
   if(typeof chargerIntegrite==="function")     chargerIntegrite();
+  /* v0.91 — filet de sécurité : si le joueur se retrouve à l'Écart SANS
+     vaisseau par un chemin qu'on n'a pas prévu (vendu, posté, périmé au sac,
+     session interrompue au mauvais moment), le secours le redescend. */
+  if(typeof secoursOrbite==="function") secoursOrbite();
 });
 /* Phase 4 : stocks, jauges, pause et mort appartiennent au serveur.
    ⚠ Ce bloc ne tournait qu'au CHARGEMENT DE LA PAGE, et sortait aussitôt si
@@ -131,5 +139,11 @@ async function syncApresConnexion(){
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
   if(typeof majEcranMort==="function")  majEcranMort();    // écran bloquant si mort
+  /* ⚠ v0.91 — le filet de secours était UNIQUEMENT dans `visibilitychange`,
+     qui ne se déclenche pas au chargement d'une page : un joueur qui rouvrait
+     le jeu bloqué à l'Écart sans vaisseau y restait tant qu'il ne changeait
+     pas d'onglet. Il joue donc ici aussi, APRÈS `syncMort` (donc après que
+     `_mortInfo` soit connu) et après l'écran bloquant. */
+  if(typeof secoursOrbite==="function") secoursOrbite();
 }
 setTimeout(syncApresConnexion, 1200);

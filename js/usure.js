@@ -245,6 +245,7 @@ async function majUsure(){
       journal(etaitCadeau
         ? "La Navette de réserve a rendu l'âme — dix jours, c'était ce qu'elle avait à donner. Soute vidée dans le sac (ce qui tenait)."
         : `${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
+      if(typeof secoursOrbite === "function") await secoursOrbite();
     }
   }
   /* v0.91 — PRÉAVIS DE FIN DE VAISSEAU. Sans lui, la coque rend l'âme sans

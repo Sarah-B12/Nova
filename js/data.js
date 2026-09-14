@@ -109,9 +109,16 @@ const BASE_BOUTIQUE = [
   { id:"fab_tank_a_oxygene",       nom:"Tank à oxygène",       prix:1250, cat:"survie" },
   { id:"fab_kit_de_soin",          nom:"Kit de soin",          prix:260,  cat:"survie" },
   { id:"fab_biocarburant",         nom:"Biocarburant",         prix:320,  cat:"carburant" },
-  { id:"fab_biocarburant_raffine", nom:"Biocarburant raffiné", prix:1400, cat:"carburant" }
+  { id:"fab_biocarburant_raffine", nom:"Biocarburant raffiné", prix:1400, cat:"carburant" },
+  /* v0.91 — la porte de sortie du joueur échoué. Un vaisseau qui lâche là-haut
+     laissait sans recours ; le comptoir en vend un, à un prix qui fait mal.
+     ⚠ 4500 ₡ contre ~1430 ₡ au marché : TROIS FOIS le prix. C'est délibéré —
+     le Constructeur doit rester le bon calcul, et ce comptoir le filet cher.
+     Le secours automatique (200 ₡, retour forcé au sol) reste moins coûteux :
+     on n'achète ici que si l'on veut RESTER en haut. */
+  { id:"fab_navette_legere",       nom:"Navette légère",       prix:4500, cat:"vaisseau" }
 ];
-const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" } ];
+const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" }, { id:"vaisseau", nom:"Vaisseau" } ];
 
 const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }

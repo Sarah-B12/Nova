@@ -104,8 +104,23 @@ async function partirVersEcart(){
   ouvrirOrbite();
 }
 
+const RENTREE_RP = "Le couloir de rentrée se calcule au relais de la base — Le Muet, lui, n'émet plus rien d'exploitable.";
+function surLaBase(){ return surLieuEspace(espaceLieu("base")); }
+
 async function revenirVersSilene(){
   if(!enEcart()) return;
+  /* ⚠ v0.91 — on ne redescend QUE depuis la base. Sans ça, on rentrait chez soi
+     depuis n'importe quel point du secteur, ce qui vidait de son sens la règle
+     « il faut de quoi revenir à la base » posée juste au-dessus.
+     ⚠ La raison est DITE AU JOUEUR avant qu'il parte (texte d'accueil de la
+     carte + infobulle du bouton), pas seulement au moment du refus : découvrir
+     la contrainte une fois à sec, c'est du carburant gâché pour rien. */
+  if(!surLaBase()){
+    const b = espaceLieu("base");
+    const c = b ? coutVol({x:b.x, y:b.y}) : null;
+    journal(`${RENTREE_RP} Rejoins-la d'abord${c?` — ${c.energie} % d'énergie, ${c.litres} L`:""}.`,"alerte");
+    return;
+  }
   if(!await _payerSaut("Rentrée")) return;
   const p = _villeDeMaFaction();
   etat.secteur = "silene";
@@ -114,6 +129,185 @@ async function revenirVersSilene(){
   fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof afficher==="function") afficher();
+}
+
+/* ===========================================================
+   VOL DANS NIELLE — v0.91, brique 1
+   Coût PROPORTIONNEL à la distance, comme sur Silène (`coutTrajet`).
+   ⚠ Pas de table de prix entre lieux : 19 objets font 171 paires, et le mode
+   placement peut tout déplacer — la table serait fausse au premier glissement.
+   La « table des distances » du lore reste un AFFICHAGE, pas une source.
+   =========================================================== */
+const PAS_ESPACE_E = 120;   // unités monde par 1 % d'énergie
+const PAS_ESPACE_C = 200;   // unités monde par litre (× conso du vaisseau)
+
+function posEspace(){
+  if(etat.posEspace && typeof etat.posEspace.x === "number") return etat.posEspace;
+  const b = espaceLieu("base");
+  return b ? { x:b.x, y:b.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
+}
+function _distEsp(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+/* Coût d'un vol depuis la position actuelle. null = déjà sur place. */
+function coutVol(dest, depuis){
+  const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
+  if(!v || !dest) return null;
+  const d = _distEsp(depuis || posEspace(), dest);
+  if(d < 6) return null;
+  return { d,
+    energie: Math.max(1, Math.round(d / PAS_ESPACE_E)),
+    litres:  Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1) };
+}
+/* Ce que coûterait le retour à la base DEPUIS un point donné. */
+function _coutRetourBase(depuis){
+  const b = espaceLieu("base"); if(!b) return null;
+  if(_distEsp(depuis, {x:b.x, y:b.y}) < 6) return { energie:0, litres:0, d:0 };
+  return coutVol({ x:b.x, y:b.y }, depuis);
+}
+
+/* ⚠ LA RÈGLE QUI FERME L'IMPASSE. Rien n'empêcherait un joueur d'aller au
+   Gravier avec juste assez de carburant, d'arriver à sec, et d'être bloqué là —
+   pas même à la base, donc sans pouvoir en racheter. Le calculateur de bord
+   refuse donc de larguer si le RETOUR n'est pas couvert. On raisonne en
+   `autonomieCarburant()` (réservoir + unités transportées), pas sur le seul
+   réservoir : refuser le départ à qui a dix unités en soute serait absurde. */
+function volPossible(dest){
+  const c = coutVol(dest); if(!c) return { ok:false, err:"surplace" };
+  const retour = _coutRetourBase(dest);
+  const litresTotal = c.litres + (retour ? retour.litres : 0);
+  if((etat.energie|0) < c.energie) return { ok:false, err:"energie", cout:c };
+  if(autonomieCarburant() < litresTotal)
+    return { ok:false, err:"retour", cout:c, besoin:litresTotal, retour:retour };
+  return { ok:true, cout:c, retour:retour };
+}
+
+/* Déplacement effectif. Le carburant se prend d'abord au réservoir ; s'il n'y
+   en a plus assez, on verse une unité transportée et on recommence. */
+async function volVers(l){
+  if(!enEcart()) return false;
+  const dest = { x:l.x, y:l.y };
+  const j = volPossible(dest);
+  if(!j.ok){
+    if(j.err === "surplace")      journal("Tu y es déjà.","alerte");
+    else if(j.err === "energie")  journal(`Trop peu d'énergie : il t'en faut ${j.cout.energie} %.`,"alerte");
+    else if(j.err === "retour"){
+      const v = vaisseauActif();
+      journal(`Le calculateur de bord refuse : ${j.besoin} L nécessaires pour aller là-bas ET revenir à la base, tu n'en as que ${Math.round(autonomieCarburant())}. Fais des réserves de ${item(v.carb).nom}.`,"alerte");
+    }
+    return false;
+  }
+  // Carburant : on complète le réservoir depuis les réserves autant que nécessaire.
+  let garde = 0;
+  while((etat.carburant||0) < j.cout.litres && garde++ < 20){
+    if(!await ravitailler()) break;
+  }
+  if((etat.carburant||0) < j.cout.litres){
+    journal("Impossible de transférer assez de carburant dans le réservoir.","alerte"); return false;
+  }
+  if(!await agirServeur({ cout:j.cout.energie, motif:"vol_nielle" })) return false;
+  etat.carburant = Math.max(0, (etat.carburant||0) - j.cout.litres);
+  etat.posEspace = dest;
+  journal(`Cap sur ${l.nom || "un point du secteur"} — ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof afficher==="function") afficher();
+  return true;
+}
+
+/* Mémoire du bandeau d'info pendant un survol (voir majOrbite). */
+let _orbInfoFige = null;
+
+/* Ligne d'aperçu affichée au survol d'un objet. */
+function _apercuVol(l){
+  const nom = l.nom || (l.type==="decor" ? "Objet stellaire" : "Destination");
+  if(surLieuEspace(l)) return `<b>${nom}</b> — <span class="itip-gris">tu y es.</span>`;
+  const c = coutVol({x:l.x, y:l.y});
+  if(!c) return `<b>${nom}</b>`;
+  const j = volPossible({x:l.x, y:l.y});
+  const cout = `${c.energie} % d'énergie · ${c.litres} L`;
+  if(j.ok) return `<b>${nom}</b> — ${cout}`;
+  const raison = (j.err==="energie")
+    ? "énergie insuffisante"
+    : `il faut ${j.besoin} L pour aller ET revenir à la base`;
+  return `<b>${nom}</b> — <span style="color:var(--coral,#ff5257)">${cout} — ${raison}</span>`;
+}
+
+/* ===========================================================
+   FENÊTRE DISTANCES — l'équivalent spatial de celle de Silène.
+   ⚠ C'est un AFFICHAGE, pas une source : tout est recalculé depuis les
+   positions réelles, donc un objet déplacé au mode placement met la table à
+   jour tout seul.
+   =========================================================== */
+function ouvrirDistancesEspace(){
+  const z = document.querySelector("#modale-distances"); if(!z) return;
+  const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
+  const lieux = ESPACE_LIEUX.filter(l => l.type !== "decor");
+  const base  = espaceLieu("base");
+
+  let h = `<h4 class="gsec">Depuis ta position</h4><div class="dist-depuis">`;
+  const depuis = lieux.map(l => ({ l, c: coutVol({x:l.x, y:l.y}) }))
+                      .sort((a,b) => ((a.c&&a.c.energie)||0) - ((b.c&&b.c.energie)||0));
+  for(const d of depuis){
+    if(!d.c){ h += `<div class="dist-ligne"><b>${d.l.nom||"—"}</b><span>tu y es</span></div>`; continue; }
+    const j = volPossible({x:d.l.x, y:d.l.y});
+    h += `<div class="dist-ligne${j.ok?"":" ko"}"><b>${d.l.nom||"—"}</b><span>${d.c.energie} % · ${d.c.litres} L</span></div>`;
+  }
+  h += `</div>`;
+
+  h += `<h4 class="gsec" style="margin-top:16px">Depuis la base</h4><div class="dist-depuis">`;
+  for(const l of lieux){
+    if(l.id === "base") continue;
+    const c = coutVol({x:l.x, y:l.y}, {x:base.x, y:base.y});
+    h += `<div class="dist-ligne"><b>${l.nom||"—"}</b><span>${c ? `${c.energie} % · ${c.litres} L` : "—"}</span></div>`;
+  }
+  h += `</div>`;
+
+  h += `<p class="vide" style="margin:10px 0 0">Coûts pour un trajet <b>direct</b>${v?`, avec ${v.nom} (conso ${v.conso} L/u)`:""}.
+    Une ligne en rouge signifie que tu n'as pas de quoi <b>aller ET revenir à la base</b> : ${RENTREE_RP}</p>`;
+
+  z.querySelector("#distances-corps").innerHTML = h;
+  z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
+}
+
+/* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
+   rayon, pas sur le pixel. `espaceRayon` existait déjà. */
+function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <= espaceRayon(l); }
+
+/* ===========================================================
+   SECOURS — v0.91
+   ⚠ Un joueur sans vaisseau à l'Écart est BLOQUÉ HORS DE LA CARTE PRINCIPALE :
+   il ne peut ni descendre, ni miner, ni cultiver, ni même mourir utilement.
+   C'est une impasse, pas une difficulté. Le cas devient courant depuis que la
+   Navette de réserve expire au bout de dix jours.
+   Appel de détresse automatique : on redescend dans sa cité, on paie un
+   forfait. ⚠ Forfait FIXE et non pourcentage — un pourcentage punit les riches
+   et laisse indifférent le joueur sans réserve, qui est justement celui qu'on
+   veut faire réfléchir avant de monter.
+   ⚠ Si le joueur ne peut pas payer, il descend QUAND MÊME, solde à zéro.
+   On ne laisse jamais personne coincé là-haut. */
+const SECOURS_FRAIS = 200;
+async function secoursOrbite(){
+  if(!enEcart()) return false;
+  if(etat.vaisseau) return false;                 // il lui reste un moyen de rentrer
+  /* ⚠ ORDRE AVEC LA MORT. Un joueur mort est derrière un écran bloquant : le
+     redescendre pendant ce temps contredirait la règle « mourir à l'Écart ne
+     fait pas descendre », et il se réveillerait chez lui sans avoir rien payé.
+     On attend donc la résurrection — `ressusciter` rappelle le secours juste
+     après, et il joue à ce moment-là, dans le bon ordre : on se réveille à la
+     base, PUIS on est rapatrié. */
+  if(typeof _mortInfo !== "undefined" && _mortInfo && _mortInfo.mort) return false;
+  const p = _villeDeMaFaction();
+  const du = Math.min(SECOURS_FRAIS, Math.max(0, etat.credits||0));
+  etat.credits = Math.max(0, (etat.credits||0) - SECOURS_FRAIS);
+  etat.secteur = "silene";
+  etat.pos = { x:p.x, y:p.y };
+  journal(du < SECOURS_FRAIS
+    ? `Appel de détresse : un cargo de passage te redescend. Tu n'avais pas de quoi payer — ${du} ₡, et tu leur dois le reste.`
+    : `Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.`,"alerte");
+  if(typeof fermerOrbite==="function") fermerOrbite();
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof afficher==="function") afficher();
+  return true;
 }
 
 /* Conditions d'accès */
@@ -216,8 +410,24 @@ function majOrbite(){
   }
   svg.innerHTML = html;
 
+  /* v0.91 — APERÇU AU SURVOL, équivalent de `_apercuCout` sur Silène. Le prix
+     d'un vol doit se lire en balayant la carte, pas en cliquant partout.
+     ⚠ On réutilise le bandeau `#orbite-info` : au survol il affiche le coût, et
+     il RESTAURE au départ de la souris ce que le dernier clic y avait mis. */
   svg.querySelectorAll("[data-lieu]").forEach(g=>{
+    g.addEventListener("mouseenter", ()=>{
+      if(_placementActif || !enEcart()) return;
+      const l = espaceLieu(g.dataset.lieu); if(!l) return;
+      const z = document.querySelector("#orbite-info"); if(!z) return;
+      if(_orbInfoFige === null) _orbInfoFige = z.innerHTML;
+      z.innerHTML = _apercuVol(l);
+    });
+    g.addEventListener("mouseleave", ()=>{
+      const z = document.querySelector("#orbite-info");
+      if(z && _orbInfoFige !== null){ z.innerHTML = _orbInfoFige; _orbInfoFige = null; }
+    });
     g.addEventListener("click", ()=>{
+      _orbInfoFige = null;                     // le clic remplace l'aperçu
       if(_placementActif) return;                 // en placement, le clic sert à glisser
       const l = espaceLieu(g.dataset.lieu); if(!l) return;
       const z=document.querySelector("#orbite-info"); if(!z) return;
@@ -230,8 +440,22 @@ function majOrbite(){
         z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
         return;
       }
-      z.innerHTML = `<b>${l.nom}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>
-        <span class="itip-gris">Déplacement spatial à venir : le carburant n'est pas encore consommé.</span>`;
+      /* v0.91 — le bandeau annonce le coût du vol et propose de partir.
+         ⚠ Le bouton n'apparaît QUE si l'on est à l'Écart : depuis Silène, la
+         carte spatiale se consulte mais ne se parcourt pas. */
+      const c = (typeof coutVol==="function") ? coutVol({x:l.x,y:l.y}) : null;
+      let bas = "";
+      if(!enEcart()) bas = `<span class="itip-gris">Décolle pour t'y rendre.</span>`;
+      else if(surLieuEspace(l)) bas = `<span class="itip-gris">Tu y es.</span>`;
+      else if(c){
+        const j = volPossible({x:l.x,y:l.y});
+        bas = `<span class="itip-gris">Vol : ${c.energie} % d'énergie · ${c.litres} L</span>`
+            + (j.ok ? ` <button class="mini" id="orb-voler">Mettre le cap</button>`
+                    : ` <span style="color:var(--coral,#ff5257)">— ${j.err==="energie"?"énergie insuffisante":`il faut ${j.besoin} L pour aller ET revenir à la base`}</span>`);
+      }
+      z.innerHTML = `<b>${l.nom}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>${bas}`;
+      const bv = z.querySelector("#orb-voler");
+      if(bv) bv.addEventListener("click", ()=>volVers(l));
     });
   });
 
@@ -240,8 +464,15 @@ function majOrbite(){
   const br=document.querySelector("#orbite-retour");
   if(br){ br.hidden = !enEcart(); br.style.display = enEcart() ? "" : "none";
     const cs=coutSaut();
-    if(enEcart() && cs){ br.textContent = `Redescendre sur Silène — ${cs.litres} L carburant, ${cs.energie} % énergie`;
-      br.title = `Il te reste ${Math.round(etat.carburant||0)}/${cs.reservoir} L.`; } }
+    if(enEcart() && cs){
+      const alaBase = surLaBase();
+      br.disabled = !alaBase;
+      br.textContent = alaBase
+        ? `Redescendre sur Silène — ${cs.litres} L carburant, ${cs.energie} % énergie`
+        : `Redescendre — rejoins d'abord la base`;
+      br.title = alaBase
+        ? `Il te reste ${Math.round(etat.carburant||0)}/${cs.reservoir} L.`
+        : RENTREE_RP; } }
 
   const nav=document.querySelector("#orbite-vaisseau");
   if(nav){ const v=(typeof vaisseauActif==="function")?vaisseauActif():null;

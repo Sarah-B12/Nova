@@ -1,5 +1,5 @@
 /* ===========================================================
-   ESPACE — DONNÉES (v0.83)
+   ESPACE — DONNÉES (v0.83, noms AREPO en v0.91)
 
    Catalogue des objets stellaires posés sur `images/carte_espace_1.png`.
    Séparé d'orbite.js pour que ce fichier reste ÉDITABLE À LA MAIN : c'est lui
@@ -24,7 +24,25 @@
      r      rayon d'arrivée (lieux seulement) ; défaut = t/2 + 20
      usage  une ligne, affichée au clic
      desc   deux lignes d'ambiance
-     verrou null, ou l'identifiant d'une condition (ex. "q15" pour le trou noir)
+     verrou null, ou l'identifiant d'une condition (ex. "q20" pour le trou noir)
+     officiel  nom AREPO, JAMAIS AFFICHÉ SUR LA CARTE (v0.91)
+
+   ⚠ DEUX REGISTRES (LORE_Corporation.md §4). Chaque objet porte le nom que
+   disent les équipages (`nom`, cru et descriptif) et le nom qu'AREPO avait
+   gravé sur ses plaques (`officiel`, un nom de plante ou un matricule
+   `Nielle-n`). **L'écart entre les deux EST une information** : un joueur qui
+   trouve une plaque « Nielle-4 » là où tout le monde dit « La Cassée » tient
+   une trace d'AREPO, pas une coquetterie d'habillage. `officiel` est donc
+   RÉSERVÉ AUX QUÊTES — il ne doit apparaître nulle part dans l'interface tant
+   qu'une quête ne le révèle pas.
+
+   ⚠ Deux absences volontaires : le trou noir n'a **pas** de nom officiel (les
+   registres s'arrêtent là, ce qui est plus inquiétant qu'un nom), et le portail
+   n'est que numéroté zéro — de quoi l'accrocher au lore sans rien promettre,
+   puisque c'est un leurre.
+
+   ⚠ Les identifiants techniques (`id`) ne changent JAMAIS : seuls les noms
+   affichés bougent.
      halo   couleur CSS d'un liseré lumineux (facultatif), pour les lieux
             qu'on doit retrouver d'un coup d'œil
    =========================================================== */
@@ -38,43 +56,47 @@ const ESPACE_LIEUX = [
   /* halo : liseré lumineux autour de l'objet (les images sombres se perdent
      sur un fond d'étoiles). Valeur = couleur CSS. Réservé aux lieux qui
      doivent SE REPÉRER : la base d'abord. */
-  { id:"base", nom:"Base de l'Écart", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
+  { id:"base", nom:"Base de l'Écart", officiel:"Relais Nielle-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
     usage:"Auberge · Boutique · Poste · Quêtes", desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
-  { id:"planete_chaude", nom:"Braisier", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
+  { id:"planete_chaude", nom:"La Braise", officiel:"Ancolie", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
     usage:"Descente au sol · zone chaude", desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },
-  { id:"planete_froide", nom:"Le Suaire", img:"planete_froide_1.png", x:203, y:967, t:312, type:"lieu",
+  { id:"planete_froide", nom:"Le Suaire", officiel:"Gypsophile", img:"planete_froide_1.png", x:203, y:967, t:312, type:"lieu",
     usage:"Descente au sol · zone froide", desc:"Blanche jusqu'à l'horizon. Rien n'y bouge, et c'est le problème." },
-  { id:"planete_bleue", nom:"Halde", img:"planete_bleue.png", x:1093, y:316, t:312, type:"lieu",
-    usage:"À venir", desc:"Une lune la suit de près, comme si elle n'osait pas s'éloigner." },
-  { id:"planete_cassee", nom:"Ce qu'il en reste", img:"planete_cassee.png", x:2150, y:864, t:406, type:"lieu",
+  /* ⚠ RÉSERVÉE À L'ARC SUIVANT : reste un `lieu`, mais ne mène nulle part pour l'instant. */
+  { id:"planete_bleue", nom:"Les Deux Sœurs", officiel:"Consoude", img:"planete_bleue.png", x:1093, y:316, t:312, type:"lieu",
+    usage:"À venir", desc:"Une lune la suit de près, comme si elle n'osait pas s'éloigner. De loin, on ne sait plus laquelle tourne autour de l'autre." },
+  { id:"planete_cassee", nom:"La Cassée", officiel:"Nielle-4", img:"planete_cassee.png", x:2150, y:864, t:406, type:"lieu",
     usage:"À venir", desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
-  { id:"etoile", nom:"Iode", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
+  { id:"etoile", nom:null, officiel:"Digitale", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
     usage:"", desc:"" },
-  { id:"trou_noir", nom:"La Gorge", img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"q15",
+  /* ⚠ AUCUN nom officiel : les registres d'AREPO s'arrêtent là. Verrou porté de
+     q15 à q20 — le trou noir ouvre la carte SUIVANTE, pas celle-ci. */
+  { id:"trou_noir", nom:"La Gorge", officiel:null, img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"q20",
     usage:"Verrouillé", desc:"Elle avale la lumière sans un bruit. Personne n'en est revenu pour le raconter." },
-  { id:"portail", nom:"L'Arche", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
+  /* ⚠ LEURRE : ne mène à rien, jamais. Non répertorié, seulement numéroté zéro. */
+  { id:"portail", nom:"L'Arche", officiel:"Structure NL-0", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
     usage:"Inerte", desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
-  { id:"epave", nom:"L'épave", img:"ruine_vaisseau.png", x:747, y:1270, t:133, type:"lieu",
+  { id:"epave", nom:"La Carcasse", officiel:"NL-217", img:"ruine_vaisseau.png", x:747, y:1270, t:133, type:"lieu",
     usage:"Fouille", desc:"Une coque éventrée, dérivant depuis trop longtemps pour qu'on sache d'où." },
-  { id:"antenne", nom:"Relais orphelin", img:"antene.png", x:1253, y:118, t:312, type:"lieu",
+  { id:"antenne", nom:"Le Muet", officiel:"Relais Nielle-2", img:"antene.png", x:1253, y:118, t:312, type:"lieu",
     usage:"Écoute", desc:"Il émet encore. Vers quoi, c'est une autre question." },
-  { id:"satellite1", nom:"Sonde muette", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
+  { id:"satellite1", nom:null, officiel:"Sonde Bardane", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
     usage:"", desc:"" },
-  { id:"satellite2", nom:null, img:"satellite2.png", x:668, y:142, t:156, type:"decor",
+  { id:"satellite2", nom:null, officiel:"Sonde Chardon", img:"satellite2.png", x:668, y:142, t:156, type:"decor",
     usage:"", desc:"" },
-  { id:"asteroides", nom:"Champ d'astéroïdes", img:"cailloux_grands.png", x:2113, y:1393, t:203, type:"lieu",
+  { id:"asteroides", nom:"Le Gravier", officiel:"Jachère haute", img:"cailloux_grands.png", x:2113, y:1393, t:203, type:"lieu",
     usage:"Minage", desc:"Roches lentes et riches. Le minerai y vaut ce qu'il coûte à remonter." },
-  { id:"cailloux2", nom:null, img:"cailloux_petits.png", x:325, y:273, t:312, type:"decor",
+  { id:"cailloux2", nom:null, officiel:"Jachère basse", img:"cailloux_petits.png", x:325, y:273, t:312, type:"decor",
     usage:"", desc:"" },
-  { id:"asteroide_v", nom:null, img:"asteroide_vert.png", x:1154, y:1490, t:156, type:"decor",
+  { id:"asteroide_v", nom:"Le Vert", officiel:"Prêle", img:"asteroide_vert.png", x:1154, y:1490, t:156, type:"decor",
+    usage:"", desc:"Un caillou seul, d'un vert qui n'a rien à faire là. Personne n'a jamais pris la peine d'aller voir." },
+  { id:"comete", nom:"La Traînée", officiel:"Sarriette", img:"comete_bleue.png", x:306, y:457, t:156, type:"decor",
+    usage:"", desc:"Elle repasse. On ne sait pas tous les combien, et personne ne tient le compte." },
+  { id:"anneaux_b", nom:null, officiel:"Campanule", img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
     usage:"", desc:"" },
-  { id:"comete", nom:null, img:"comete_bleue.png", x:306, y:457, t:156, type:"decor",
+  { id:"pp_vert", nom:null, officiel:"Mousseron", img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
     usage:"", desc:"" },
-  { id:"anneaux_b", nom:null, img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
-    usage:"", desc:"" },
-  { id:"pp_vert", nom:null, img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
-    usage:"", desc:"" },
-  { id:"pp_violet", nom:null, img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
+  { id:"pp_violet", nom:null, officiel:"Aubépine", img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
     usage:"", desc:"" }
 ];
 

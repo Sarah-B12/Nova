@@ -73,7 +73,13 @@ function placementBarreHtml(){
 function placementExport(){
   const q = s => (s===null || s===undefined) ? "null" : JSON.stringify(s);
   const lignes = ESPACE_LIEUX.map(l=>{
+    /* ⚠ v0.91 — TOUT champ absent d'ici est PERDU au premier « Copier le bloc ».
+       `officiel` (noms AREPO) et `halo` manquaient : un seul export aurait
+       effacé dix-neuf noms et le liseré de la base, sans le moindre message.
+       Règle : tout nouveau champ d'ESPACE_LIEUX s'ajoute AUSSI ici. */
     let t = `  { id:${q(l.id)}, nom:${q(l.nom)}, img:${q(l.img)}, x:${l.x}, y:${l.y}, t:${l.t}, type:${q(l.type)}`;
+    if(l.officiel !== undefined) t += `, officiel:${q(l.officiel)}`;
+    if(l.halo)   t += `, halo:${q(l.halo)}`;
     if(l.r)      t += `, r:${l.r}`;
     if(l.verrou) t += `, verrou:${q(l.verrou)}`;
     t += `,\n    usage:${q(l.usage||"")}, desc:${q(l.desc||"")} }`;

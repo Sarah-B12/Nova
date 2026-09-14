@@ -150,15 +150,39 @@ async function retirerSoute(id){
 }
 
 /* ---------- Ravitaillement ---------- */
+/* Litres réellement disponibles : le réservoir PLUS tout ce qu'on transporte.
+   ⚠ v0.91 — sert à décider si un vol est possible. Ignorer les unités en soute
+   ferait refuser le départ à un joueur qui a dix unités dans sa cale, ce qu'il
+   ne comprendrait pas ; et l'obligerait à un plein qui gaspille (remplir un
+   réservoir à 38/40 avec une unité de 20 L en perd 18).
+   ⚠ Légère SURESTIMATION assumée : une unité versée dans un réservoir presque
+   plein perd le surplus. On préfère se tromper dans le sens permissif — un
+   refus injustifié est bien plus agaçant qu'un départ risqué, qui a de toute
+   façon le secours pour filet. */
+function autonomieCarburant(){
+  const v = vaisseauActif(); if(!v) return 0;
+  const parUnite = CARBURANT_LITRES[v.carb] || 0;
+  const unites = ((etat.sac && etat.sac[v.carb]) || 0) + ((etat.soute && etat.soute[v.carb]) || 0);
+  return (etat.carburant || 0) + unites * parUnite;
+}
+
 async function ravitailler(){
   const v=vaisseauActif(); if(!v) return;
-  if((etat.carburant||0) >= v.reservoir){ journal("Réservoir plein.","alerte"); return; }
-  if((etat.sac[v.carb]||0) <= 0){ journal(`Il te faut du ${item(v.carb).nom} dans ton sac.`,"alerte"); return; }
+  if((etat.carburant||0) >= v.reservoir){ journal("Réservoir plein.","alerte"); return false; }
+  /* v0.91 — la soute compte aussi. Du carburant rangé dans sa propre cale était
+     inutilisable sans le remonter au sac à la main : un piège, pas une règle. */
+  if((etat.sac[v.carb]||0) <= 0){
+    if((etat.soute && etat.soute[v.carb]||0) > 0){
+      // rangerServeur journalise déjà son propre refus : on ne double pas le message.
+      if(typeof rangerServeur!=="function" || !await rangerServeur(v.carb, 1, "sac", "soute")) return false;
+    } else { journal(`Il te faut du ${item(v.carb).nom} dans ton sac ou ta soute.`,"alerte"); return false; }
+  }
   const litres = CARBURANT_LITRES[v.carb]||0;
-  if(!await agirServeur({ retirer:{ [v.carb]:1 }, motif:"ravitailler" })) return;
+  if(!await agirServeur({ retirer:{ [v.carb]:1 }, motif:"ravitailler" })) return false;
   etat.carburant = Math.min(v.reservoir, (etat.carburant||0) + litres);
   journal(`Plein : +${litres} L de ${item(v.carb).nom}. Réservoir ${Math.round(etat.carburant)}/${v.reservoir} L.`,"gain");
   apresAction(); majVaisseau();
+  return true;   // v0.91 : volVers() enchaîne les pleins tant qu'il en faut
 }
 
 /* ---------- Rendu (onglet Vaisseau) ---------- */

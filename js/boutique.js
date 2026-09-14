@@ -104,6 +104,13 @@ async function acheterBoutique(id){
   const a = _catalogueBoutique().find(x=>x.id===id); if(!a) return;
   const dehors = _boutiqueDehors();
   if(dehors && !(typeof aptBoutiquePartout==="function" && aptBoutiquePartout())){ journal("La Boutique n'est accessible qu'en ville.","alerte"); _boutiqueMsg("Rejoins une ville pour acheter."); return; }
+  /* v0.91 — le comptoir de la base vend un vaisseau : il doit respecter le même
+     verrou que l'atelier, le marché et l'équipement. En pratique on ne peut pas
+     être à la base sans permis, mais le jour où l'on y arrivera autrement, la
+     garde sera déjà là. */
+  if(typeof estVaisseau==="function" && estVaisseau(id) && !etat.permisVaisseau){
+    journal("Il te faut un permis de vaisseau.","alerte"); _boutiqueMsg("Permis de vaisseau requis."); return;
+  }
   const prix = _prixBoutique(a);
   const champ = document.querySelector(`#bq-${id}`);
   let n = Math.max(1, parseInt(champ ? champ.value : 1, 10) || 1);
