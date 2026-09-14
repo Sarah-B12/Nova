@@ -285,7 +285,9 @@ function texteSac(){
   const cap   = (typeof capaciteSac==="function") ? capaciteSac() : 50;
   const libre = (typeof placesLibres==="function") ? Math.max(0, placesLibres()) : cap;
   const uti   = cap - libre;
-  return `<span class="sac-jauge${libre<=0?" plein":(libre<=5?" bas":"")}">Sac : ${uti}/${cap}${libre>0?` · ${libre} place${libre>1?"s":""} libre${libre>1?"s":""}`:" · PLEIN"}</span>`;
+  // v0.91 : le compte de places libres est une soustraction de 2/50, on l'a retiré.
+  //   « PLEIN » reste, parce que c'est un avertissement et pas une information.
+  return `<span class="sac-jauge${libre<=0?" plein":(libre<=5?" bas":"")}">Sac : ${uti}/${cap}${libre<=0?" · PLEIN":""}</span>`;
 }
 function majStruct(){
   const m=document.querySelector("#modale-struct"); if(!m) return;

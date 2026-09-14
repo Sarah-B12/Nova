@@ -161,16 +161,33 @@ function marqueIntegrite(plot){
       <span class="ip-etat">${etatTxt}</span><br>
       Réparation : ${texteCoutReparation(plot)}</span></span>`;
 }
-/* En-tête de la fenêtre de structure : la mention ET le bouton de réparation.
+/* En-tête de la fenêtre de structure : la mention, son infobulle, et le bouton.
    ⚠ Le bouton est ici pour TOUS les niveaux de dégâts, pas seulement à 0 % —
-   sinon une structure à 75 % n'avait aucun moyen d'être réparée. */
+   sinon une structure à 75 % n'avait aucun moyen d'être réparée.
+   L'infobulle réutilise le motif `.tip` des compétences (`tabindex` compris,
+   pour qu'elle reste atteignable au toucher, où il n'y a pas de survol). */
+function bulleReparation(plot){
+  const v = integriteDe(plot);
+  const c = coutReparation(plot); if(!c) return "";
+  const manque = _manqueReparation(plot);
+  const l = Object.keys(c.matieres).map(k => {
+    const ko = nbStock(k) < c.matieres[k];
+    return `<span style="color:${ko?"#ff5257":"inherit"}">${c.matieres[k]} ${item(k).nom}</span>`;
+  }).join(" + ");
+  const effet = v <= 0
+    ? "Elle est <b>à l'arrêt</b> : plus aucune production, mais rien n'est perdu à l'intérieur."
+    : "Elle fonctionne encore. Chaque attaque réussie du Protocole subie en étant hors de Silène lui retire 25 %.";
+  return `<span class="tip" role="tooltip"><b>${_nomStructure(plot)} — ${v} %</b><br>${effet}
+    <br><br><b>Réparer (remet à 100 %)</b><br>${l}<br>−${c.energie} % d'énergie
+    ${manque.length ? `<br><span style="color:#ff5257">Il te manque ${manque.join(", ")}.</span>` : ""}
+    <br><br><small>Les matières demandées suivent l'ampleur des dégâts ; l'énergie, non.</small></span>`;
+}
 function noteIntegrite(plot){
   const v = integriteDe(plot);
   if(v >= 100) return "";
   const manque = _manqueReparation(plot);
-  const dispo = manque.length ? ` title="Il te manque ${manque.join(", ")}"` : ` title="Réparation : ${texteCoutReparation(plot)}"`;
-  return `<span class="integrite-note ${_niveauIntegrite(v)}">Intégrité ${v} %</span>`
-       + `<button class="mini" id="struct-reparer"${dispo} ${manque.length?"disabled":""} style="margin-left:6px">Réparer</button>`;
+  return `<span class="integrite-note ${_niveauIntegrite(v)}" tabindex="0">Intégrité ${v} %${bulleReparation(plot)}</span>`
+       + `<button class="mini" id="struct-reparer" ${manque.length?"disabled":""} style="margin-left:6px">Réparer</button>`;
 }
 
 function _phraseContenu(p){

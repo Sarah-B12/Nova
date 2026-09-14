@@ -409,9 +409,14 @@ async function _devChargerProto(){
   });
   const bts=z.querySelector("#dev-proto-test");
   if(bts) bts.addEventListener("click", async ()=>{
-    const { data:res, error } = await sb.rpc("admin_protocole_test", { p_cible: etat.faction||null, p_puissance: "moyenne" });
+    /* v0.91 — « moyenne » (coef 0,80) ne passait jamais : p_att ne dépend que du
+       NOMBRE de joueurs actifs, quand p_def dépend de leur FORCE. Sur un serveur
+       peu peuplé avec un personnage équipé, l'attaque ne pouvait pas réussir et
+       le bouton semblait cassé. Un bouton de test doit tester le pire cas. */
+    const { data:res, error } = await sb.rpc("admin_protocole_test", { p_cible: etat.faction||null, p_puissance: "ecrasante" });
     if(error||!res||!res.ok){ alert("Échec : "+((res&&res.err)||(error&&error.message)||"?")); return; }
-    journal(`[DEV] attaque du Protocole ${res.action==="creee"?"créée":"avancée"} — résolution à la minute suivante (si les attaques sont actives).`,"alerte");
+    journal(`[DEV] attaque du Protocole ${res.action==="creee"?"créée":"avancée"} (puissance écrasante) — résolution à la minute suivante.`,"alerte");
+    journal("[DEV] Pour qu'elle RÉUSSISSE : sors de la zone de ta cité (ou décolle) avant la résolution — sinon ta force de combat la repousse.","alerte");
     _devChargerProto();
   });
 }

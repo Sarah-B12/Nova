@@ -121,10 +121,18 @@
 /* v0.75 — place restante du sac, dans la barre des fenêtres de structure. */
 .sac-jauge-slot { margin-left:auto; margin-right:10px; }
 /* v0.91 — intégrité, à côté de la place du sac dans la barre de la fenêtre. */
-.integrite-note { font-family:"Space Mono",monospace; font-size:12px; color:#ffc061;
+/* ⚠ `position:relative` + `.tip` : même motif que les compétences (composants.css),
+   `tabindex` sur la pastille pour que la bulle reste atteignable au toucher. */
+.integrite-note { position:relative; cursor:help; font-family:"Space Mono",monospace; font-size:12px; color:#ffc061;
   border:1px solid currentColor; border-radius:6px; padding:1px 7px; margin-left:8px; white-space:nowrap; }
 .integrite-note.n2 { color:#ff8a3d; }
 .integrite-note.n3 { color:#ff5257; }
+.integrite-note .tip {
+  display:none; position:absolute; top:145%; right:0; width:250px; z-index:12;
+  background:var(--surface-2); border:1px solid var(--edge); border-radius:10px; padding:9px 11px;
+  font-family:"Space Mono",monospace; font-size:11px; color:var(--texte); line-height:1.5;
+  box-shadow:0 8px 22px rgba(0,0,0,.5); text-align:left; white-space:normal; }
+.integrite-note:hover .tip, .integrite-note:focus .tip { display:block; }
 .sac-jauge { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine);
   border:1px solid var(--line); border-radius:4px; padding:2px 8px; white-space:nowrap; }
 .sac-jauge.bas   { color:#ffb37a; border-color:rgba(255,179,122,.5); }

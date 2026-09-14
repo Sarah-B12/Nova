@@ -77,6 +77,13 @@ async function _syncPause(){
       if(cumul > applique){
         const d = cumul - applique;
         if(etat.vaisseauDate) etat.vaisseauDate += d;
+        /* v0.91 — les deux horloges de vaisseau ajoutées avec la Navette de
+           réserve doivent suivre le même dégel, sinon un joueur qui met le jeu
+           en pause perd ses dix jours pendant qu'il ne joue pas. */
+        if(etat.navetteFin) etat.navetteFin += d;
+        if(etat.vaisseauAge) for(const k in etat.vaisseauAge){
+          if(etat.vaisseauAge[k]) etat.vaisseauAge[k] += d;
+        }
         if(etat.equipementDate) for(const k in etat.equipementDate){
           if(etat.equipementDate[k]) etat.equipementDate[k] += d;
         }
