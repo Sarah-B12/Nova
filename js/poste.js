@@ -76,7 +76,7 @@ async function majPoste(){
   const envoyes= _posteCache.filter(o=>o.statut==="attente" && o.de_id===_posteMonId);
   let h = _posteBanniere();
   if((typeof surBase==="function") && surBase())
-    h += `<p class="vide" style="border-left:3px solid var(--orange);padding-left:10px">Poste de la Base de l'Écart : tout part en vaisseau. La taxe sur les <b>objets</b> est de <b>15 %</b> au lieu de 5 %.</p>`;
+    h += `<p class="vide" style="border-left:3px solid var(--orange);padding-left:10px">Poste du Perchoir : tout part en vaisseau. La taxe sur les <b>objets</b> est de <b>15 %</b> au lieu de 5 %.</p>`;
   h += `<p class="itip-gris" style="margin:0 0 10px">Le destinataire a <b>3 jours</b> pour récupérer ou refuser. Sinon, l'envoi <b>retourne à l'expéditeur</b> (3 jours de plus pour le récupérer). Passé ce délai, tout est <b>supprimé</b>. La taxe n'est jamais remboursée.</p>`;
   h += `<div class="sous-menu"><button class="sous-lien${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte${(recus.length+retours.length)?` (${recus.length+retours.length})`:""}</button><button class="sous-lien${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button></div>`;
   if(posteVue==="envoyer"){ h += _vueEnvoyer(); }

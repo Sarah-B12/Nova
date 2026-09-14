@@ -56,7 +56,7 @@ const ESPACE_LIEUX = [
   /* halo : liseré lumineux autour de l'objet (les images sombres se perdent
      sur un fond d'étoiles). Valeur = couleur CSS. Réservé aux lieux qui
      doivent SE REPÉRER : la base d'abord. */
-  { id:"base", nom:"Base de l'Écart", officiel:"Relais Nielle-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
+  { id:"base", nom:"Le Perchoir", officiel:"Relais Nielle-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
     usage:"Auberge · Boutique · Poste · Quêtes", desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
   { id:"planete_chaude", nom:"La Braise", officiel:"Ancolie", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
     usage:"Descente au sol · zone chaude", desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },

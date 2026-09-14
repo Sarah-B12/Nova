@@ -118,8 +118,14 @@ function _ligneJoueur(j, o){
   const dot = `<span class="comm-dot ${j.enLigne?"on":"off"}" title="${j.enLigne?"en ligne":"hors ligne"}"></span>`;
   const fac = _facNomComm(j.faction);
   const cred = (j.credits!=null && j.credits!=="?") ? ` · ${j.credits} ₡` : "";
+  /* v0.91 — où se trouve l'ami. Réservé aux amis confirmés : sur la carte
+     spatiale c'est une information utile (on sait qui peut nous retrouver là-
+     haut), et sur un inconnu ce serait de la surveillance. */
+  const secteurNom = (j.secteur && j.secteur !== "silene")
+    ? (typeof SECTEUR_NOM !== "undefined" ? SECTEUR_NOM : "Nielle") : "Silène";
+  const ou = o.ami ? ` · <span class="comm-ou">Sur ${secteurNom}</span>` : "";
   const infos = o.ami
-    ? `<span class="comm-meta">niv. ${j.niveau}${cred} · ${j.metier||"—"} · ${fac}</span>`
+    ? `<span class="comm-meta">niv. ${j.niveau}${cred} · ${j.metier||"—"} · ${fac}${ou}</span>`
     : `<span class="comm-meta">niv. ${j.niveau} · ${j.metier||"—"} · ${fac}</span>`;
   let btns="";
   if(o.recherche){
@@ -158,7 +164,19 @@ function _brancherActionsAmis(z){
 async function _majListesAmis(){
   const zc=document.querySelector("#amis-listes"); if(!zc) return;
   const { amis, envoyees, recues } = await _chargerRelations();
-  for(const a of amis){ try{ const { data } = await sb.rpc("credits_ami",{ cible:a.id }); if(data!=null) a.credits=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#1"); } }
+  /* v0.91 — UN appel au lieu d'un par ami. `credits_ami` était appelée en
+     boucle : dix amis faisaient dix allers-retours. `amis_infos()` renvoie
+     crédits ET secteur pour tous les amis confirmés, en une fois.
+     ⚠ Le secteur est une information d'AMI, pas une information publique : il
+     n'est pas dans `profils_publics`, la fonction vérifie l'amitié côté
+     serveur. Un joueur qu'on ne connaît pas ne révèle pas où il se trouve. */
+  try{
+    const { data:infos } = await sb.rpc("amis_infos");
+    if(infos) for(const a of amis){
+      const i = infos[a.id];
+      if(i){ if(i.credits!=null) a.credits = i.credits; a.secteur = i.secteur || "silene"; }
+    }
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#amis_infos"); }
   let h="";
   if(recues.length){
     h+=`<h4 class="comm-titre">Demandes reçues (${recues.length})</h4>`;
@@ -616,6 +634,9 @@ function _commStyle(){
     .comm-dot.on{ background:#8bd450; box-shadow:0 0 6px #8bd450aa; } .comm-dot.off{ background:#ff5257; }
     .comm-nom{ background:none; border:none; color:var(--bleu); cursor:pointer; font:inherit; text-decoration:underline; padding:0; font-weight:700; }
     .comm-meta{ color:var(--sourdine); font-size:13px; }
+    /* v0.91 — où se trouve l'ami. Volontairement discret : c'est un repère,
+       pas une alerte. Plus clair quand il n'est pas sur la carte principale. */
+    .comm-ou{ color:var(--texte); }
     .comm-btns{ margin-left:auto; display:flex; gap:6px; flex-wrap:wrap; }
     #comm-profil, #comm-msg{ position:fixed; inset:0; z-index:200; background:rgba(4,8,20,.7); display:grid; place-items:center; padding:20px; }
     #comm-profil[hidden], #comm-msg[hidden]{ display:none; }

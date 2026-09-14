@@ -57,7 +57,7 @@ function renderBoutique(){
   if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
   if(_surBaseBoutique()){
-    html += `<p class="vide" style="margin:0 0 10px">Comptoir de la Base de l'Écart — <b>oxygène, soins et carburant</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
+    html += `<p class="vide" style="margin:0 0 10px">Comptoir du Perchoir — <b>oxygène, soins, carburant et vaisseau</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
   } else {
     html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
     if(_boutiqueDehors()) html += `<p class="vide" style="margin:0 0 10px"><b>Boutique mobile</b> — hors d'une ville, +10 % sur chaque article.</p>`;

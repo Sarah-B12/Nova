@@ -28,7 +28,13 @@
    présent en expédition). À traiter côté SQL avant l'ouverture — voir
    PASSATION. En attendant, le retour repose bien le joueur dans sa cité, donc
    la position reste cohérente au sol. */
-const ECART_NOM = "L'Écart";
+/* ⚠ v0.91 — « L'Écart » servait à la fois de nom de SECTEUR et de nom de BASE,
+   ce que le lore contredit : le secteur s'appelle Nielle (LORE_Corporation §4)
+   et « L'Écart » n'était que le nom courant de la base — devenue Le Perchoir.
+   ⚠ L'identifiant technique ne change PAS : `profils.secteur` vaut toujours
+   'ecart', et `enEcart()` garde son nom. Seuls les textes bougent. */
+const SECTEUR_NOM = "Nielle";
+const ECART_NOM   = SECTEUR_NOM;   // ancien nom, conservé pour ne rien casser
 
 /* Coût du saut Silène ⇄ L'Écart. C'est une SORTIE D'ATMOSPHÈRE, pas un vol
    d'orbite : distance fixe, donc coût fixe en unités de vol. Le carburant
@@ -98,7 +104,7 @@ async function partirVersEcart(){
   const base = espaceLieu("base");
   etat.secteur   = "ecart";
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
-  journal(`Décollage. Tu te poses sur la ${base?base.nom:"base"} — secteur ${ECART_NOM}.`,"gain");
+  journal(`Décollage. Arrivée : ${base?base.nom:"la base"} — secteur ${SECTEUR_NOM}.`,"gain");
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof afficher==="function") afficher();
   ouvrirOrbite();
@@ -321,7 +327,7 @@ function majBoutonOrbite(){
   // button.action impose display:flex, qui l'emporterait sur l'attribut hidden.
   b.style.display = ok ? "" : "none";
   if(ok){
-    b.querySelector("span").textContent = enEcart() ? `Carte de ${ECART_NOM}` : `Partir pour ${ECART_NOM}`;
+    b.querySelector("span").textContent = enEcart() ? `Carte de ${SECTEUR_NOM}` : `Partir pour ${SECTEUR_NOM}`;
     const cs=coutSaut();
     const c=b.querySelector(".cout");
     if(c) c.textContent = enEcart() ? "tu y es"
