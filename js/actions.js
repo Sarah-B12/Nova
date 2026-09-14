@@ -12,7 +12,9 @@ async function reposer(){
   const base  = (typeof surBase==="function") && surBase();     // v0.87 : l'auberge de l'Écart
   if(!ville && !base){ journal("Repos possible seulement en ville, ou à l'auberge de la base.","alerte"); return; }
   if(memeJour(etat.reposLe)){ journal("Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
-  const chezSoi = (!!ville && ville===etat.faction);
+  /* v0.91 — logement à l'arrêt : on dort encore dans sa ville, mais pas chez
+     soi. Le confort retombe à celui de l'auberge (plafond 70). */
+  const chezSoi = (!!ville && ville===etat.faction && !(typeof maisonHS==="function" && maisonHS()));
   const gain = chezSoi?25:20, cap = chezSoi?80:70;
   if(etat.jauges.sante>=cap && etat.jauges.moral>=cap){ journal(`Déjà en forme — le repos ne dépasse pas ${cap} (kit/ration pour aller plus haut).`,"alerte"); return; }
   // Les jauges sont serveur : on calcule le gain UTILE (plafonné) et on l'envoie.

@@ -56,6 +56,7 @@ function placerMaison(i){
 }
 function agrandirMaison(){
   const m=etat.maison;
+  if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   if(m.chantier){ journal("Un chantier est déjà en cours.","alerte"); return; }
   if(m.palier>=5){ journal("Palier maximum atteint.","alerte"); return; }
   m.chantier = { cible:m.palier+1, depose:{}, travail:0 };
@@ -66,6 +67,7 @@ function agrandirMaison(){
    quand on est chez soi, comme à l'atelier. */
 async function deposerMat(matId, tout){
   const c=etat.maison.chantier; if(!c) return;
+  if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   const r=recetteMaison(c.cible); const besoin=r[matId]||0; const dej=c.depose[matId]||0;
   const reste = besoin - dej;
   if(reste<=0){ journal("Déjà assez de cette matière.","alerte"); return; }
@@ -85,6 +87,7 @@ async function deposerMat(matId, tout){
 }
 async function travaillerMaison(){
   const c=etat.maison.chantier; if(!c) return;
+  if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   const dispo = deposeTotal(c) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
   if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
@@ -97,12 +100,16 @@ async function travaillerMaison(){
   } else journal(`Travaux : ${c.travail}/${total}.`);
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
-function demolirMaison(){
+async function demolirMaison(){
   if(itemsCoffre()>0){ journal("Vide d'abord ton rangement avant de démolir.","alerte"); return; }
   if(!confirm("Démolir ton logement ? La parcelle sera libérée.")) return;
-  if(etat.maison.plot!=null) etat.terrain.parcelles[etat.maison.plot]=null;
+  const libere = etat.maison.plot;
+  if(libere!=null) etat.terrain.parcelles[libere]=null;
   etat.maison={ palier:0, plot:null, chantier:null };
-  journal("Logement démoli.","alerte"); apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  journal("Logement démoli.","alerte"); apresAction();
+  // v0.91 : même règle que demolir() — sauver, PUIS faire oublier les dégâts.
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(libere!=null && typeof integriteOublier==="function") await integriteOublier(libere);
 }
 async function deposerObjet(id){
   if(!etat.sac[id]) return;
@@ -129,6 +136,9 @@ function majMaison(){
     return;
   }
   let html="";
+  /* v0.91 — logement abîmé par le Protocole : bandeau en tête, chantier gelé.
+     Le RANGEMENT reste accessible (décision : on ne coupe pas le coffre). */
+  if(typeof blocArretMaison==="function") html += blocArretMaison();
   const vimg = imgMaison(m.palier);
   if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt=""></div>`;
   if(m.chantier){
@@ -166,6 +176,7 @@ function majMaison(){
   const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", travaillerMaison);
   const ba=z.querySelector("#maison-agrandir"); if(ba) ba.addEventListener("click", agrandirMaison);
   const bd=z.querySelector("#maison-demolir"); if(bd) bd.addEventListener("click", demolirMaison);
+  const br=z.querySelector("#maison-reparer"); if(br) br.addEventListener("click", ()=>reparerStructure(etat.maison.plot));
 
   if(m.palier>0){
     const g=z.querySelector("#coffre-grille");

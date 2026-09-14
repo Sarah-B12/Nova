@@ -83,12 +83,16 @@ function renderHangar(corps){
 function majDrones(){
   if(!etat.terrain || !Array.isArray(etat.terrain.parcelles)) return;
   let agi = false;
-  etat.terrain.parcelles.forEach(p=>{
+  etat.terrain.parcelles.forEach((p,i)=>{
     if(!p || p.type!=="hangar" || !Array.isArray(p.drones)) return;
+    // v0.91 : hangar à l'arrêt = les drones ne sortent pas.
+    if(typeof structureHS==="function" && structureHS(i)) return;
     p.drones.forEach(dr=>{
       if(!dr || dr.cible==null || memeJour(dr.maj)) return;
       const cible = etat.terrain.parcelles[dr.cible];
       if(!cible) return;   // parcelle cible démolie
+      // …ni sur une parcelle à l'arrêt : rien n'y pousse, rien n'y mange.
+      if(typeof structureHS==="function" && structureHS(dr.cible)) return;
       if(dr.type==="recolte" && cible.type==="biodome"){ droneRecolte(cible); dr.maj=Date.now(); agi=true; }
       else if(dr.type==="elevage" && cible.type==="enclos"){ droneElevage(cible); dr.maj=Date.now(); agi=true; }
     });

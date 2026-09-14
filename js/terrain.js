@@ -42,6 +42,15 @@ function _nomMaFaction(){
   const f = (typeof FACTIONS!=="undefined") ? FACTIONS.find(x=>x.id===etat.faction) : null;
   return f ? f.nom : "ta faction";
 }
+/* v0.91 — une structure à 0 % d'intégrité ne produit plus rien. Elle n'est
+   PAS détruite et son contenu est intact : seules les actions sont refusées.
+   ⚠ « Démolir » reste possible — c'est le choix laissé au joueur quand son
+   terrain est plein : réparer, ou raser pour rebâtir ailleurs. */
+function _refusHS(i){
+  if(typeof structureHS!=="function" || i==null || !structureHS(i)) return false;
+  journal("Structure à l'arrêt : répare-la (ou démolis-la) avant de t'en servir.","alerte");
+  return true;
+}
 function _refusTerrain(){
   if(surMonTerrain()) return false;
   journal(`Ton terrain est dans ta ville : rejoins ${_nomMaFaction()} sur la carte pour t'en occuper.`, "alerte");
@@ -141,7 +150,7 @@ async function batirParcelle(type){
   journal(`${s.nom} bâti (−${prix} ₡).`,"gain"); apresAction();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();   // v0.65 : 200 ₡ ne doivent pas tenir à 2,5 s de minuterie
 }
-function demolir(i){
+async function demolir(i){
   if(_refusTerrain()) return;
   if(!confirm("Démolir cette structure ? La parcelle sera libérée.")) return;
   const p=etat.terrain.parcelles[i]; const taux=aptRecyclageTaux();
@@ -150,12 +159,17 @@ function demolir(i){
   if(remb>0){ etat.credits+=remb; journal(`Structure démolie. Recyclage : +${remb} ₡.`,"gain"); }
   else journal("Structure démolie.","alerte");
   apresAction();
-  if(typeof sauverMaintenant==="function") sauverMaintenant();
+  /* v0.91 — la parcelle est libérée : le serveur doit OUBLIER ses dégâts,
+     sinon la prochaine structure bâtie ici naîtrait déjà abîmée.
+     ⚠ Dans cet ordre : la RPC vérifie que la parcelle est vide dans la
+     sauvegarde. L'appeler avant sauverMaintenant() la ferait refuser. */
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof integriteOublier==="function") await integriteOublier(i);
 }
 
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
 async function recolterMine(i){
-  if(_refusTerrain()) return;
+  if(_refusTerrain()||_refusHS(i)) return;
   const p=etat.terrain.parcelles[i]; const stock=p.stock||0; const rmax=p.max||MINE_MAX;
   const lot=aptMineLot(aptStructureLot(alea(3,6)));   // Fournaise (ig2) en zone chaude
   const n=Math.min(lot, stock, placesLibres());
@@ -186,14 +200,14 @@ function consommerStock(id){
   if(etat.coffre && (etat.coffre[id]||0)>0){ etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } return true; }
   return false;
 }
-async function poserPlante(ci, plId){ if(_refusTerrain()) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+async function poserPlante(ci, plId){ if(_refusTerrain()||_refusHS(structSel)) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const gr=graineDe(plId);
   if(!await assurerDansSac(gr,1)){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
   const res=await agirServeur({ cout:COUT_TERRAIN.planter, retirer:{ [gr]:1 }, motif:"planter" });
   if(!res) return;
   p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
 async function arroserCase(ci){
-  if(_refusTerrain()) return;
+  if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance>=PLANT_MAX){ journal("Déjà mûr — récolte-le.","alerte"); return; }
   if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
@@ -202,7 +216,7 @@ async function arroserCase(ci){
   journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 async function recolterCase(ci){
-  if(_refusTerrain()) return;
+  if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance<PLANT_MAX){ journal("Pas encore mûr.","alerte"); return; }
   const rr=aptBiodomeRecolte(); const nb=aptStructureLot(alea(rr.min,rr.max));
@@ -224,7 +238,7 @@ async function recolterCase(ci){
    d'application. On ne fait PAS ça pour les actions purement cosmétiques ni
    pour les rendus, afin de ne pas multiplier les écritures. */
 function _sauveTerrain(){ if(typeof sauverMaintenant==="function") sauverMaintenant(); }
-async function poserAnimal(ci, anId){ if(_refusTerrain()) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
+async function poserAnimal(ci, anId){ if(_refusTerrain()||_refusHS(structSel)) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const bb=bebeDe(anId);
   if(!await assurerDansSac(bb,1)){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
   const res=await agirServeur({ cout:COUT_TERRAIN.elever, retirer:{ [bb]:1 }, motif:"elever" });
@@ -232,7 +246,7 @@ async function poserAnimal(ci, anId){ if(_refusTerrain()) return; const p=etat.t
   p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
 function plantesDuSac(){ return etat.sacOrdre.filter(id=>{ const it=item(id); return it&&it.cat==="plante"&&(etat.sac[id]||0)>0; }); }
 async function nourrirCase(ci){
-  if(_refusTerrain()) return;
+  if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas>=a.repasAdulte){ journal("Déjà adulte.","alerte"); return; }
@@ -243,7 +257,7 @@ async function nourrirCase(ci){
   journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
 }
 async function tondreCase(ci){
-  if(_refusTerrain()) return;
+  if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
@@ -280,8 +294,16 @@ function majStruct(){
   const foT = (p.type==="atelier" && etat.formation) ? " — "+FORMATIONS[etat.formation.cle].nom : (p.type==="mine"?` — ${p.stock||0}/${p.max||MINE_MAX}`:"");
   document.querySelector("#struct-titre").textContent = STRUCTURES[p.type].nom + foT;
   // v0.75 : la place restante du sac, visible dès l'ouverture (mine, atelier, tout).
-  const js=document.querySelector("#struct-sac"); if(js) js.innerHTML = texteSac();
+  const js=document.querySelector("#struct-sac");
+  if(js) js.innerHTML = texteSac() + ((typeof noteIntegrite==="function") ? noteIntegrite(structSel) : "");
   const corps=document.querySelector("#struct-corps"); corps.innerHTML="";
+  /* v0.91 — structure à l'arrêt : un seul écran, avant tout le reste. C'est le
+     point de passage unique de TOUTES les fenêtres de structure (mine, atelier,
+     hangar, bio-dôme, enclos) : rien d'utilisable ne peut passer à côté. */
+  if(typeof structureHS==="function" && structureHS(structSel)){
+    corps.appendChild(panneauArret(structSel));
+    return;
+  }
   if(p.type==="atelier"){ renderAtelier(corps); return; }
   if(p.type==="hangar"){ renderHangar(corps); return; }
   if(p.type==="mine"){
@@ -380,6 +402,8 @@ function majRecolte(){
       }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); if(p) ouvrirStruct(i); });
     }
+    // v0.91 : jauge d'intégrité, affichée seulement si la structure est abîmée.
+    if(p && typeof barreIntegrite==="function") cell.insertAdjacentHTML("beforeend", barreIntegrite(i));
     g.appendChild(cell);
   });
   const pa=document.querySelector("#plot-actions"); if(!pa) return; pa.innerHTML="";

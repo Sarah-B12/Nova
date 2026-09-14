@@ -57,6 +57,14 @@
   .maison-vis { display:flex; justify-content:center; margin:0 0 10px; }
   .maison-vis img { max-height:150px; max-width:100%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
   .plot .vide-plot { color:rgba(180,200,230,.4); font-size:26px; font-weight:300; }
+  /* v0.91 — intégrité : barre fine en bas de la tuile, badge rouge en haut
+     quand la structure est à l'arrêt. Le badge est EN HAUT pour ne pas
+     recouvrir `.badge-plot` (hangar / logement sans image). */
+  .plot-integrite { position:absolute; left:4px; right:4px; bottom:3px; height:4px; border-radius:3px; background:rgba(6,14,30,.75); overflow:hidden; pointer-events:none; }
+  .plot-integrite i { display:block; height:100%; background:#8bd450; border-radius:3px; }
+  .plot-integrite.bas i { background:var(--orange,#ff8a3d); }
+  .plot-integrite.hs i { background:#ff5257; }
+  .badge-hs { position:absolute; top:2px; left:2px; right:2px; text-align:center; font-family:"Space Mono",monospace; font-size:9px; color:#ff5257; background:rgba(6,14,30,.78); border-radius:4px; padding:1px 2px; pointer-events:none; }
   .badge-plot { position:absolute; bottom:2px; left:2px; right:2px; text-align:center; font-family:"Space Mono",monospace; font-size:9px; color:var(--orange-hi); background:rgba(6,14,30,.72); border-radius:4px; padding:1px 2px; }
   .plot-actions { margin-top:4px; }
   /* Modale d'une structure (mine / bio-dôme / enclos) */
@@ -101,6 +109,9 @@
 
 /* v0.75 — place restante du sac, dans la barre des fenêtres de structure. */
 .sac-jauge-slot { margin-left:auto; margin-right:10px; }
+/* v0.91 — intégrité, à côté de la place du sac dans la barre de la fenêtre. */
+.integrite-note { font-family:"Space Mono",monospace; font-size:12px; color:#ffb37a;
+  border:1px solid rgba(255,179,122,.5); border-radius:6px; padding:1px 7px; margin-left:8px; white-space:nowrap; }
 .sac-jauge { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine);
   border:1px solid var(--line); border-radius:4px; padding:2px 8px; white-space:nowrap; }
 .sac-jauge.bas   { color:#ffb37a; border-color:rgba(255,179,122,.5); }

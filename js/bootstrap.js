@@ -103,6 +103,7 @@ document.addEventListener("visibilitychange", ()=>{
   if(document.hidden || !etat.inscrit) return;
   if(typeof chargerStocksServeur==="function") chargerStocksServeur();
   if(typeof rechargerCredits==="function")     rechargerCredits();
+  if(typeof chargerIntegrite==="function")     chargerIntegrite();
 });
 /* Phase 4 : stocks, jauges, pause et mort appartiennent au serveur.
    ⚠ Ce bloc ne tournait qu'au CHARGEMENT DE LA PAGE, et sortait aussitôt si
@@ -125,6 +126,7 @@ async function syncApresConnexion(){
      ne voyait jamais ce qui s'était passé. On les relève à la connexion. */
   if(typeof syncEffetsCombat==="function") t.push(syncEffetsCombat());
   if(typeof boissonCharger==="function")  t.push(boissonCharger());        // v0.77 : effet de boisson en cours
+  if(typeof chargerIntegrite==="function") t.push(chargerIntegrite());     // v0.91 : dégâts subis pendant l'absence
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
