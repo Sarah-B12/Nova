@@ -186,8 +186,12 @@ function noteIntegrite(plot){
   const v = integriteDe(plot);
   if(v >= 100) return "";
   const manque = _manqueReparation(plot);
+  /* ⚠ Un bouton `disabled` n'émet AUCUN événement de souris : ni `title`, ni
+     `:hover`. Le joueur voyait un cercle barré sans savoir ce qui lui manquait.
+     On enveloppe donc le bouton dans un porteur d'infobulle, qui reste vivant. */
+  const bouton = `<button class="mini" id="struct-reparer" ${manque.length?"disabled":""}>Réparer</button>`;
   return `<span class="integrite-note ${_niveauIntegrite(v)}" tabindex="0">Intégrité ${v} %${bulleReparation(plot)}</span>`
-       + `<button class="mini" id="struct-reparer" ${manque.length?"disabled":""} style="margin-left:6px">Réparer</button>`;
+       + `<span class="integrite-note bouton${manque.length?" n3":""}" tabindex="0">${bouton}${bulleReparation(plot)}</span>`;
 }
 
 function _phraseContenu(p){
@@ -217,7 +221,8 @@ function panneauArret(plot){
       <br><small>Ou démolis-la (bouton ci-dessous) pour libérer la parcelle.</small></p>`;
   const row = document.createElement("div"); row.className = "actions";
   const b = document.createElement("button");
-  b.className = "mini"; b.textContent = "Réparer";
+  b.className = "mini";
+  b.textContent = manque.length ? `Réparer — il te manque ${manque.join(", ")}` : "Réparer";
   b.disabled = manque.length > 0;
   b.addEventListener("click", ()=>reparerStructure(plot));
   row.appendChild(b); box.appendChild(row);

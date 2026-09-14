@@ -148,7 +148,12 @@ function _espaceHtml(l){
   /* ⚠ v0.85 — en PLACEMENT, tout doit s'attraper, décor compris : `decor` porte
      pointer-events:none pour le jeu, ce qui le rendait aussi indéplaçable dans
      l'outil (astéroïdes, satellites, petites planètes). */
-  const clic = (l.type !== "decor") || _placementActif;
+  /* ⚠ v0.91 — SPOIL DE CURSEUR. Seuls les lieux visitables portaient
+     `cursor:pointer` : il suffisait de balayer la carte à la souris pour savoir
+     lesquels mènent quelque part, sans rien avoir découvert. Tout répond
+     désormais au survol de la même façon ; c'est le CLIC qui distingue, et
+     cliquer est un acte, pas un balayage. */
+  const clic = true;
   const r = espaceRayon(l);
   const demi = l.t/2;
   let h = `<g class="orb-lieu${clic?" cliquable":""}${(_placementSel&&_placementSel.id===l.id)?" sel":""}"`
@@ -216,6 +221,11 @@ function majOrbite(){
       if(_placementActif) return;                 // en placement, le clic sert à glisser
       const l = espaceLieu(g.dataset.lieu); if(!l) return;
       const z=document.querySelector("#orbite-info"); if(!z) return;
+      // v0.91 : le décor répond, mais ne mène nulle part. Il n'est plus muet.
+      if(l.type === "decor"){
+        z.innerHTML = `<b>${l.nom||"Objet stellaire"}</b><br><span class="itip-gris">${l.desc||"Rien qui mérite le carburant d'un détour."}</span>`;
+        return;
+      }
       if(l.verrou){
         z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
         return;

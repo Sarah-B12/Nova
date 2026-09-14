@@ -247,6 +247,23 @@ async function majUsure(){
         : `${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
     }
   }
+  /* v0.91 — PRÉAVIS DE FIN DE VAISSEAU. Sans lui, la coque rend l'âme sans
+     prévenir et la soute se vide dans un sac qui n'a pas la place : le joueur
+     perd ce qui ne tient pas. On alerte à 3, 2 et 1 jour, une fois par jour de
+     jeu (`jourDeJeu`), pour que le message ne devienne pas du bruit. */
+  if(etat.vaisseau && typeof dureeVie==="function"){
+    const dvv = dureeVie(etat.vaisseau);
+    if(dvv != null && etat.vaisseauDate){
+      const reste = Math.ceil((etat.vaisseauDate + dvv*JOUR_MS - now)/JOUR_MS);
+      const jour  = (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString();
+      if(reste > 0 && reste <= 3 && etat.vaisseauPreavis !== jour){
+        etat.vaisseauPreavis = jour;
+        const nomv = (typeof VAISSEAUX!=="undefined" && VAISSEAUX[etat.vaisseau]) ? VAISSEAUX[etat.vaisseau].nom : "Ton vaisseau";
+        journal(`⚠ ${nomv} n'a plus que ${reste} jour${reste>1?"s":""} avant de rendre l'âme. Vide ta soute pendant qu'il est temps : ce qui ne tiendra pas dans ton sac sera perdu.`,"alerte");
+        perte = true;   // force la sauvegarde du préavis
+      }
+    }
+  }
   // v0.91 : un modèle dont plus aucun exemplaire n'existe perd sa garde d'âge.
   if(typeof purgerAgesVaisseaux==="function") purgerAgesVaisseaux();
   if(perte && typeof sauvegarder=="function") sauvegarder();

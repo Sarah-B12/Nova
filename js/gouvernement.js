@@ -653,7 +653,8 @@ async function syncEffetsCombat(){
         const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
         // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.
         const onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
-        journal(ev.texte, ton, onglet); });
+        // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
+        journal((typeof joliserItems==="function") ? joliserItems(ev.texte) : ev.texte, ton, onglet); });
       if(typeof sauvegarder==="function") sauvegarder();
     }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
@@ -1014,14 +1015,7 @@ function _ouvrirCandidature(programme){
 async function _soumettreCandidature(){
   const t=(document.querySelector("#cand-prog").value||"").trim(); _candForm.prog=null;
   const { data:res, error } = await sb.rpc("candidater", { p_programme:t });
-  if(error || !res || !res.ok){
-    if(res && res.err==="depot_ferme") journal("Le dépôt des candidatures est fermé (après le 3).","alerte");
-    /* v0.91 — on ne gouverne pas de loin : se présenter exige d'être sur
-       Silène. VOTER reste possible depuis Nielle. */
-    else if(res && res.err==="hors_silene") journal("On ne se présente pas depuis l'orbite : redescends sur Silène pour déposer ta candidature.","alerte");
-    else journal("Candidature impossible.","alerte");
-    return;
-  }
+  if(error || !res || !res.ok){ if(res && res.err==="depot_ferme") journal("Le dépôt des candidatures est fermé (après le 3).","alerte"); else journal("Candidature impossible.","alerte"); return; }
   const m=document.querySelector("#gouv-modal"); if(m) m.hidden=true;
   journal("Candidature enregistrée. Bonne chance !","gain");
   if(typeof majCentre==="function") majCentre();

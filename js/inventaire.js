@@ -144,6 +144,22 @@ async function assurerDansSac(id, n){
    Trois corrections : on attend que la session existe, on réessaie, et un
    échec définitif est DIT au joueur au lieu de lui montrer un sac vide comme
    si c'était la vérité. */
+/* v0.91 — le SERVEUR ne connaît que les identifiants (`inventaire.item_id` est
+   du texte libre, il n'existe aucun catalogue en base) : ses messages disaient
+   « 1× fab_lingot_de_silite ». Plutôt que de dupliquer les noms français côté
+   serveur — deux tables à tenir d'accord —, on traduit à l'affichage.
+   ⚠ La carte est construite au PREMIER appel, donc après que formations.js et
+   vaisseau.js aient fini de remplir TOUS_ITEMS. */
+let _nomsItems = null;
+function joliserItems(t){
+  if(typeof t !== "string" || !t) return t;
+  if(!_nomsItems){
+    _nomsItems = {};
+    (typeof TOUS_ITEMS!=="undefined" ? TOUS_ITEMS : []).forEach(i=>{ if(i && i.id && i.nom) _nomsItems[i.id] = i.nom; });
+  }
+  return t.replace(/\b[a-z][a-z0-9_]{2,}\b/g, m => _nomsItems[m] || m);
+}
+
 async function chargerStocksServeur(){
   if(typeof sb === "undefined") return null;
   const MAX = 3;
