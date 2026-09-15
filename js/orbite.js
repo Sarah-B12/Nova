@@ -65,6 +65,17 @@ function enEcart(){ return etat.secteur === "ecart"; }
    « en vol » et les hubs se ferment, comme en pleine nature sur Silène. */
 /* v0.91 — La Carcasse, comme le Perchoir : un lieu ou les hubs s'ouvrent.
    Ailleurs dans le secteur, on est « en vol » et tout se ferme. */
+/* ⚠ v0.91 — À APPELER APRÈS TOUT CHANGEMENT DE LIEU. La liste des onglets
+   dépend de l'endroit : sans ce rappel, on garde ceux du lieu qu'on vient de
+   quitter — on atterrit sur Silène avec l'onglet du Gisement, seul et vide.
+   C'est arrivé parce que l'appel n'était que dans `volVers` : décollage,
+   rentrée et remorquage l'avaient oublié. Un seul point d'entrée, désormais. */
+function majApresDeplacement(){
+  if(typeof majHub==="function")   majHub();
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof afficher==="function") afficher();
+}
+
 function surCarcasse(){ return enEcart() && surLieuEspace(espaceLieu("epave")); }
 function surGravier(){  return enEcart() && surLieuEspace(espaceLieu("asteroides")); }
 
@@ -119,7 +130,7 @@ async function partirVersEcart(){
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
   journal(`Décollage. Arrivée : ${base?base.nom:"la base"} — secteur ${SECTEUR_NOM}.`,"gain","voyage");
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof afficher==="function") afficher();
+  majApresDeplacement();
   ouvrirOrbite();
 }
 
@@ -146,10 +157,10 @@ async function revenirVersSilene(){
   const p = _villeDeMaFaction();
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };                 // retour DANS sa cité, jamais en pleine nature
-  journal("Retour sur Silène. Tu te poses chez toi.","gain");
+  journal("Retour sur Silène. Tu te poses chez toi.","gain","voyage");
   fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof afficher==="function") afficher();
+  majApresDeplacement();
 }
 
 /* ===========================================================
@@ -237,12 +248,7 @@ async function volVers(l){
      dégâts de coque changeraient le coût du vol déjà payé. */
   if(typeof tenterSonde==="function") tenterSonde();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof majOrbite==="function") majOrbite();
-  /* ⚠ On vient peut-être d'arriver sur un LIEU : la liste des hubs dépend de
-     l'endroit, il faut la recalculer, sinon Le Garage n'apparaît qu'au
-     prochain rafraîchissement. */
-  if(typeof majHub==="function") majHub();
-  if(typeof afficher==="function") afficher();
+  majApresDeplacement();
   return true;
 }
 
@@ -338,8 +344,7 @@ async function secoursOrbite(){
     if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
     journal(`Appel de détresse : on te remorque jusqu'au ${b?b.nom:"Perchoir"} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte","voyage");
     if(typeof sauverMaintenant==="function") await sauverMaintenant();
-    if(typeof majOrbite==="function") majOrbite();
-    if(typeof afficher==="function") afficher();
+    majApresDeplacement();
     return true;
   }
 
@@ -349,7 +354,7 @@ async function secoursOrbite(){
   journal(`Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof afficher==="function") afficher();
+  majApresDeplacement();
   return true;
 }
 

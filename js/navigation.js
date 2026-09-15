@@ -35,6 +35,9 @@ function majHub(){
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
     const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler","garage","gisement"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    /* ⚠ v0.91 — `montrerHub("vide")` est le vrai filet : si AUCUN onglet n'est
+       disponible ici, on n'en laisse surtout pas un périmé affiché. C'est ce
+       qui s'est produit avec Le Gisement resté seul après un atterrissage. */
     if(prem) changerHub(prem); else montrerHub("vide");
   } else {
     changerHub(cur);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)

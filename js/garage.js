@@ -27,7 +27,8 @@ function majGarage(){
   const z = document.querySelector("#garage-vue"); if(!z) return;
 
   if(typeof surCarcasse !== "function" || !surCarcasse()){
-    z.innerHTML = `<p class="vide">Il faut être à La Carcasse.</p>`;
+    z.innerHTML = `<p class="vide">Tu n'es plus à La Carcasse.</p>`;
+    if(typeof majHub==="function") majHub();
     return;
   }
 
@@ -81,7 +82,10 @@ function majGisement(){
   const z = document.querySelector("#gisement-vue"); if(!z) return;
 
   if(typeof surGravier !== "function" || !surGravier()){
-    z.innerHTML = `<p class="vide">Il faut être au Gravier.</p>`;
+    /* ⚠ Ne jamais laisser un panneau VIDE : si cet écran s'ouvre alors qu'on
+       n'est plus sur place, il doit le dire au lieu de laisser un blanc. */
+    z.innerHTML = `<p class="vide">Tu n'es plus au Gravier.</p>`;
+    if(typeof majHub==="function") majHub();
     return;
   }
 
