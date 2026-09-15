@@ -3,6 +3,10 @@
    =========================================================== */
   /* Carte hexagonale (défilable) */
   /* Carte en modale plein écran */
+  /* ⚠ v0.91 — `#modale-distances` partageait le z-index de la carte : à
+     égalité, l'ordre du HTML tranche, et la carte (déclarée après) passait
+     devant. Une sous-fenêtre de carte doit toujours être au-dessus d'elle. */
+  #modale-distances { z-index:70 !important; }
   .modale-carte { position:fixed; inset:0; z-index:60; background:rgba(4,10,26,.92); display:none; padding:18px; }
   .modale-carte.ouverte { display:grid; place-items:center; }
   .cadre-carte { background:var(--surface); border:1px solid var(--edge); border-radius:var(--r); box-shadow:0 12px 40px rgba(0,0,0,.5); padding:14px 16px; width:100%; max-width:1100px; max-height:94vh; display:flex; flex-direction:column; }

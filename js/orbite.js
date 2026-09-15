@@ -87,7 +87,7 @@ async function _payerSaut(quoi){
   if(!c){ journal("Aucun vaisseau équipé.","alerte"); return false; }
   const cuve = etat.carburant || 0;
   if(cuve < c.litres){
-    journal(`${quoi} impossible : il faut ${c.litres} L, tu en as ${Math.round(cuve)}. Fais le plein (${item(c.carb)?item(c.carb).nom:"carburant"}).`,"alerte");
+    journal(`${quoi} impossible : il faut ${c.litres} L, tu en as ${Math.round(cuve)}. Fais le plein (${item(c.carb)?item(c.carb).nom:"carburant"}).`,"alerte","voyage");
     return false;
   }
   // L'énergie est vérifiée et débitée par le serveur (agir), comme au sol.
@@ -117,7 +117,7 @@ async function partirVersEcart(){
   const base = espaceLieu("base");
   etat.secteur   = "ecart";
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
-  journal(`Décollage. Arrivée : ${base?base.nom:"la base"} — secteur ${SECTEUR_NOM}.`,"gain");
+  journal(`Décollage. Arrivée : ${base?base.nom:"la base"} — secteur ${SECTEUR_NOM}.`,"gain","voyage");
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof afficher==="function") afficher();
   ouvrirOrbite();
@@ -139,7 +139,7 @@ async function revenirVersSilene(){
   if(!surLaBase()){
     const b = espaceLieu("base");
     const c = b ? coutVol({x:b.x, y:b.y}) : null;
-    journal(`${RENTREE_RP} Rejoins-la d'abord${c?` — ${c.energie} % d'énergie, ${c.litres} L`:""}.`,"alerte");
+    journal(`${RENTREE_RP} Rejoins-la d'abord${c?` — ${c.energie} % d'énergie, ${c.litres} L`:""}.`,"alerte","voyage");
     return;
   }
   if(!await _payerSaut("Rentrée")) return;
@@ -231,7 +231,7 @@ async function volVers(l){
   if(!await agirServeur({ cout:j.cout.energie, motif:"vol_nielle" })) return false;
   etat.carburant = Math.max(0, (etat.carburant||0) - j.cout.litres);
   etat.posEspace = dest;
-  journal(`Cap sur ${espaceNom(l)} — ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain");
+  journal(`Cap sur ${espaceNom(l)} — ${Math.round(j.cout.d)} u, ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain","voyage");
   /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
      un joueur intercepté à mi-parcours ne saurait plus où il est, et les
      dégâts de coque changeraient le coût du vol déjà payé. */
@@ -273,132 +273,26 @@ function _apercuVol(l){
 function ouvrirDistancesEspace(){
   const z = document.querySelector("#modale-distances"); if(!z) return;
   const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
-  const lieux = ESPACE_LIEUX.filter(l => l.type !== "decor");
-  const base  = espaceLieu("base");
+  /* ⚠ UNE SEULE SECTION. J'en avais mis deux (depuis ta position ET depuis la
+     base), soit 22 lignes pour 11 lieux : la fenêtre n'en finissait plus. Celle
+     de Silène tient en 5 lignes. Ici, « depuis ta position » suffit — la base
+     figure dans la liste comme les autres. */
+  const lieux = ESPACE_LIEUX.filter(l => l.type !== "decor")
+    .map(l => ({ l, c: coutVol({x:l.x, y:l.y}) }))
+    .sort((a,b) => ((a.c&&a.c.energie)||0) - ((b.c&&b.c.energie)||0));
 
   let h = `<h4 class="gsec">Depuis ta position</h4><div class="dist-depuis">`;
-  const depuis = lieux.map(l => ({ l, c: coutVol({x:l.x, y:l.y}) }))
-                      .sort((a,b) => ((a.c&&a.c.energie)||0) - ((b.c&&b.c.energie)||0));
-  for(const d of depuis){
-    if(!d.c){ h += `<div class="dist-ligne"><b>${d.l.nom||"—"}</b><span>tu y es</span></div>`; continue; }
+  for(const d of lieux){
+    if(!d.c){ h += `<div class="dist-ligne"><b>${espaceNom(d.l)}</b><span>tu y es</span></div>`; continue; }
     const j = volPossible({x:d.l.x, y:d.l.y});
-    h += `<div class="dist-ligne${j.ok?"":" ko"}"><b>${d.l.nom||"—"}</b><span>${d.c.energie} % · ${d.c.litres} L</span></div>`;
+    h += `<div class="dist-ligne${j.ok?"":" ko"}"><b>${espaceNom(d.l)}</b><span>${d.c.energie} % · ${d.c.litres} L</span></div>`;
   }
   h += `</div>`;
-
-  h += `<h4 class="gsec" style="margin-top:16px">Depuis la base</h4><div class="dist-depuis">`;
-  for(const l of lieux){
-    if(l.id === "base") continue;
-    const c = coutVol({x:l.x, y:l.y}, {x:base.x, y:base.y});
-    h += `<div class="dist-ligne"><b>${l.nom||"—"}</b><span>${c ? `${c.energie} % · ${c.litres} L` : "—"}</span></div>`;
-  }
-  h += `</div>`;
-
-  h += `<p class="vide" style="margin:10px 0 0">Coûts pour un trajet <b>direct</b>${v?`, avec ${v.nom} (conso ${v.conso} L/u)`:""}.
-    Une ligne en rouge signifie que tu n'as pas de quoi <b>aller ET revenir à la base</b> : ${RENTREE_RP}</p>`;
+  h += `<p class="vide" style="margin:10px 0 0">Trajets <b>directs</b>${v?`, ${v.nom} (conso ${v.conso} L/u)`:""}.
+    En rouge : pas de quoi <b>aller ET revenir au Perchoir</b>.</p>`;
 
   z.querySelector("#distances-corps").innerHTML = h;
   z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
-}
-
-/* ===========================================================
-   LE GRAVIER — gisement de Cristal de Nyx (v0.91)
-
-   ⚠ UN SEUL MINERAI, et un QUOTA QUOTIDIEN. Le lore veut un gisement qui « se
-   recharge une fois par jour » ; l'économie l'exige aussi. Le Cristal de Nyx
-   est la matière la plus rare du jeu (butin de patrouille 5 %, aptitude Toundra
-   *Veine de cristal* 5 %) et il verrouille la Lame et le Canon à singularité.
-   20 % par tentative, c'est QUATRE FOIS le taux de l'aptitude : sans plafond,
-   on dévalue le seul bonus identitaire de la Toundra et on inonde le marché.
-
-   ⚠ Chaque tentative RAYE LA COQUE (1 à 3 PV). Un champ d'astéroïdes n'est pas
-   un jardin. C'est la source de dégâts régulière et prévisible, celle qu'on
-   planifie — l'autre étant la défaite contre une sonde.
-   =========================================================== */
-const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu
-const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal
-const GRAVIER_ENERGIE  = 4;      // par tentative (le minage au sol coûte 8)
-const GRAVIER_PV       = [1, 3]; // dégâts de coque par tentative
-
-function _gravierJour(){ return (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString(); }
-function gravierRestants(){
-  const g = etat.gravier;
-  if(!g || g.jour !== _gravierJour()) return GRAVIER_ESSAIS;
-  return Math.max(0, GRAVIER_ESSAIS - (g.essais||0));
-}
-async function minerGravier(){
-  const l = espaceLieu("asteroides");
-  if(!surLieuEspace(l)){ journal(`Il faut être au ${espaceNom(l)} pour ça.`,"alerte"); return; }
-  if(!etat.vaisseau){ journal("Il te faut un vaisseau pour travailler ici.","alerte"); return; }
-  if(vaisseauCloue()){ journal("Coque hors service : impossible de manœuvrer dans les cailloux.","alerte"); return; }
-  if(gravierRestants() <= 0){ journal("Le gisement est épuisé pour aujourd'hui. Il se recharge demain.","alerte"); return; }
-  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
-
-  const touche = Math.random() < GRAVIER_CHANCE;
-  const gains  = touche ? { cristal:1 } : {};
-  const r = await agirServeur({ cout:GRAVIER_ENERGIE, ajouter:gains, motif:"gravier" });
-  if(!r) return;
-
-  const g = (etat.gravier && etat.gravier.jour === _gravierJour()) ? etat.gravier : { jour:_gravierJour(), essais:0 };
-  g.essais = (g.essais||0) + 1;
-  etat.gravier = g;
-
-  abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
-  if(touche && (r.ajoutes||{}).cristal) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain");
-  else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte");
-  if(typeof gagnerXp==="function") gagnerXp(3);
-  if(typeof majOrbite==="function") majOrbite();
-  if(typeof apresAction==="function") apresAction();
-}
-
-/* ===========================================================
-   LE RÉPARATEUR DE LA CARCASSE — v0.91
-   ⚠ Il répare les PV, JAMAIS la durée de vie : sinon le Constructeur perdrait
-   le marché que la Navette de réserve lui protège déjà mal.
-   ⚠ Il doit rester MOINS CHER que le kit du comptoir, sinon personne ne ferait
-   le détour — et le kit doit rester achetable, sinon une coque clouée au
-   Perchoir ne pourrait plus bouger. C'est cet écart qui fait vivre les deux.
-   =========================================================== */
-const REPARATEUR_PRIX_PV = 1.5;          // crédits par PV manquant
-function coutReparateur(){
-  if(!etat.vaisseau) return 0;
-  return Math.ceil((pvMax() - pvVaisseau()) * REPARATEUR_PRIX_PV);
-}
-async function reparerChezReparateur(){
-  if(!etat.vaisseau){ journal("Aucun vaisseau équipé.","alerte"); return; }
-  const l = espaceLieu("epave");
-  if(!surLieuEspace(l)){ journal(`Il faut être à ${espaceNom(l)} pour ça.`,"alerte"); return; }
-  const c = coutReparateur();
-  if(c <= 0){ journal("La coque est déjà intacte.","alerte"); return; }
-  if((etat.credits||0) < c){ journal(`Il te faut ${c} ₡ pour cette réparation.`,"alerte"); return; }
-  etat.credits -= c;
-  const gagne = reparerPv(pvMax());
-  journal(`Coque remise à neuf : +${gagne} PV (${pvVaisseau()}/${pvMax()}). −${c} ₡.`,"gain");
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof majOrbite==="function") majOrbite();
-  if(typeof afficher==="function") afficher();
-}
-
-/* ===========================================================
-   VOL LIBRE — cliquer n'importe où, comme sur Silène (v0.91)
-   ⚠ Sans ça, on ne pouvait rejoindre QUE les objets dessinés : la carte
-   cessait d'être un espace pour devenir une liste de boutons. On peut donc
-   viser le vide — pour couper au plus court, ou simplement pour se poster.
-   ⚠ Un clic sur un OBJET garde son comportement : il ouvre sa fiche, parce
-   qu'un lieu a des services et qu'on veut pouvoir les lire avant de payer.
-   =========================================================== */
-function _coordEspace(svg, e){
-  if(!svg.createSVGPoint) return null;
-  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
-  const m = svg.getScreenCTM(); if(!m) return null;
-  const p = pt.matrixTransform(m.inverse());
-  return { x:Math.round(p.x), y:Math.round(p.y) };
-}
-async function volVersPoint(pt){
-  if(!pt) return;
-  pt.x = Math.max(0, Math.min(ESPACE_MONDE.w, pt.x));
-  pt.y = Math.max(0, Math.min(ESPACE_MONDE.h, pt.y));
-  await volVers({ x:pt.x, y:pt.y, nom:null, libelle:"ce point du secteur", id:null });
 }
 
 /* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
@@ -442,7 +336,7 @@ async function secoursOrbite(){
     const b = espaceLieu("base");
     if(b) etat.posEspace = { x:b.x, y:b.y };
     if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
-    journal(`Appel de détresse : on te remorque jusqu'au ${b?b.nom:"Perchoir"} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte");
+    journal(`Appel de détresse : on te remorque jusqu'au ${b?b.nom:"Perchoir"} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte","voyage");
     if(typeof sauverMaintenant==="function") await sauverMaintenant();
     if(typeof majOrbite==="function") majOrbite();
     if(typeof afficher==="function") afficher();
@@ -452,7 +346,7 @@ async function secoursOrbite(){
   const p = _villeDeMaFaction();
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
-  journal(`Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte");
+  journal(`Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof afficher==="function") afficher();

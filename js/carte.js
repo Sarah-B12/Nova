@@ -232,9 +232,10 @@ async function voyager(x, y){
                      new Promise(r=>setTimeout(r, 4000)) ])
     : null;
   if(etat.pas) etat.pas.deplace=true;
+  // v0.91 : les déplacements ont leur propre catégorie de journal.
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
                     : `Déplacement (${Math.round(dOpen)} u à découvert). −${coutE} % énergie, −${coutO} O₂.`)
-          + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""));
+          + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""), "", "voyage");
   apresAction();
   if(typeof queteArrivee==="function") queteArrivee();
   if(dOpen>0 && typeof tenterPatrouille==="function"){ if(posEnvoyee) await posEnvoyee; tenterPatrouille(); }

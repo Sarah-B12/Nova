@@ -23,7 +23,11 @@ const JOURNAL_CATS = [
   {id:"tout",nom:"Tout"}, {id:"systeme",nom:"Système"}, {id:"quete",nom:"Quêtes"},
   {id:"minage",nom:"Minage"}, {id:"agri",nom:"Agri./élevage"}, {id:"combat",nom:"Combats"},
   {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"},
-  {id:"poste",nom:"La Poste"}          // v0.69 : séparé du social — colis, envois, retours, refus
+  {id:"poste",nom:"La Poste"},         // v0.69 : séparé du social — colis, envois, retours, refus
+  /* v0.91 — déplacements : marche sur Silène, vols dans Nielle, décollages,
+     rentrées, remorquages. Ils noyaient « Système », qui doit rester le journal
+     des choses qu'on n'a pas demandées. */
+  {id:"voyage",nom:"Voyage"}
 ];
 const JOURNAL_MAX = 300;
 const JOURNAL_RETENTION = 2*86400000;         // 2 jours réels (indépendant de JOUR_MS)
@@ -177,6 +181,7 @@ function _journalStyle(){
     .j-minage{ background:#8a6a3a; color:#ffe1b0; } .j-agri{ background:#3f7a42; color:#dfffcf; }
     .j-combat{ background:#9c3d3d; color:#ffd6d6; } .j-vol{ background:#7a3a7a; color:#ffd6ff; }
     .j-eco{ background:#2f6f6f; color:#d6ffff; } .j-social{ background:#3a5aa0; color:#d6e4ff; }
+    .j-voyage{ background:#2f5a7a; color:#cfe8ff; }
     .msg.poste{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
   `;
   document.head.appendChild(st);
