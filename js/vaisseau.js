@@ -193,6 +193,10 @@ function abimerVaisseau(n, raison){
   const nom = VAISSEAUX[id].nom;
   if(apres <= 0){
     journal(`${nom} est CLOUÉ : coque hors service${raison?` (${raison})`:""}. Il faut la réparer avant de repartir.`,"alerte");
+    /* ⚠ v0.91 — le remorquage part TOUT DE SUITE. Il n'était déclenché qu'au
+       chargement de la page ou au retour d'onglet : il fallait faire Ctrl+R
+       pour réapparaître au Perchoir, ce qui n'a aucun sens en jeu. */
+    if(typeof secoursOrbite==="function") secoursOrbite();
   } else if(ratioAvant >= PV_SEUIL_AVARIE && apres/pvMax(id) < PV_SEUIL_AVARIE){
     journal(`⚠ ${nom} est en avarie — coque à ${Math.round(100*apres/pvMax(id))} %. La consommation de carburant augmente de moitié tant que ce n'est pas réparé.`,"alerte");
   }

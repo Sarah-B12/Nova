@@ -110,27 +110,27 @@ function _sondePerdu(){
 }
 
 /* ===========================================================
-   MINI-JEU — VISÉE À FENÊTRE MOBILE
+   MINI-JEU — TIR DE SONDAGE (duel de vaisseaux)
 
-   Un réticule balaie la coque de la sonde ; un point faible s'ouvre quelque
-   part sur la piste. On tire quand le réticule passe dessus.
+   La coque de la sonde est une grille 5 × 5. Son CŒUR est dans une case, et
+   une seule. Tu as cinq salves. Chaque tir qui rate renvoie un ÉCHO : la
+   distance en cases jusqu'au cœur. À toi de recouper.
 
-   ⚠ POURQUOI PAS UN SHOOTER À DÉPLACEMENT LIBRE. Il serait plus spectaculaire
-   mais injouable au doigt, et il faudrait l'équilibrer séparément pour chaque
-   support. Ici, un seul geste — tirer — au bon moment : identique à la souris,
-   au doigt et au clavier, et dans la même famille que les trois mini-jeux de
-   `voler.js` (précision et rythme, pas réflexes purs).
-
-   ⚠ LE PREMIER PASSAGE EST UN ENTRAÎNEMENT. Il est lent, annoncé, et ne compte
-   NI en réussite NI en échec. Personne ne doit perdre sa coque sur un jeu dont
-   il découvrait les règles à l'instant.
+   ⚠ POURQUOI PAS UN JEU DE VISÉE. La première version faisait tirer sur un
+   réticule qui balaie — c'est-à-dire la même idée que « Grille laser » et
+   « Bypass du pare-feu » : viser au bon moment. Six mini-jeux sur sept auraient
+   reposé sur le même geste.
+   ⚠ Celui-ci ne demande AUCUN réflexe : c'est de la déduction pure, au tour par
+   tour. Il est donc rigoureusement identique au doigt et à la souris — pas de
+   temps de réaction à compenser, pas de précision de pointage — et il récompense
+   la tête plutôt que le matériel. C'est aussi le seul qui fasse vraiment
+   « duel » : on cherche l'autre, on encaisse, on recommence.
    =========================================================== */
-const TIR_TOUCHES  = 5;      // plaques à arracher pour l'emporter
-const TIR_RATES    = 3;      // ratés tolérés avant de rompre le contact
-const TIR_TEMPS    = 4200;   // ms accordées par passage (hors entraînement)
+const TIR_GRILLE  = 5;   // côté de la grille
+const TIR_SALVES  = 5;   // tirs disponibles
 
-let _tirRaf = null, _tirMonte = false, _tirWin = null, _tirLose = null;
-let _tirTouches = 0, _tirRates = 0, _tirEssai = true, _tirActif = false;
+let _tirMonte = false, _tirWin = null, _tirLose = null;
+let _tirCoeur = null, _tirRestant = 0, _tirVus = {};
 
 function _tirStyle(){
   if(_tirMonte) return;
@@ -138,17 +138,21 @@ function _tirStyle(){
   st.textContent = `
     #tir-modale{ position:fixed; inset:0; z-index:210; background:rgba(4,8,20,.88); display:grid; place-items:center; padding:20px; }
     #tir-modale[hidden]{ display:none; }
-    .sd-cadre{ width:min(520px,96vw); background:var(--surface,#0d1e30); border:1px solid var(--bleu,#5aa8e6); border-radius:14px 6px 14px 6px; padding:18px 20px; box-shadow:0 20px 60px rgba(0,0,0,.6); color:var(--texte,#dfe8f2); font-family:"Exo 2",sans-serif; }
+    .sd-cadre{ width:min(460px,96vw); background:var(--surface,#0d1e30); border:1px solid var(--bleu,#5aa8e6); border-radius:14px 6px 14px 6px; padding:18px 20px; box-shadow:0 20px 60px rgba(0,0,0,.6); color:var(--texte,#dfe8f2); font-family:"Exo 2",sans-serif; }
     .sd-tete{ display:flex; align-items:baseline; gap:10px; font-family:"Space Mono",monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--bleu,#5aa8e6); font-size:13px; margin-bottom:10px; }
-    .sd-tete .sd-chrono{ margin-left:auto; color:var(--orange,#ff8a3d); }
+    .sd-tete .sd-salves{ margin-left:auto; color:var(--orange,#ff8a3d); }
     .sd-sous{ font-size:13.5px; line-height:1.5; margin:0 0 12px; }
-    .sd-piste{ position:relative; height:54px; background:rgba(6,14,30,.85); border:1px solid var(--line,#243a52); border-radius:8px; overflow:hidden; cursor:crosshair; touch-action:manipulation; }
-    .sd-zone{ position:absolute; top:0; bottom:0; background:rgba(90,168,230,.22); border-left:1px solid var(--bleu,#5aa8e6); border-right:1px solid var(--bleu,#5aa8e6); }
-    .sd-vise{ position:absolute; top:-2px; bottom:-2px; width:3px; background:var(--orange,#ff8a3d); box-shadow:0 0 10px var(--orange,#ff8a3d); }
-    .sd-piste.touche{ background:rgba(139,212,80,.18); }
-    .sd-piste.rate{ background:rgba(255,82,87,.18); }
-    .sd-etat{ font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine,#7f93a8); margin-top:10px; display:flex; gap:14px; }
-    .sd-barres{ margin-left:auto; }
+    .sd-grille{ display:grid; grid-template-columns:repeat(${TIR_GRILLE},1fr); gap:6px; }
+    .sd-case{ aspect-ratio:1; display:grid; place-items:center; background:rgba(6,14,30,.85); border:1px solid var(--line,#243a52);
+      border-radius:8px; cursor:pointer; font-family:"Space Mono",monospace; font-size:15px; color:var(--sourdine,#7f93a8);
+      transition:border-color .12s, background .12s; touch-action:manipulation; }
+    .sd-case:hover:not(.joue){ border-color:var(--orange,#ff8a3d); }
+    .sd-case.joue{ cursor:default; }
+    .sd-case.p1{ color:#ff5257; border-color:rgba(255,82,87,.5); }   /* tout près */
+    .sd-case.p2{ color:#ff8a3d; border-color:rgba(255,138,61,.4); }
+    .sd-case.p3{ color:#ffc061; }
+    .sd-case.loin{ color:var(--sourdine,#7f93a8); }
+    .sd-case.touche{ background:rgba(139,212,80,.25); border-color:#8bd450; color:#8bd450; }
     #tir-modale .mini{ background:rgba(16,41,78,.7); border:1px solid var(--line,#243a52); color:var(--texte,#dfe8f2); border-radius:8px; padding:8px 14px; font-family:inherit; font-size:13px; cursor:pointer; margin-top:12px; }
     #tir-modale .mini:hover{ border-color:var(--orange,#ff8a3d); }
   `;
@@ -158,144 +162,50 @@ function _tirStyle(){
   _tirMonte = true;
 }
 function _tirModal(){ _tirStyle(); return document.querySelector("#tir-modale"); }
-function _tirStop(){ if(_tirRaf){ cancelAnimationFrame(_tirRaf); _tirRaf=null; } _tirActif=false; }
-function _tirFermer(){ _tirStop(); const m=document.querySelector("#tir-modale"); if(m){ m.hidden=true; m.innerHTML=""; } document.removeEventListener("keydown", _tirTouche); }
+function _tirFermer(){ const m=document.querySelector("#tir-modale"); if(m){ m.hidden=true; m.innerHTML=""; } }
 
 function lancerTirSonde(onWin, onLose){
-  _tirWin=onWin; _tirLose=onLose; _tirTouches=0; _tirRates=0; _tirEssai=true;
+  _tirWin=onWin; _tirLose=onLose;
+  _tirCoeur = { x:Math.floor(Math.random()*TIR_GRILLE), y:Math.floor(Math.random()*TIR_GRILLE) };
+  _tirRestant = TIR_SALVES; _tirVus = {};
   const m=_tirModal();
   m.innerHTML = `<div class="sd-cadre">
-    <div class="sd-tete"><b>🎯 Tir de précision</b></div>
-    <p class="sd-sous">Un réticule balaie la coque de la sonde. Un <b>point faible</b> s'ouvre par intermittence :
-      tire quand le réticule passe dedans.<br><br>
-      <b>${TIR_TOUCHES} plaques</b> à arracher. <b>${TIR_RATES} ratés</b> et tu romps le contact.
-      Le point faible rétrécit et le balayage accélère à chaque coup au but.<br><br>
-      <span class="itip-gris">Clique la piste, appuie sur <b>Espace</b>, ou touche l'écran. Le premier passage est un entraînement : il ne compte pas.</span></p>
+    <div class="sd-tete"><b>🎯 Tir de sondage</b></div>
+    <p class="sd-sous">La coque de la sonde tient dans une grille de ${TIR_GRILLE} × ${TIR_GRILLE}.
+      Son <b>cœur</b> est dans une case, et une seule.<br><br>
+      Tu as <b>${TIR_SALVES} salves</b>. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
+      qui te séparent du cœur, en comptant tout droit puis de côté.<br>
+      <b>1</b> = juste à côté. Recoupe deux échos et tu le tiens.<br><br>
+      <span class="itip-gris">Aucun réflexe : prends ton temps, la sonde ne bouge pas.</span></p>
     <div><button class="mini" id="sd-jouer">▶ Commencer</button>
          <button class="mini" id="sd-fuir" style="margin-left:8px">Renoncer</button></div>
   </div>`;
   m.hidden=false;
-  m.querySelector("#sd-jouer").addEventListener("click", _tirTour);
+  m.querySelector("#sd-jouer").addEventListener("click", _tirRendre);
   m.querySelector("#sd-fuir").addEventListener("click", ()=>{ _tirFermer(); if(_tirLose) _tirLose(); });
 }
 
-/* Un passage : zone tirée au hasard, réticule qui va et vient. */
-function _tirTour(){
+function _tirRendre(){
   const m=_tirModal();
-  const n = _tirTouches;                                   // 0 → 4 : difficulté croissante
-  const largeur = _tirEssai ? 32 : Math.max(11, 26 - n*3.5);   // % de la piste
-  const gauche  = 6 + Math.random() * (88 - largeur);
-  const vitesse = (_tirEssai ? 26 : 46 + n*9) / 1000;      // % de piste par ms
-  const limite  = _tirEssai ? 9000 : TIR_TEMPS;
-
+  let cases = "";
+  for(let y=0;y<TIR_GRILLE;y++) for(let x=0;x<TIR_GRILLE;x++){
+    const v = _tirVus[x+","+y];
+    const cls = v==null ? "" : ` joue ${v===0?"touche":(v===1?"p1":(v===2?"p2":(v===3?"p3":"loin")))}`;
+    cases += `<div class="sd-case${cls}" data-x="${x}" data-y="${y}">${v==null?"":(v===0?"✷":v)}</div>`;
+  }
   m.innerHTML = `<div class="sd-cadre">
-    <div class="sd-tete"><b>🎯 ${_tirEssai ? "Entraînement" : "Tir de précision"}</b><span class="sd-chrono" id="sd-chrono"></span></div>
-    <p class="sd-sous">${_tirEssai
-      ? "Passage d'essai, il ne compte pas. Tire quand le trait orange entre dans la zone bleue."
-      : "Tire quand le réticule entre dans la zone."}</p>
-    <div class="sd-piste" id="sd-piste">
-      <div class="sd-zone" style="left:${gauche}%;width:${largeur}%"></div>
-      <div class="sd-vise" id="sd-vise" style="left:0%"></div>
-    </div>
-    <div class="sd-etat"><span>Plaques ${_tirTouches}/${TIR_TOUCHES}</span><span>Ratés ${_tirRates}/${TIR_RATES}</span>
-      <span class="sd-barres">${_tirEssai ? "essai" : `passage ${_tirTouches+1}`}</span></div>
-    <button class="mini" id="sd-feu">FEU</button>
+    <div class="sd-tete"><b>🎯 Tir de sondage</b><span class="sd-salves">${_tirRestant} salve(s)</span></div>
+    <p class="sd-sous">Tire sur une case. L'écho te dira à combien de cases se trouve le cœur.</p>
+    <div class="sd-grille">${cases}</div>
   </div>`;
-
-  const piste=m.querySelector("#sd-piste"), vise=m.querySelector("#sd-vise"), chrono=m.querySelector("#sd-chrono");
-  let pos=0, sens=1, t0=performance.now(), dernier=t0;
-  _tirActif=true;
-
-  const tirer = ()=>{
-    if(!_tirActif) return;
-    _tirActif=false; _tirStop();
-    const dedans = pos >= gauche && pos <= gauche+largeur;
-    piste.classList.add(dedans ? "touche" : "rate");
-    if(!_tirEssai){ if(dedans) _tirTouches++; else _tirRates++; }
-    setTimeout(()=>{ _tirEssai=false; _tirSuite(); }, 420);
-  };
-  piste.addEventListener("click", tirer);
-  m.querySelector("#sd-feu").addEventListener("click", tirer);
-  document.removeEventListener("keydown", _tirTouche);
-  _tirTouche = e => { if(e.code==="Space" || e.key===" "){ e.preventDefault(); tirer(); } };
-  document.addEventListener("keydown", _tirTouche);
-
-  const boucle = (t)=>{
-    if(!_tirActif) return;
-    const dt = t - dernier; dernier = t;
-    pos += sens * vitesse * dt;
-    if(pos >= 100){ pos = 100; sens = -1; } else if(pos <= 0){ pos = 0; sens = 1; }
-    vise.style.left = pos + "%";
-    const reste = limite - (t - t0);
-    if(chrono) chrono.textContent = (reste/1000).toFixed(1) + " s";
-    /* ⚠ Ne pas tirer compte comme un raté : sans ça, attendre serait la
-       meilleure stratégie du joueur prudent, et le mini-jeu n'aurait plus
-       d'enjeu. */
-    if(reste <= 0){ tirer(); return; }
-    _tirRaf = requestAnimationFrame(boucle);
-  };
-  _tirRaf = requestAnimationFrame(boucle);
-}
-let _tirTouche = null;
-
-function _tirSuite(){
-  if(_tirTouches >= TIR_TOUCHES){ _tirFermer(); if(_tirWin) _tirWin(); return; }
-  if(_tirRates   >= TIR_RATES)  { _tirFermer(); if(_tirLose) _tirLose(); return; }
-  _tirTour();
+  m.querySelectorAll(".sd-case:not(.joue)").forEach(c=>c.addEventListener("click", ()=>_tirSalve(+c.dataset.x, +c.dataset.y)));
 }
 
-/* ---------- Se laisser scanner ----------
-   Elle prélève UNE unité au hasard dans la soute. ⚠ AREPO collectait des
-   échantillons : c'est le geste le plus juste qu'une de ses machines puisse
-   avoir. Gratuit quand on voyage à vide, cher quand on rentre chargé — c'est
-   ce qui rend le choix intéressant plutôt qu'automatique. */
-async function sondeScanner(){
-  const soute = etat.soute || {};
-  const ids = Object.keys(soute).filter(k => (soute[k]||0) > 0);
-  if(!ids.length){
-    journal("La lumière passe sur une soute vide. L'appareil s'écarte sans un signal.","gain");
-    if(typeof apresAction==="function") apresAction(); return;
-  }
-  const id = ids[Math.floor(Math.random()*ids.length)];
-  /* ⚠ On passe par la soute → le sac → le retrait : deux chemins déjà éprouvés
-     plutôt qu'une suppression directe. Si le sac est plein, elle renonce —
-     mieux vaut un prélèvement raté qu'un objet détruit par un cas limite. */
-  if(typeof placesLibres==="function" && placesLibres() <= 0){
-    journal("Elle tente un prélèvement, n'y parvient pas, et s'écarte.","alerte");
-    if(typeof apresAction==="function") apresAction(); return;
-  }
-  if(typeof rangerServeur!=="function" || !await rangerServeur(id, 1, "sac", "soute")) return;
-  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"sonde_prelevement" })) return;
-  journal(`Un bras sort, prélève 1 ${item(id).nom} dans ta soute, et rentre. L'appareil s'écarte.`,"alerte");
-  if(typeof apresAction==="function") apresAction();
-}
-
-/* ---------- Dériver, moteurs coupés ---------- */
-async function sondeDeriver(){
-  const p = Math.min(0.85, 0.35 + (typeof intelligenceEffective==="function" ? intelligenceEffective()/300 : 0));
-  if(Math.random() < p){
-    journal("Moteurs coupés, tu dérives comme un débris. La lumière passe sur toi et poursuit sa route.","gain");
-    if(typeof gagnerXp==="function") gagnerXp(5);
-  } else {
-    abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
-    journal("Elle ne s'y trompe pas et tire sans sommation. Coque touchée.","alerte");
-  }
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
-}
-
-/* ---------- Brouiller ---------- */
-async function sondeBrouiller(){
-  if(typeof ordiHackEquipe!=="function" || !ordiHackEquipe()) return;
-  const p = Math.min(0.90, 0.45 + ((typeof _apt==="function" && _apt("om4")) ? 0.25 : 0)
-                     + (typeof intelligenceEffective==="function" ? intelligenceEffective()/500 : 0));
-  if(Math.random() < p){
-    journal("Son scanner se remplit de bruit. Elle te classe comme roche et s'en va.","gain");
-    if(typeof gagnerXp==="function") gagnerXp(8);
-  } else {
-    abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
-    journal("Le brouillage ne prend pas. Elle tire.","alerte");
-  }
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+function _tirSalve(x, y){
+  const d = Math.abs(x-_tirCoeur.x) + Math.abs(y-_tirCoeur.y);
+  _tirVus[x+","+y] = d;
+  _tirRestant--;
+  _tirRendre();
+  if(d === 0){ setTimeout(()=>{ _tirFermer(); if(_tirWin) _tirWin(); }, 600); return; }
+  if(_tirRestant <= 0){ setTimeout(()=>{ _tirFermer(); if(_tirLose) _tirLose(); }, 900); }
 }

@@ -571,7 +571,15 @@ function majOrbite(){
     });
   }
 
+  /* ⚠ v0.91 — RÉINITIALISATION. Le bandeau gardait le contenu du dernier
+     survol, donc un coût calculé depuis une position qu'on avait quittée :
+     « La Carcasse — 11 % · 11 L » restait affiché après s'en être éloigné.
+     Chaque rendu de la carte le remet à son texte d'accueil. */
   const zi = document.querySelector("#orbite-info");
+  if(zi){
+    _orbInfoFige = null;
+    zi.innerHTML = `Clique un point de la carte pour t'y rendre. <span class="itip-gris">Rentrée vers Silène : depuis le Perchoir uniquement.</span>`;
+  }
   if(zi && !zi.dataset.branche){
     zi.dataset.branche = "1";
     zi.addEventListener("click", e=>{
