@@ -116,13 +116,15 @@ const BASE_BOUTIQUE = [
      le Constructeur doit rester le bon calcul, et ce comptoir le filet cher.
      Le secours automatique (200 ₡, retour forcé au sol) reste moins coûteux :
      on n'achète ici que si l'on veut RESTER en haut. */
-  { id:"fab_navette_legere",       nom:"Navette légère",       prix:4500, cat:"vaisseau" },
+  { id:"fab_navette_legere",       nom:"Navette légère",       prix:4500, cat:"vaisseau",
+    sous:"vaisseau neuf — 3× le prix du marché" },
   /* v0.91 — objet d'URGENCE, pas une marchandise. On l'achète AVANT d'en avoir
      besoin : une coque clouée ne peut plus rejoindre le comptoir.
      ⚠ Volontairement PAS fabricable par le Constructeur. La Carcasse répare à
      1,5 ₡ le PV et se trouve sur le chemin du retour du Gravier (3 % d'énergie
      et 2 L de détour) : aucun kit fabriqué n'aurait jamais trouvé preneur. */
-  { id:"kit_reparation",           nom:"Kit de réparation",    prix:450,  cat:"vaisseau" }
+  { id:"kit_reparation",           nom:"Kit de réparation",    prix:450,  cat:"vaisseau",
+    sous:"+40 PV de coque, utilisable partout" }
 ];
 const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" }, { id:"vaisseau", nom:"Vaisseau" } ];
 

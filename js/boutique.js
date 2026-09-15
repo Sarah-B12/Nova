@@ -76,7 +76,13 @@ function renderBoutique(){
          e.jauge, d'où le « +undefined undefined » affiché en boutique. */
       const e=effetConso(a.id);
       const parts = e ? Object.entries(e).filter(([,v])=>v).map(([g,v])=>`+${v} ${labelJauge(g)}`) : [];
-      sous = parts.length ? `${parts.join(", ")} à l'usage` : "carburant de vaisseau";
+      /* ⚠ v0.91 — « carburant de vaisseau » servait de repli à TOUT ce qui n'a
+         pas d'effet de jauge : la Navette légère et le Kit de réparation
+         s'affichaient donc comme du carburant. Un article peut désormais porter
+         sa propre ligne (`sous`), et le repli ne s'applique plus qu'au vrai
+         carburant. */
+      sous = a.sous || (parts.length ? `${parts.join(", ")} à l'usage`
+                                     : (a.cat === "carburant" ? "carburant de vaisseau" : ""));
     }
     html += `<div class="marche-ligne" data-item="${a.id}"><span class="marche-ic">${iconeItem(a.id)}</span>`
       + `<span class="marche-nom">${a.nom}<span class="qte">${sous}</span></span>`
