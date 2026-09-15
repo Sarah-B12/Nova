@@ -641,7 +641,12 @@ function majOrbite(){
             + (j.ok ? ` <button class="mini" data-orb="voler" data-id="${l.id}">Mettre le cap</button>`
                     : ` <span style="color:var(--coral,#ff5257)">— ${j.err==="energie"?"énergie insuffisante":`il faut ${j.besoin} L pour aller ET revenir à la base`}</span>`);
       }
-      z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>${bas}`;
+      /* ⚠ DEUX LIGNES, PAS TROIS. Le bandeau est à hauteur fixe avec
+         `overflow:hidden` : une troisième ligne n'est pas rognée à l'écran,
+         elle DISPARAÎT — et avec elle le bouton « Mettre le cap », ce qui
+         rendait les objets stellaires injoignables. Nom, usage et description
+         tiennent donc sur la première ligne, l'action sur la seconde. */
+      z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}${l.desc?` <span class="itip-gris">${l.desc}</span>`:""}<br>${bas}`;
     });
   });
 
@@ -660,9 +665,17 @@ function majOrbite(){
         ? `Il te reste ${Math.round(etat.carburant||0)}/${cs.reservoir} L.`
         : RENTREE_RP; } }
 
+  /* v0.91 — le sous-titre dit OÙ L'ON EST, comme sur Silène (« La Toundra —
+     ta zone de faction »). Le vaisseau a déjà sa fiche ; savoir où l'on se
+     trouve dans le secteur est bien plus utile en un coup d'œil. */
   const nav=document.querySelector("#orbite-vaisseau");
-  if(nav){ const v=(typeof vaisseauActif==="function")?vaisseauActif():null;
-    nav.textContent = v ? `À bord : ${v.nom}` : "Aucun vaisseau"; }
+  if(nav){
+    if(!enEcart()){ nav.textContent = "— vu depuis Silène"; }
+    else {
+      const ici = ESPACE_LIEUX.find(l => l.type !== "decor" && surLieuEspace(l));
+      nav.textContent = ici ? `— ${espaceNom(ici)}` : "— en vol";
+    }
+  }
 }
 
 /* p_forcer : réservé au mode placement (outil de dev), qui doit pouvoir
