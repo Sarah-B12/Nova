@@ -78,6 +78,7 @@ function placementExport(){
        effacé dix-neuf noms et le liseré de la base, sans le moindre message.
        Règle : tout nouveau champ d'ESPACE_LIEUX s'ajoute AUSSI ici. */
     let t = `  { id:${q(l.id)}, nom:${q(l.nom)}, img:${q(l.img)}, x:${l.x}, y:${l.y}, t:${l.t}, type:${q(l.type)}`;
+    if(l.libelle)  t += `, libelle:${q(l.libelle)}`;
     if(l.officiel !== undefined) t += `, officiel:${q(l.officiel)}`;
     if(l.halo)   t += `, halo:${q(l.halo)}`;
     if(l.r)      t += `, r:${l.r}`;

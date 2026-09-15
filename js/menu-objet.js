@@ -5,6 +5,12 @@
    =========================================================== */
 
 // Valeur de référence pour brader : prix min du marché, sinon prix Boutique (graines/bébés).
+/* ⚠ PRIX DE RÉFÉRENCE, PAS PRIX PAYÉ. Le bradage rapporte la MOITIÉ de ce que
+   renvoie cette fonction : l'affichage divise par deux (voir plus bas) et le
+   serveur paie d'après la table `prix_brade`, qui contient `valeurBrade()/2`.
+   ⚠ Les deux se modifient ENSEMBLE — toucher au taux ici sans resynchroniser
+   `prix_brade` ferait payer au serveur autre chose que ce qui est annoncé.
+   Un Cristal de Nyx se brade donc à 500 ₡, pas 1000. */
 function valeurBrade(id){
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]) return PRIX_ITEM[id].min;
   const b = (typeof BOUTIQUE!=="undefined") ? BOUTIQUE.find(a=>a.id===id) : null;
@@ -29,10 +35,13 @@ function ouvrirMenuObjet(id){
   const vais = (typeof estVaisseau==="function") && estVaisseau(id);
   const prixMarche = (typeof PRIX_ITEM!=="undefined") && PRIX_ITEM[id];
   const brade = valeurBrade(id);
-  if(!conso && !equip && !vais && !prixMarche && brade==null) return;   // rien à faire
+  // v0.91 : le Kit de réparation a sa propre action, hors du système de conso.
+  const kit = (id === "kit_reparation");
+  if(!conso && !equip && !vais && !prixMarche && !kit && brade==null) return;   // rien à faire
 
   let html = `<div class="menu-cadre"><div class="menu-tete"><span class="menu-ic">${iconeItem(id)}</span><b>${it.nom}</b> <span class="qte">×${etat.sac[id]}</span><button class="mini" data-fermer="1">✕</button></div>`;
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
+  if(kit)        html += `<button class="menu-act" data-act="kit-coque">Réparer la coque (+${(typeof KIT_PV!=="undefined")?KIT_PV:40} PV)</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
   if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
   if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché — fixe ton prix…</button>`;
@@ -94,6 +103,7 @@ function menuActionObjet(act, id){
   }
   fermerMenuObjet();
   if(act==="consommer" && typeof utiliser==="function") utiliser(id);
+  else if(act==="kit-coque" && typeof utiliserKitReparation==="function") utiliserKitReparation();
   else if(act==="equiper" && typeof equiper==="function") equiper(id);
   else if(act==="equiper-vaisseau" && typeof equiperVaisseau==="function") equiperVaisseau(id);
   else if(act==="brader") braderObjet(id, _brdQte);

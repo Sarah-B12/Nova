@@ -26,6 +26,15 @@
      desc   deux lignes d'ambiance
      verrou null, ou l'identifiant d'une condition (ex. "q20" pour le trou noir)
      officiel  nom AREPO, JAMAIS AFFICHÉ SUR LA CARTE (v0.91)
+     libelle   pour les objets SANS nom courant : une désignation commune
+               (« Une étoile », « Une sonde à la dérive »), pas un nom propre.
+
+   ⚠ POURQUOI `libelle` ET PAS UN NOM. Les décors n'ont pas de nom courant dans
+   le lore, et leur en inventer ferait une liste à retenir pour rien. Mais les
+   laisser muets au survol serait pire qu'un détail cosmétique : le joueur
+   apprendrait que « pas de texte = pas une destination », ce qui recrée
+   exactement le SPOIL DE CURSEUR corrigé en v0.91. Une désignation commune
+   garde l'uniformité sans rien ajouter à mémoriser.
 
    ⚠ DEUX REGISTRES (LORE_Corporation.md §4). Chaque objet porte le nom que
    disent les équipages (`nom`, cru et descriptif) et le nom qu'AREPO avait
@@ -67,7 +76,7 @@ const ESPACE_LIEUX = [
     usage:"À venir", desc:"Une lune la suit de près, comme si elle n'osait pas s'éloigner. De loin, on ne sait plus laquelle tourne autour de l'autre." },
   { id:"planete_cassee", nom:"La Cassée", officiel:"Nielle-4", img:"planete_cassee.png", x:2150, y:864, t:406, type:"lieu",
     usage:"À venir", desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
-  { id:"etoile", nom:null, officiel:"Digitale", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
+  { id:"etoile", nom:null, libelle:"Une étoile", officiel:"Digitale", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
     usage:"", desc:"" },
   /* ⚠ AUCUN nom officiel : les registres d'AREPO s'arrêtent là. Verrou porté de
      q15 à q20 — le trou noir ouvre la carte SUIVANTE, pas celle-ci. */
@@ -77,29 +86,31 @@ const ESPACE_LIEUX = [
   { id:"portail", nom:"L'Arche", officiel:"Structure NL-0", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
     usage:"Inerte", desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
   { id:"epave", nom:"La Carcasse", officiel:"NL-217", img:"ruine_vaisseau.png", x:747, y:1270, t:133, type:"lieu",
-    usage:"Fouille", desc:"Une coque éventrée, dérivant depuis trop longtemps pour qu'on sache d'où." },
+    usage:"Réparation de coque", desc:"Une coque éventrée, dérivant depuis trop longtemps pour qu'on sache d'où. Quelqu'un s'y est installé et découpe dedans ce qui manque aux autres." },
   { id:"antenne", nom:"Le Muet", officiel:"Relais Nielle-2", img:"antene.png", x:1253, y:118, t:312, type:"lieu",
     usage:"Écoute", desc:"Il émet encore. Vers quoi, c'est une autre question." },
-  { id:"satellite1", nom:null, officiel:"Sonde Bardane", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
+  { id:"satellite1", nom:null, libelle:"Une sonde à la dérive", officiel:"Sonde Bardane", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
     usage:"", desc:"" },
-  { id:"satellite2", nom:null, officiel:"Sonde Chardon", img:"satellite2.png", x:668, y:142, t:156, type:"decor",
+  { id:"satellite2", nom:null, libelle:"Une sonde à la dérive", officiel:"Sonde Chardon", img:"satellite2.png", x:668, y:142, t:156, type:"decor",
     usage:"", desc:"" },
   { id:"asteroides", nom:"Le Gravier", officiel:"Jachère haute", img:"cailloux_grands.png", x:2113, y:1393, t:203, type:"lieu",
-    usage:"Minage", desc:"Roches lentes et riches. Le minerai y vaut ce qu'il coûte à remonter." },
-  { id:"cailloux2", nom:null, officiel:"Jachère basse", img:"cailloux_petits.png", x:325, y:273, t:312, type:"decor",
+    usage:"Cristal de Nyx", desc:"Roches lentes, et quelque part dedans ce qui ne pousse nulle part ailleurs. On en ressort toujours avec la coque rayée." },
+  { id:"cailloux2", nom:null, libelle:"Un chapelet de cailloux", officiel:"Jachère basse", img:"cailloux_petits.png", x:325, y:273, t:312, type:"decor",
     usage:"", desc:"" },
   { id:"asteroide_v", nom:"Le Vert", officiel:"Prêle", img:"asteroide_vert.png", x:1154, y:1490, t:156, type:"decor",
     usage:"", desc:"Un caillou seul, d'un vert qui n'a rien à faire là. Personne n'a jamais pris la peine d'aller voir." },
   { id:"comete", nom:"La Traînée", officiel:"Sarriette", img:"comete_bleue.png", x:306, y:457, t:156, type:"decor",
     usage:"", desc:"Elle repasse. On ne sait pas tous les combien, et personne ne tient le compte." },
-  { id:"anneaux_b", nom:null, officiel:"Campanule", img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
+  { id:"anneaux_b", nom:null, libelle:"Une planète à anneaux", officiel:"Campanule", img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
     usage:"", desc:"" },
-  { id:"pp_vert", nom:null, officiel:"Mousseron", img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
+  { id:"pp_vert", nom:null, libelle:"Une petite planète", officiel:"Mousseron", img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
     usage:"", desc:"" },
-  { id:"pp_violet", nom:null, officiel:"Aubépine", img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
+  { id:"pp_violet", nom:null, libelle:"Une petite planète", officiel:"Aubépine", img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
     usage:"", desc:"" }
 ];
 
 
 function espaceLieu(id){ return ESPACE_LIEUX.find(l => l.id === id) || null; }
+/* Ce qu'on montre au joueur : nom courant, sinon désignation commune. */
+function espaceNom(l){ return (l && (l.nom || l.libelle)) || "Objet stellaire"; }
 function espaceRayon(l){ return l.r || Math.round(l.t/2) + 20; }

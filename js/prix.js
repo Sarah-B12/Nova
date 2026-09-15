@@ -7,6 +7,15 @@ const PRIX_ITEM = {
   silite: { min:5, moy:7, max:13 }, // Silite
   givrite: { min:10, moy:14, max:25 }, // Givrite
   cristal: { min:1000, moy:2500, max:4000 }, // Cristal de Nyx
+  /* ⚠ v0.91 — Kit de réparation. Il ne se VEND qu'au comptoir du Perchoir, à
+     450 ₡. Le marché encadrant les prix (min/max), un plafond à 330 ₡ rend
+     l'aller-retour marchand DÉFINITIVEMENT non rentable : acheter en haut pour
+     revendre au sol perd au moins 120 ₡ par kit.
+     Il reste échangeable entre joueurs — celui qui redescend avec un kit
+     inutilisé peut le céder à celui qui monte, moins cher que le comptoir. Et
+     le bradage à 60 ₡ (la moitié du min) permet de faire de la place sans en
+     faire une source de revenus. */
+  kit_reparation: { min:120, moy:220, max:330 }, // Kit de réparation
   sylve: { min:4, moy:5, max:9 }, // Sylve
   sporelle: { min:3, moy:4, max:7 }, // Sporelle
   nectine: { min:4, moy:5, max:9 }, // Nectine

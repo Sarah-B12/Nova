@@ -141,7 +141,11 @@
         <button class="onglet" data-onglet="equipement">Équipement</button>
         <button class="onglet" data-onglet="vaisseau">Vaisseau</button>
         <button class="onglet" data-onglet="aptitudes">Aptitudes</button>
-        <button class="onglet" data-onglet="comm">Comm</button>
+        <!-- ⚠ v0.91 — « Comm » devient « Le Réseau ». L'identifiant technique
+             `data-onglet="comm"` ne change PAS : tout le code (bootstrap.js,
+             changerComm, commVue, les classes CSS .comm-*) s'y réfère. Même
+             règle que Nielle et Le Perchoir — seuls les textes bougent. -->
+        <button class="onglet" data-onglet="comm">Le Réseau</button>
         <button class="onglet" data-onglet="parametres">Paramètres</button>
       </div>
 
@@ -256,7 +260,13 @@
             <button class="sous-lien" data-centre="votes">Élections</button>
             <button class="sous-lien" data-centre="bureau">Bureau</button>
             <button class="sous-lien" data-centre="guerres">Expéditions</button>
-            <button class="sous-lien" data-centre="bar">Bar</button>
+            <!-- ⚠ v0.91 — BAR RETIRÉ DE SILÈNE. Ses effets sont puissants et il
+                 n'a jamais trouvé sa place ici : il sera retravaillé pour une
+                 carte ultérieure, ni Silène ni Nielle. `js/bar.js` est laissé
+                 INTACT, seul l'accès disparaît — il suffira de rétablir ce
+                 bouton (ou d'en poser un ailleurs) pour le rouvrir.
+                 Les boissons déjà actives courent jusqu'à leur expiration. -->
+            <!-- <button class="sous-lien" data-centre="bar">Bar</button> -->
             <button class="sous-lien" data-centre="prison">Prison</button>
           </div>
           <div id="centre-corps"></div>
@@ -356,6 +366,7 @@
 <script src="js/espace-data.js"></script>
 <script src="js/placement.js"></script>
 <script src="js/orbite.js"></script>
+<script src="js/sonde.js"></script>
 <script src="js/formations.js"></script>
 <script src="js/aptitudes-data.js"></script>
 <script src="js/aptitudes.js"></script>

@@ -272,6 +272,9 @@ function majDev(){
       <button class="mini" id="dev-recaler-comp">Recaler compétences (10/10/10)</button>
       <button class="mini" id="dev-abimer" title="Retire 25 % d'intégrité à une structure bâtie, tirée au hasard">Abîmer une structure (−25 %)</button>
       <button class="mini" id="dev-integrite-reset" title="Remet toutes tes structures à 100 %">Réparer toutes les structures</button>
+      <button class="mini" id="dev-coque" title="Retire 30 PV à la coque du vaisseau équipé">Abîmer la coque (−30 PV)</button>
+      <button class="mini" id="dev-coque-ok" title="Remet la coque à neuf">Réparer la coque</button>
+      <button class="mini" id="dev-sonde" title="Déclenche une interception, sans attendre les 15 %">Croiser une sonde</button>
       <button class="mini" id="dev-facbloc">${(etat.factionChangeBloque!==false)?"Débloquer":"Bloquer"} changement de faction</button>
       <button class="mini" id="dev-protocole" title="Interceptions sur le terrain, pour ce personnage seulement">Patrouilles : ${(etat.protocoleActif!==false)?"ON":"OFF"}</button>
       <button class="mini" id="dev-imperso" disabled title="Nécessite le backend multijoueur">Entrer dans le compte</button>
@@ -295,6 +298,24 @@ function majDev(){
     const brc=av.querySelector("#dev-recaler-comp"); if(brc) brc.addEventListener("click", devRecalerCompetences);
     const bab=av.querySelector("#dev-abimer"); if(bab) bab.addEventListener("click", ()=>{ if(typeof devAbimerStructure==="function") devAbimerStructure(); });
     const bir=av.querySelector("#dev-integrite-reset"); if(bir) bir.addEventListener("click", ()=>{ if(typeof devReparerTout==="function") devReparerTout(); });
+    const bcq=av.querySelector("#dev-coque");
+    if(bcq) bcq.addEventListener("click", ()=>{
+      if(!etat.vaisseau){ journal("[dev] Aucun vaisseau équipé.","alerte"); return; }
+      abimerVaisseau(30, "console dev");
+      journal(`[dev] Coque : ${pvVaisseau()}/${pvMax()} PV.`,"alerte");
+    });
+    const bso=av.querySelector("#dev-sonde");
+    if(bso) bso.addEventListener("click", ()=>{
+      if(typeof enEcart!=="function" || !enEcart()){ journal("[dev] Il faut être dans le secteur Nielle.","alerte"); return; }
+      if(typeof ouvrirSonde==="function") ouvrirSonde();
+    });
+    const bcr=av.querySelector("#dev-coque-ok");
+    if(bcr) bcr.addEventListener("click", ()=>{
+      if(!etat.vaisseau){ journal("[dev] Aucun vaisseau équipé.","alerte"); return; }
+      reparerPv(pvMax()); journal(`[dev] Coque remise à neuf : ${pvVaisseau()}/${pvMax()} PV.`,"gain");
+      if(typeof majVaisseau==="function") majVaisseau();
+      if(typeof sauvegarder==="function") sauvegarder();
+    });
     const bfb=av.querySelector("#dev-facbloc"); if(bfb) bfb.addEventListener("click", devFactionBloc);
     const bpro=av.querySelector("#dev-protocole"); if(bpro) bpro.addEventListener("click", devProtocole);
     /* ⚠ Ces deux boutons existaient dans le HTML et leurs fonctions étaient

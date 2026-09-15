@@ -10,6 +10,13 @@
   .titre-carte { font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; color:var(--orange-hi); }
   #carte-lieu { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); font-weight:400; }
   .zone-carte { flex:1; min-height:0; display:flex; }
+  /* ⚠ v0.91 — le bandeau d'info de Nielle passait de DEUX lignes (texte
+     d'accueil) à UNE (aperçu au survol). `.zone-carte` étant en `flex:1`, elle
+     récupérait la place libérée et le SVG se redimensionnait : la carte
+     semblait zoomer à chaque passage de souris. On lui réserve sa hauteur, et
+     le contenu peut varier sans rien bouger autour. */
+  #orbite-info { min-height:3.1em; box-sizing:border-box; }
+  @media (max-width:520px){ #orbite-info { min-height:4.4em; } }
   .corps-carte { display:flex; gap:14px; flex:1; min-height:0; }
   .menu-carte { flex:0 0 148px; display:flex; flex-direction:column; gap:6px; }
   .lien-carte { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; text-align:left; color:var(--sourdine); background:rgba(16,41,78,.5); border:1px solid var(--line); border-left:2px solid var(--line); border-radius:var(--r-s); padding:9px 12px; cursor:pointer; }

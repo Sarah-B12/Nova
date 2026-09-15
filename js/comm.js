@@ -21,6 +21,8 @@ async function _chargerAmisServeur(noms){
   if(error){ console.warn("[comm] annuaire:", error.message); return; }
   for(const r of (data||[])) _annuaire[r.nom]=_mapProf(r);
 }
+/* Nom affiché de l'onglet social (ex-« Comm »). */
+const ONGLET_RESEAU = "Le Réseau";
 function _facNomComm(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:"—"; }
 
 let commVue = "amis";
@@ -42,7 +44,11 @@ async function compterNotifs(){
 function majBadges(){
   const B = n => ` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700;vertical-align:middle">${n}</span>`;
   const tot=_notifMsg+_notifAmis;
-  const c=document.querySelector('[data-onglet="comm"]'); if(c) c.innerHTML = "Comm" + (tot>0?B(tot):"");
+  /* ⚠ Le libellé est écrit à DEUX endroits : ici et dans index.html. Cette
+     ligne réécrit l'onglet à chaque mise à jour du compteur de non-lus — s'il
+     n'était changé que dans le HTML, il redeviendrait « Comm » au premier
+     message reçu. */
+  const c=document.querySelector('[data-onglet="comm"]'); if(c) c.innerHTML = ONGLET_RESEAU + (tot>0?B(tot):"");
   const a=document.querySelector('#comm-nav [data-comm="amis"]'); if(a) a.innerHTML = "Amis" + (_notifAmis>0?B(_notifAmis):"");
   const mm=document.querySelector('#comm-nav [data-comm="messages"]'); if(mm) mm.innerHTML = "Messages" + (_notifMsg>0?B(_notifMsg):"");
 }

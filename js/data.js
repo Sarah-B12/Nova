@@ -116,16 +116,27 @@ const BASE_BOUTIQUE = [
      le Constructeur doit rester le bon calcul, et ce comptoir le filet cher.
      Le secours automatique (200 ₡, retour forcé au sol) reste moins coûteux :
      on n'achète ici que si l'on veut RESTER en haut. */
-  { id:"fab_navette_legere",       nom:"Navette légère",       prix:4500, cat:"vaisseau" }
+  { id:"fab_navette_legere",       nom:"Navette légère",       prix:4500, cat:"vaisseau" },
+  /* v0.91 — objet d'URGENCE, pas une marchandise. On l'achète AVANT d'en avoir
+     besoin : une coque clouée ne peut plus rejoindre le comptoir.
+     ⚠ Volontairement PAS fabricable par le Constructeur. La Carcasse répare à
+     1,5 ₡ le PV et se trouve sur le chemin du retour du Gravier (3 % d'énergie
+     et 2 L de détour) : aucun kit fabriqué n'aurait jamais trouvé preneur. */
+  { id:"kit_reparation",           nom:"Kit de réparation",    prix:450,  cat:"vaisseau" }
 ];
 const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" }, { id:"vaisseau", nom:"Vaisseau" } ];
 
-const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES];
+/* v0.91 — le Kit de réparation n'appartient à aucune des familles ci-dessus :
+   ni consommable de survie, ni matière, ni vivant. Il est déclaré à part. */
+const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", cat:"vaisseau", poids:1 } ];
+const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
 // Chemins relatifs à la page (le rendu se fait via JS dans le document).
 const IMG_ITEM = {
+  // v0.91 — réutilise l'image de la Plaque de coque : c'est exactement ce qu'on rustine.
+  kit_reparation:"images/items/plaque_coque.png",
   cendrite:"images/items/cendrite.png", voltane:"images/items/voltane.png",
   silite:"images/items/silite.png",     givrite:"images/items/givrite.png",
   cristal:"images/items/cristal.png",   biofibre:"images/items/biofibre.png",

@@ -150,6 +150,77 @@ async function retirerSoute(id){
 }
 
 /* ---------- Ravitaillement ---------- */
+/* ===========================================================
+   PV DE COQUE — v0.91
+   ⚠ LES PV NE SONT PAS UNE VIE, C'EST UN ÉTAT DE NAVIGABILITÉ.
+   La DURÉE DE VIE détruit déjà les vaisseaux. Si les PV les détruisaient
+   aussi, on aurait deux mécaniques jumelles, une double peine, et le joueur ne
+   saurait jamais laquelle l'a tué. Donc : à 0 PV le vaisseau est CLOUÉ, jamais
+   détruit. La durée de vie reste la seule chose qui tue une coque.
+
+   ⚠ Stockés par MODÈLE, comme `vaisseauAge`, et pour la même raison : équiper
+   un vaisseau le RETIRE de l'inventaire et le déséquiper en recrée un neuf, il
+   n'existe donc aucun lot serveur où accrocher son état.
+   =========================================================== */
+const PV_SEUIL_AVARIE    = 0.30;   // sous ce ratio : avarie
+const PV_MALUS_CARBURANT = 1.5;    // conso majorée en avarie
+const PV_REMORQUAGE      = 0.25;   // navigabilité rendue par le remorquage
+
+function pvMax(id){ const v = VAISSEAUX[id || etat.vaisseau]; return v ? (v.pv || 100) : 0; }
+function pvVaisseau(id){
+  id = id || etat.vaisseau; if(!id) return 0;
+  const v = (etat.vaisseauPv || {})[id];
+  return (typeof v === "number") ? Math.max(0, Math.min(pvMax(id), v)) : pvMax(id);
+}
+function pvRatio(id){ const mx = pvMax(id); return mx ? pvVaisseau(id)/mx : 1; }
+function vaisseauCloue(){ return !!etat.vaisseau && pvVaisseau() <= 0; }
+function vaisseauAvarie(){ return !!etat.vaisseau && pvRatio() < PV_SEUIL_AVARIE; }
+/* Majoration de carburant en avarie : la falaise doit se voir venir. */
+function malusCarburant(){ return vaisseauAvarie() ? PV_MALUS_CARBURANT : 1; }
+
+function _poserPv(id, n){
+  if(!id) return;
+  etat.vaisseauPv = etat.vaisseauPv || {};
+  etat.vaisseauPv[id] = Math.max(0, Math.min(pvMax(id), Math.round(n)));
+}
+/* Abîme la coque équipée. Prévient au franchissement des deux seuils, et
+   seulement là : un message à chaque éraflure deviendrait du bruit. */
+function abimerVaisseau(n, raison){
+  const id = etat.vaisseau; if(!id || !(n > 0)) return;
+  const avant = pvVaisseau(id), ratioAvant = avant / pvMax(id);
+  _poserPv(id, avant - n);
+  const apres = pvVaisseau(id);
+  const nom = VAISSEAUX[id].nom;
+  if(apres <= 0){
+    journal(`${nom} est CLOUÉ : coque hors service${raison?` (${raison})`:""}. Il faut la réparer avant de repartir.`,"alerte");
+  } else if(ratioAvant >= PV_SEUIL_AVARIE && apres/pvMax(id) < PV_SEUIL_AVARIE){
+    journal(`⚠ ${nom} est en avarie — coque à ${Math.round(100*apres/pvMax(id))} %. La consommation de carburant augmente de moitié tant que ce n'est pas réparé.`,"alerte");
+  }
+  if(typeof majVaisseau==="function") majVaisseau();
+  if(typeof sauvegarder==="function") sauvegarder();
+}
+function reparerPv(n){
+  const id = etat.vaisseau; if(!id) return 0;
+  const avant = pvVaisseau(id);
+  _poserPv(id, avant + n);
+  return pvVaisseau(id) - avant;
+}
+
+/* PV rendus par un Kit de réparation. ⚠ Forfait et non pourcentage : trois kits
+   pour une Navette (120 PV), neuf pour un Maître (340). Les gros vaisseaux
+   coûtent plus cher à entretenir, ce qui est juste puisqu'ils rapportent plus. */
+const KIT_PV = 40;
+async function utiliserKitReparation(){
+  if(!etat.vaisseau){ journal("Aucun vaisseau équipé à réparer.","alerte"); return; }
+  if((etat.sac["kit_reparation"]||0) <= 0){ journal("Tu n'as pas de Kit de réparation dans ton sac.","alerte"); return; }
+  if(pvVaisseau() >= pvMax()){ journal("La coque est déjà intacte.","alerte"); return; }
+  if(!await agirServeur({ retirer:{ kit_reparation:1 }, motif:"reparer_coque" })) return;
+  const gagne = reparerPv(KIT_PV);
+  journal(`Coque rafistolée : +${gagne} PV (${pvVaisseau()}/${pvMax()}).`,"gain");
+  apresAction(); majVaisseau();
+  if(typeof sauvegarder==="function") sauvegarder();
+}
+
 /* Litres réellement disponibles : le réservoir PLUS tout ce qu'on transporte.
    ⚠ v0.91 — sert à décider si un vol est possible. Ignorer les unités en soute
    ferait refuser le départ à un joueur qui a dix unités dans sa cale, ce qu'il
@@ -226,7 +297,8 @@ function majVaisseau(){
         <div class="vais-stats">
           <div><span>Soute</span><b>${itemsSoute()}/${v.soute}</b></div>
           <div><span>PV (coque)</span><b>${v.pv}</b></div>
-          <div><span>Conso carburant</span><b>${v.conso} L/u</b></div>
+          <div><span>Conso carburant</span><b>${v.conso} L/u${malusCarburant()>1?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}</b></div>
+          <div><span>Coque</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
         </div>

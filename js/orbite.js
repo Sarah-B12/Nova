@@ -48,7 +48,9 @@ const SAUT_ENERGIE = 12;
 function coutSaut(){
   const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
   if(!v) return null;
-  return { litres: SAUT_UNITES * (v.conso||1),
+  /* v0.91 — la majoration d'avarie s'applique aussi au saut : sinon on
+     décollerait indéfiniment avec une coque en ruine sans rien sentir. */
+  return { litres: Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1)),
            energie: SAUT_ENERGIE + (v.energie||0) * 2,
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
@@ -100,6 +102,12 @@ async function partirVersEcart(){
   if(typeof villeActuelle==="function" && !villeActuelle()){
     journal("On ne décolle pas depuis la nature : rejoins une ville d'abord.","alerte"); return;
   }
+  /* ⚠ v0.91 — un vaisseau cloué au SOL ne décolle pas non plus. C'est le seul
+     cas sans issue du système : il n'y a pas de réparateur sur Silène. C'est
+     pour ça que le remorquage dépose au Perchoir et jamais au sol. */
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){
+    journal("Coque hors service : ton vaisseau ne quittera pas le sol.","alerte"); return;
+  }
   if(!await _payerSaut("Décollage")) return;
   const base = espaceLieu("base");
   etat.secteur   = "ecart";
@@ -121,6 +129,8 @@ async function revenirVersSilene(){
      ⚠ La raison est DITE AU JOUEUR avant qu'il parte (texte d'accueil de la
      carte + infobulle du bouton), pas seulement au moment du refus : découvrir
      la contrainte une fois à sec, c'est du carburant gâché pour rien. */
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){
+    journal("Coque hors service : impossible de tenter une rentrée atmosphérique.","alerte"); return; }
   if(!surLaBase()){
     const b = espaceLieu("base");
     const c = b ? coutVol({x:b.x, y:b.y}) : null;
@@ -162,7 +172,8 @@ function coutVol(dest, depuis){
   if(d < 6) return null;
   return { d,
     energie: Math.max(1, Math.round(d / PAS_ESPACE_E)),
-    litres:  Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1) };
+    litres:  Math.ceil(Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1)
+                       * ((typeof malusCarburant==="function") ? malusCarburant() : 1)) };
 }
 /* Ce que coûterait le retour à la base DEPUIS un point donné. */
 function _coutRetourBase(depuis){
@@ -191,6 +202,8 @@ function volPossible(dest){
    en a plus assez, on verse une unité transportée et on recommence. */
 async function volVers(l){
   if(!enEcart()) return false;
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){
+    journal("Coque hors service : ton vaisseau ne décolle pas. Fais-le réparer.","alerte"); return false; }
   const dest = { x:l.x, y:l.y };
   const j = volPossible(dest);
   if(!j.ok){
@@ -213,7 +226,11 @@ async function volVers(l){
   if(!await agirServeur({ cout:j.cout.energie, motif:"vol_nielle" })) return false;
   etat.carburant = Math.max(0, (etat.carburant||0) - j.cout.litres);
   etat.posEspace = dest;
-  journal(`Cap sur ${l.nom || "un point du secteur"} — ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain");
+  journal(`Cap sur ${espaceNom(l)} — ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain");
+  /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
+     un joueur intercepté à mi-parcours ne saurait plus où il est, et les
+     dégâts de coque changeraient le coût du vol déjà payé. */
+  if(typeof tenterSonde==="function") tenterSonde();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof majOrbite==="function") majOrbite();
   if(typeof afficher==="function") afficher();
@@ -225,7 +242,7 @@ let _orbInfoFige = null;
 
 /* Ligne d'aperçu affichée au survol d'un objet. */
 function _apercuVol(l){
-  const nom = l.nom || (l.type==="decor" ? "Objet stellaire" : "Destination");
+  const nom = espaceNom(l);
   if(surLieuEspace(l)) return `<b>${nom}</b> — <span class="itip-gris">tu y es.</span>`;
   const c = coutVol({x:l.x, y:l.y});
   if(!c) return `<b>${nom}</b>`;
@@ -275,6 +292,84 @@ function ouvrirDistancesEspace(){
   z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
 }
 
+/* ===========================================================
+   LE GRAVIER — gisement de Cristal de Nyx (v0.91)
+
+   ⚠ UN SEUL MINERAI, et un QUOTA QUOTIDIEN. Le lore veut un gisement qui « se
+   recharge une fois par jour » ; l'économie l'exige aussi. Le Cristal de Nyx
+   est la matière la plus rare du jeu (butin de patrouille 5 %, aptitude Toundra
+   *Veine de cristal* 5 %) et il verrouille la Lame et le Canon à singularité.
+   20 % par tentative, c'est QUATRE FOIS le taux de l'aptitude : sans plafond,
+   on dévalue le seul bonus identitaire de la Toundra et on inonde le marché.
+
+   ⚠ Chaque tentative RAYE LA COQUE (1 à 3 PV). Un champ d'astéroïdes n'est pas
+   un jardin. C'est la source de dégâts régulière et prévisible, celle qu'on
+   planifie — l'autre étant la défaite contre une sonde.
+   =========================================================== */
+const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu
+const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal
+const GRAVIER_ENERGIE  = 4;      // par tentative (le minage au sol coûte 8)
+const GRAVIER_PV       = [1, 3]; // dégâts de coque par tentative
+
+function _gravierJour(){ return (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString(); }
+function gravierRestants(){
+  const g = etat.gravier;
+  if(!g || g.jour !== _gravierJour()) return GRAVIER_ESSAIS;
+  return Math.max(0, GRAVIER_ESSAIS - (g.essais||0));
+}
+async function minerGravier(){
+  const l = espaceLieu("asteroides");
+  if(!surLieuEspace(l)){ journal(`Il faut être au ${espaceNom(l)} pour ça.`,"alerte"); return; }
+  if(!etat.vaisseau){ journal("Il te faut un vaisseau pour travailler ici.","alerte"); return; }
+  if(vaisseauCloue()){ journal("Coque hors service : impossible de manœuvrer dans les cailloux.","alerte"); return; }
+  if(gravierRestants() <= 0){ journal("Le gisement est épuisé pour aujourd'hui. Il se recharge demain.","alerte"); return; }
+  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
+
+  const touche = Math.random() < GRAVIER_CHANCE;
+  const gains  = touche ? { cristal:1 } : {};
+  const r = await agirServeur({ cout:GRAVIER_ENERGIE, ajouter:gains, motif:"gravier" });
+  if(!r) return;
+
+  const g = (etat.gravier && etat.gravier.jour === _gravierJour()) ? etat.gravier : { jour:_gravierJour(), essais:0 };
+  g.essais = (g.essais||0) + 1;
+  etat.gravier = g;
+
+  abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
+  if(touche && (r.ajoutes||{}).cristal) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain");
+  else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte");
+  if(typeof gagnerXp==="function") gagnerXp(3);
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof apresAction==="function") apresAction();
+}
+
+/* ===========================================================
+   LE RÉPARATEUR DE LA CARCASSE — v0.91
+   ⚠ Il répare les PV, JAMAIS la durée de vie : sinon le Constructeur perdrait
+   le marché que la Navette de réserve lui protège déjà mal.
+   ⚠ Il doit rester MOINS CHER que le kit du comptoir, sinon personne ne ferait
+   le détour — et le kit doit rester achetable, sinon une coque clouée au
+   Perchoir ne pourrait plus bouger. C'est cet écart qui fait vivre les deux.
+   =========================================================== */
+const REPARATEUR_PRIX_PV = 1.5;          // crédits par PV manquant
+function coutReparateur(){
+  if(!etat.vaisseau) return 0;
+  return Math.ceil((pvMax() - pvVaisseau()) * REPARATEUR_PRIX_PV);
+}
+async function reparerChezReparateur(){
+  if(!etat.vaisseau){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const l = espaceLieu("epave");
+  if(!surLieuEspace(l)){ journal(`Il faut être à ${espaceNom(l)} pour ça.`,"alerte"); return; }
+  const c = coutReparateur();
+  if(c <= 0){ journal("La coque est déjà intacte.","alerte"); return; }
+  if((etat.credits||0) < c){ journal(`Il te faut ${c} ₡ pour cette réparation.`,"alerte"); return; }
+  etat.credits -= c;
+  const gagne = reparerPv(pvMax());
+  journal(`Coque remise à neuf : +${gagne} PV (${pvVaisseau()}/${pvMax()}). −${c} ₡.`,"gain");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof afficher==="function") afficher();
+}
+
 /* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
    rayon, pas sur le pixel. `espaceRayon` existait déjà. */
 function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <= espaceRayon(l); }
@@ -294,7 +389,8 @@ function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <
 const SECOURS_FRAIS = 200;
 async function secoursOrbite(){
   if(!enEcart()) return false;
-  if(etat.vaisseau) return false;                 // il lui reste un moyen de rentrer
+  const cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
+  if(etat.vaisseau && !cloue) return false;       // il lui reste un moyen de rentrer
   /* ⚠ ORDRE AVEC LA MORT. Un joueur mort est derrière un écran bloquant : le
      redescendre pendant ce temps contredirait la règle « mourir à l'Écart ne
      fait pas descendre », et il se réveillerait chez lui sans avoir rien payé.
@@ -302,14 +398,30 @@ async function secoursOrbite(){
      après, et il joue à ce moment-là, dans le bon ordre : on se réveille à la
      base, PUIS on est rapatrié. */
   if(typeof _mortInfo !== "undefined" && _mortInfo && _mortInfo.mort) return false;
-  const p = _villeDeMaFaction();
   const du = Math.min(SECOURS_FRAIS, Math.max(0, etat.credits||0));
   etat.credits = Math.max(0, (etat.credits||0) - SECOURS_FRAIS);
+  const impaye = du < SECOURS_FRAIS ? " Tu n'avais pas de quoi payer : tu leur dois le reste." : "";
+
+  /* ⚠ DEUX DESTINATIONS, et la différence compte. Un vaisseau CLOUÉ ramené au
+     sol ne pourrait plus jamais remonter — il n'y a pas de réparateur sur
+     Silène. On remorque donc jusqu'au PERCHOIR, avec une navigabilité minimale
+     rendue, de quoi rejoindre La Carcasse. Sans vaisseau du tout, en revanche,
+     il n'y a plus rien à faire là-haut : retour au sol. */
+  if(cloue){
+    const b = espaceLieu("base");
+    if(b) etat.posEspace = { x:b.x, y:b.y };
+    if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
+    journal(`Appel de détresse : on te remorque jusqu'au ${b?b.nom:"Perchoir"} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte");
+    if(typeof sauverMaintenant==="function") await sauverMaintenant();
+    if(typeof majOrbite==="function") majOrbite();
+    if(typeof afficher==="function") afficher();
+    return true;
+  }
+
+  const p = _villeDeMaFaction();
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
-  journal(du < SECOURS_FRAIS
-    ? `Appel de détresse : un cargo de passage te redescend. Tu n'avais pas de quoi payer — ${du} ₡, et tu leur dois le reste.`
-    : `Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.`,"alerte");
+  journal(`Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof afficher==="function") afficher();
@@ -439,7 +551,7 @@ function majOrbite(){
       const z=document.querySelector("#orbite-info"); if(!z) return;
       // v0.91 : le décor répond, mais ne mène nulle part. Il n'est plus muet.
       if(l.type === "decor"){
-        z.innerHTML = `<b>${l.nom||"Objet stellaire"}</b><br><span class="itip-gris">${l.desc||"Rien qui mérite le carburant d'un détour."}</span>`;
+        z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Rien qui mérite le carburant d'un détour."}</span>`;
         return;
       }
       if(l.verrou){
@@ -452,16 +564,36 @@ function majOrbite(){
       const c = (typeof coutVol==="function") ? coutVol({x:l.x,y:l.y}) : null;
       let bas = "";
       if(!enEcart()) bas = `<span class="itip-gris">Décolle pour t'y rendre.</span>`;
-      else if(surLieuEspace(l)) bas = `<span class="itip-gris">Tu y es.</span>`;
+      else if(surLieuEspace(l)){
+        bas = `<span class="itip-gris">Tu y es.</span>`;
+        /* v0.91 — le gisement du Gravier, seulement quand on y est. */
+        if(l.id === "asteroides" && etat.vaisseau){
+          const reste = gravierRestants();
+          bas += reste > 0
+            ? ` <span class="itip-gris">${reste}/${GRAVIER_ESSAIS} tentative(s) · −${GRAVIER_ENERGIE} % d'énergie, la coque prend</span> <button class="mini" id="orb-miner" ${((etat.energie|0)<GRAVIER_ENERGIE||vaisseauCloue()||placesLibres()<=0)?"disabled":""}>Fouiller les cailloux</button>`
+            : ` <span class="itip-gris">Gisement épuisé pour aujourd'hui.</span>`;
+        }
+        /* v0.91 — le réparateur n'existe qu'ici, et seulement quand on y est. */
+        if(l.id === "epave" && etat.vaisseau){
+          const c = coutReparateur();
+          bas += c > 0
+            ? ` <span class="itip-gris">Coque ${pvVaisseau()}/${pvMax()} PV</span> <button class="mini" id="orb-reparer" ${((etat.credits||0)<c)?"disabled":""}>Faire réparer — ${c} ₡</button>`
+            : ` <span class="itip-gris">Coque intacte.</span>`;
+        }
+      }
       else if(c){
         const j = volPossible({x:l.x,y:l.y});
         bas = `<span class="itip-gris">Vol : ${c.energie} % d'énergie · ${c.litres} L</span>`
             + (j.ok ? ` <button class="mini" id="orb-voler">Mettre le cap</button>`
                     : ` <span style="color:var(--coral,#ff5257)">— ${j.err==="energie"?"énergie insuffisante":`il faut ${j.besoin} L pour aller ET revenir à la base`}</span>`);
       }
-      z.innerHTML = `<b>${l.nom}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>${bas}`;
+      z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>${bas}`;
       const bv = z.querySelector("#orb-voler");
       if(bv) bv.addEventListener("click", ()=>volVers(l));
+      const br2 = z.querySelector("#orb-reparer");
+      if(br2) br2.addEventListener("click", reparerChezReparateur);
+      const bm = z.querySelector("#orb-miner");
+      if(bm) bm.addEventListener("click", minerGravier);
     });
   });
 
