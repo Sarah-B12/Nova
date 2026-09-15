@@ -54,6 +54,14 @@
   .plot img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); pointer-events:none; }
   .plot.plot-maison { flex-direction:column; background:rgba(90,168,230,.10); }
   .plot-maison .maison-glyphe { font-size:34px; line-height:1; color:var(--orange-hi); text-shadow:0 0 10px rgba(255,158,84,.5); }
+  /* v0.91 — bannière du Garage (La Carcasse), même traitement que le logement.
+     ⚠ L'image `images/garage.png` reste À PRODUIRE : tant qu'elle manque, le
+     bloc se masque tout seul (onerror) et l'écran reste propre. */
+  .garage-vis { display:flex; justify-content:center; margin:0 0 12px; }
+  .garage-vis img { max-height:170px; max-width:100%; object-fit:contain; border-radius:12px 4px 12px 4px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+  .garage-etat { display:flex; flex-wrap:wrap; gap:10px 22px; font-family:"Space Mono",monospace; font-size:12.5px; }
+  .garage-etat div { display:flex; gap:8px; align-items:baseline; }
+  .garage-etat span { color:var(--sourdine); }
   .maison-vis { display:flex; justify-content:center; margin:0 0 10px; }
   .maison-vis img { max-height:150px; max-width:100%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
   .plot .vide-plot { color:rgba(180,200,230,.4); font-size:26px; font-weight:300; }

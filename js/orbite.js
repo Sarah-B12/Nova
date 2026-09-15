@@ -63,6 +63,10 @@ function enEcart(){ return etat.secteur === "ecart"; }
 /* Sur la Base de l'Écart : c'est elle qui ouvre les services (auberge,
    comptoir, poste, gouvernement, quêtes). Ailleurs dans le secteur, on est
    « en vol » et les hubs se ferment, comme en pleine nature sur Silène. */
+/* v0.91 — La Carcasse, comme le Perchoir : un lieu ou les hubs s'ouvrent.
+   Ailleurs dans le secteur, on est « en vol » et tout se ferme. */
+function surCarcasse(){ return enEcart() && surLieuEspace(espaceLieu("epave")); }
+
 function surBase(){
   if(!enEcart()) return false;
   const b = espaceLieu("base"); if(!b) return false;
@@ -233,6 +237,10 @@ async function volVers(l){
   if(typeof tenterSonde==="function") tenterSonde();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof majOrbite==="function") majOrbite();
+  /* ⚠ On vient peut-être d'arriver sur un LIEU : la liste des hubs dépend de
+     l'endroit, il faut la recalculer, sinon Le Garage n'apparaît qu'au
+     prochain rafraîchissement. */
+  if(typeof majHub==="function") majHub();
   if(typeof afficher==="function") afficher();
   return true;
 }
@@ -368,6 +376,28 @@ async function reparerChezReparateur(){
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   if(typeof majOrbite==="function") majOrbite();
   if(typeof afficher==="function") afficher();
+}
+
+/* ===========================================================
+   VOL LIBRE — cliquer n'importe où, comme sur Silène (v0.91)
+   ⚠ Sans ça, on ne pouvait rejoindre QUE les objets dessinés : la carte
+   cessait d'être un espace pour devenir une liste de boutons. On peut donc
+   viser le vide — pour couper au plus court, ou simplement pour se poster.
+   ⚠ Un clic sur un OBJET garde son comportement : il ouvre sa fiche, parce
+   qu'un lieu a des services et qu'on veut pouvoir les lire avant de payer.
+   =========================================================== */
+function _coordEspace(svg, e){
+  if(!svg.createSVGPoint) return null;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = svg.getScreenCTM(); if(!m) return null;
+  const p = pt.matrixTransform(m.inverse());
+  return { x:Math.round(p.x), y:Math.round(p.y) };
+}
+async function volVersPoint(pt){
+  if(!pt) return;
+  pt.x = Math.max(0, Math.min(ESPACE_MONDE.w, pt.x));
+  pt.y = Math.max(0, Math.min(ESPACE_MONDE.h, pt.y));
+  await volVers({ x:pt.x, y:pt.y, nom:null, libelle:"ce point du secteur", id:null });
 }
 
 /* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
@@ -533,6 +563,17 @@ function majOrbite(){
      `innerHTML` : le bouton réapparaissait identique mais SANS son écouteur,
      donc mort. Un seul écouteur posé une fois sur le bandeau, qui lit
      `data-orb`, survit à n'importe quel remplacement de contenu. */
+  /* Clic dans le vide : on y va. ⚠ Posé sur le SVG, donc après les objets —
+     un clic sur un objet ne remonte pas jusqu'ici (il s'arrête sur son <g>). */
+  if(!svg.dataset.branche){
+    svg.dataset.branche = "1";
+    svg.addEventListener("click", e=>{
+      if(_placementActif || !enEcart()) return;
+      if(e.target.closest("[data-lieu]")) return;      // un objet : sa fiche s'ouvre
+      volVersPoint(_coordEspace(svg, e));
+    });
+  }
+
   const zi = document.querySelector("#orbite-info");
   if(zi && !zi.dataset.branche){
     zi.dataset.branche = "1";
@@ -589,13 +630,10 @@ function majOrbite(){
             ? ` <span class="itip-gris">${reste}/${GRAVIER_ESSAIS} tentative(s) · −${GRAVIER_ENERGIE} % d'énergie, la coque prend</span> <button class="mini" data-orb="miner" ${((etat.energie|0)<GRAVIER_ENERGIE||vaisseauCloue()||placesLibres()<=0)?"disabled":""}>Fouiller les cailloux</button>`
             : ` <span class="itip-gris">Gisement épuisé pour aujourd'hui.</span>`;
         }
-        /* v0.91 — le réparateur n'existe qu'ici, et seulement quand on y est. */
-        if(l.id === "epave" && etat.vaisseau){
-          const c = coutReparateur();
-          bas += c > 0
-            ? ` <span class="itip-gris">Coque ${pvVaisseau()}/${pvMax()} PV</span> <button class="mini" data-orb="reparer" ${((etat.credits||0)<c)?"disabled":""}>Faire réparer — ${c} ₡</button>`
-            : ` <span class="itip-gris">Coque intacte.</span>`;
-        }
+        /* v0.91 — le garage a son propre écran (hub « Le Garage ») : ici on ne
+           fait que renvoyer dessus, pour ne pas tenir la même logique à deux
+           endroits. Ferme la carte et l'onglet est là. */
+        if(l.id === "epave") bas += ` <span class="itip-gris">Ferme la carte : l'onglet <b>Le Garage</b> t'attend.</span>`;
       }
       else if(c){
         const j = volPossible({x:l.x,y:l.y});

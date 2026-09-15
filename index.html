@@ -90,7 +90,7 @@
     </div>
     <div id="orbite-barre-plac"></div>
     <div class="zone-carte"><svg id="carte-orbite" aria-label="Orbite basse"></svg></div>
-    <p class="vide" id="orbite-info" style="text-align:center; margin:8px 0 0">Survole un objet pour voir le coût du vol, clique pour l'examiner. <span class="itip-gris">Le couloir de rentrée vers Silène se calcule au relais de la base : c'est de là, et de là seulement, qu'on redescend.</span></p>
+    <p class="vide" id="orbite-info" style="text-align:center; margin:8px 0 0">Clique un point de la carte pour t'y rendre. <span class="itip-gris">Rentrée vers Silène : depuis le Perchoir uniquement.</span></p>
   </div>
 </div>
 
@@ -222,6 +222,11 @@
           <button class="hub-lien" data-hub="boutique">La Boutique</button>
           <button class="hub-lien" data-hub="quete">Quêtes</button>
           <button class="hub-lien" data-hub="voler">Voler / Hacker</button>
+          <!-- v0.91 — La Carcasse. Un lieu de Nielle réutilise la MÊME charpente
+               de hubs que les cités et le Perchoir : c'est `majHub()` qui décide
+               lesquels sont visibles selon l'endroit. Q6 s'y passe, elle n'aura
+               qu'à activer `quete` dans la liste de ce lieu. -->
+          <button class="hub-lien" data-hub="garage">Le Garage</button>
         </div>
 
         <div class="hub-vue" id="hub-quete" hidden></div>
@@ -275,6 +280,7 @@
         <div class="hub-vue" id="hub-marche" hidden><h3>Le Marché</h3><div id="marche-vue"></div></div>
         <div class="hub-vue" id="hub-boutique" hidden><h3>La Boutique</h3><div id="boutique-vue"></div></div>
         <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><div id="voler-vue"></div></div>
+        <div class="hub-vue" id="hub-garage" hidden><h3>Le Garage</h3><div id="garage-vue"></div></div>
       </section>
 
       <!-- SAC -->
@@ -367,6 +373,7 @@
 <script src="js/placement.js"></script>
 <script src="js/orbite.js"></script>
 <script src="js/sonde.js"></script>
+<script src="js/garage.js"></script>
 <script src="js/formations.js"></script>
 <script src="js/aptitudes-data.js"></script>
 <script src="js/aptitudes.js"></script>

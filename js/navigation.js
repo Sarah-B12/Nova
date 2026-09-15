@@ -8,7 +8,7 @@ function montrerHub(h){
   document.querySelectorAll(".hub-vue").forEach(el => el.hidden = (el.id !== "hub-"+h));
   document.querySelectorAll(".hub-lien").forEach(b => b.classList.toggle("actif", b.dataset.hub===h));
 }
-function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); }
+function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -17,15 +17,20 @@ function majHub(){
      ni terrain, ni marché, ni vol. Le Centre y est réduit au gouvernement
      (voir formations.js) : pas de bureaux, pas d'expéditions. */
   const base = (typeof surBase==="function") && surBase();
-  const dispo = base
-    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true }
-    : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville,
+  /* v0.91 — La Carcasse : un seul service pour l'instant, le garage. La liste
+     est là pour grossir — l'arc Q6→Q15 prévoit DEUX quêtes par lieu. */
+  const carcasse = (typeof surCarcasse==="function") && surCarcasse();
+  const dispo = carcasse
+    ? { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:true }
+    : base
+    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true, garage:false }
+    : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false,
         boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
         quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler","garage"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
     if(prem) changerHub(prem); else montrerHub("vide");
   } else {
     changerHub(cur);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)

@@ -296,9 +296,8 @@ function majVaisseau(){
         <h3 style="margin:0 0 8px">${v.nom}</h3>
         <div class="vais-stats">
           <div><span>Soute</span><b>${itemsSoute()}/${v.soute}</b></div>
-          <div><span>PV (coque)</span><b>${v.pv}</b></div>
+          <div><span>PV (coque)</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>
           <div><span>Conso carburant</span><b>${v.conso} L/u${malusCarburant()>1?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}</b></div>
-          <div><span>Coque</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
         </div>

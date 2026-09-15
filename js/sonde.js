@@ -42,8 +42,12 @@ function tenterSonde(){
 let _sondeMonte = false;
 function monterSonde(){
   if(_sondeMonte) return;
-  /* On réutilise les classes `.patr-*` de patrouille.js : même famille de
-     rencontre, même grammaire visuelle. Seul le conteneur diffère. */
+  /* ⚠ Les classes `.patr-*` sont injectées par `monterPatrouille()` — donc
+     SEULEMENT après une première patrouille au sol. Sans cet appel, la modale
+     des sondes s'affichait sans aucune mise en forme pour qui n'avait pas
+     encore croisé le Protocole. On monte la patrouille (sa modale reste
+     cachée) puis on surcharge la couleur : bleu pour les machines. */
+  if(typeof monterPatrouille==="function") monterPatrouille();
   const st = document.createElement("style");
   st.textContent = `
     #sonde-modale{ position:fixed; inset:0; z-index:200; background:rgba(4,8,20,.82); display:grid; place-items:center; padding:20px; }
