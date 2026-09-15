@@ -528,6 +528,22 @@ function majOrbite(){
   }
   svg.innerHTML = html;
 
+  /* ⚠ v0.91 — DÉLÉGATION, ET SURTOUT PAS D'ÉCOUTEUR SUR LES BOUTONS.
+     L'aperçu au survol remplace le contenu du bandeau et le RESTAURE via
+     `innerHTML` : le bouton réapparaissait identique mais SANS son écouteur,
+     donc mort. Un seul écouteur posé une fois sur le bandeau, qui lit
+     `data-orb`, survit à n'importe quel remplacement de contenu. */
+  const zi = document.querySelector("#orbite-info");
+  if(zi && !zi.dataset.branche){
+    zi.dataset.branche = "1";
+    zi.addEventListener("click", e=>{
+      const b = e.target.closest("[data-orb]"); if(!b || b.disabled) return;
+      if(b.dataset.orb === "voler"){ const l = espaceLieu(b.dataset.id); if(l) volVers(l); }
+      else if(b.dataset.orb === "reparer") reparerChezReparateur();
+      else if(b.dataset.orb === "miner")   minerGravier();
+    });
+  }
+
   /* v0.91 — APERÇU AU SURVOL, équivalent de `_apercuCout` sur Silène. Le prix
      d'un vol doit se lire en balayant la carte, pas en cliquant partout.
      ⚠ On réutilise le bandeau `#orbite-info` : au survol il affiche le coût, et
@@ -570,30 +586,24 @@ function majOrbite(){
         if(l.id === "asteroides" && etat.vaisseau){
           const reste = gravierRestants();
           bas += reste > 0
-            ? ` <span class="itip-gris">${reste}/${GRAVIER_ESSAIS} tentative(s) · −${GRAVIER_ENERGIE} % d'énergie, la coque prend</span> <button class="mini" id="orb-miner" ${((etat.energie|0)<GRAVIER_ENERGIE||vaisseauCloue()||placesLibres()<=0)?"disabled":""}>Fouiller les cailloux</button>`
+            ? ` <span class="itip-gris">${reste}/${GRAVIER_ESSAIS} tentative(s) · −${GRAVIER_ENERGIE} % d'énergie, la coque prend</span> <button class="mini" data-orb="miner" ${((etat.energie|0)<GRAVIER_ENERGIE||vaisseauCloue()||placesLibres()<=0)?"disabled":""}>Fouiller les cailloux</button>`
             : ` <span class="itip-gris">Gisement épuisé pour aujourd'hui.</span>`;
         }
         /* v0.91 — le réparateur n'existe qu'ici, et seulement quand on y est. */
         if(l.id === "epave" && etat.vaisseau){
           const c = coutReparateur();
           bas += c > 0
-            ? ` <span class="itip-gris">Coque ${pvVaisseau()}/${pvMax()} PV</span> <button class="mini" id="orb-reparer" ${((etat.credits||0)<c)?"disabled":""}>Faire réparer — ${c} ₡</button>`
+            ? ` <span class="itip-gris">Coque ${pvVaisseau()}/${pvMax()} PV</span> <button class="mini" data-orb="reparer" ${((etat.credits||0)<c)?"disabled":""}>Faire réparer — ${c} ₡</button>`
             : ` <span class="itip-gris">Coque intacte.</span>`;
         }
       }
       else if(c){
         const j = volPossible({x:l.x,y:l.y});
         bas = `<span class="itip-gris">Vol : ${c.energie} % d'énergie · ${c.litres} L</span>`
-            + (j.ok ? ` <button class="mini" id="orb-voler">Mettre le cap</button>`
+            + (j.ok ? ` <button class="mini" data-orb="voler" data-id="${l.id}">Mettre le cap</button>`
                     : ` <span style="color:var(--coral,#ff5257)">— ${j.err==="energie"?"énergie insuffisante":`il faut ${j.besoin} L pour aller ET revenir à la base`}</span>`);
       }
       z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}.<br><span class="itip-gris">${l.desc}</span><br>${bas}`;
-      const bv = z.querySelector("#orb-voler");
-      if(bv) bv.addEventListener("click", ()=>volVers(l));
-      const br2 = z.querySelector("#orb-reparer");
-      if(br2) br2.addEventListener("click", reparerChezReparateur);
-      const bm = z.querySelector("#orb-miner");
-      if(bm) bm.addEventListener("click", minerGravier);
     });
   });
 
