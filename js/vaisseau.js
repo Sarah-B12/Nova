@@ -24,7 +24,10 @@ const VAISSEAUX = {
    ⚠ Coque plus faible que la Navette légère : ce n'est pas un vaisseau neuf.
    =========================================================== */
 const NAVETTE_CADEAU = "navette_reserve";
-const NAVETTE_CADEAU_JOURS = 10;
+/* ⚠ v0.92 — NAVETTE_CADEAU_JOURS (= 10) vivait ici EN PLUS de
+   DUREE_VIE_ITEM.navette_reserve (usure.js), et les deux étaient lues. Deux
+   copies d'un même chiffre qui pouvaient diverger sans un mot. La durée de vie
+   d'un objet a UN seul domicile : usure.js. */
 VAISSEAUX[NAVETTE_CADEAU] = { nom:"Navette de réserve", soute:5, img:"images/vaisseaux/navette_legere.png",
                               carb:"fab_biocarburant", reservoir:40, conso:1, energie:1, pv:90, cadeau:true };
 if(typeof TOUS_ITEMS !== "undefined" && !TOUS_ITEMS.some(i => i.id === NAVETTE_CADEAU)){
@@ -36,13 +39,23 @@ if(typeof TOUS_ITEMS !== "undefined" && !TOUS_ITEMS.some(i => i.id === NAVETTE_C
    (`vaisseauDate` repart à maintenant, et le retour au sac crée un lot neuf) :
    le cadeau deviendrait un vaisseau gratuit et éternel. */
 function navetteCadeauPosee(){
-  if(!etat.navetteFin) etat.navetteFin = Date.now() + NAVETTE_CADEAU_JOURS*86400000;
+  if(!etat.navetteFin){
+    /* ⚠ v0.92 — C'EST JOUR_MS, PAS 86400000. L'expiration d'une navette est une
+       usure d'objet, donc du TEMPS DE JEU (§0bis de la PASSATION). Avec un jour
+       réel en dur, `usure.js` (qui divise par JOUR_MS) et cette ligne donnaient
+       deux échéances différentes dès que JOUR_MS quittait 24 h : la navette
+       devenait immortelle d'un côté et périmée de l'autre. C'est le seul
+       interrupteur pour tester vite, il doit rester fiable.
+       ⚠ Si usure.js n'est pas encore chargé, on ne pose RIEN : mieux vaut
+       réessayer au prochain appel qu'inscrire une échéance fausse à vie. */
+    if(typeof dureeVie !== "function" || typeof JOUR_MS === "undefined") return 0;
+    etat.navetteFin = Date.now() + dureeVie(NAVETTE_CADEAU) * JOUR_MS;
+  }
   return etat.navetteFin;
 }
-function navetteCadeauJours(){
-  if(!etat.navetteFin) return null;
-  return Math.max(0, Math.ceil((etat.navetteFin - Date.now())/86400000));
-}
+/* ⚠ `navetteCadeauJours()` a été SUPPRIMÉE (v0.92) : elle n'était appelée nulle
+   part, et le décompte qu'elle calculait est déjà affiché par `majVaisseau()`
+   — `vaisseauDate` étant antidatée, le « Xj » générique tombe juste tout seul. */
 
 // Litres apportés par une unité de carburant, lors d'un plein.
 const CARBURANT_LITRES = { fab_biocarburant:20, fab_biocarburant_raffine:60 };
@@ -113,7 +126,7 @@ async function equiperVaisseau(id){
      l'instant présent. La Navette de réserve, elle, est antidatée pour retomber
      sur son échéance absolue. */
   etat.vaisseauDate = (id===NAVETTE_CADEAU && etat.navetteFin)
-    ? (etat.navetteFin - dureeVie(id)*86400000)
+    ? (etat.navetteFin - dureeVie(id)*((typeof JOUR_MS!=="undefined")?JOUR_MS:86400000))
     : (ageVaisseau(id) || Date.now());
   _noterAgeVaisseau(id, etat.vaisseauDate);
   etat.carburant = Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);   // le réservoir peut être plus petit

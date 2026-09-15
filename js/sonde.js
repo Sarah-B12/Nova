@@ -90,6 +90,19 @@ async function sondeChoix(s){
   else if(s==="brouiller") await sondeBrouiller();
 }
 
+/* ---------- Fin de rencontre (commune aux cinq issues) ----------
+   ⚠ v0.92 — les cinq issues finissaient par les deux MÊMES lignes. Elles en
+   ont maintenant une troisième, et c'est la raison de cette fonction : une
+   rencontre peut retirer au joueur son dernier moyen de rentrer, soit en
+   PRÉLEVANT son dernier bidon, soit en ABÎMANT la coque (l'avarie majore la
+   consommation de moitié, donc le coût du retour vers Silène). `volVers` ne
+   contrôle pas ce cas quand une sonde intercepte — il attend justement ici. */
+function _sondeFin(){
+  if(typeof apresAction==="function") apresAction();
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof secoursOrbite==="function") secoursOrbite();
+}
+
 /* ---------- Ouvrir le feu ---------- */
 async function sondeCombat(){
   lancerTirSonde(_sondeGagne, _sondePerdu);
@@ -99,14 +112,12 @@ function _sondeGagne(){
   etat.credits += g;
   if(typeof gagnerXp==="function") gagnerXp(10);
   journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris.`,"gain");
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+  _sondeFin();
 }
 function _sondePerdu(){
   abimerVaisseau(alea(SONDE_PV_DEFAITE[0], SONDE_PV_DEFAITE[1]), "tir de sonde");
   journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte");
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+  _sondeFin();
 }
 
 /* ===========================================================
@@ -145,8 +156,7 @@ async function sondeScanner(){
   } else {
     journal("La lumière te balaie une dernière fois. Tu ne transportes rien : elle décroche.","");
   }
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+  _sondeFin();
 }
 
 /* ---------- Couper les moteurs et dériver ----------
@@ -162,8 +172,7 @@ async function sondeDeriver(){
     abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
     journal("Trop tard : elle avait déjà verrouillé. Elle tire la première, coque touchée.","alerte");
   }
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+  _sondeFin();
 }
 
 /* ---------- Brouiller son scanner ----------
@@ -182,8 +191,7 @@ async function sondeBrouiller(){
     abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
     journal("Le brouillage ne prend pas — elle isole ta signature et ouvre le feu.","alerte");
   }
-  if(typeof apresAction==="function") apresAction();
-  if(typeof majOrbite==="function") majOrbite();
+  _sondeFin();
 }
 
 /* ===========================================================

@@ -116,17 +116,29 @@ let structSel = null, structCaseSel = null;   // structure ouverte en modale + c
 let plotSel = null;
 
 function normCases(c){ const a=Array(N_CASES).fill(null); if(Array.isArray(c)) for(let i=0;i<N_CASES;i++) a[i]=c[i]||null; return a; }
+/* ⚠ v0.92 — DEUXIÈME LISTE BLANCHE DU PROJET, de la même famille que
+   `hydraterEtat`. Chaque parcelle était reconstruite champ par champ ET par
+   type : tout champ non listé ici disparaissait au rechargement, en silence.
+   `{ ...s, … }` renverse la logique — on PART de ce qui existe et on ne
+   normalise que ce qu'on connaît. Un futur champ de parcelle (date de pose,
+   nom donné par le joueur, niveau d'atelier…) survit désormais tout seul.
+   ⚠ `type` est réécrit en dernier : il fait autorité, le spread ne peut pas
+   l'abîmer. Et les branches inconnues renvoient toujours `null` : une parcelle
+   dont le type ne veut rien dire reste rejetée.
+   ⚠ Les DEUX emplacements de drones restent explicites (voir drones.js, modèle
+   `drones:[slot0, slot1]`) : la longueur du tableau est une règle de jeu, pas
+   une donnée à recopier. Un hangar à trois places se déciderait ici. */
 function normaliserParcelles(t){
   const arr = Array(N_PLOTS).fill(null);
   const src = (t && Array.isArray(t.parcelles)) ? t.parcelles : (t && Array.isArray(t.structures)) ? t.structures : [];
   for(let i=0;i<N_PLOTS;i++){
     const s = src[i]; if(!s){ arr[i]=null; continue; }
-    if(s.type==="mine")         arr[i]={ type:"mine", stock:(typeof s.stock==="number")?s.stock:MINE_MAX, max:(typeof s.max==="number")?s.max:MINE_MAX };
-    else if(s.type==="biodome") arr[i]={ type:"biodome", cases:normCases(s.cases) };
-    else if(s.type==="enclos")  arr[i]={ type:"enclos",  cases:normCases(s.cases) };
-    else if(s.type==="atelier") arr[i]={ type:"atelier" };
-    else if(s.type==="maison")  arr[i]={ type:"maison" };
-    else if(s.type==="hangar")  arr[i]={ type:"hangar", drones:[ (s.drones&&s.drones[0])||null, (s.drones&&s.drones[1])||null ] };
+    if(s.type==="mine")         arr[i]={ ...s, type:"mine", stock:(typeof s.stock==="number")?s.stock:MINE_MAX, max:(typeof s.max==="number")?s.max:MINE_MAX };
+    else if(s.type==="biodome") arr[i]={ ...s, type:"biodome", cases:normCases(s.cases) };
+    else if(s.type==="enclos")  arr[i]={ ...s, type:"enclos",  cases:normCases(s.cases) };
+    else if(s.type==="atelier") arr[i]={ ...s, type:"atelier" };
+    else if(s.type==="maison")  arr[i]={ ...s, type:"maison" };
+    else if(s.type==="hangar")  arr[i]={ ...s, type:"hangar", drones:[ (s.drones&&s.drones[0])||null, (s.drones&&s.drones[1])||null ] };
     else arr[i]=null;
   }
   return arr;

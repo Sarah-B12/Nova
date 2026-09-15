@@ -110,7 +110,16 @@ function ecranMort(){
            mort : il se réveillerait à la base sans moyen d'en repartir. Le
            secours joue maintenant, après le réveil, jamais avant. */
         if(typeof secoursOrbite === "function") await secoursOrbite();
-        if(typeof afficher === "function") afficher();
+        /* ⚠ PIÈGE N°11, DEUXIÈME OCCURRENCE. `afficher()` seul ne suffit pas :
+           la résurrection DÉPLACE le joueur (chez lui, ou à la base s'il est
+           mort en orbite), et la liste des onglets dépend du lieu. On mourait
+           au Gravier, on ressuscitait au Perchoir, et l'onglet du Gisement
+           restait à l'écran — vide. `majApresDeplacement()` est le point
+           d'entrée unique : il fait majHub + majOrbite + afficher.
+           ⚠ Si `secoursOrbite()` a rapatrié le joueur, il l'a déjà appelé ;
+           un second appel ne coûte qu'un redessin. */
+        if(typeof majApresDeplacement === "function") majApresDeplacement();
+        else if(typeof afficher === "function") afficher();
       }catch(e){ journal("Résurrection impossible — réessaie.","alerte"); b.disabled = false; }
     });
   }

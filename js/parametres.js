@@ -163,11 +163,23 @@ async function changerFaction(fid){
   }
 
   // La destination vient du serveur (table `villes`), pas de posDefaut().
+  /* ⚠ v0.92 — AVANT d'écrire la nouvelle faction : `aptBranche()` lit la
+     faction COURANTE. Placé après, ce remboursement rendrait les PA de la
+     branche d'ARRIVÉE — des points jamais dépensés. */
+  const paRendus = (typeof aptRembourserFaction==="function") ? (aptRembourserFaction()||0) : 0;
   etat.faction=f.id;
   if(typeof data.x==="number" && typeof data.y==="number") etat.pos={x:data.x, y:data.y};
-  journal(`Tu as rejoint ${f.nom}.`,"gain");
+  journal(`Tu as rejoint ${f.nom}.`+(paRendus>0?` Les ${paRendus} PA de ta branche d'origine te sont rendus.`:""),"gain");
   if(typeof sauvegarder==="function") sauvegarder();
-  if(typeof afficher==="function") afficher();
+  /* ⚠ PIEGE N°11, TROISIEME OCCURRENCE. Le changement de faction DEPLACE le
+     joueur (ligne au-dessus : `etat.pos` reçoit les coordonnées de sa nouvelle
+     cité, lues dans `villes`). `afficher()` redessine, mais ne recalcule pas le
+     LIEU : le hub restait celui de l'ancienne cité jusqu'à la première action.
+     `majApresDeplacement()` est le point d'entrée unique (majHub + majOrbite +
+     afficher) — même correctif que `mort.js` en v0.92.
+     ⚠ CE FICHIER EST LE SEUL DU PROJET EN CRLF : conserver les fins de ligne. */
+  if(typeof majApresDeplacement==="function") majApresDeplacement();
+  else if(typeof afficher==="function") afficher();
   await chargerFactionEtat(1);
 }
 

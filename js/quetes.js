@@ -83,6 +83,21 @@ function queteVerrou(){ const a=queteActive(); const e=etapeActive();
 let _queteTimer = null; let _queteTO = [];   // animation/compte à rebours + timeouts
 function _clearQ(){ if(_queteTimer){ clearInterval(_queteTimer); _queteTimer=null; } _queteTO.forEach(clearTimeout); _queteTO=[]; }
 
+/* ⚠ v0.92 — `_clearQ()` n'est appelée QU'À UN ENDROIT : la première ligne de
+   `majQueteHub()`. Autrement dit, chaque redessin de l'onglet Quêtes annulait
+   les minuteurs du Simon EN COURS. Or une séquence de 5 dure
+   500 + 620 × 5 ≈ 3,6 s, et `chargerStocksServeur()` redessine toutes les 60 s :
+   une partie sur quatre se figeait sur « Regarde… », pavés morts (`jouable`
+   restait à `false`), et le joueur concluait que le mécanisme s'était
+   verrouillé. Il n'y avait pourtant aucun verrou — `echouerDefi()` n'est
+   appelée que depuis un clic sur un mauvais pavé.
+   On suspend donc le redessin tant qu'une séquence est en cours.
+   ⚠ La borne de 60 s est une soupape : si le drapeau fuyait (onglet quitté en
+   pleine partie), le panneau se débloque tout seul au lieu de rester gelé. */
+let _seqAnim = 0;
+function _seqEnCours(){ return _seqAnim > 0 && (Date.now() - _seqAnim) < 60000; }
+function _seqFin(){ _seqAnim = 0; }
+
 /* ---------- Progression ---------- */
 function accepterQuete(id){
   if(queteActive()){ journal("Termine ta quête en cours d'abord.","alerte"); return; }
@@ -566,12 +581,18 @@ function _wireSequence(z,d){
   function flash(i){ const p=pads[i]; if(!p) return; p.classList.add("actif"); const t=setTimeout(()=>p.classList.remove("actif"),380); _queteTO.push(t); }
   function jouerSeq(){ jouable=false; etat.textContent="Regarde…"; let k=0;
     (function next(){ if(k>=seq.length){ jouable=true; etat.textContent="À toi !"; return; } flash(seq[k]); k++; const t=setTimeout(next,620); _queteTO.push(t); })(); }
-  function tour(){ seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,500); _queteTO.push(t); }
+  function tour(){ _seqAnim = Date.now();   // v0.92 : la partie est en cours, le panneau ne doit plus se redessiner
+    seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,500); _queteTO.push(t); }
   pads.forEach((p,i)=>p.addEventListener("click",()=>{
     if(!jouable) return; flash(i);
-    if(i!==seq[pos]){ jouable=false; echouerDefi("Séquence ratée — la console se verrouille. Reviens demain."); return; }
+    _seqAnim = Date.now();   // chaque clic repousse la soupape des 60 s
+    /* ⚠ `_seqFin()` AVANT `echouerDefi()` et `reussirDefi()` : toutes deux
+       appellent `rafraichirQuetes()`, donc `majQueteHub()`. Le drapeau encore
+       levé, le panneau refuserait de se redessiner et le joueur resterait
+       devant l'écran du défi qu'il vient de terminer. */
+    if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi("Séquence ratée — la console se verrouille. Reviens demain."); return; }
     pos++;
-    if(pos>=seq.length){ if(seq.length>=L){ jouable=false; journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien !"; tour(); } }
+    if(pos>=seq.length){ if(seq.length>=L){ jouable=false; _seqFin(); journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien !"; tour(); } }
   }));
   z.querySelector("#q-seq-go").addEventListener("click",function(){ this.disabled=true; seq=[]; tour(); });
 }
@@ -641,6 +662,10 @@ function majMarqueursQuete(){
 /* ---------- Onglet « Quêtes » ---------- */
 function majQueteHub(){
   const z=document.querySelector("#hub-quete"); if(!z) return;
+  /* ⚠ v0.92 — NE PAS REDESSINER PENDANT UN SIMON : le redessin appelle
+     `_clearQ()`, qui tuerait les minuteurs de la partie en cours, et
+     reconstruirait le DOM en perdant la séquence mémorisée. Voir `_seqEnCours`. */
+  if(_seqEnCours()) return;
   _queteStyle();
   _clearQ();
   const enFac=_enFaction();

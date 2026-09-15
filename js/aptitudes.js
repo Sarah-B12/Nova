@@ -51,12 +51,21 @@ function respecApt(){
 }
 // Appelée à la fin d'une quête (à venir) — et par le bouton debug.
 function gagnerPA(n=1){ aptEtat().pa += n; sauvegarder(); majAptitudes(); }
-// Remboursement de la seule branche de faction (au changement de faction — à câbler plus tard).
+/* Remboursement de la seule branche de FACTION — le tronc n'est jamais touché.
+   ⚠ v0.92 — CÂBLÉE (parametres.js, changement de faction). Elle était écrite
+   depuis des mois et appelée nulle part : les aptitudes d'une faction quittée
+   restaient prises, leurs PA perdus, et le joueur se retrouvait avec des nœuds
+   d'une branche à laquelle il n'appartenait plus.
+   ⚠ APPELER AVANT d'écrire `etat.faction` : `aptBranche()` lit la faction
+   COURANTE. Après, elle rendrait la branche de la NOUVELLE faction — donc
+   rembourserait des points jamais dépensés.
+   Renvoie le total rendu, pour pouvoir l'annoncer au joueur. */
 function aptRembourserFaction(){
-  const e = aptEtat(); const br = aptBranche(); if(!br) return;
+  const e = aptEtat(); const br = aptBranche(); if(!br) return 0;
   const ids = br.noeuds.map(n=>n.id);
   const rendu = e.pris.filter(id=>ids.includes(id)).reduce((a,id)=>a+aptCoutParId(id), 0);
   e.pris = e.pris.filter(id=>!ids.includes(id)); e.pa += rendu;
+  return rendu;
 }
 
 /* ---------- Écran (injection unique + mises à jour) ---------- */

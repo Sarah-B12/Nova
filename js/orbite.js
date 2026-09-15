@@ -124,6 +124,21 @@ async function partirVersEcart(){
   if(typeof vaisseauCloue==="function" && vaisseauCloue()){
     journal("Coque hors service : ton vaisseau ne quittera pas le sol.","alerte"); return;
   }
+  /* ⚠ ON NE DÉCOLLE PAS SANS DE QUOI REVENIR (v0.92). Même principe que
+     volVers(), qui refuse déjà tout saut intra-secteur dont le retour n'est pas
+     couvert — ici c'est le retour vers SILÈNE qui est en jeu.
+     ⚠ Le test porte sur l'AUTONOMIE (cuve + bidons du sac ET de la soute), pas
+     sur la cuve seule : le Cargo (108 L par saut, 200 L de cuve) et le Vaisseau
+     maître (54 L, 100 L) ne PEUVENT PAS emporter leur aller-retour dans le
+     réservoir. Exiger 2 × le saut en cuve les clouerait au sol définitivement.
+     Le déficit réel est de 16 L et 8 L : un seul bidon suffit. */
+  const csDep = coutSaut();
+  const autoDep = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
+  if(csDep && autoDep < 2*csDep.litres){
+    const nomCarb = (typeof item==="function" && item(csDep.carb)) ? item(csDep.carb).nom : "carburant";
+    journal(`Décollage refusé : il faut de quoi revenir. L'aller-retour coûte ${2*csDep.litres} L, tu n'as que ${Math.round(autoDep)} L en tout (réservoir + bidons). Emporte ${Math.ceil(2*csDep.litres - autoDep)} L de ${nomCarb} de plus.`,"alerte","voyage");
+    return;
+  }
   if(!await _payerSaut("Décollage")) return;
   const base = espaceLieu("base");
   etat.secteur   = "ecart";
@@ -246,9 +261,17 @@ async function volVers(l){
   /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
      un joueur intercepté à mi-parcours ne saurait plus où il est, et les
      dégâts de coque changeraient le coût du vol déjà payé. */
-  if(typeof tenterSonde==="function") tenterSonde();
+  const sondeOuverte = (typeof tenterSonde==="function") ? tenterSonde() : false;
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();
+  /* v0.92 — un vol intra-secteur peut consommer la dernière réserve : volVers()
+     ne garantit que le retour à la BASE, pas le retour vers Silène. On contrôle
+     donc ici. ⚠ PAS si une sonde vient d'ouvrir sa modale : le joueur y a un
+     choix en attente, le rapatrier sous la fenêtre serait incompréhensible — et
+     la rencontre peut encore changer la donne (bidon prélevé, coque touchée,
+     donc consommation majorée). Le cas est repris à la fin de la rencontre,
+     dans `_sondeFin()` (sonde.js). */
+  if(!sondeOuverte && typeof secoursOrbite==="function") await secoursOrbite();
   return true;
 }
 
@@ -415,10 +438,43 @@ function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <
    ⚠ Si le joueur ne peut pas payer, il descend QUAND MÊME, solde à zéro.
    On ne laisse jamais personne coincé là-haut. */
 const SECOURS_FRAIS = 200;
+
+/* ⚠ LE SEUIL DÉPEND DU VAISSEAU, jamais d'un forfait. Une Navette se remplit
+   avec du Biocarburant (320 ₡ les 20 L) et il lui faut 18 L : une unité suffit.
+   Un Cargo brûle 108 L de raffiné (1 400 ₡ les 60 L) : il lui en faut DEUX,
+   soit 2 800 ₡. Un seuil unique aurait laissé un pilote de Cargo coincé avec
+   1 000 ₡ en poche, ce qui est précisément le cas qu'on cherche à fermer.
+   On demande le prix au comptoir via `_prixBoutique()` plutôt que de recopier
+   le barème : une règle de prix de plus serait une divergence de plus. */
+function _prixPleinComptoir(carb, litresManquants){
+  if(typeof BASE_BOUTIQUE === "undefined") return null;
+  const ligne = BASE_BOUTIQUE.find(a => a.id === carb);
+  if(!ligne) return null;
+  const parUnite = (typeof CARBURANT_LITRES !== "undefined") ? (CARBURANT_LITRES[carb]||0) : 0;
+  if(parUnite <= 0) return null;
+  const prix = (typeof _prixBoutique === "function") ? _prixBoutique(ligne) : ligne.prix;
+  return Math.ceil(litresManquants / parUnite) * prix;
+}
+
+/* Vrai si le joueur ne peut NI rentrer, NI faire le plein, NI en acheter un. */
+function vaisseauSansRetour(){
+  const c = coutSaut(); if(!c) return false;
+  const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
+  if(auto >= c.litres) return false;                       // il peut rentrer, ou se remplir depuis ses bidons
+  const cout = _prixPleinComptoir(c.carb, c.litres - auto);
+  if(cout == null) return true;                            // ce carburant ne se vend pas là-haut
+  return (etat.credits||0) < cout;                         // il ne peut pas non plus l'acheter
+}
+
 async function secoursOrbite(){
   if(!enEcart()) return false;
   const cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
-  if(etat.vaisseau && !cloue) return false;       // il lui reste un moyen de rentrer
+  /* v0.92 — TROISIÈME CAS : le vaisseau est intact mais à sec, sans bidon et
+     sans de quoi en acheter. Le secours n'existait que pour le vaisseau absent
+     ou cloué : un pilote sans carburant restait en haut sans aucun recours, et
+     sans revenu possible puisqu'il ne pouvait plus voler. */
+  const aSec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
+  if(etat.vaisseau && !cloue && !aSec) return false;       // il lui reste un moyen de rentrer
   /* ⚠ ORDRE AVEC LA MORT. Un joueur mort est derrière un écran bloquant : le
      redescendre pendant ce temps contredirait la règle « mourir à l'Écart ne
      fait pas descendre », et il se réveillerait chez lui sans avoir rien payé.
@@ -426,9 +482,20 @@ async function secoursOrbite(){
      après, et il joue à ce moment-là, dans le bon ordre : on se réveille à la
      base, PUIS on est rapatrié. */
   if(typeof _mortInfo !== "undefined" && _mortInfo && _mortInfo.mort) return false;
-  const du = Math.min(SECOURS_FRAIS, Math.max(0, etat.credits||0));
-  etat.credits = Math.max(0, (etat.credits||0) - SECOURS_FRAIS);
-  const impaye = du < SECOURS_FRAIS ? " Tu n'avais pas de quoi payer : tu leur dois le reste." : "";
+  /* ⚠ v0.92 — LE REMORQUAGE À SEC N'A PAS LE MÊME TARIF, et ce n'est pas une
+     punition : c'est ce qui l'empêche de devenir un taxi. Redescendre un Cargo
+     brûle 108 L de raffiné, soit ~2 500 ₡ ; à 200 ₡ forfaitaires, tout le monde
+     serait arrivé à sec exprès et le carburant n'aurait plus servi à rien.
+     On facture donc le plein qu'il n'a pas pu payer — et comme le secours ne se
+     déclenche QUE si ses crédits sont inférieurs à ce prix, cela revient à
+     prendre ce qu'il a. Il descend quoi qu'il arrive, même à zéro : la règle
+     d'or est intacte, l'arbitrage ne l'est plus.
+     ⚠ Un FORFAIT ne peut pas marcher, quel que soit son montant : bas, il offre
+     le taxi ; haut, il laisse un pilote de Navette avec 300 ₡ coincé en haut. */
+  const frais  = aSec ? Math.max(0, etat.credits||0) : SECOURS_FRAIS;
+  const du     = Math.min(frais, Math.max(0, etat.credits||0));
+  etat.credits = Math.max(0, (etat.credits||0) - frais);
+  const impaye = du < frais ? " Tu n'avais pas de quoi payer : tu leur dois le reste." : "";
 
   /* ⚠ DEUX DESTINATIONS, et la différence compte. Un vaisseau CLOUÉ ramené au
      sol ne pourrait plus jamais remonter — il n'y a pas de réparateur sur
@@ -448,7 +515,9 @@ async function secoursOrbite(){
   const p = _villeDeMaFaction();
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
-  journal(`Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
+  journal(aSec
+    ? `Réservoir à sec, plus un bidon et pas de quoi en acheter : un cargo de passage te prend en remorque. ${du > 0 ? `Le remorquage te prend tout ce qu'il te restait — ${du} ₡.` : "Tu n'avais rien à leur donner ; ils te redescendent quand même."}`
+    : `Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();

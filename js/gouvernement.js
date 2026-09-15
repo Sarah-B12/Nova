@@ -153,10 +153,24 @@ async function majGouvernement(el){
      hors de chez soi, la requête renvoie une liste vide sans erreur. Afficher
      0 ₡ laissait croire à une caisse épuisée — information fausse, et
      précieuse pour qui la croirait. */
-  let solde = null, dejaJour = 0;
+  let solde = null, donEtat = null;
   try{ const { data } = await sb.from("caisses").select("solde").eq("faction", fac).maybeSingle(); if(data && typeof data.solde==="number") solde = data.solde; }catch(e){ console.warn("[gouv] caisse:", e.message); }
-  try{ const s=await sessionActuelle(); if(s){ const lim=new Date(Date.now()-24*3600*1000).toISOString(); const { data } = await sb.from("dons").select("montant").gte("cree_le", lim); dejaJour=(data||[]).reduce((a,d)=>a+(d.montant||0),0); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
-  const reste = Math.max(0, 500 - dejaJour);
+  /* ⚠ v0.92 — LE PLAFOND DE DON APPARTIENT AU SERVEUR. Il était écrit « 500 »
+     en dur ici, et le déjà-donné se comptait sur une fenêtre GLISSANTE de 24 h
+     (`Date.now() - 24*3600*1000`). Or `caisse_don()` applique 500 OU 750 selon
+     le Fragment Générosité, et compte par JOUR CIVIL à Paris (`jour_jeu()`).
+     Deux divergences silencieuses : entre minuit et 2 h le reste affiché était
+     faux, et un porteur du Fragment se voyait refuser par l'écran un don que le
+     serveur aurait accepté.
+     `caisse_don_etat()` renvoie exactement ce que `caisse_don()` appliquera :
+     une seule règle, plus aucune copie à tenir à jour.
+     ⚠ En cas d'échec on n'affiche PAS « 0 » — leçon §4quindecies : « je ne sais
+     pas » et « zéro » ne sont pas la même information. */
+  if(solde !== null){
+    try{ const { data } = await sb.rpc("caisse_don_etat"); if(data && data.ok) donEtat = data; }
+    catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#1"); }
+  }
+  const reste = donEtat ? donEtat.reste : 0;
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
     ${chezMoi ? "" : `<p class="itip-gris" style="margin:0 0 8px">Tu consultes le gouvernement d'une faction qui n'est pas la tienne.</p>`}
     ${_blasonFaction(fac)}
@@ -169,7 +183,9 @@ async function majGouvernement(el){
     ${solde===null ? "" : `<div class="gouv-don">
       <input type="number" id="gouv-don-montant" min="1" max="${reste}" value="${Math.min(100,reste)}" ${reste<=0?"disabled":""}>
       <button class="mini" id="gouv-don-btn" ${reste<=0?"disabled":""}>Faire un don</button>
-      <span class="itip-gris">Reste aujourd'hui : <b>${reste} ₡</b> / 500</span>
+      <span class="itip-gris">${donEtat
+        ? `Reste aujourd'hui : <b>${reste} ₡</b> / ${donEtat.plafond}`
+        : `Plafond du jour <b>indisponible</b> — réessaie dans un instant.`}</span>
     </div>`}`;
     /* ⚠ Pas de bloc de don hors de sa faction : caisse_don() verse toujours
        dans SA PROPRE caisse, quelle que soit la page consultée. L'afficher
@@ -567,9 +583,18 @@ function _expRapportHtml(row){
   const r=row.rapport||{}; const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut du Protocole"};
   const on=noms[r.objectif]||"Expédition";
   const quand=row.date_prevue?new Date(row.date_prevue).toLocaleString("fr-FR"):"—";
-  if(r.raison==="aucun_participant") return `<p class="vide">${on} du ${quand} : <b>annulée</b>, aucun participant.</p>`;
+  /* v0.92 — CONTRE QUI. Le compte rendu donnait l'objectif, l'heure, le score et
+     le butin, mais pas l'adversaire : deux raids de la même semaine étaient
+     indiscernables. `cible` est déjà chargée par la requête de l'historique, il
+     n'y avait rien à demander au serveur.
+     ⚠ On passe par `_gouvFacNom()` (table FACTIONS) et JAMAIS par l'identifiant
+     brut : `cultivateurs` s'affiche « Le Rhizome ». */
+  const contre = (r.objectif==="protocole") ? "le Protocole"
+               : (row.cible ? _gouvFacNom(row.cible) : null);
+  const vs = contre ? ` contre <b>${contre}</b>` : "";
+  if(r.raison==="aucun_participant") return `<p class="vide">${on}${vs} du ${quand} : <b>annulée</b>, aucun participant.</p>`;
   const verdict=r.succes?`<b style="color:var(--vert,#4caf50)">SUCCÈS</b>`:`<b style="color:var(--orange,#ff8a3d)">ÉCHEC</b>`;
-  let d=`<p class="itip-gris" style="font-size:12px">${on} · ${quand} · ${verdict} <span class="itip-gris">(${r.p_att} vs ${r.p_def}, ${r.nb_att} participant(s))</span></p>`;
+  let d=`<p class="itip-gris" style="font-size:12px">${on}${vs} · ${quand} · ${verdict} <span class="itip-gris">(${r.p_att} vs ${r.p_def}, ${r.nb_att} participant(s))</span></p>`;
   if(r.objectif==="protocole"){
     if(r.succes){ d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.credits_par} ₡</b> par participant.${r.fragment_nom?` 🧩 Fragment récupéré : <b>${r.fragment_nom}</b> !`:""}</p>`; }
   } else if(r.succes){
@@ -649,6 +674,8 @@ async function syncEffetsCombat(){
       /* v0.63 — tout arrivait en rouge « alerte », y compris « colis reçu » ou
          « ta vente est partie ». Le ton suit la catégorie déposée par le serveur. */
       evs.forEach(ev=>{ if(!ev || !ev.texte) return;
+        // v0.92 : le serveur dépose `{fac:id}`, les libellés vivent dans FACTIONS.
+        if(typeof rendreLibelles==="function") ev.texte = rendreLibelles(ev.texte);
         const cat = ev.cat || "combat";
         const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
         // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.

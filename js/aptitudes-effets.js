@@ -107,7 +107,13 @@ function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="functio
 function aptSoin(soin){ return Math.round(soin * (_apt("cu1") ? 1.3 : 1)); }                                      // Autarcie +30 %
 
 /* ---------- Maison ---------- */
-function aptMaisonParNiveau(){ return 5 + (_apt("to3") ? 1 : 0); }                                                // Réserves d'hiver +1/niveau
+/* ⚠ v0.92 — `aptMaisonParNiveau()` a été SUPPRIMÉE. Elle n'était appelée nulle
+   part ET elle était FAUSSE : elle annonçait « 5 par niveau, +1 avec to3 »
+   alors que la vraie capacité est `MAISON_PALIERS[].storage` (5/10/18/28/40)
+   plus 2 par palier avec to3 — c'est ce que calcule `capaciteMaison()`
+   (maison.js) et ce qu'applique `coffre_capacite()` côté serveur. Un barème
+   fantôme qui contredit le vrai est pire qu'un barème dupliqué : le prochain
+   qui s'y fie introduit une divergence en croyant lire la règle. */
 
 /* ---------- Boutique mobile ---------- */
 function aptBoutiquePartout(){ return _apt("no1"); }

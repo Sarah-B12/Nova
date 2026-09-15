@@ -329,7 +329,8 @@ async function _ppJournalStaff(profilId){
       .map(e=>{
         if(typeof e === "string") return `<div>${e.replace(/</g,"&lt;")}</div>`;
         const q = e && e.d ? new Date(e.d).toLocaleString("fr-FR") : "—";
-        const txt = (e && (e.t || e.txt || e.texte)) || JSON.stringify(e);
+        let txt = (e && (e.t || e.txt || e.texte)) || JSON.stringify(e);
+        if(typeof rendreLibelles==="function") txt = rendreLibelles(txt);   // v0.92 : marqueurs {fac:id}
         const c = cls[e && e.type] || "";
         const cat = (e && e.cat) ? ` <span class="jd">[${e.cat}]</span>` : "";
         return `<div><span class="jd">${q}</span>${cat} <span${c?` style="color:${c}"`:""}>${String(txt).replace(/</g,"&lt;")}</span></div>`;

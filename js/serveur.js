@@ -76,6 +76,12 @@ async function chargerDepuisServeur(){
   const { data, error } = await sb.from("profils").select("*").eq("id", s.user.id).maybeSingle();
   if(error){ console.warn("[serveur] chargement:", error.message); return null; }
   _rev = (data && data.donnees && Number(data.donnees._rev)) || 0;   // v0.65 : point de départ du compteur anti-écrasement
+  /* ⚠ v0.92 — CEINTURE. `_majSync` retient QUAND, selon l'horloge du SERVEUR,
+     l'état que je tiens en mémoire a été écrit. Il ne sert qu'à une chose :
+     refuser de forcer une sauvegarde par-dessus un état plus récent que le
+     mien. Toutes les valeurs comparées viennent du serveur — aucune horloge
+     de client n'entre dans la décision. */
+  _majSync = (data && data.donnees && Number(data.donnees._maj)) || 0;
   return data;   // ligne { id, nom, faction, ..., donnees } OU null si aucun profil
 }
 /* ⚠ v0.65 — ÉCRASEMENT ENTRE APPAREILS. La sauvegarde écrivait `donnees` en
@@ -91,13 +97,32 @@ let _conflitSignale = false;
    le filet envoie une dernière sauvegarde : le serveur passe en révision N+1.
    Mais la page rechargée avait déjà lu la révision N — elle arrivait donc
    « en retard » et déclenchait l'alerte, sans qu'aucun autre appareil ne soit
-   en cause. On identifie donc chaque NAVIGATEUR par un jeton durable, gardé en
-   localStorage : si le dernier à avoir écrit est ce même navigateur, ce n'est
-   pas un conflit — on adopte simplement la révision et on continue. */
+   en cause. D'où ce jeton : si le dernier à avoir écrit est moi, ce n'est pas
+   un conflit — on adopte la révision et on continue.
+
+   ⚠⚠ v0.92 — CE JETON ÉTAIT EN `localStorage`, ET C'ÉTAIT LE BUG DE LA
+   PROGRESSION QUI RECULE. localStorage est partagé par TOUS LES ONGLETS d'un
+   même navigateur, et survit aux rechargements. Un onglet resté ouvert depuis
+   le matin, avec son `etat` en mémoire périmé, reconnaissait donc le conflit
+   comme « le sien » : il adoptait la révision du serveur et REPOUSSAIT sa
+   version du matin par-dessus celle de l'après-midi. `sauver_profil` REMPLACE
+   `donnees` en bloc — tout ce qui avait été fait entre-temps disparaissait.
+   Sur mobile un onglet d'arrière-plan survit des heures, d'où un bug
+   intermittent, jamais reproductible sur un poste propre.
+   Symptômes vus par les joueurs : une quête revenue à l'étape précédente, et
+   un verrou de défi « jamais déclenché » — c'était celui d'avant, restauré
+   avec le reste de l'objet `quetes`.
+
+   ⚠ LA BONNE GRANULARITÉ EST L'ONGLET, PAS LE NAVIGATEUR. `sessionStorage` est
+   propre à chaque onglet et survit à un rechargement — exactement le cas que
+   ce jeton devait couvrir. Deux onglets = deux jetons = un vrai conflit, donc
+   refusé au lieu d'être écrasé.
+   ⚠ NE PAS remettre ce jeton en localStorage. */
 const _SID = (function(){
   try{
-    let v = localStorage.getItem("nova_sid");
-    if(!v){ v = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem("nova_sid", v); }
+    let v = sessionStorage.getItem("nova_sid");
+    if(!v){ v = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("nova_sid", v); }
+    try{ localStorage.removeItem("nova_sid"); }catch(e){}   // purge de l'ancien jeton partagé
     return v;
   }catch(e){ return "sid-" + Math.random().toString(36).slice(2); }
 })();
@@ -189,8 +214,36 @@ const CLES_SERVEUR = [
                                         n'écrit plus ne doit plus être persistée non plus. */
   "avatar",                          // colonne profils.avatar, écrite par changer_apparence()
   "apparenceLe",                     // vestige : le verrou est calculé par apparence_etat()
-  "jauges"                           // colonnes o2/sante/moral : lues par jauges_lire(), écrites par agir()
+  "jauges",                          // colonnes o2/sante/moral : lues par jauges_lire(), écrites par agir()
+  /* ⚠ v0.92 — trois colonnes SERVEUR qui avaient gardé une copie persistante,
+     en violation de la règle d'or. `reputation` et `cercles` sont protégées par
+     le trigger `profils_protection` (le client ne peut PAS les écrire) et
+     `role_admin` aussi : les persister ne servait qu'à afficher une valeur
+     périmée au rechargement — console dev visible pour un admin démis, gain de
+     Cercle obtenu ailleurs invisible. Même mécanisme que le bug `faction`.
+     Elles sont relues à chaque entrée par `appliquerColonnesProfil()`. */
+  "reputation", "cercles", "roleAdmin"
 ];
+
+/* ⚠ v0.92 — LES COLONNES DE `profils` SE RELISENT EN UN SEUL ENDROIT.
+   Cette séquence était copiée à l'identique dans `bootstrap.js` (démarrage) et
+   `navigation.js` (connexion). Deux copies de la même règle, et elles avaient
+   DÉJÀ divergé : seule celle de bootstrap posait `etat.avatar`.
+   ⚠ RÈGLE : toute clé ajoutée à CLES_SERVEUR doit être relue ici. Cesser
+   d'écrire une colonne sans se mettre à la relire, c'est le bug `faction`
+   (BACKEND_PLAN §4quaterdecies). */
+function appliquerColonnesProfil(prof){
+  if(!prof || typeof etat === "undefined") return;
+  if(typeof prof.credits === "number"){
+    etat.credits = prof.credits;
+    if(typeof initCredits === "function") initCredits(prof.credits);
+  }
+  etat.reputation = (typeof prof.reputation === "number") ? prof.reputation : 0;
+  etat.roleAdmin  = prof.role_admin || null;
+  etat.cercles    = prof.cercles || {};
+  etat.avatar     = prof.avatar || null;
+  if(prof.faction) etat.faction = prof.faction;   // écrite par changer_faction() seule
+}
 
 // Copie de l'état SANS les données serveur : elles vivent dans `inventaire`.
 function _etatSansStocks(){
@@ -221,6 +274,7 @@ async function _premiereFaction(fid){
    Les sauvegardes passent donc par une FILE : une à la fois, chacune lisant la
    révision laissée par la précédente. Une seule est mise en attente (l'état est
    global : la dernière contient déjà tout). */
+let _majSync = 0;                 // v0.92 : horodatage serveur de ma dernière synchro (voir chargerDepuisServeur)
 let _sauveFile = Promise.resolve();
 let _sauveEnAttente = null;
 function sauverSurServeur(){
@@ -269,16 +323,40 @@ async function _sauverMaintenantInterne(){
   };
   let { data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev, p_sid: _SID });
   if(error){ console.warn("[serveur] sauvegarde ÉCHEC:", error.message); return; }
-  /* Même navigateur que le dernier écrivain (même _SID) : ce n'est pas une
-     autre partie, seulement une de NOS sauvegardes arrivée entre-temps. On
-     adopte sa révision et on rejoue, sans alerter le joueur. */
+  /* Même onglet que le dernier écrivain (même _SID) : ce n'est pas une autre
+     partie, seulement une de NOS sauvegardes arrivée entre-temps. On adopte sa
+     révision et on rejoue, sans alerter le joueur.
+
+     ⚠⚠ v0.92 — CETTE REPRISE EST CE QUI A FAIT PERDRE DEUX JOURNÉES DE JEU À UN
+     JOUEUR. `sauver_profil` REMPLACE `donnees` en bloc : rejouer, c'est écraser.
+     Tant que `_SID` vivait en localStorage (partagé par tous les onglets), un
+     onglet resté ouvert depuis la veille reconnaissait le conflit comme le sien
+     et réécrivait son état périmé par-dessus. `_SID` est passé en
+     sessionStorage, ce qui ferme ce chemin — la ceinture ci-dessous ferme les
+     autres, connus ou non.
+
+     LA RÈGLE : on ne rejoue que si l'état en base est celui que je tiens, ou
+     un plus ancien. `res.maj` est l'horodatage SERVEUR de la dernière écriture ;
+     `_majSync` celui de ma dernière synchronisation. S'il est plus récent que
+     moi, quelqu'un a écrit depuis, et mon état est périmé : je ne force pas.
+     ⚠ Deux valeurs venues du SERVEUR : aucune horloge de client, donc aucun
+     décalage possible entre appareils.
+     ⚠ `maj` absent (profil écrit avant la v0.92) vaut 0 des deux côtés :
+     l'égalité tient et l'ancien comportement est conservé. */
   if(res && res.err === "conflit" && res.sid && res.sid === _SID){
-    _rev = Number(res.rev) || _rev;
-    ({ data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev, p_sid: _SID }));
-    if(error){ console.warn("[serveur] sauvegarde ÉCHEC (2e essai):", error.message); return; }
+    const majSrv = Number(res.maj) || 0;
+    if(majSrv > _majSync){
+      console.warn("[serveur] reprise REFUSÉE : la base est plus récente que mon état",
+                   "(serveur", majSrv, "> ma synchro", _majSync, ") — je n'écrase pas.");
+    } else {
+      _rev = Number(res.rev) || _rev;
+      ({ data:res, error } = await sb.rpc("sauver_profil", { p_maj: maj, p_rev: _rev, p_sid: _SID }));
+      if(error){ console.warn("[serveur] sauvegarde ÉCHEC (2e essai):", error.message); return; }
+    }
   }
   if(res && res.ok){
     _rev = Number(res.rev) || (_rev + 1); _conflitSignale = false;
+    _majSync = Number(res.maj) || _majSync;   // v0.92 : je suis à jour avec ce que je viens d'écrire
     _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
     return;
   }

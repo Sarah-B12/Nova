@@ -655,7 +655,8 @@ function _devAfficherFiche(p){
     const lignes = (data.journal||[]).slice().sort((a,b)=>(b&&b.d||0)-(a&&a.d||0)).map(e=>{
       if(typeof e === "string") return `<div>${e.replace(/</g,"&lt;")}</div>`;
       const q = e && e.d ? new Date(e.d).toLocaleString("fr-FR") : "—";
-      const t = (e && (e.t || e.txt)) || JSON.stringify(e);
+      let t = (e && (e.t || e.txt)) || JSON.stringify(e);
+      if(typeof rendreLibelles==="function") t = rendreLibelles(t);   // v0.92 : marqueurs {fac:id}
       const c = cls[e && e.type] || "";
       return `<div><span class="dev-note">${q}${e.cat?" ["+e.cat+"]":""}</span> <span${c?` style="color:${c}"`:""}>${String(t).replace(/</g,"&lt;")}</span></div>`;
     }).join("");

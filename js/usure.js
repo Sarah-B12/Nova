@@ -17,7 +17,7 @@ const DUREE_VIE_ITEM = {
   fab_biogel:8, fab_ration_chaude:5, fab_recharge_d_oxygene:20, fab_kit_de_soin:14, fab_boite_de_soin:10,
   fab_biocarburant:10, fab_biocarburant_raffine:12, fab_stimulant:8, fab_antidote:8,
   fab_tank_a_oxygene:22, fab_combinaison_pressurisee:22, fab_biofil_renforce:20,
-  navette_reserve:10                                                 // v0.91 : cadeau de Q5, trois cents ans au compteur
+  navette_reserve:10                 // ⚠ SOURCE UNIQUE de la durée du cadeau de Q5 (lue par vaisseau.js)
   // lingots, composants, armes, armures, implants, pièces et vaisseaux : 30 j (défaut)
 };
 function dureeVie(id){
