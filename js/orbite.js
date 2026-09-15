@@ -301,6 +301,103 @@ function ouvrirDistancesEspace(){
   z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
 }
 
+/* ===========================================================
+   VOL LIBRE — cliquer n'importe où, comme sur Silène (v0.91)
+   ⚠ Sans ça, on ne pouvait rejoindre QUE les objets dessinés : la carte
+   cessait d'être un espace pour devenir une liste de boutons.
+   =========================================================== */
+function _coordEspace(svg, e){
+  if(!svg.createSVGPoint) return null;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const m = svg.getScreenCTM(); if(!m) return null;
+  const p = pt.matrixTransform(m.inverse());
+  return { x:Math.round(p.x), y:Math.round(p.y) };
+}
+async function volVersPoint(pt){
+  if(!pt) return;
+  pt.x = Math.max(0, Math.min(ESPACE_MONDE.w, pt.x));
+  pt.y = Math.max(0, Math.min(ESPACE_MONDE.h, pt.y));
+  await volVers({ x:pt.x, y:pt.y, nom:null, libelle:"ce point du secteur", id:null });
+}
+
+/* ===========================================================
+   LE GRAVIER — gisement de Cristal de Nyx (v0.91)
+
+   ⚠ UN SEUL MINERAI, et un QUOTA QUOTIDIEN. Le lore veut un gisement qui « se
+   recharge une fois par jour » ; l'économie l'exige aussi. Le Cristal de Nyx
+   est la matière la plus rare du jeu (butin de patrouille 5 %, aptitude Toundra
+   *Veine de cristal* 5 %) et il verrouille la Lame et le Canon à singularité.
+   20 % par tentative, c'est QUATRE FOIS le taux de l'aptitude : sans plafond,
+   on dévalue le seul bonus identitaire de la Toundra et on inonde le marché.
+
+   ⚠ Chaque tentative RAYE LA COQUE (1 à 3 PV). Un champ d'astéroïdes n'est pas
+   un jardin. C'est la source de dégâts régulière et prévisible, celle qu'on
+   planifie — l'autre étant la défaite contre une sonde.
+   =========================================================== */
+const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu
+const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal
+const GRAVIER_ENERGIE  = 4;      // par tentative (le minage au sol coûte 8)
+const GRAVIER_PV       = [1, 3]; // dégâts de coque par tentative
+
+function _gravierJour(){ return (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString(); }
+function gravierRestants(){
+  const g = etat.gravier;
+  if(!g || g.jour !== _gravierJour()) return GRAVIER_ESSAIS;
+  return Math.max(0, GRAVIER_ESSAIS - (g.essais||0));
+}
+async function minerGravier(){
+  const l = espaceLieu("asteroides");
+  if(!surLieuEspace(l)){ journal(`Il faut être au ${espaceNom(l)} pour ça.`,"alerte"); return; }
+  if(!etat.vaisseau){ journal("Il te faut un vaisseau pour travailler ici.","alerte"); return; }
+  if(vaisseauCloue()){ journal("Coque hors service : impossible de manœuvrer dans les cailloux.","alerte"); return; }
+  if(gravierRestants() <= 0){ journal("Le gisement est épuisé pour aujourd'hui. Il se recharge demain.","alerte"); return; }
+  if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
+
+  const touche = Math.random() < GRAVIER_CHANCE;
+  const gains  = touche ? { cristal:1 } : {};
+  const r = await agirServeur({ cout:GRAVIER_ENERGIE, ajouter:gains, motif:"gravier" });
+  if(!r) return;
+
+  const g = (etat.gravier && etat.gravier.jour === _gravierJour()) ? etat.gravier : { jour:_gravierJour(), essais:0 };
+  g.essais = (g.essais||0) + 1;
+  etat.gravier = g;
+
+  abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
+  if(touche && (r.ajoutes||{}).cristal) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain","minage");
+  else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte","minage");
+  if(typeof gagnerXp==="function") gagnerXp(3);
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof apresAction==="function") apresAction();
+}
+
+/* ===========================================================
+   LE RÉPARATEUR DE LA CARCASSE — v0.91
+   ⚠ Il répare les PV, JAMAIS la durée de vie : sinon le Constructeur perdrait
+   le marché que la Navette de réserve lui protège déjà mal.
+   ⚠ Il doit rester MOINS CHER que le kit du comptoir, sinon personne ne ferait
+   le détour — et le kit doit rester achetable, sinon une coque clouée au
+   Perchoir ne pourrait plus bouger. C'est cet écart qui fait vivre les deux.
+   =========================================================== */
+const REPARATEUR_PRIX_PV = 1.5;          // crédits par PV manquant
+function coutReparateur(){
+  if(!etat.vaisseau) return 0;
+  return Math.ceil((pvMax() - pvVaisseau()) * REPARATEUR_PRIX_PV);
+}
+async function reparerChezReparateur(){
+  if(!etat.vaisseau){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const l = espaceLieu("epave");
+  if(!surLieuEspace(l)){ journal(`Il faut être à ${espaceNom(l)} pour ça.`,"alerte"); return; }
+  const c = coutReparateur();
+  if(c <= 0){ journal("La coque est déjà intacte.","alerte"); return; }
+  if((etat.credits||0) < c){ journal(`Il te faut ${c} ₡ pour cette réparation.`,"alerte"); return; }
+  etat.credits -= c;
+  const gagne = reparerPv(pvMax());
+  journal(`Coque remise à neuf : +${gagne} PV (${pvVaisseau()}/${pvMax()}). −${c} ₡.`,"gain");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof majOrbite==="function") majOrbite();
+  if(typeof afficher==="function") afficher();
+}
+
 /* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
    rayon, pas sur le pixel. `espaceRayon` existait déjà. */
 function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <= espaceRayon(l); }
