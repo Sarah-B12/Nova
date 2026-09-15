@@ -65,8 +65,24 @@ const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","
    Les clés périmées sont nettoyées à la lecture pour ne pas gonfler `donnees`. */
 function _verrous(){ const q=queteEtat(); if(!q.verrous || typeof q.verrous!=="object") q.verrous={}; return q.verrous; }
 function _cleVerrou(a){ return a ? `${a.id}:${a.etape}` : null; }
+/* ⚠ v0.92 — DÉLAI FIXE DE 8 HEURES, et plus « jusqu'au prochain minuit ».
+   La v0.91 était passée au minuit parisien pour éviter qu'un échec à 23 h
+   bloque tout le lendemain. Le cas SYMÉTRIQUE n'avait pas été vu : un échec à
+   00:16 coûtait alors 23 h 44. C'est arrivé à une testeuse, sur un défi de
+   séquence qu'elle avait sans doute raté à cause du gel du Simon (piège n°20) —
+   punie près d'un jour pour un bug.
+   Une même faute doit coûter la même chose quelle que soit l'heure. 8 h reste
+   fidèle à l'intention (une tentative, puis on attend), sans jamais devenir
+   absurde ni disparaître.
+   ⚠ Exprimé en FRACTION de `_jourMs()` et non en 8×3600000 : `JOUR_MS` est le
+   seul interrupteur pour tester vite, un délai en dur le contournerait — c'est
+   exactement le piège n°16 (deux échelles de temps pour une même échéance). */
+const VERROU_DEFI_H = 8;
+function _verrouDefiMs(){ return Math.round(_jourMs() * VERROU_DEFI_H / 24); }
+
 function _purgerVerrous(){
-  const v=_verrous(); const perime = t => (typeof memeJour==="function") ? !memeJour(t) : (Date.now()-t >= _jourMs());
+  const v=_verrous(); const d=_verrouDefiMs();
+  const perime = t => (Date.now() - t) >= d;
   for(const k in v){ if(!v[k] || perime(v[k])) delete v[k]; }
 }
 function queteVerrou(){ const a=queteActive(); const e=etapeActive();
@@ -75,10 +91,8 @@ function queteVerrou(){ const a=queteActive(); const e=etapeActive();
   // `a._echecLe` reste lu en secours : parties commencées avant la v0.91.
   const t = _verrous()[_cleVerrou(a)] || a._echecLe || 0;
   if(!t) return 0;
-  if(typeof memeJour === "function" && typeof msAvantResetJeu === "function"){
-    return memeJour(t) ? msAvantResetJeu() : 0;
-  }
-  const r=_jourMs()-(Date.now()-t); return r>0?r:0; }
+  const r = _verrouDefiMs() - (Date.now() - t);
+  return r > 0 ? r : 0; }
 
 let _queteTimer = null; let _queteTO = [];   // animation/compte à rebours + timeouts
 function _clearQ(){ if(_queteTimer){ clearInterval(_queteTimer); _queteTimer=null; } _queteTO.forEach(clearTimeout); _queteTO=[]; }
@@ -354,7 +368,7 @@ function _wireChoix(z,d){
    Contrôle de niveau : on compare la MEILLEURE compétence effective à d.puissance.
      ≥ puissance            → victoire nette
      ≥ puissance × 0,7      → victoire arrachée, coût en santé proportionnel à l'écart
-     en dessous             → échec, l'étape se verrouille jusqu'au lendemain
+     en dessous             → échec, l'étape se verrouille 8 h (VERROU_DEFI_H)
    La compétence qui l'emporte choisit le récit ET le Cercle qui gagne des points. */
 const COMBAT_CERCLES = { force:"racines", agilite:"langues", intelligence:"assembleurs" };
 function _combatStats(){
@@ -386,7 +400,7 @@ function _wireCombat(z,d){
       const perte=Math.round(8+Math.random()*10);
       await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
       if(typeof afficher==="function") afficher();
-      echouerDefi(`${d.nom||"L'adversaire"} te domine (−${perte} santé). Entraîne-toi et reviens demain.`);
+      echouerDefi(`${d.nom||"L'adversaire"} te domine (−${perte} santé). Entraîne-toi — le mécanisme se rouvre dans ${VERROU_DEFI_H} h.`);
       return;
     }
     let perte=0;
@@ -474,7 +488,7 @@ function _wirePiratage(z,d){
       setup(); return;
     }
     clearInterval(_queteTimer); _queteTimer=null;
-    echouerDefi(`Raté de ${Math.round(ecart)} % (${sens}) — l'alarme se déclenche. Reviens tenter demain.`);
+    echouerDefi(`Raté de ${Math.round(ecart)} % (${sens}) — l'alarme se déclenche. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
   });
 }
 
@@ -499,7 +513,7 @@ function _wireGlyphes(z,d){
     if(sels.some(s=>!s.value)){ journal("Associe chaque glyphe avant de valider.","alerte"); return; }
     const ok=sels.every(s=> _qnorm(s.value)===_qnorm(paires[parseInt(s.dataset.i,10)].sens));
     if(ok){ journal("Glyphes déchiffrés !","gain"); reussirDefi(); }
-    else echouerDefi("Traduction erronée — les glyphes se brouillent. Reviens demain.");
+    else echouerDefi(`Traduction erronée — les glyphes se brouillent. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
   });
 }
 
@@ -520,7 +534,7 @@ function _wireOrdre(z,d){
     const chip=document.createElement("span"); chip.className="q-ordre-chip"; chip.textContent=picks.length+". "+b.textContent; rep.appendChild(chip);
     if(picks.length===n) val.disabled=false; }));
   z.querySelector("#q-ordre-reset").addEventListener("click",()=>{ picks=[]; rep.innerHTML=""; val.disabled=true; z.querySelectorAll(".q-ordre-el").forEach(b=>b.disabled=false); });
-  val.addEventListener("click",()=>{ if(picks.every((v,i)=>v===i)){ journal("Séquence correcte !","gain"); reussirDefi(); } else echouerDefi("Mauvaise séquence — le nœud se verrouille. Reviens demain."); });
+  val.addEventListener("click",()=>{ if(picks.every((v,i)=>v===i)){ journal("Séquence correcte !","gain"); reussirDefi(); } else echouerDefi(`Mauvaise séquence — le nœud se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); });
 }
 
 /* cadenas (ratable : Mastermind — code de symboles, N essais dans la journée) */
@@ -529,7 +543,7 @@ function _htmlCadenas(d){
   const opts=syms.map(s=>`<option value="${s}">${s}</option>`).join("");
   const slots=Array.from({length:L},(_,i)=>`<select class="q-cad-slot" data-i="${i}"><option value="">?</option>${opts}</select>`).join("");
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Trouve le code de ${L} symboles. ${maxE} essais — après, le sas se bloque pour la journée.</p>
+    <p class="quete-indice">Trouve le code de ${L} symboles. ${maxE} essais — après, le sas se bloque ${VERROU_DEFI_H} h.</p>
     <div class="q-cad-slots">${slots}</div>
     <div class="quete-rep"><button class="mini" id="q-cad-go">Tester</button><span class="itip-gris" id="q-cad-cpt"></span></div>
     <div class="q-cad-hist" id="q-cad-hist"></div></div>`;
@@ -560,7 +574,7 @@ function _wireCadenas(z,d){
     const h={ g, bien, pres }; a._cadHist.push(h); ligneHist(h);
     if(bien===L){ journal("Code trouvé !","gain"); reussirDefi(); return; }
     a._cadEssais=(a._cadEssais||0)+1; sauvegarder();
-    if(a._cadEssais>=maxE){ echouerDefi("Trop d'essais — le sas se bloque. Reviens demain."); return; } maj();
+    if(a._cadEssais>=maxE){ echouerDefi(`Trop d'essais — le sas se bloque. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; } maj();
   });
 }
 
@@ -569,7 +583,7 @@ function _htmlSequence(d){
   const syms=d.symboles||["◤","◥","◣","◢"], L=d.longueur||5;
   const pads=syms.map((s,i)=>`<button class="q-seq-pad" data-i="${i}">${s}</button>`).join("");
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Mémorise puis répète la séquence (jusqu'à ${L}). Une erreur = fichu pour aujourd'hui.</p>
+    <p class="quete-indice">Mémorise puis répète la séquence (jusqu'à ${L}). Une erreur et la console se verrouille ${VERROU_DEFI_H} h.</p>
     <div class="q-seq-etat" id="q-seq-etat">Prêt ?</div>
     <div class="q-seq-pads">${pads}</div>
     <div class="quete-rep"><button class="mini" id="q-seq-go">Commencer</button></div></div>`;
@@ -590,7 +604,7 @@ function _wireSequence(z,d){
        appellent `rafraichirQuetes()`, donc `majQueteHub()`. Le drapeau encore
        levé, le panneau refuserait de se redessiner et le joueur resterait
        devant l'écran du défi qu'il vient de terminer. */
-    if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi("Séquence ratée — la console se verrouille. Reviens demain."); return; }
+    if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi(`Séquence ratée — la console se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
     pos++;
     if(pos>=seq.length){ if(seq.length>=L){ jouable=false; _seqFin(); journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien !"; tour(); } }
   }));
@@ -620,7 +634,7 @@ function _wireMemoire(z,d){
     return;
   }
   const b=z.querySelector("#q-mem-btn"), c=z.querySelector("#q-mem-champ");
-  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne mémoire !","gain"); reussirDefi(); } else echouerDefi("Raté — mauvaise mémorisation. Reviens demain."); };
+  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne mémoire !","gain"); reussirDefi(); } else echouerDefi(`Raté — mauvaise mémorisation. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); };
   if(b&&c){ b.addEventListener("click",go); c.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); }
 }
 
@@ -641,10 +655,33 @@ function queteArrivee(){
    douzaine de pixels sur un téléphone : un doigt le rate facilement, et le
    joueur croyait que « les zones ne marchent pas ». Un clic dans le cercle ou
    à moins de 50 u de son bord mène au CENTRE du repère. */
+/* ⚠ v0.92 — UNE ÉTOILE NE VOLE PLUS LES CLICS D'UNE VILLE.
+   Le rayon de capture d'un repère vaut `p.r + 50`, soit 120 px par défaut, et
+   une ville fait 100 px. Une étoile posée à moins de ~220 px du centre d'une
+   ville avalait donc les clics faits EN PLEIN MILIEU de cette ville : voyager()
+   déplaçait le joueur au centre de l'étoile, hors des murs. Résultat côté
+   joueur : énergie débitée, « zone sauvage », et aucune explication.
+   Deux testeurs l'ont signalé le même jour, sur Ignis et sur la Toundra.
+
+   RÈGLE : un clic tombé DANS une ville va à cette ville, point. Le repère ne
+   reprend la main que si le joueur clique hors de toute ville.
+   ⚠ Sauf si le repère est lui-même dans CETTE ville : la capture est alors
+   sans effet de bord, et l'interdire pourrait rendre une étape injouable si
+   une cible de quête se trouve à l'intérieur d'une cité. */
+function _villeSous(x, y){
+  if(typeof VILLES === "undefined") return null;
+  for(const fid in VILLES){ const v=VILLES[fid]; if(Math.hypot(x-v.x, y-v.y) <= v.r) return v; }
+  return null;
+}
 function repereQueteSous(x, y){
   const a=queteActive(); const e=etapeActive(); if(!a || a._resolu || !e || !e.cible) return null;
+  const ville = _villeSous(x, y);
   let best=null, bd=Infinity;
-  for(const p of [e.cible, ...(e.leurres||[])]){ const d=Math.hypot(x-p.x, y-p.y); if(d <= (p.r||70)+50 && d < bd){ bd=d; best=p; } }
+  for(const p of [e.cible, ...(e.leurres||[])]){
+    if(ville && Math.hypot(p.x-ville.x, p.y-ville.y) > ville.r) continue;   // l'étoile est dehors : elle ne prend pas ce clic
+    const d=Math.hypot(x-p.x, y-p.y);
+    if(d <= (p.r||70)+50 && d < bd){ bd=d; best=p; }
+  }
   return best;
 }
 
@@ -715,7 +752,7 @@ function majQueteHub(){
     let html=entete+`<div class="quete-etape" style="border-left-color:var(--bleu)">`;
     if(e.image) html+=`<img class="quete-img" src="${e.image}" alt="" onerror="this.remove()">`;
     html+=_par(e.arrivee)+`</div>`;
-    if(verrou>0) html+=`<div class="quete-etape"><p class="quete-indice">🔒 Échec — le mécanisme s'est verrouillé.</p><p class="vide">Reviens tenter à nouveau dans <b id="q-verrou">${_fmtDuree(verrou)}</b> (le lendemain).</p></div>`;
+    if(verrou>0) html+=`<div class="quete-etape"><p class="quete-indice">🔒 Échec — le mécanisme s'est verrouillé.</p><p class="vide">Reviens tenter à nouveau dans <b id="q-verrou">${_fmtDuree(verrou)}</b> (délai de ${VERROU_DEFI_H} h).</p></div>`;
     else html+=_defiHTML(e.defi);
     html+=`<button class="mini danger" id="quete-abandon" style="margin-top:6px">Abandonner</button>`;
     z.innerHTML=html;

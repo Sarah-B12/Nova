@@ -44,6 +44,46 @@ function capaciteMaison(){
 }
 function deposeTotal(c){ return c ? Object.values(c.depose).reduce((a,b)=>a+b,0) : 0; }
 
+/* ⚠ v0.92 — LE TRAVAIL OUVERT SE CALCULE ICI, ET NULLE PART AILLEURS.
+   Il était écrit DEUX FOIS — dans `travaillerMaison()` et dans le rendu — à dix
+   lignes d'écart. Corriger l'un sans l'autre donnait un bouton grisé sur une
+   action pourtant permise, ou l'inverse.
+
+   ⚠ Et la formule elle-même bloquait les trois derniers paliers. Elle bornait
+   le travail par le NOMBRE D'UNITÉS déposées, or dès le palier 3 une recette
+   contient moins d'unités qu'il n'y a d'actions à faire :
+       Maison 40 actions / 28 unités · Villa 70 / 25 · Palace 110 / 28
+   Tout déposer n'ouvrait que 28 actions sur 40 : chantier complet, plus aucun
+   moyen d'avancer. Les deux premiers paliers (8/14 et 20/23) le masquaient.
+   La bonne mesure est une PROPORTION : le travail ouvert suit la part de la
+   recette livrée. Tout déposé = tout le travail, quel que soit le rapport. */
+function travailOuvert(c){
+  if(!c) return 0;
+  const r = recetteMaison(c.cible) || {};
+  const besoin = Object.values(r).reduce((a,b)=>a+b,0);
+  if(besoin <= 0) return 0;
+  return Math.floor(travailTotal(c.cible) * deposeTotal(c) / besoin);
+}
+
+/* ⚠ v0.92 — LA FIN DU CHANTIER N'ÉTAIT TESTÉE QU'EN TRAVAILLANT, juste après
+   `c.travail++`. Un joueur qui finissait son travail AVANT d'avoir tout déposé
+   n'avait plus aucun moyen de conclure : `travaillerMaison()` refuse à l'entrée
+   quand `travail >= total`, donc la vérification n'était jamais atteinte.
+   Déposer la dernière matière ne concluait rien. Un testeur s'est retrouvé à
+   « 10/8 », tout livré, avec une maison qui ne se construirait jamais — le 10
+   étant un reliquat de l'ancien bug « 9/8 » d'avant le plafond v0.91.
+   ⚠ `>=` et non `==` : les états hérités dépassent le total.
+   Appelée après CHAQUE dépôt et à l'entrée du travail. */
+function finirChantierSiPret(){
+  const c = etat.maison.chantier; if(!c) return false;
+  const r = recetteMaison(c.cible) || {};
+  const toutDepose = Object.keys(r).every(k => (c.depose[k]||0) >= r[k]);
+  if(!toutDepose || c.travail < travailTotal(c.cible)) return false;
+  etat.maison.palier = c.cible; etat.maison.chantier = null;
+  journal(`${nomPalier(etat.maison.palier)} construite ! Rangement : ${capaciteMaison()} places.`,"gain");
+  return true;
+}
+
 /* ---------- Placement & construction ---------- */
 function placerMaison(i){
   if(etat.maison.plot!=null){ journal("Tu as déjà un logement (un seul autorisé).","alerte"); return; }
@@ -83,6 +123,7 @@ async function deposerMat(matId, tout){
   if(!await agirServeur({ retirer:{ [matId]:n }, motif:"chantier", toutOuRien:true })) return;
   c.depose[matId]=dej+n;
   journal(`Chantier : ${n}× ${item(matId).nom} déposé${n>1?"s":""} (${c.depose[matId]}/${besoin}).`);
+  finirChantierSiPret();   // v0.92 : la dernière matière peut suffire à conclure
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function travaillerMaison(){
@@ -108,19 +149,14 @@ async function travaillerMaison(){
      travail, quel que soit le rapport entre unités et actions. Les deux
      intentions tiennent ensemble — on ne travaille pas plus que ce qu'on a
      livré, et on peut toujours finir. */
+  // v0.92 : un chantier déjà complet se conclut ici, sans exiger un clic de plus.
+  if(finirChantierSiPret()){ apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant(); return; }
   if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
-  const r0 = recetteMaison(c.cible) || {};
-  const besoinTotal = Object.values(r0).reduce((a,b)=>a+b,0);
-  const dispo = (besoinTotal>0 ? Math.floor(total * deposeTotal(c) / besoinTotal) : 0) - c.travail;
+  const dispo = travailOuvert(c) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
   if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
   c.travail++;
-  const r=recetteMaison(c.cible);
-  const toutDepose = Object.keys(r).every(k=>(c.depose[k]||0)>=r[k]);
-  if(toutDepose && c.travail>=total){
-    etat.maison.palier=c.cible; etat.maison.chantier=null;
-    journal(`${nomPalier(etat.maison.palier)} construite ! Rangement : ${capaciteMaison()} places.`,"gain");
-  } else journal(`Travaux : ${c.travail}/${total}.`);
+  if(!finirChantierSiPret()) journal(`Travaux : ${Math.min(c.travail,total)}/${total}.`);
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function demolirMaison(){
@@ -164,7 +200,7 @@ function majMaison(){
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;
-    html += `<p class="vide">Dépose les matières, puis fournis le travail — <b>${total} actions</b> à ${TRAVAIL_ENERGIE} % d'énergie (soit ${total*TRAVAIL_ENERGIE} % en tout). Chaque matière déposée débloque une action. ${(typeof coffreAccessible==="function" && coffreAccessible())?"Ton coffre compte (🏠).":"Hors de ta ville : seul le sac compte."}</p><div class="recette-liste">`;
+    html += `<p class="vide">Dépose les matières, puis fournis le travail — <b>${total} actions</b> à ${TRAVAIL_ENERGIE} % d'énergie (soit ${total*TRAVAIL_ENERGIE} % en tout). Le travail s'ouvre au fur et à mesure : livrer la moitié de la recette débloque la moitié des actions. ${(typeof coffreAccessible==="function" && coffreAccessible())?"Ton coffre compte (🏠).":"Hors de ta ville : seul le sac compte."}</p><div class="recette-liste">`;
     for(const mid in r){ const dej=c.depose[mid]||0, bes=r[mid], plein=dej>=bes;
       const auSac=etat.sac[mid]||0;
       const auCof=(typeof coffreAccessible==="function" && coffreAccessible()) ? (etat.coffre[mid]||0) : 0;
@@ -172,8 +208,9 @@ function majMaison(){
       html += `<div class="recette-ligne ok"><span class="recette-seuil">${dej}/${bes}</span><span class="recette-corps"><b class="recette-nom">${item(mid).nom}</b><span class="recette-ing">disponible : ${auSac}${auCof?` +${auCof} 🏠`:""}</span></span><button class="mini" data-dep="${mid}" ${(plein||has<=0)?"disabled":""}>Déposer ${Math.min(bes-dej, has)>1?`×${Math.min(bes-dej, has)}`:""}</button></div>`;
     }
     html += `</div>`;
-    const dispoTravail = Math.min(total, deposeTotal(c)) - c.travail;   // v0.91 : plafonné
-    html += `<div class="form-progress" style="margin-top:10px"><div class="form-progress-tete"><span>Travaux</span><span>${c.travail}/${total}</span></div><div class="form-barre"><div class="form-remplissage" style="width:${Math.round(c.travail/(total||1)*100)}%"></div></div></div>`;
+    const dispoTravail = travailOuvert(c) - c.travail;   // v0.92 : source unique, voir travailOuvert()
+    const faits = Math.min(c.travail, total);            // ⚠ jamais « 10/8 » : les états hérités dépassent
+    html += `<div class="form-progress" style="margin-top:10px"><div class="form-progress-tete"><span>Travaux</span><span>${faits}/${total}</span></div><div class="form-barre"><div class="form-remplissage" style="width:${Math.round(faits/(total||1)*100)}%"></div></div></div>`;
     html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${(dispoTravail<=0||etat.energie<TRAVAIL_ENERGIE)?"disabled":""}><span>Travailler</span><span class="cout">−${TRAVAIL_ENERGIE} % én. · ${Math.max(0,dispoTravail)} à faire</span></button></div>`;
     html += `<div class="actions" style="margin-top:8px"><button class="mini danger" id="maison-demolir">Annuler / Démolir</button></div>`;
   } else {

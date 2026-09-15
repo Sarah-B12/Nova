@@ -58,3 +58,49 @@
   .dist-grille td { font-family:"Space Mono",monospace; color:var(--orange-hi); }
   .dist-grille td.vide-c { background:rgba(255,255,255,.02); }
   @media (max-width:600px){ .dist-grille th, .dist-grille td { padding:5px 6px; font-size:12px; } }
+
+/* ===========================================================
+   ⚠ v0.92 — TRONCATURE SUR MOBILE (carte ET page des distances).
+
+   `.barre-carte` est un `flex` sans `wrap`. Ses enfants — le titre, les jauges
+   (`.carte-jauges`, en `white-space:nowrap`) et le bouton Distances — ne
+   peuvent pas rétrécir sous leur contenu : la barre devient plus large que le
+   cadre, et comme `.modale-carte.ouverte` est une grille en `place-items:center`
+   sans défilement, le débordement est simplement COUPÉ à droite. Sur un
+   téléphone, le bouton Distances et la moitié de la carte disparaissaient, sans
+   aucun moyen de faire défiler.
+   Le titre, lui, était le seul enfant capable de se comprimer : il se pliait à
+   un mot par ligne (« Carte / de / Silène » sur la capture) pendant que les
+   autres continuaient de déborder. C'est la signature de ce défaut.
+
+   Les trois modales (#modale-carte, #modale-distances, #modale-orbite)
+   partagent ces classes : une seule correction les couvre toutes.
+   ⚠ Rien au-dessus de 640 px n'est touché — le comportement de bureau est
+   inchangé, y compris la hauteur fixe d'#orbite-info réglée en v0.91.
+   =========================================================== */
+@media (max-width:640px){
+  .modale-carte { padding:8px; overflow-y:auto; }
+  /* `start` et non `center` : un cadre plus haut que l'écran doit pouvoir
+     défiler vers le haut, pas être rogné par les deux bouts. */
+  .modale-carte.ouverte { place-items:start center; }
+
+  .cadre-carte { max-width:100%; padding:10px 12px; max-height:none; }
+
+  /* La barre passe à la ligne au lieu de pousser le cadre. */
+  .barre-carte { flex-wrap:wrap; gap:6px 10px; }
+  .titre-carte { flex:1 1 100%; }        /* le titre prend sa ligne, plus de pliage mot à mot */
+  .carte-jauges { flex:1 1 auto; gap:12px; }
+
+  /* Le menu latéral de la carte stellaire passe au-dessus, en rangée. */
+  .corps-carte { flex-direction:column; }
+  .menu-carte  { flex:0 0 auto; flex-direction:row; flex-wrap:wrap; }
+  .lien-carte  { flex:1 1 auto; text-align:center; }
+
+  /* ⚠ Le SVG garde son ratio : on borne la HAUTEUR, jamais la largeur, sinon
+     les coordonnées du clic ne correspondraient plus à ce qu'on voit. */
+  #carte { max-height:56vh; }
+
+  /* Le tableau des distances a des cellules en `nowrap` : il ne rétrécira
+     jamais. On le rend défilable latéralement plutôt que coupé. */
+  .dist-grille { display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+}
