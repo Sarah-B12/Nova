@@ -92,9 +92,26 @@ async function travaillerMaison(){
   /* ⚠ v0.91 — « Travaux : 9/8 ». Le travail disponible se comptait sur le
      TOTAL DÉPOSÉ, qui dépasse le nombre d'actions requises dès qu'une recette
      demande plus de 8 unités. On pouvait donc travailler au-delà du compte,
-     en payant l'énergie pour rien. Le travail est maintenant plafonné. */
+     en payant l'énergie pour rien. Le travail est maintenant plafonné.
+
+     ⚠⚠ v0.92 — ET CE PLAFOND BLOQUAIT LES TROIS DERNIERS PALIERS. Il s'écrivait
+     `Math.min(total, deposeTotal(c)) - c.travail`, donc le travail disponible
+     était borné par le NOMBRE D'UNITÉS déposées. Or à partir du palier 3, une
+     recette contient MOINS d'unités qu'il n'y a d'actions à faire :
+         Maison  40 actions / 28 unités · Villa 70 / 25 · Palace 110 / 28
+     Tout déposer ne débloquait que 28 actions sur 40 : le chantier restait
+     ouvert à jamais, matières livrées et aucun moyen d'avancer. Les deux
+     premiers paliers (8/14 et 20/23) masquaient le défaut.
+
+     LA BONNE MESURE EST UNE PROPORTION, pas un compte d'unités : le travail
+     ouvert suit la PART de la recette déjà livrée. Tout déposé = tout le
+     travail, quel que soit le rapport entre unités et actions. Les deux
+     intentions tiennent ensemble — on ne travaille pas plus que ce qu'on a
+     livré, et on peut toujours finir. */
   if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
-  const dispo = Math.min(total, deposeTotal(c)) - c.travail;
+  const r0 = recetteMaison(c.cible) || {};
+  const besoinTotal = Object.values(r0).reduce((a,b)=>a+b,0);
+  const dispo = (besoinTotal>0 ? Math.floor(total * deposeTotal(c) / besoinTotal) : 0) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
   if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
   c.travail++;
