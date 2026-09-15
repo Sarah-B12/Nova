@@ -66,6 +66,7 @@ function enEcart(){ return etat.secteur === "ecart"; }
 /* v0.91 — La Carcasse, comme le Perchoir : un lieu ou les hubs s'ouvrent.
    Ailleurs dans le secteur, on est « en vol » et tout se ferme. */
 function surCarcasse(){ return enEcart() && surLieuEspace(espaceLieu("epave")); }
+function surGravier(){  return enEcart() && surLieuEspace(espaceLieu("asteroides")); }
 
 function surBase(){
   if(!enEcart()) return false;
@@ -618,35 +619,20 @@ function majOrbite(){
       /* v0.91 — le bandeau annonce le coût du vol et propose de partir.
          ⚠ Le bouton n'apparaît QUE si l'on est à l'Écart : depuis Silène, la
          carte spatiale se consulte mais ne se parcourt pas. */
-      const c = (typeof coutVol==="function") ? coutVol({x:l.x,y:l.y}) : null;
-      let bas = "";
-      if(!enEcart()) bas = `<span class="itip-gris">Décolle pour t'y rendre.</span>`;
-      else if(surLieuEspace(l)){
-        bas = `<span class="itip-gris">Tu y es.</span>`;
-        /* v0.91 — le gisement du Gravier, seulement quand on y est. */
-        if(l.id === "asteroides" && etat.vaisseau){
-          const reste = gravierRestants();
-          bas += reste > 0
-            ? ` <span class="itip-gris">${reste}/${GRAVIER_ESSAIS} tentative(s) · −${GRAVIER_ENERGIE} % d'énergie, la coque prend</span> <button class="mini" data-orb="miner" ${((etat.energie|0)<GRAVIER_ENERGIE||vaisseauCloue()||placesLibres()<=0)?"disabled":""}>Fouiller les cailloux</button>`
-            : ` <span class="itip-gris">Gisement épuisé pour aujourd'hui.</span>`;
-        }
-        /* v0.91 — le garage a son propre écran (hub « Le Garage ») : ici on ne
-           fait que renvoyer dessus, pour ne pas tenir la même logique à deux
-           endroits. Ferme la carte et l'onglet est là. */
-        if(l.id === "epave") bas += ` <span class="itip-gris">Ferme la carte : l'onglet <b>Le Garage</b> t'attend.</span>`;
+      /* ⚠ v0.91 — AUCUN BOUTON DANS CE BANDEAU. Il est à hauteur fixe : une
+         ligne de trop ne se rogne pas, elle DISPARAÎT, et le bouton avec.
+         Le clic sur un objet EMMÈNE, comme sur Silène et comme le vol libre ;
+         les services d'un lieu vivent dans son onglet (Le Garage, Le Gisement),
+         qui a la place de respirer. Ici : uniquement de l'information. */
+      if(surLieuEspace(l)){
+        z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}<br><span class="itip-gris">Tu y es. ${l.type==="decor"?"Rien à y faire.":"Ferme la carte : son onglet t'attend."}</span>`;
+        return;
       }
-      else if(c){
-        const j = volPossible({x:l.x,y:l.y});
-        bas = `<span class="itip-gris">Vol : ${c.energie} % d'énergie · ${c.litres} L</span>`
-            + (j.ok ? ` <button class="mini" data-orb="voler" data-id="${l.id}">Mettre le cap</button>`
-                    : ` <span style="color:var(--coral,#ff5257)">— ${j.err==="energie"?"énergie insuffisante":`il faut ${j.besoin} L pour aller ET revenir à la base`}</span>`);
+      if(!enEcart()){
+        z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}<br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`;
+        return;
       }
-      /* ⚠ DEUX LIGNES, PAS TROIS. Le bandeau est à hauteur fixe avec
-         `overflow:hidden` : une troisième ligne n'est pas rognée à l'écran,
-         elle DISPARAÎT — et avec elle le bouton « Mettre le cap », ce qui
-         rendait les objets stellaires injoignables. Nom, usage et description
-         tiennent donc sur la première ligne, l'action sur la seconde. */
-      z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}${l.desc?` <span class="itip-gris">${l.desc}</span>`:""}<br>${bas}`;
+      volVers(l);
     });
   });
 

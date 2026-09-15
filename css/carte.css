@@ -19,8 +19,8 @@
      quand on cliquait un objet (ligne de coût + bouton) et `.zone-carte`, en
      `flex:1`, rendait la place : la carte se redimensionnait dans l'autre sens.
      Une hauteur fixe rend le bandeau totalement neutre. */
-  #orbite-info { height:3em; overflow:hidden; box-sizing:border-box; }
-  @media (max-width:520px){ #orbite-info { height:4.2em; } }
+  #orbite-info { height:3.8em; overflow:hidden; box-sizing:border-box; }
+  @media (max-width:520px){ #orbite-info { height:5.2em; } }
   .corps-carte { display:flex; gap:14px; flex:1; min-height:0; }
   .menu-carte { flex:0 0 148px; display:flex; flex-direction:column; gap:6px; }
   .lien-carte { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; text-align:left; color:var(--sourdine); background:rgba(16,41,78,.5); border:1px solid var(--line); border-left:2px solid var(--line); border-radius:var(--r-s); padding:9px 12px; cursor:pointer; }
