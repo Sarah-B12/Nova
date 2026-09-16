@@ -8,7 +8,7 @@ function montrerHub(h){
   document.querySelectorAll(".hub-vue").forEach(el => el.hidden = (el.id !== "hub-"+h));
   document.querySelectorAll(".hub-lien").forEach(b => b.classList.toggle("actif", b.dataset.hub===h));
 }
-function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); }
+function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -21,20 +21,23 @@ function majHub(){
      est là pour grossir — l'arc Q6→Q15 prévoit DEUX quêtes par lieu. */
   const carcasse = (typeof surCarcasse==="function") && surCarcasse();
   const gravier  = (typeof surGravier==="function")  && surGravier();
-  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false };
+  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false };
   const dispo = carcasse
     ? { ...vide, garage:true }
     : gravier
     ? { ...vide, gisement:true }
     : base
-    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true, garage:false }
-    : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false,
+    /* v0.92 — L'ARÈNE n'existe qu'au Perchoir. `arene_adversaires()` refuse de
+       toute façon ceux qui n'ont pas fini Q5, mais l'onglet ne doit pas
+       s'afficher ailleurs : un service visible et vide est pire qu'absent. */
+    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true, garage:false, arene:true }
+    : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false, arene:false,
         boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
         quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler","garage","gisement"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
     /* ⚠ v0.91 — `montrerHub("vide")` est le vrai filet : si AUCUN onglet n'est
        disponible ici, on n'en laisse surtout pas un périmé affiché. C'est ce
        qui s'est produit avec Le Gisement resté seul après un atterrissage. */
@@ -146,6 +149,10 @@ async function inscrire(){
   // qu'elle a une valeur. L'attribution initiale passe par cet update ciblé, seul
   // cas autorisé (old.faction IS NULL). Sans lui, le compte resterait sans faction.
   if(typeof _premiereFaction==="function") await _premiereFaction(f.id);
+  /* ⚠ v0.92b — `sauverSurServeur()` refuse d'écrire tant que le profil n'a pas
+     été lu dans cette page. À l'inscription il n'y a rien à lire : l'état vient
+     d'être créé ici, il fait autorité. On lève la garde explicitement. */
+  if(typeof marquerProfilLu==="function") marquerProfilLu();
   await sauverSurServeur();
   fermerAuth(); fermerEntree(); afficher();
   journal(`Bienvenue, ${pseudo}. Faction attribuée : ${f.nom}.`,"gain");
@@ -164,7 +171,7 @@ async function connecter(){
   const { error } = await seConnecter(email, mdp);
   if(error){ authErreur(_authMsg(error)); return; }
   const prof = await chargerDepuisServeur();
-  if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); appliquerColonnesProfil(prof); /* v0.92 : cf. serveur.js */ }
+  if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); if(typeof prof.credits==="number"){ etat.credits=prof.credits; if(typeof initCredits==="function") initCredits(prof.credits); } if(typeof prof.reputation==="number") etat.reputation=prof.reputation; etat.roleAdmin=prof.role_admin||null; etat.cercles=prof.cercles||{}; if(prof.faction) etat.faction=prof.faction; /* COLONNE : cf. bootstrap.js */ }
   else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); if(typeof _premiereFaction==="function") await _premiereFaction(f.id); await sauverSurServeur(); }
   if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();

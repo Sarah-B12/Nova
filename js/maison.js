@@ -188,6 +188,19 @@ async function retirerObjet(id){
 /* ---------- Rendu de la vue Maison (#sous-maison) ---------- */
 function majMaison(){
   const z=document.querySelector("#sous-maison"); if(!z) return;
+  /* ⚠⚠ v0.92b — LE CHANTIER SE CONCLUT ICI AUSSI, ET C'EST INDISPENSABLE.
+     La complétion n'était déclenchée que par `deposerMat()` et
+     `travaillerMaison()`. Or le bouton « Travailler » est grisé dès que
+     `dispoTravail <= 0` — c'est-à-dire EXACTEMENT quand le chantier est fini.
+     Un joueur ayant tout déposé et tout travaillé se retrouvait devant un
+     bouton mort, sans aucun moyen de valider : la seule porte de sortie était
+     fermée par la condition qui signale qu'on peut sortir.
+     Le cas frappait aussi tous ceux arrivés à ce stade AVANT le correctif.
+     L'affichage est le seul point de passage garanti : on y vérifie, et le
+     chantier s'achève tout seul à la première ouverture de l'écran.
+     ⚠ Pas de récursion possible : `finirChantierSiPret()` met `chantier` à
+     `null`, l'appel suivant sort immédiatement. */
+  if(finirChantierSiPret() && typeof sauverMaintenant==="function") sauverMaintenant();
   const _RB = `<div class="actions" style="margin-bottom:12px"><button class="action" onclick="reposer()"><span>Se reposer (chez toi)</span><span class="cout">+25 santé/moral (≤80) · 1×/jour</span></button></div>`;
   const m=etat.maison;
   if(m.plot==null){
@@ -211,7 +224,14 @@ function majMaison(){
     const dispoTravail = travailOuvert(c) - c.travail;   // v0.92 : source unique, voir travailOuvert()
     const faits = Math.min(c.travail, total);            // ⚠ jamais « 10/8 » : les états hérités dépassent
     html += `<div class="form-progress" style="margin-top:10px"><div class="form-progress-tete"><span>Travaux</span><span>${faits}/${total}</span></div><div class="form-barre"><div class="form-remplissage" style="width:${Math.round(faits/(total||1)*100)}%"></div></div></div>`;
-    html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${(dispoTravail<=0||etat.energie<TRAVAIL_ENERGIE)?"disabled":""}><span>Travailler</span><span class="cout">−${TRAVAIL_ENERGIE} % én. · ${Math.max(0,dispoTravail)} à faire</span></button></div>`;
+    /* ⚠ Le libellé dit POURQUOI le bouton est gris. « Travailler » grisé sans
+       explication a fait croire à deux testeurs que le jeu était cassé : dans
+       un cas il manquait des matières, dans l'autre il ne manquait rien du
+       tout. C'est le piège n°3 du projet — un bouton désactivé ne porte pas
+       d'infobulle, la raison doit être dans le libellé. */
+    const _rienAFaire = dispoTravail <= 0;
+    const _faute = _rienAFaire ? "dépose des matières" : (etat.energie < TRAVAIL_ENERGIE ? "énergie insuffisante" : null);
+    html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${(_rienAFaire||etat.energie<TRAVAIL_ENERGIE)?"disabled":""}><span>Travailler</span><span class="cout">${_faute ? _faute : `−${TRAVAIL_ENERGIE} % én. · ${dispoTravail} à faire`}</span></button></div>`;
     html += `<div class="actions" style="margin-top:8px"><button class="mini danger" id="maison-demolir">Annuler / Démolir</button></div>`;
   } else {
     html += `<h3>${nomPalier(m.palier)} <span class="qte">${itemsCoffre()}/${capaciteMaison()} rangement</span></h3>`;

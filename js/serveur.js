@@ -82,6 +82,10 @@ async function chargerDepuisServeur(){
      mien. Toutes les valeurs comparées viennent du serveur — aucune horloge
      de client n'entre dans la décision. */
   _majSync = (data && data.donnees && Number(data.donnees._maj)) || 0;
+  /* ⚠ v0.92b — À PARTIR D'ICI SEULEMENT, CETTE PAGE A LE DROIT D'ÉCRIRE.
+     Voir `sauverSurServeur()`. Posé même si `data` est nul (compte sans profil) :
+     ce qui compte n'est pas d'avoir trouvé un profil, c'est d'avoir DEMANDÉ. */
+  _profilLu = true;
   return data;   // ligne { id, nom, faction, ..., donnees } OU null si aucun profil
 }
 /* ⚠ v0.65 — ÉCRASEMENT ENTRE APPAREILS. La sauvegarde écrivait `donnees` en
@@ -275,10 +279,30 @@ async function _premiereFaction(fid){
    révision laissée par la précédente. Une seule est mise en attente (l'état est
    global : la dernière contient déjà tout). */
 let _majSync = 0;                 // v0.92 : horodatage serveur de ma dernière synchro (voir chargerDepuisServeur)
+let _profilLu = false;            // v0.92b : le serveur a-t-il été interrogé dans CETTE page ? (voir sauverSurServeur)
+/* Seul cas légitime de levée manuelle : l'inscription, où l'état vient d'être
+   créé localement et où il n'y a aucun profil à lire. */
+function marquerProfilLu(){ _profilLu = true; }
 let _sauveFile = Promise.resolve();
 let _sauveEnAttente = null;
 function sauverSurServeur(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return Promise.resolve();
+  /* ⚠⚠ v0.92b — UNE PAGE QUI N'A PAS LU LE PROFIL N'A RIEN À DIRE AU SERVEUR.
+     Au chargement, `etat` vient de localStorage — donc de la DERNIÈRE session,
+     qui peut dater d'hier. `chargerDepuisServeur()` le remplace, mais c'est un
+     aller-retour réseau, et pendant ce temps une sauvegarde peut partir avec
+     l'état périmé.
+     Le cas réel : Chrome restaure les onglets d'une session précédente EN
+     ARRIÈRE-PLAN. `visibilitychange` part aussitôt, `_filetSauvegarde()` se
+     déclenche, et l'état de la veille est proposé au serveur. La ceinture
+     `_maj` le refusait déjà — mais elle refusait en montrant au joueur une
+     alerte l'accusant d'avoir ouvert le jeu ailleurs, ce qui était faux.
+     Ici on ne refuse pas : on n'envoie pas. Rien n'est perdu, puisque
+     l'hydratation qui arrive juste après apporte l'état à jour. */
+  if(!_profilLu){
+    console.warn("[serveur] sauvegarde ignorée : le profil n'a pas encore été lu dans cette page.");
+    return Promise.resolve();
+  }
   if(_sauveEnAttente) return _sauveEnAttente;       // déjà une en attente : elle emportera nos changements
   _sauveEnAttente = _sauveFile.then(_sauverMaintenantInterne, _sauverMaintenantInterne)
                               .then(r=>{ _sauveEnAttente=null; return r; },
@@ -368,7 +392,11 @@ async function _sauverMaintenantInterne(){
     if(!_conflitSignale){
       _conflitSignale = true;
       if(typeof journal==="function") journal("Ta partie est ouverte ailleurs (autre navigateur ou appareil) et a avancé de son côté. Recharge la page pour récupérer la version à jour — cet onglet n'enregistre plus, pour ne rien effacer.","alerte");
-      try{ alert("Nova Epic est ouvert sur un autre appareil ou navigateur, avec une partie plus avancée.\n\nRecharge cette page pour reprendre la bonne version. Tant que tu ne l'as pas fait, cet onglet n'enregistre plus (c'est ce qui évite d'effacer ta progression)."); }catch(e){}
+      /* ⚠ v0.92b — NE PLUS AFFIRMER « un autre appareil ». C'est vrai parfois,
+         faux souvent : un onglet restauré par le navigateur produit le même
+         conflit tout seul. Le message dit maintenant ce qu'on SAIT — cette
+         page est en retard — et pas ce qu'on suppose. */
+      try{ alert("Cette page n'est plus à jour : ta partie a avancé ailleurs (un autre onglet, un autre appareil, ou une session restaurée par ton navigateur).\n\nRecharge-la pour reprendre la bonne version. En attendant, cet onglet n'enregistre plus — c'est ce qui protège ta progression."); }catch(e){}
     }
     return;
   }

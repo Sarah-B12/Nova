@@ -28,22 +28,27 @@ function _facNomComm(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find
 let commVue = "amis";
 let _commQ = "";
 let _commRecherche = null;   // null = pas de recherche ; [] = aucun résultat
-let _notifMsg = 0, _notifAmis = 0;
+let _notifMsg = 0, _notifAmis = 0, _notifDefis = 0;
 async function compterNotifs(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   const s=await sessionActuelle(); if(!s) return;
   try{
-    const [mq, aq] = await Promise.all([
+    /* ⚠ v0.92 — les défis d'arène se comptent en LECTURE DIRECTE, pas par une
+       RPC : les RLS de `arene_defis` ne laissent voir que mes propres lignes,
+       donc `head:true` suffit et ne coûte qu'un compte. Une RPC de plus dans
+       une fonction appelée en boucle aurait été du gaspillage. */
+    const [mq, aq, dq] = await Promise.all([
       sb.from("messages").select("id",{count:"exact",head:true}).eq("a_id",s.user.id).eq("lu",false).eq("efface_a",false),
-      sb.from("amis").select("demandeur",{count:"exact",head:true}).eq("destinataire",s.user.id).eq("statut","attente")
+      sb.from("amis").select("demandeur",{count:"exact",head:true}).eq("destinataire",s.user.id).eq("statut","attente"),
+      sb.from("arene_defis").select("id",{count:"exact",head:true}).eq("defie",s.user.id).eq("statut","attente")
     ]);
-    _notifMsg = mq.count||0; _notifAmis = aq.count||0;
+    _notifMsg = mq.count||0; _notifAmis = aq.count||0; _notifDefis = dq.count||0;
   }catch(e){ console.warn("[comm] notifs:", e.message); }
   majBadges();
 }
 function majBadges(){
   const B = n => ` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700;vertical-align:middle">${n}</span>`;
-  const tot=_notifMsg+_notifAmis;
+  const tot=_notifMsg+_notifAmis+_notifDefis;
   /* ⚠ Le libellé est écrit à DEUX endroits : ici et dans index.html. Cette
      ligne réécrit l'onglet à chaque mise à jour du compteur de non-lus — s'il
      n'était changé que dans le HTML, il redeviendrait « Comm » au premier
@@ -51,6 +56,7 @@ function majBadges(){
   const c=document.querySelector('[data-onglet="comm"]'); if(c) c.innerHTML = ONGLET_RESEAU + (tot>0?B(tot):"");
   const a=document.querySelector('#comm-nav [data-comm="amis"]'); if(a) a.innerHTML = "Amis" + (_notifAmis>0?B(_notifAmis):"");
   const mm=document.querySelector('#comm-nav [data-comm="messages"]'); if(mm) mm.innerHTML = "Messages" + (_notifMsg>0?B(_notifMsg):"");
+  const dd=document.querySelector('#comm-nav [data-comm="duels"]'); if(dd) dd.innerHTML = "Duels" + (_notifDefis>0?B(_notifDefis):"");
 }
 
 function changerComm(c){
@@ -68,6 +74,9 @@ function majComm(){
   if(commVue==="annonces"){ z.innerHTML = `<p class="vide">Chargement…</p>`; _rendreAnnonces(z); return; }
   if(commVue==="population"){ _rendrePopulation(z); return; }
   if(commVue==="carnet"){ _rendreCarnet(z); return; }
+  /* v0.92 — la vue vit dans arene.js : tout ce qui touche aux duels y est
+     rassemblé, y compris les libellés d'erreur. */
+  if(commVue==="duels"){ if(typeof rendreDuelsComm==="function") rendreDuelsComm(z); else z.innerHTML=`<p class="vide">Indisponible.</p>`; return; }
 }
 
 /* ---------- Amis (serveur : demandes réciproques) ---------- */

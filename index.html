@@ -228,6 +228,8 @@
                qu'à activer `quete` dans la liste de ce lieu. -->
           <button class="hub-lien" data-hub="garage">Le Garage</button>
           <button class="hub-lien" data-hub="gisement">Le Gisement</button>
+          <!-- v0.92 — L'Arène : uniquement au Perchoir, voir majHub(). -->
+          <button class="hub-lien" data-hub="arene">L'Arène</button>
         </div>
 
         <div class="hub-vue" id="hub-quete" hidden></div>
@@ -283,6 +285,7 @@
         <div class="hub-vue" id="hub-voler" hidden><h3>Voler / Hacker</h3><div id="voler-vue"></div></div>
         <div class="hub-vue" id="hub-garage" hidden><h3>Le Garage</h3><div id="garage-vue"></div></div>
         <div class="hub-vue" id="hub-gisement" hidden><h3>Le Gisement</h3><div id="gisement-vue"></div></div>
+        <div class="hub-vue" id="hub-arene" hidden><h3>L'Arène</h3><div id="arene-vue"></div></div>
       </section>
 
       <!-- SAC -->
@@ -318,6 +321,10 @@
           <button class="sous-lien comm-lien" data-comm="annonces">Annonces</button>
           <button class="sous-lien comm-lien" data-comm="population">Population</button>
           <button class="sous-lien comm-lien" data-comm="carnet">Carnet</button>
+          <!-- v0.92 — Duels : répondre à un défi d'arène depuis n'importe où.
+               ⚠ Le libellé est réécrit par majBadges() quand il y a des défis
+               en attente ; le changer ici ne suffirait pas. -->
+          <button class="sous-lien comm-lien" data-comm="duels">Duels</button>
         </div>
         <div id="comm-vue"></div>
       </section>
@@ -395,6 +402,7 @@
 <script src="js/gouvernement.js"></script>
 <script src="js/espionnage.js"></script>
 <script src="js/bar.js"></script>
+<script src="js/arene.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/bootstrap.js"></script>
 <script src="js/dev-console.js"></script>
