@@ -80,26 +80,73 @@ function renderHangar(corps){
 }
 
 /* ---------- Automatisation (appelée dans afficher()) ---------- */
-/* ⚠⚠ v0.93 — LE DRONE NE BRÛLE PLUS SA JOURNÉE POUR RIEN.
-   L'ancienne version posait `dr.maj = Date.now()` AVANT de savoir si le drone
-   avait pu agir : l'appel est asynchrone et n'était pas attendu. Or
-   `droneElevage()` ne nourrit que si la Ferragave est DANS LE SAC à cet instant
-   — au coffre, elle ne compte pas — et `droneRecolte()` ne peut rien ramasser
-   si le sac est plein. Dans ces cas le drone ne faisait rien, ne DISAIT rien,
-   et `memeJour(dr.maj)` le bloquait jusqu'au lendemain, où le même scénario se
-   rejouait. Vu du joueur : « le drone d'élevage ne s'active jamais ».
+/* ⚠⚠ v0.94 — LE DRONE D'ÉLEVAGE NE S'ACTIVAIT JAMAIS. Trois causes, et
+   aucune ne levait la moindre erreur :
 
-   Trois changements :
-     · les deux fonctions RENVOIENT ce qu'elles ont fait, et sont attendues ;
-     · `dr.maj` n'est posé que si quelque chose a eu lieu ;
-     · sinon le drone EXPLIQUE pourquoi, une fois par jour (`dr.vu`), au lieu
-       de rester muet. Un automate silencieux qui ne marche pas est
-       indiscernable d'un automate en panne.
-   ⚠ `_dronesOccupe` : `majDrones()` est appelée à chaque `afficher()`. Devenue
-     asynchrone, deux passes pourraient se chevaucher et nourrir deux fois. */
+   1. IL NE TONDAIT PAS. Il ne savait que nourrir. Une fois les bêtes adultes,
+      il répondait « aucun jeune à nourrir » et s'arrêtait là — pour toujours,
+      puisqu'un adulte ne redevient pas jeune. Vu du joueur : un automate
+      installé, assigné, et définitivement muet.
+   2. IL NE VOYAIT QUE LE SAC. `agir()` code 'sac' en dur (BACKEND_PLAN §7) ;
+      la Ferragave rangée au coffre — c'est-à-dire l'usage normal — lui était
+      invisible.
+   3. IL TOURNAIT TROP TÔT. `afficher()` est appelée ~1,2 s avant que
+      `syncApresConnexion()` n'ait lu les stocks : le sac était vide, le drone
+      concluait « pas de Ferragave », posait `dr.vu`, et se taisait pour la
+      JOURNÉE — y compris quand il aurait vraiment eu quelque chose à dire.
+
+   Le drone passe donc par `drone_agir()` : coffre d'abord, sac ensuite, et le
+   sac SEULEMENT sur Silène (hors de Silène, le sac est en orbite avec le
+   joueur). Conséquence voulue : hors Silène + coffre plein = pas de tonte,
+   et rien n'est débité.
+
+   ⚠ `_dronesOccupe` : `majDrones()` part à chaque `afficher()`. Elle est
+     asynchrone, deux passes se chevaucheraient et nourriraient deux fois. */
 let _dronesOccupe = false;
+
+function _droneSurSilene(){ return !(typeof enEcart==="function" && enEcart()); }
+// Ce que le drone peut PRENDRE : le coffre, plus le sac si le joueur est sur Silène.
+function _droneDispo(id){
+  return ((etat.coffre && etat.coffre[id]) || 0)
+       + (_droneSurSilene() ? ((etat.sac && etat.sac[id]) || 0) : 0);
+}
+// Ce que le drone peut POSER, même règle. Le serveur revérifie : ceci n'est
+// qu'un garde-fou d'affichage, pour ne pas tenter un appel voué à l'échec.
+function _dronePlaces(){
+  const coffre = Math.max(0, ((typeof capaciteMaison==="function") ? capaciteMaison() : 0)
+                            - ((typeof itemsCoffre==="function") ? itemsCoffre() : 0));
+  const sac = _droneSurSilene() ? Math.max(0, (typeof placesLibres==="function") ? placesLibres() : 0) : 0;
+  return coffre + sac;
+}
+/* Appel unique vers le serveur. Renvoie la réponse, ou null si refusée.
+   ⚠ Pas de `.catch` sur `sb.rpc` : l'objet renvoyé n'a que `then` (v0.94). */
+async function droneStock(retirer, ajouter, motif){
+  if(typeof sb === "undefined" || !sb) return null;
+  try{
+    const { data, error } = await sb.rpc("drone_agir",
+      { p_retirer: retirer || {}, p_ajouter: ajouter || {}, p_motif: motif || null });
+    if(error){ console.warn("[drone] drone_agir :", error.message, "| motif :", motif); return null; }
+    if(!data || !data.ok){ console.warn("[drone] refus :", data, "| motif :", motif); return null; }
+    if(typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+    return data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "drones.js#droneStock"); return null; }
+}
+// « au coffre » / « dans ton sac » / « au coffre et dans ton sac » — le joueur
+// doit savoir OÙ chercher ce que le drone a ramené.
+function _droneOu(r){
+  if(!r) return "";
+  if(r.au_coffre && r.au_sac) return " (au coffre et dans ton sac)";
+  if(r.au_sac)   return " (dans ton sac)";
+  if(r.au_coffre) return " (au coffre)";
+  return "";
+}
+
 async function majDrones(){
   if(_dronesOccupe) return;
+  if(!etat || !etat.inscrit) return;
+  /* ⚠ LA GARDE QUI MANQUAIT. Tant que `sac_lire()` n'a pas répondu, `etat.sac`
+     et `etat.coffre` sont vides : le drone croirait n'avoir aucune Ferragave. */
+  if(!etat._lotsSynchro) return;
   if(!etat.terrain || !Array.isArray(etat.terrain.parcelles)) return;
   _dronesOccupe = true;
   let agi = false;
@@ -117,8 +164,13 @@ async function majDrones(){
         // …ni sur une parcelle à l'arrêt : rien n'y pousse, rien n'y mange.
         if(typeof structureHS==="function" && structureHS(dr.cible)) continue;
         let fait = null;
-        if(dr.type==="recolte" && cible.type==="biodome")      fait = await droneRecolte(cible);
-        else if(dr.type==="elevage" && cible.type==="enclos")  fait = await droneElevage(cible);
+        // v0.94 : le coffre est sa réserve ET son dépôt. Logement à l'arrêt,
+        // plus de coffre : le drone s'arrête et le DIT.
+        if(typeof maisonHS==="function" && maisonHS()){
+          fait = { agi:false, raison:"ton logement est à l'arrêt : plus d'accès au coffre. Répare-le." };
+        }
+        else if(dr.type==="recolte" && cible.type==="biodome")      fait = await droneRecolte(cible);
+        else if(dr.type==="elevage" && cible.type==="enclos")       fait = await droneElevage(cible);
         else continue;
         if(fait && fait.agi){ dr.maj = Date.now(); agi = true; }
         else if(fait && fait.raison && !memeJour(dr.vu)){
@@ -130,37 +182,87 @@ async function majDrones(){
   } finally { _dronesOccupe = false; }
   if(agi && typeof sauvegarder==="function") sauvegarder();
 }
+
 /* Renvoie { agi, raison } : `agi` vrai si quelque chose a été fait, sinon
    `raison` explique au joueur pourquoi rien n'a bougé. */
 async function droneRecolte(p){
-  let agi = false;
+  let agi = false, plusDePlace = false;
   // arrose ce qui pousse (et n'a pas déjà été arrosé aujourd'hui)
   p.cases.forEach(c=>{ if(c && c.croissance<PLANT_MAX && !memeJour(c.arrose)){ c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now(); agi=true; } });
   // récolte ce qui est mûr
-  for(let i=0;i<p.cases.length;i++){ const c=p.cases[i]; if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0;
-    /* ⚠ v0.59 — sac plein : la case était vidée quand même, la récolte perdue.
-       La plante attend désormais sur pied ; un seul avertissement par case. */
-    if(placesLibres() < nb){ if(!c._attente){ c._attente=true; journal(`Drone de récolte : sac plein, ${plante(c.plante).nom} laissée sur pied (${nb} places nécessaires).`,"alerte"); } continue; }
-    const res = await agirServeur({ ajouter:{ [c.plante]:nb }, motif:"drone_recolte", toutOuRien:true });
-    pr = res ? ((res.ajoutes||{})[c.plante]||0) : 0;
-    if(pr>0){ journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; agi=true; } } }
+  for(let i=0;i<p.cases.length;i++){
+    const c = p.cases[i];
+    if(!c || c.croissance < PLANT_MAX) continue;
+    const r = aptBiodomeRecolte(); const nb = aptStructureLot(alea(r.min, r.max));
+    /* ⚠ v0.59 — place insuffisante : la case était vidée quand même, la récolte
+       perdue. La plante attend désormais sur pied ; un seul avertissement. */
+    if(_dronePlaces() < nb){
+      plusDePlace = true;
+      if(!c._attente){ c._attente=true; journal(`Drone de récolte : plus de place (coffre${_droneSurSilene()?" et sac":""}), ${plante(c.plante).nom} laissée sur pied (${nb} places nécessaires).`,"alerte"); }
+      continue;
+    }
+    const res = await droneStock(null, { [c.plante]:nb }, "drone_recolte");
+    if(!res){ plusDePlace = true; break; }   // refus serveur : inutile d'insister
+    const pr = (res.ajoutes||{})[c.plante] || 0;
+    if(pr>0){ journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}${_droneOu(res)}.`,"gain"); p.cases[i]=null; agi=true; }
+  }
   if(agi) return { agi:true };
+  if(plusDePlace) return { agi:false, raison:_droneSurSilene()
+      ? "plus de place au coffre ni dans ton sac : la récolte attend sur pied."
+      : "coffre plein, et tu n'es pas sur Silène : la récolte attend sur pied." };
   const vide = !p.cases.some(c=>c);
   return { agi:false, raison: vide ? "le bio-dôme est vide, rien à arroser ni à récolter."
                                    : "rien à faire aujourd'hui (tout est déjà arrosé, et rien n'est mûr)." };
 }
+
+/* NOURRIR puis TONDRE — c'est la seconde moitié qui manquait. Un enclos
+   d'adultes ne produisait plus rien tant que le joueur ne tondait pas à la
+   main, et le drone se déclarait sans travail. */
 async function droneElevage(p){
-  let fed=0, aNourrir=0;
-  for(const c of p.cases){ if(!c) continue; const a=animal(c.animal);
-    if(c.repas>=a.repasAdulte) continue;              // déjà adulte : plus rien à lui donner
-    aNourrir++;
-    /* ⚠ LE SAC, PAS LE COFFRE. `agirServeur` retire du sac : de la Ferragave
-       rangée au coffre est invisible pour le drone. C'est la première cause de
-       « il ne s'active jamais », et c'est maintenant DIT au joueur. */
-    if((etat.sac["ferragave"]||0)>0
-       && await agirServeur({ retirer:{ ferragave:1 }, motif:"drone_nourrir" })){ c.repas++; fed++; }
+  const jeunes = [], adultes = [];
+  p.cases.forEach((c, ci)=>{
+    if(!c) return; const a = animal(c.animal); if(!a) return;
+    if((c.repas||0) < a.repasAdulte) jeunes.push(ci);
+    else if(!memeJour(c.tonte) && (c.tontes||0) < TONTES_MAX) adultes.push(ci);
+  });
+  let agi = false, manqueFerra = false, plusDePlace = false;
+
+  // 1. Nourrir : 1 Ferragave par jeune, dans la limite de ce qui est en réserve.
+  if(jeunes.length){
+    const n = Math.min(jeunes.length, _droneDispo("ferragave"));
+    if(n > 0){
+      const res = await droneStock({ ferragave:n }, null, "drone_nourrir");
+      if(res){
+        for(let i=0;i<n;i++){ const c = p.cases[jeunes[i]]; if(c) c.repas = (c.repas||0) + 1; }
+        journal(`Drone d'élevage : ${n} repas de Ferragave distribué(s).`,"gain");
+        agi = true;
+      }
+    } else manqueFerra = true;
   }
-  if(fed>0){ journal(`Drone d'élevage : ${fed} repas de Ferragave distribué(s).`,"gain"); return { agi:true }; }
-  if(aNourrir===0) return { agi:false, raison:"aucun jeune à nourrir dans l'enclos." };
-  return { agi:false, raison:"pas de Ferragave dans ton sac (celle du coffre ne compte pas)." };
+
+  // 2. Tondre les adultes, une fois par jour, comme à la main.
+  for(const ci of adultes){
+    const c = p.cases[ci]; if(!c) continue;
+    const a = animal(c.animal); if(!a) continue;
+    const nb = aptStructureLot(alea(2,3) + aptTonteBonus());
+    if(_dronePlaces() < nb){ plusDePlace = true; break; }
+    const res = await droneStock(null, { [a.produit]:nb }, "drone_tonte");
+    if(!res){ plusDePlace = true; break; }
+    const pr = (res.ajoutes||{})[a.produit] || 0;
+    c.tontes = (c.tontes||0) + 1; c.tonte = Date.now(); agi = true;
+    let msg = `Drone d'élevage : tonte, +${pr} ${item(a.produit).nom}${_droneOu(res)} — ${c.tontes}/${TONTES_MAX}.`;
+    if(c.tontes >= TONTES_MAX){ p.cases[ci] = null; msg += ` Le ${a.nom} a pris sa retraite.`; }
+    journal(msg, "gain");
+  }
+
+  if(agi) return { agi:true };
+  if(plusDePlace) return { agi:false, raison:_droneSurSilene()
+      ? "plus de place au coffre ni dans ton sac : la tonte attend."
+      : "coffre plein, et tu n'es pas sur Silène : impossible de tondre." };
+  if(manqueFerra) return { agi:false, raison:_droneSurSilene()
+      ? "pas de Ferragave, ni au coffre ni dans ton sac."
+      : "pas de Ferragave au coffre (tu n'es pas sur Silène : ton sac ne compte pas)." };
+  if(jeunes.length===0 && adultes.length===0)
+    return { agi:false, raison:"rien à faire aujourd'hui (aucun jeune à nourrir, et les adultes sont déjà tondus)." };
+  return { agi:false, raison:"rien n'a pu être fait aujourd'hui." };
 }

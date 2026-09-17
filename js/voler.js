@@ -27,7 +27,24 @@ function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITE
 function _enVille(){ return (typeof enZoneFaction==="function") && enZoneFaction(); }
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
 function prisonRestant(){ return Math.max(0, (etat.prisonJusqua||0)-Date.now()); }
-function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; if(typeof sb!=="undefined"&&sb) sb.rpc("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)}).catch(()=>{}); if(typeof sauvegarder==="function") sauvegarder(); }
+/* ⚠⚠ v0.94 — L'OBJET RENVOYÉ PAR `sb.rpc()` N'EST PAS UNE PROMESSE.
+   C'est un « thenable » PARESSEUX : il n'a QUE `then`, pas `catch` ni
+   `finally`, et la requête ne part qu'au premier appel de `then`.
+   `sb.rpc("emprisonner", …).catch(()=>{})` levait donc un TypeError SYNCHRONE
+   — « .catch is not a function » — avant même l'envoi. Résultat : la RPC
+   n'était JAMAIS appelée, `sauvegarder()` non plus, et la ligne de journal qui
+   suit l'appel ne s'affichait pas. La prison n'existait qu'en mémoire, et
+   `syncPrison()` (60 s) l'effaçait en relisant le serveur.
+   ⚠ RÈGLE : ne jamais chaîner `.catch` / `.finally` sur un appel Supabase.
+   Soit `await`, soit `Promise.resolve(...)` qui adopte le thenable — c'est
+   cette adoption qui DÉCLENCHE la requête. */
+function _rpcFireAndForget(nom, args, repere){
+  if(typeof sb==="undefined" || !sb) return;
+  Promise.resolve(sb.rpc(nom, args||{}))
+    .then(r=>{ if(r && r.error) console.warn(`[${repere}] ${nom} :`, r.error.message); })
+    .catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, repere); });
+}
+function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; _rpcFireAndForget("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)},"voler.js#emprisonner"); if(typeof sauvegarder==="function") sauvegarder(); }
 function _emprisonner(){ emprisonnerJoueur((typeof villeActuelle==="function"?villeActuelle():etat.faction)||etat.faction, _vjm()); }
 function _melange(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
@@ -497,7 +514,7 @@ async function tenterEvasion(){
   const p=Math.min(0.6, 0.12 + (agi+intel)*0.01);
   if(Math.random() < p){
     etat.prisonJusqua=0; etat.prisonFaction=null;
-    if(typeof sb!=="undefined"&&sb) sb.rpc("liberer_moi").catch(()=>{});
+    _rpcFireAndForget("liberer_moi", {}, "voler.js#evasion");   // ⚠ voir _rpcFireAndForget : pas de .catch sur sb.rpc
     journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain","vol");
   } else {
     journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte","vol");
