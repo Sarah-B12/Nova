@@ -80,28 +80,62 @@ function renderHangar(corps){
 }
 
 /* ---------- Automatisation (appelée dans afficher()) ---------- */
-function majDrones(){
+/* ⚠⚠ v0.93 — LE DRONE NE BRÛLE PLUS SA JOURNÉE POUR RIEN.
+   L'ancienne version posait `dr.maj = Date.now()` AVANT de savoir si le drone
+   avait pu agir : l'appel est asynchrone et n'était pas attendu. Or
+   `droneElevage()` ne nourrit que si la Ferragave est DANS LE SAC à cet instant
+   — au coffre, elle ne compte pas — et `droneRecolte()` ne peut rien ramasser
+   si le sac est plein. Dans ces cas le drone ne faisait rien, ne DISAIT rien,
+   et `memeJour(dr.maj)` le bloquait jusqu'au lendemain, où le même scénario se
+   rejouait. Vu du joueur : « le drone d'élevage ne s'active jamais ».
+
+   Trois changements :
+     · les deux fonctions RENVOIENT ce qu'elles ont fait, et sont attendues ;
+     · `dr.maj` n'est posé que si quelque chose a eu lieu ;
+     · sinon le drone EXPLIQUE pourquoi, une fois par jour (`dr.vu`), au lieu
+       de rester muet. Un automate silencieux qui ne marche pas est
+       indiscernable d'un automate en panne.
+   ⚠ `_dronesOccupe` : `majDrones()` est appelée à chaque `afficher()`. Devenue
+     asynchrone, deux passes pourraient se chevaucher et nourrir deux fois. */
+let _dronesOccupe = false;
+async function majDrones(){
+  if(_dronesOccupe) return;
   if(!etat.terrain || !Array.isArray(etat.terrain.parcelles)) return;
+  _dronesOccupe = true;
   let agi = false;
-  etat.terrain.parcelles.forEach((p,i)=>{
-    if(!p || p.type!=="hangar" || !Array.isArray(p.drones)) return;
-    // v0.91 : hangar à l'arrêt = les drones ne sortent pas.
-    if(typeof structureHS==="function" && structureHS(i)) return;
-    p.drones.forEach(dr=>{
-      if(!dr || dr.cible==null || memeJour(dr.maj)) return;
-      const cible = etat.terrain.parcelles[dr.cible];
-      if(!cible) return;   // parcelle cible démolie
-      // …ni sur une parcelle à l'arrêt : rien n'y pousse, rien n'y mange.
-      if(typeof structureHS==="function" && structureHS(dr.cible)) return;
-      if(dr.type==="recolte" && cible.type==="biodome"){ droneRecolte(cible); dr.maj=Date.now(); agi=true; }
-      else if(dr.type==="elevage" && cible.type==="enclos"){ droneElevage(cible); dr.maj=Date.now(); agi=true; }
-    });
-  });
+  try{
+    const parcelles = etat.terrain.parcelles;
+    for(let i=0;i<parcelles.length;i++){
+      const p = parcelles[i];
+      if(!p || p.type!=="hangar" || !Array.isArray(p.drones)) continue;
+      // v0.91 : hangar à l'arrêt = les drones ne sortent pas.
+      if(typeof structureHS==="function" && structureHS(i)) continue;
+      for(const dr of p.drones){
+        if(!dr || dr.cible==null || memeJour(dr.maj)) continue;
+        const cible = parcelles[dr.cible];
+        if(!cible) continue;   // parcelle cible démolie
+        // …ni sur une parcelle à l'arrêt : rien n'y pousse, rien n'y mange.
+        if(typeof structureHS==="function" && structureHS(dr.cible)) continue;
+        let fait = null;
+        if(dr.type==="recolte" && cible.type==="biodome")      fait = await droneRecolte(cible);
+        else if(dr.type==="elevage" && cible.type==="enclos")  fait = await droneElevage(cible);
+        else continue;
+        if(fait && fait.agi){ dr.maj = Date.now(); agi = true; }
+        else if(fait && fait.raison && !memeJour(dr.vu)){
+          dr.vu = Date.now(); agi = true;   // on enregistre pour ne pas répéter demain matin
+          journal(`${nomDrone(dr.type)} : ${fait.raison}`, "alerte");
+        }
+      }
+    }
+  } finally { _dronesOccupe = false; }
   if(agi && typeof sauvegarder==="function") sauvegarder();
 }
+/* Renvoie { agi, raison } : `agi` vrai si quelque chose a été fait, sinon
+   `raison` explique au joueur pourquoi rien n'a bougé. */
 async function droneRecolte(p){
+  let agi = false;
   // arrose ce qui pousse (et n'a pas déjà été arrosé aujourd'hui)
-  p.cases.forEach(c=>{ if(c && c.croissance<PLANT_MAX && !memeJour(c.arrose)){ c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now(); } });
+  p.cases.forEach(c=>{ if(c && c.croissance<PLANT_MAX && !memeJour(c.arrose)){ c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now(); agi=true; } });
   // récolte ce qui est mûr
   for(let i=0;i<p.cases.length;i++){ const c=p.cases[i]; if(c && c.croissance>=PLANT_MAX){ const r=aptBiodomeRecolte(); const nb=aptStructureLot(alea(r.min,r.max)); let pr=0;
     /* ⚠ v0.59 — sac plein : la case était vidée quand même, la récolte perdue.
@@ -109,13 +143,24 @@ async function droneRecolte(p){
     if(placesLibres() < nb){ if(!c._attente){ c._attente=true; journal(`Drone de récolte : sac plein, ${plante(c.plante).nom} laissée sur pied (${nb} places nécessaires).`,"alerte"); } continue; }
     const res = await agirServeur({ ajouter:{ [c.plante]:nb }, motif:"drone_recolte", toutOuRien:true });
     pr = res ? ((res.ajoutes||{})[c.plante]||0) : 0;
-    if(pr>0){ journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; } } }
+    if(pr>0){ journal(`Drone de récolte : +${pr} ${plante(c.plante).nom}.`,"gain"); p.cases[i]=null; agi=true; } } }
+  if(agi) return { agi:true };
+  const vide = !p.cases.some(c=>c);
+  return { agi:false, raison: vide ? "le bio-dôme est vide, rien à arroser ni à récolter."
+                                   : "rien à faire aujourd'hui (tout est déjà arrosé, et rien n'est mûr)." };
 }
 async function droneElevage(p){
-  let fed=0;
+  let fed=0, aNourrir=0;
   for(const c of p.cases){ if(!c) continue; const a=animal(c.animal);
-    if(c.repas<a.repasAdulte && (etat.sac["ferragave"]||0)>0){
-      if(await agirServeur({ retirer:{ ferragave:1 }, motif:"drone_nourrir" })){ c.repas++; fed++; }
-    } }
-  if(fed>0) journal(`Drone d'élevage : ${fed} repas de Ferragave distribué(s).`,"gain");
+    if(c.repas>=a.repasAdulte) continue;              // déjà adulte : plus rien à lui donner
+    aNourrir++;
+    /* ⚠ LE SAC, PAS LE COFFRE. `agirServeur` retire du sac : de la Ferragave
+       rangée au coffre est invisible pour le drone. C'est la première cause de
+       « il ne s'active jamais », et c'est maintenant DIT au joueur. */
+    if((etat.sac["ferragave"]||0)>0
+       && await agirServeur({ retirer:{ ferragave:1 }, motif:"drone_nourrir" })){ c.repas++; fed++; }
+  }
+  if(fed>0){ journal(`Drone d'élevage : ${fed} repas de Ferragave distribué(s).`,"gain"); return { agi:true }; }
+  if(aNourrir===0) return { agi:false, raison:"aucun jeune à nourrir dans l'enclos." };
+  return { agi:false, raison:"pas de Ferragave dans ton sac (celle du coffre ne compte pas)." };
 }
