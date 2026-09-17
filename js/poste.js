@@ -142,21 +142,44 @@ function _brancherPoste(z){
     maj();
   }));
   ["#poste-item","#poste-qte","#poste-montant"].forEach(s=>{ const el=z.querySelector(s); if(el) el.addEventListener("input", maj); });
-  maj();
+  /* ⚠ `change` et `blur` SEULEMENT : c'est là qu'on a le droit de corriger la
+     saisie. `_posteFige` dit à `_majTaxe` qu'il peut écrire dans le champ.
+     Le changement d'objet borne aussi, puisque le stock disponible change. */
+  const q=z.querySelector("#poste-qte");
+  if(q){ ["change","blur"].forEach(ev=>q.addEventListener(ev,()=>{ _posteFige=true; maj(); _posteFige=false; })); }
+  const it=z.querySelector("#poste-item");
+  if(it) it.addEventListener("change",()=>{ _posteFige=true; maj(); _posteFige=false; });
+  _posteFige=true; maj(); _posteFige=false;
 }
+let _posteFige = false;   // v0.93 : vrai uniquement quand on a le droit d'écrire dans #poste-qte
 function _posteTypeChoisi(z){ const r=z.querySelector('[name="poste-type"]:checked'); return r?r.value:"objet"; }
 /* ⚠ On pouvait saisir une quantité supérieure au stock. L'envoi était déjà
    borné (posteEnvoyer ~168), mais la TAXE affichée était calculée sur le
    chiffre saisi : l'aperçu annonçait le prix de 10 objets alors que 3
    partaient. On borne donc à la saisie, et on rappelle le stock à côté. */
-function _posteBornerQte(z, id){
+/* ⚠⚠ v0.93 — ON NE CORRIGE PAS UN CHAMP PENDANT QU'ON ÉCRIT DEDANS.
+   La version précédente réécrivait la valeur à CHAQUE frappe. En effaçant le
+   champ pour saisir autre chose, `c.value` valait "", `q` retombait à 1, et la
+   ligne d'écriture remettait aussitôt « 1 » dans le champ. Chaque chiffre tapé
+   venait donc se coller derrière : taper « 2 » donnait « 12 », aussitôt borné
+   au stock. Le joueur voyait la totalité de son sac quoi qu'il tape, et ne
+   pouvait plus envoyer 2 ou 3 unités.
+   C'est le correctif du piège n°6 (saisie supérieure au stock) qui a créé
+   celui-ci : la borne est juste, le MOMENT où on l'appliquait ne l'était pas.
+
+   `ecrire` sépare les deux usages :
+     · à la frappe (`input`)  → on CALCULE pour l'aperçu de taxe, sans toucher
+       au champ. Un champ vide vaut 1 pour l'aperçu, et reste vide à l'écran.
+     · à la validation (`change`, `blur`) → là seulement on borne et on écrit,
+       quand la personne a fini sa phrase. */
+function _posteBornerQte(z, id, ecrire){
   const c = z.querySelector("#poste-qte"); if(!c) return 1;
   const dispo = Math.max(0, (etat.sac && etat.sac[id]) || 0);
   let q = parseInt(c.value, 10);
   if(!Number.isFinite(q) || q < 1) q = 1;
   if(dispo > 0 && q > dispo) q = dispo;
   c.max = dispo || 1;
-  if(String(q) !== c.value) c.value = q;
+  if(ecrire && String(q) !== c.value) c.value = q;
   const d = z.querySelector("#poste-dispo");
   if(d) d.textContent = dispo ? `/ ${dispo}` : "";
   return q;
@@ -182,7 +205,7 @@ function _majTaxe(z){
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0;
     const tx=Math.ceil(tauxPoste()*m);
     el.innerHTML=`Coût total : <b>${m + tx} ₡</b> (${m} + taxe ${tx} ₡, soit ${Math.round(tauxPoste()*100)} %).`; }
-  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (${Math.round(tauxPoste()*100)} % du prix de base).`; }
+  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id, !!_posteFige); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (${Math.round(tauxPoste()*100)} % du prix de base).`; }
 }
 
 async function posteEnvoyer(){
