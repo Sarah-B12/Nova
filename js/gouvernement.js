@@ -1042,7 +1042,11 @@ function _ouvrirCandidature(programme){
 async function _soumettreCandidature(){
   const t=(document.querySelector("#cand-prog").value||"").trim(); _candForm.prog=null;
   const { data:res, error } = await sb.rpc("candidater", { p_programme:t });
-  if(error || !res || !res.ok){ if(res && res.err==="depot_ferme") journal("Le dépôt des candidatures est fermé (après le 3).","alerte"); else journal("Candidature impossible.","alerte"); return; }
+  if(error || !res || !res.ok){ if(res && res.err==="depot_ferme") journal("Le dépôt des candidatures est fermé (après le 3).","alerte");
+    else if(res && res.err==="deja_candidat"){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===res.faction):null;
+      journal(f ? `Tu es déjà candidat ce cycle-ci, chez ${f.nom}. Retire cette candidature d'abord.` : "Tu es déjà candidat ce cycle-ci ailleurs.","alerte"); }
+    else if(res && res.err==="hors_silene") journal("On ne gouverne pas de loin : redescends sur Silène pour te présenter.","alerte");
+    else journal("Candidature impossible.","alerte"); return; }
   const m=document.querySelector("#gouv-modal"); if(m) m.hidden=true;
   journal("Candidature enregistrée. Bonne chance !","gain");
   if(typeof majCentre==="function") majCentre();
@@ -1115,7 +1119,13 @@ async function _voter(candidatId, nom){
   const { data:res, error } = await sb.rpc("voter", { p_candidat:candidatId });
   if(error || !res || !res.ok){
     const e=res&&res.err;
-    if(e==="deja_vote") journal("Tu as déjà voté.","alerte");
+    /* ⚠ v0.93 — le vote est unique PAR CYCLE, toutes factions confondues. Si le
+       joueur a voté ailleurs avant de nous rejoindre, « tu as déjà voté » seul
+       serait incompréhensible : on nomme la faction où sa voix est restée. */
+    if(e==="deja_vote"){
+      const f = (res && res.faction && typeof FACTIONS!=="undefined") ? FACTIONS.find(x=>x.id===res.faction) : null;
+      journal(f ? `Tu as déjà voté ce cycle-ci, chez ${f.nom}. Ta voix y reste.` : "Tu as déjà voté ce cycle-ci.","alerte");
+    }
     else if(e==="hors_vote") journal("Les votes ne sont pas ouverts (jour 3-4 du mois).","alerte");
     else if(e==="candidat") journal("Candidat invalide.","alerte");
     else journal("Vote impossible.","alerte");

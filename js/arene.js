@@ -102,17 +102,7 @@ async function majArene(){
         const mot = h.statut==="refuse" ? "refusé" : "expiré";
         return `<p class="itip-gris" style="margin:2px 0;font-size:12px">${_areneFmt(h.quand)} — défi ${mot} · ${h.adversaire}</p>`;
       }
-      const r = h.rapport || {};
-      const jeSuisCh = (h.jetais === "challenger");
-      /* `rapport.vainqueur` est un identifiant : on ne sait pas si c'est le
-         nôtre. On le déduit du camp qu'on occupait et des XP, qui valent 12×
-         en victoire contre 4× en défaite. */
-      const monXp = jeSuisCh ? r.xp_challenger : r.xp_defie;
-      /* Le rapport donne l'identifiant du vainqueur, pas le mien : on compare
-         les XP, qui valent 12× en victoire contre 4× en défaite. */
-      const sonXp = jeSuisCh ? r.xp_defie : r.xp_challenger;
-      const issue = (monXp > sonXp) ? "gagné" : (monXp < sonXp ? "perdu" : "—");
-      return `<p class="itip-gris" style="margin:2px 0;font-size:12px">${_areneFmt(h.quand)} — ${h.adversaire} · <b>${issue}</b> · +${monXp||0} XP</p>`;
+      return _areneLigneHisto(h);
     }).join("");
   }
 
@@ -178,11 +168,7 @@ async function rendreDuelsComm(z){
       if(h.statut !== "accepte"){
         return `<p class="itip-gris" style="margin:2px 0;font-size:12px">${_areneFmt(h.quand)} — défi ${h.statut==="refuse"?"refusé":"expiré"} · ${h.adversaire}</p>`;
       }
-      const r = h.rapport || {}; const ch = (h.jetais === "challenger");
-      const monXp = ch ? r.xp_challenger : r.xp_defie;
-      const sonXp = ch ? r.xp_defie : r.xp_challenger;
-      const issue = (monXp > sonXp) ? "gagné" : (monXp < sonXp ? "perdu" : "—");
-      return `<p class="itip-gris" style="margin:2px 0;font-size:12px">${_areneFmt(h.quand)} — ${h.adversaire} · <b>${issue}</b> · +${monXp||0} XP</p>`;
+      return _areneLigneHisto(h);
     }).join("");
   }
 
@@ -200,6 +186,22 @@ function _areneRafraichir(){
   if(typeof majArene==="function") majArene();
   if(typeof commVue!=="undefined" && commVue==="duels" && typeof majComm==="function") majComm();
   if(typeof compterNotifs==="function") compterNotifs();
+}
+
+/* ⚠ v0.92c — L'ISSUE VIENT DU SERVEUR (`gagne`), ELLE N'EST PLUS DÉDUITE.
+   Je la calculais en comparant les XP des deux camps, en supposant que le
+   vainqueur en gagne toujours plus. Faux : les deux barèmes se croisent.
+   Kyraa (43) bat Test1 (26) → 12 × 26/43 = 7 pour elle, 4 × 43/26 = 7 pour lui.
+   Égalité, et l'historique affichait « — » sur une victoire nette.
+   `rapport.vainqueur` porte l'identifiant depuis le début : le serveur SAVAIT.
+   Une déduction est toujours plus fragile qu'une lecture. */
+function _areneLigneHisto(h){
+  const r = h.rapport || {};
+  const monXp = (h.jetais === "challenger") ? r.xp_challenger : r.xp_defie;
+  const v = (h.gagne === true) ? { t:"gagné", c:"#8bd450" }
+          : (h.gagne === false) ? { t:"perdu", c:"#ff5257" }
+          : { t:"—", c:"inherit" };   // vieux duels sans le champ : on n'invente pas
+  return `<p class="itip-gris" style="margin:2px 0;font-size:12px">${_areneFmt(h.quand)} — ${h.adversaire} · <b style="color:${v.c}">${v.t}</b> · +${monXp||0} XP</p>`;
 }
 
 function _areneFacNom(id){
@@ -271,7 +273,10 @@ async function _areneRepondre(id, accepte, bouton){
          l'annonce déjà (« Expérience de campagne : +N XP »). L'écrire ici
          aussi la ferait lire deux fois — c'est le doublon supprimé en v0.89
          pour les expéditions, je ne le réintroduis pas pour les duels. */
-      journal(`⚔️ ${issue} contre ${data.adversaire} — ${data.ma_force} contre ${data.sa_force}.${rep}${bis}`,
+      /* ⚠ v0.92c — plus de forces affichées : `sa_force` n'est d'ailleurs plus
+         renvoyée par le serveur. On garde la sienne, qui n'apprend rien sur
+         l'adversaire et situe le joueur. */
+      journal(`⚔️ ${issue} contre ${data.adversaire} (ta force : ${data.ma_force}).${rep}${bis}`,
               data.gagne ? "gain" : "alerte");
       /* L'XP est déposée dans `effets_combat` : c'est la synchro habituelle qui
          la ramène et qui gère la montée de niveau. On ne l'ajoute pas ici. */

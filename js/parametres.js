@@ -157,6 +157,11 @@ async function changerFaction(fid){
     else if(err==="verrou")          journal(`Prochain changement possible le ${new Date(data.prochain).toLocaleString()}.`,"alerte");
     else if(err==="faction_inconnue") journal("Faction inconnue.","alerte");
     else if(err==="deja")            journal("Tu appartiens déjà à cette faction.","alerte");
+    /* ⚠ v0.93 — CHACUN DE CES DEUX REFUS A UNE PORTE DE SORTIE, et le message
+       doit la nommer. Un « Changement refusé » sec devant un Régent qui veut
+       partir, c'est un joueur qui croit à un bug et qui écrit au support. */
+    else if(err==="regent")          journal("Tu es Régent : transmets d'abord ton mandat (Centre → Gouvernement) avant de changer de faction.","alerte");
+    else if(err==="candidat")        journal("Tu es candidat à l'élection en cours : retire d'abord ta candidature avant de changer de faction.","alerte");
     else journal("Changement refusé.","alerte");
     await chargerFactionEtat(1);
     return;
