@@ -36,6 +36,34 @@ function categorieMarche(id){
 }
 function marcheFaction(){ return (typeof villeActuelle==="function") ? villeActuelle() : null; }
 
+/* ⚠⚠ v0.94 — LE MARCHÉ VENDAIT DES CADAVRES.
+   `deposer_offre` garde la date du lot (`offres.acquis_le`) et `acheter_offre`
+   la rend telle quelle à l'acheteur : « l'objet continue de vieillir en
+   vitrine », « pas de blanchiment par le marché ». L'intention est juste.
+   Mais RIEN ne retirait les offres périmées — `nova_purges` ne touchait pas à
+   `offres` — et le marché n'affichait aucune fraîcheur. Une Ferragave (5 j)
+   déposée il y a une semaine restait en vente, se payait plein tarif, et
+   mourait dans le sac de l'acheteur à la synchro suivante. Le vendeur gardait
+   les crédits. C'est ce qui a coûté ses Ferragave à un testeur.
+   Le serveur purge désormais (brique 2) ; ici on AFFICHE le temps restant et
+   on refuse ce qui est mort, pour la fenêtre entre deux purges.
+   ⚠ `acquis_le` est déjà renvoyé : `_chargerOffres` fait un `select("*")`.
+   ⚠ La durée reste dans `usure.js` — SOURCE UNIQUE. Le serveur ne stocke
+     qu'une date, il n'apprend aucun barème. */
+function _offreJours(o){
+  if(!o || !o.acquis_le || typeof dureeVie!=="function") return null;
+  const t0 = new Date(o.acquis_le).getTime();
+  if(!isFinite(t0)) return null;
+  return (t0 + dureeVie(o.item_id)*JOUR_MS - Date.now()) / JOUR_MS;
+}
+function _offreMorte(o){ const j=_offreJours(o); return j!=null && j<=0; }
+// Badge « 3 j » / « <1 j », dans les couleurs déjà utilisées pour l'usure.
+function _offreBadge(o){
+  const j = _offreJours(o); if(j==null) return "";
+  const cls = j<1 ? "usure-critique" : (j<3 ? "usure-basse" : "");
+  return ` <span class="picker-usure ${cls}">${j<1 ? "<1" : Math.floor(j)} j</span>`;
+}
+
 /* --- Crédits autoritatifs serveur --- */
 async function _syncCredits(){
   if(typeof pousserCredits==="function"){ const av=etat.credits; await pousserCredits(); if(etat.credits!==av && typeof afficher==="function") afficher(); }
@@ -65,7 +93,9 @@ async function renderMarche(){
   let html = `<div class="marche-tete"><h3 style="color:${fc.couleur};margin:0">Marché — ${fc.nom}</h3>`
     + `<span class="actions" style="gap:6px"><button class="mini" id="marche-mesventes-btn">Mes ventes${mesN?` (${mesN})`:""}</button><button class="mini" id="marche-vendre-btn">Mettre en vente</button></span></div>`;
   html += `<div class="marche-tabs">` + CAT_MARCHE.map(c=>`<button class="marche-tab${c.id===marcheTab?" actif":""}" data-cat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
-  const achat = _offresCache.filter(o=>o.vendeur_id!==_marcheMonId && categorieMarche(o.item_id)===marcheTab);
+  // ⚠ v0.94 : les offres mortes ne s'achètent plus. Elles disparaîtront à la
+  // purge horaire ; d'ici là, elles ne doivent ni s'afficher ni se vendre.
+  const achat = _offresCache.filter(o=>o.vendeur_id!==_marcheMonId && categorieMarche(o.item_id)===marcheTab && !_offreMorte(o));
   html += `<div class="marche-liste">`;
   if(!achat.length) html += `<p class="vide">Aucun objet en vente dans cette catégorie.</p>`;
   /* ⚠ UNE SEULE LIGNE PAR OBJET, tous vendeurs et tous prix confondus. Le
@@ -99,7 +129,7 @@ async function renderMarche(){
       ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ l'unité · moy ${p.moy||"?"} ₡`
       : `${o.quantite} en vente par ${echapper(o.vendeurNom||"?")} · ${o.prix} ₡ l'unité · moy ${p.moy||"?"} ₡`;
     html += `<div class="marche-ligne" data-item="${iid}"><span class="marche-ic">${iconeItem(iid)}</span>`
-      + `<span class="marche-nom">${item(iid).nom}<span class="qte">${detail}</span></span>`
+      + `<span class="marche-nom">${item(iid).nom}${_offreBadge(o)}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
       + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
@@ -117,6 +147,10 @@ async function renderMarche(){
 async function acheterOffre(offreId){
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
   if(typeof estVaisseau==="function" && estVaisseau(o.item_id) && !etat.permisVaisseau){ journal("Achat de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
+  /* ⚠ v0.94 — dernier filet avant l'achat : le cache a pu vieillir pendant que
+     la fenêtre restait ouverte, et le lot mourrait dans le sac à la synchro
+     suivante, crédits perdus. */
+  if(_offreMorte(o)){ journal("Ce lot est périmé : il va être retiré du marché.","alerte"); renderMarche(); return; }
   if(placesLibres() < 1){ journal("Sac plein.","alerte"); return; }
   const { data:res, error } = await rpcAvecSolde("acheter_offre", { offre: Number(offreId) });
   if(error || !res || !res.ok){
@@ -158,7 +192,19 @@ async function mettreEnVente(id, prix, qte){
   qte  = Math.max(1, Math.min(dispo, Math.floor(qte||1)));
   prix = Math.max(p.min, Math.min(p.max, Math.round(prix||p.moy)));
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
-  const { data:res, error } = await rpcAvecSolde("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix });
+  /* ⚠ v0.94 — c'est le CLIENT qui calcule l'échéance, et lui seul : `usure.js`
+     reste la source unique des durées de vie. Le serveur ne reçoit qu'une date,
+     qu'il range dans `offres.expire_le` pour pouvoir purger.
+     On part du temps restant du LOT LE PLUS ANCIEN, pas de `dureeVie()` à
+     neuf : le serveur retire en FIFO (`inv_date_plus_ancienne`), c'est donc ce
+     lot-là qui part en vitrine. Sans ça, une mise en vente rajeunirait
+     l'objet — exactement le « blanchiment par le marché » qu'on refuse.
+     Si les lots ne sont pas encore synchronisés, on n'invente pas de date :
+     l'offre ne sera pas purgée, ce qui vaut mieux qu'une purge trop tôt. */
+  const _jr  = (typeof joursRestantsLot==="function") ? joursRestantsLot(id, "sac") : null;
+  const _exp = (_jr!=null) ? new Date(Date.now() + _jr*JOUR_MS).toISOString() : null;
+  if(_exp==null) console.warn("[marche] lots non synchronisés : offre déposée sans échéance.", id);
+  const { data:res, error } = await rpcAvecSolde("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix, p_expire_le:_exp });
   if(error || !res || !res.ok){
     if(res && res.err==="taxe") journal(`Taxe de ${res.taxe} ₡ — crédits insuffisants.`,"alerte");
     else if(res && res.err==="manque") journal(`Tu ne possèdes que ${res.possede}× cet objet.`,"alerte");
@@ -229,8 +275,10 @@ function ouvrirMesVentes(){
   html += `<p class="vide" style="margin:0 0 8px">Retirer une offre te rend l'objet. La taxe déjà payée n'est pas remboursée.</p>`;
   if(!mes.length) html += `<p class="vide">Tu n'as rien en vente ici.</p>`;
   for(const o of mes){
+    // v0.94 : le vendeur voit ce qui va être purgé, et peut le retirer avant.
+    const mort = _offreMorte(o);
     html += `<div class="vente-ligne" data-item="${o.item_id}"><span class="picker-ic">${iconeItem(o.item_id)}</span>`
-      + `<span class="picker-nom"><b>${item(o.item_id).nom}</b> <span class="qte">×${o.quantite} à ${o.prix} ₡</span></span>`
+      + `<span class="picker-nom"><b>${item(o.item_id).nom}</b>${mort ? ` <span class="picker-usure usure-critique">périmé</span>` : _offreBadge(o)} <span class="qte">×${o.quantite} à ${o.prix} ₡</span></span>`
       + `<button class="mini danger" data-retirer="${o.id}">Retirer</button></div>`;
   }
   html += `</div>`;
