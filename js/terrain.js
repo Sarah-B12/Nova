@@ -163,6 +163,7 @@ async function batirParcelle(type){
   if(typeof sauverMaintenant==="function") await sauverMaintenant();   // v0.65 : 200 ₡ ne doivent pas tenir à 2,5 s de minuterie
 }
 async function demolir(i){
+  if(refusPrison("démolir")) return;
   if(_refusTerrain()) return;
   if(!confirm("Démolir cette structure ? La parcelle sera libérée.")) return;
   const p=etat.terrain.parcelles[i]; const taux=aptRecyclageTaux();

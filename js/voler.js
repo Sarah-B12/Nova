@@ -26,6 +26,22 @@ function aIntrusion(){ return _apris("om4"); }
 function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK_VOL || etat.equipement.arme2===ITEM_HACK_VOL)); }
 function _enVille(){ return (typeof enZoneFaction==="function") && enZoneFaction(); }
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
+/* ⚠⚠ v0.94 — LA PRISON NE TENAIT QUE LA MOITIÉ DU JEU.
+   `agir()` refuse en prison, donc tout ce qui passe par elle était bloqué
+   (miner, récolter, fabriquer, bâtir, se déplacer…). Mais tout ce qui NE passe
+   pas par `agir()` restait ouvert : vendre et acheter au marché, envoyer un
+   colis, publier une annonce, démolir ou reconstruire son logement. Un joueur
+   emprisonné continuait de commercer depuis sa cellule.
+   ⚠ Ce garde-ci n'est qu'un CONFORT D'INTERFACE. La vraie interdiction est
+   côté serveur (`public.en_prison()` dans deposer_offre, acheter_offre,
+   retirer_offre, poste_envoyer, publier_annonce) : le client ne protège de
+   rien, il explique. Logement et terrain restent purement clients, donc non
+   protégés — c'est une limite connue, pas un oubli. */
+function refusPrison(quoi){
+  if(typeof enPrison!=="function" || !enPrison()) return false;
+  journal(`Tu es en prison — ${quoi} est impossible jusqu'à ta libération.`,"alerte");
+  return true;
+}
 function prisonRestant(){ return Math.max(0, (etat.prisonJusqua||0)-Date.now()); }
 /* ⚠⚠ v0.94 — L'OBJET RENVOYÉ PAR `sb.rpc()` N'EST PAS UNE PROMESSE.
    C'est un « thenable » PARESSEUX : il n'a QUE `then`, pas `catch` ni

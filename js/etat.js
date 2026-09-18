@@ -13,7 +13,7 @@ function nouvelEtat(){
     credits:0, niveau:1, xp:0, pointsCompetence:0, retours:0,
     competences:{ force:10, agilite:10, intelligence:10 },   // égales au départ : aucune voie de Cercle favorisée
     equipement:{ tete:null, torse:null, jambes:null, arme:null, arme2:null, drone:null, implant:null }, equipementDate:{},
-    vaisseau:null, vaisseauDate:null, vaisseauAge:{}, vaisseauPv:{}, navetteFin:0, carburant:0, gravier:null, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null,
+    vaisseau:null, vaisseauDate:null, vaisseauAge:{}, vaisseauPv:{}, navetteFin:0, carburant:0, gravier:null, permisVaisseau:false, soute:{}, souteDate:{}, prisonJusqua:0, prisonFaction:null, respecOffert:false,   // v0.94 : la 1re réattribution d'aptitudes est offerte
     /* v0.86 — secteur : "silene" | "ecart" (voir orbite.js). ⚠ Valeur PAR
        DÉFAUT uniquement : ne JAMAIS la répéter dans hydraterEtat, qui
        écraserait alors le secteur relu du serveur — le joueur redescendait sur

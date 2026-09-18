@@ -724,6 +724,7 @@ async function _rendreBureauRegent(el, fac){
   _brouillon(el, "#reg-msg", "msg", _regForm, "input");
   el.querySelector("#reg-ann-pub").addEventListener("click", async()=>{
     _regForm.annonce=null;
+    if(refusPrison("publier une annonce")) return;
     const t=(el.querySelector("#reg-annonce").value||"").trim();
     const { data:res, error } = await sb.rpc("publier_annonce",{ p_texte:t });
     if(error || !res || !res.ok){ journal("Publication impossible.","alerte"); return; }

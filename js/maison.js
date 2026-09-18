@@ -86,6 +86,7 @@ function finirChantierSiPret(){
 
 /* ---------- Placement & construction ---------- */
 function placerMaison(i){
+  if(refusPrison("bâtir un logement")) return;
   if(etat.maison.plot!=null){ journal("Tu as déjà un logement (un seul autorisé).","alerte"); return; }
   if(etat.terrain.parcelles[i]) return;
   etat.maison.plot = i;
@@ -95,6 +96,7 @@ function placerMaison(i){
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 function agrandirMaison(){
+  if(refusPrison("agrandir ton logement")) return;
   const m=etat.maison;
   if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   if(m.chantier){ journal("Un chantier est déjà en cours.","alerte"); return; }
@@ -160,6 +162,7 @@ async function travaillerMaison(){
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function demolirMaison(){
+  if(refusPrison("démolir ton logement")) return;
   if(itemsCoffre()>0){ journal("Vide d'abord ton rangement avant de démolir.","alerte"); return; }
   if(!confirm("Démolir ton logement ? La parcelle sera libérée.")) return;
   const libere = etat.maison.plot;

@@ -30,7 +30,14 @@ function categorieMarche(id){
   if(/implant|drone/.test(n)) return "implants";
   if(/couteau|pistolet|lame|fusil|canon|munition|tourelle/.test(n)) return "armes";
   if(/^vaisseau|^navette/.test(n)) return "vaisseaux";
-  if(it.type==="conso" || /oxygène|oxygene|soin|ration|stimulant|antidote|biogel|tank/.test(n)) return "conso";
+  /* ⚠ v0.94 — le Biogel N'EST PAS un consommable : c'est un INTERMÉDIAIRE
+     (3 Nectine → 1 Biogel), ingrédient du Kit de soin, du Biocarburant, du
+     Stimulant, de l'Antidote et du Drone de récolte. Il n'a aucune entrée dans
+     `EFFET_CONSO`, donc il s'affichait dans l'onglet Consommables sans pouvoir
+     être consommé. Il part en « Composants & pièces », avec les autres
+     intermédiaires. ⚠ Ne pas confondre avec le Biocarburant, qui reste en
+     « Matières bio » (il sert de carburant de vaisseau). */
+  if(it.type==="conso" || /oxygène|oxygene|soin|ration|stimulant|antidote|tank/.test(n)) return "conso";
   if(it.cat==="plante" || it.cat==="organique" || it.cat==="animal" || /sylve|biofibre|biocarburant|\bfil\b|prot[eé]ine|nectine|sporelle|ferragave|filaine|cuir/.test(n)) return "bio";
   return "composants";
 }
@@ -78,12 +85,35 @@ async function _chargerOffres(faction){
 }
 
 /* --- Rendu --- */
+/* ⚠ v0.94 — ACHETER EN BAS DE PAGE REMONTAIT LA VUE. `renderMarche()` remplace
+   tout `#marche-vue`, en passant par un « Chargement… » qui fait s'effondrer la
+   hauteur : le navigateur n'a plus rien à quoi accrocher le défilement et
+   revient en haut. Acheter deux fois le même objet obligeait à redescendre.
+   On mémorise la position AVANT, on la rend APRÈS, et on ne montre le
+   « Chargement… » que si la vue est vide (premier affichage). */
+function _marcheGardeScroll(){
+  const z = document.querySelector("#marche-vue");
+  const conteneurs = [];
+  let n = z && z.parentElement;
+  while(n && n !== document.body){
+    if(n.scrollHeight > n.clientHeight + 4) conteneurs.push([n, n.scrollTop]);
+    n = n.parentElement;
+  }
+  const y = window.scrollY || 0;
+  // Après un innerHTML, la hauteur n'est rétablie qu'à la frame suivante.
+  return () => requestAnimationFrame(()=>{
+    conteneurs.forEach(([c,t])=>{ c.scrollTop = t; });
+    if(y) window.scrollTo(0, y);
+  });
+}
+
 async function renderMarche(){
   if(typeof cacherItemTip==="function") cacherItemTip();
   const z = document.querySelector("#marche-vue"); if(!z) return;
+  const _rendreScroll = _marcheGardeScroll();
   const faction = marcheFaction();
   if(!faction){ z.innerHTML = `<p class="vide">Rends-toi dans une <b>ville de faction</b> (onglet Planète) pour accéder à son marché. Chaque faction a le sien.</p>`; return; }
-  z.innerHTML = `<p class="vide">Chargement du marché…</p>`;
+  if(!z.innerHTML.trim()) z.innerHTML = `<p class="vide">Chargement du marché…</p>`;   // v0.94 : pas d'effondrement en cours de route
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; _marcheMonId=s?s.user.id:null;
   try{ const {data}=await sb.from("gouvernement").select("profil_id").eq("faction",etat.faction).eq("role","architecte").maybeSingle(); _estArchitecte=!!(data && data.profil_id===_marcheMonId); }catch(e){ _estArchitecte=false; }
   await _syncCredits();
@@ -128,7 +158,10 @@ async function renderMarche(){
          l'unité. */
       ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ l'unité · moy ${p.moy||"?"} ₡`
       : `${o.quantite} en vente par ${echapper(o.vendeurNom||"?")} · ${o.prix} ₡ l'unité · moy ${p.moy||"?"} ₡`;
-    html += `<div class="marche-ligne" data-item="${iid}"><span class="marche-ic">${iconeItem(iid)}</span>`
+    // v0.94 : `data-jours` porte l'échéance de CETTE offre — sans lui,
+    // l'infobulle affichait la durée de vie à neuf (l'objet n'est pas au sac).
+    const _j = _offreJours(o);
+    html += `<div class="marche-ligne" data-item="${iid}"${_j!=null?` data-jours="${_j.toFixed(3)}"`:""}><span class="marche-ic">${iconeItem(iid)}</span>`
       + `<span class="marche-nom">${item(iid).nom}${_offreBadge(o)}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
       + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
@@ -141,10 +174,12 @@ async function renderMarche(){
   z.querySelectorAll("[data-acheterfac]").forEach(b=>b.addEventListener("click",()=>acheterOffreFaction(b.dataset.acheterfac)));
   const vb = z.querySelector("#marche-vendre-btn"); if(vb) vb.addEventListener("click", ouvrirVente);
   const mb = z.querySelector("#marche-mesventes-btn"); if(mb) mb.addEventListener("click", ouvrirMesVentes);
+  _rendreScroll();
 }
 
 /* --- Acheter (atomique serveur) --- */
 async function acheterOffre(offreId){
+  if(refusPrison("acheter")) return;
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
   if(typeof estVaisseau==="function" && estVaisseau(o.item_id) && !etat.permisVaisseau){ journal("Achat de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
   /* ⚠ v0.94 — dernier filet avant l'achat : le cache a pu vieillir pendant que
@@ -170,6 +205,7 @@ async function acheterOffre(offreId){
 }
 
 async function acheterOffreFaction(offreId){
+  if(refusPrison("acheter")) return;
   const { data:res, error } = await sb.rpc("acheter_offre_faction", { offre: Number(offreId) });
   if(error || !res || !res.ok){
     const e=res&&res.err;
@@ -186,6 +222,7 @@ async function acheterOffreFaction(offreId){
 
 /* --- Mettre en vente (dépôt-vente, taxe serveur) --- */
 async function mettreEnVente(id, prix, qte){
+  if(refusPrison("mettre en vente")) return;
   const faction = marcheFaction(); if(!faction){ journal("Va dans une ville de faction pour vendre.","alerte"); return; }
   const dispo = etat.sac[id]||0; if(dispo <= 0) return;
   const p = PRIX_ITEM[id]; if(!p){ journal("Cet objet n'a pas de valeur de marché.","alerte"); return; }
@@ -219,6 +256,7 @@ async function mettreEnVente(id, prix, qte){
 
 /* --- Retirer une de ses offres (rend le lot ; taxe non remboursée) --- */
 async function retirerOffre(offreId){
+  if(refusPrison("retirer une offre")) return;
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
   const { data:res, error } = await sb.rpc("retirer_offre", { offre: Number(offreId) });
   if(error || !res || !res.ok){
@@ -277,7 +315,8 @@ function ouvrirMesVentes(){
   for(const o of mes){
     // v0.94 : le vendeur voit ce qui va être purgé, et peut le retirer avant.
     const mort = _offreMorte(o);
-    html += `<div class="vente-ligne" data-item="${o.item_id}"><span class="picker-ic">${iconeItem(o.item_id)}</span>`
+    const _j = _offreJours(o);
+    html += `<div class="vente-ligne" data-item="${o.item_id}"${_j!=null?` data-jours="${_j.toFixed(3)}"`:""}><span class="picker-ic">${iconeItem(o.item_id)}</span>`
       + `<span class="picker-nom"><b>${item(o.item_id).nom}</b>${mort ? ` <span class="picker-usure usure-critique">périmé</span>` : _offreBadge(o)} <span class="qte">×${o.quantite} à ${o.prix} ₡</span></span>`
       + `<button class="mini danger" data-retirer="${o.id}">Retirer</button></div>`;
   }

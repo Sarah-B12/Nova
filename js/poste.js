@@ -209,6 +209,7 @@ function _majTaxe(z){
 }
 
 async function posteEnvoyer(){
+  if(refusPrison("envoyer un colis")) return;
   const z=document.querySelector("#poste-vue"); if(!z) return;
   const dest=(z.querySelector("#poste-dest").value||"").trim();
   if(!dest){ journal("Indique un destinataire.","alerte"); return; }

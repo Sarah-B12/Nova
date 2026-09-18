@@ -39,14 +39,32 @@ function acheterApt(chaine, idx){
   if(typeof afficher==="function") afficher();
   if(typeof majVoler==="function") majVoler();
 }
+/* v0.94 — LA PREMIÈRE RÉATTRIBUTION EST OFFERTE. La chaîne est stricte et les
+   PA sont rares : un débutant qui se trompe de branche reste coincé jusqu'à
+   50 000 ₡, ce qui est une frustration, pas une difficulté. Une fois, gratuit ;
+   ensuite, plein tarif.
+   ⚠ `respecOffert` vit dans `donnees` (via `etat`), pas côté serveur : la
+   réattribution est déjà entièrement client, crédits compris. À déplacer le
+   jour où les crédits d'aptitude passeront au serveur. */
+function respecGratuit(){ return !etat.respecOffert; }
+function respecCout(){ return respecGratuit() ? 0 : APT_RESPEC; }
 function respecApt(){
   const e = aptEtat();
   if(e.pris.length === 0){ journal("Aucune aptitude à réattribuer.","alerte"); return; }
-  if(etat.credits < APT_RESPEC){ journal(`Réattribution : ${APT_RESPEC} ₡ nécessaires.`,"alerte"); return; }
-  if(!confirm(`Réattribuer toutes tes aptitudes pour ${APT_RESPEC} ₡ ? Tes points seront rendus, à replacer.`)) return;
+  const cout = respecCout();
+  if(etat.credits < cout){ journal(`Réattribution : ${cout} ₡ nécessaires.`,"alerte"); return; }
+  const question = (cout === 0)
+    ? `Réattribuer toutes tes aptitudes ? C'est OFFERT — une seule fois. Les suivantes coûteront ${APT_RESPEC.toLocaleString("fr-FR")} ₡.`
+    : `Réattribuer toutes tes aptitudes pour ${cout} ₡ ? Tes points seront rendus, à replacer.`;
+  if(!confirm(question)) return;
   const rendu = e.pris.reduce((a,id)=>a+aptCoutParId(id), 0);
-  etat.credits -= APT_RESPEC; e.pa += rendu; e.pris = [];
-  journal(`Aptitudes réattribuées : −${APT_RESPEC} ₡, +${rendu} PA à replacer.`,"gain");
+  etat.credits -= cout; e.pa += rendu; e.pris = [];
+  // ⚠ Le drapeau se pose APRÈS le confirm : une annulation ne doit pas
+  // consommer la gratuité.
+  etat.respecOffert = true;
+  journal((cout === 0)
+    ? `Aptitudes réattribuées — réattribution offerte, +${rendu} PA à replacer.`
+    : `Aptitudes réattribuées : −${cout} ₡, +${rendu} PA à replacer.`, "gain");
   sauvegarder(); afficher();
 }
 // Appelée à la fin d'une quête (à venir) — et par le bouton debug.
@@ -75,7 +93,7 @@ function monterAptitudes(){
   const panneau = document.querySelector('[data-panneau="aptitudes"]'); if(!panneau) return;
   panneau.innerHTML =
     `<h2>Aptitudes <span class="pts" id="apt-pa"></span></h2>
-     <p class="vide" style="margin:0 0 12px">Les points d'Aptitude se gagnent en accomplissant des quêtes ; certaines en donnent plus que d'autres. Chaîne stricte : chaque nœud exige le précédent. Réattribution : ${APT_RESPEC.toLocaleString("fr-FR")} ₡.</p>
+     <p class="vide" style="margin:0 0 12px">Les points d'Aptitude se gagnent en accomplissant des quêtes ; certaines en donnent plus que d'autres. Chaîne stricte : chaque nœud exige le précédent. Réattribution : ${respecGratuit() ? "<b>la première est offerte</b>, puis " : ""}${APT_RESPEC.toLocaleString("fr-FR")} ₡.</p>
      <div class="apt-sous-menu">
        <button class="apt-sous-lien actif" data-apt="communes">Aptitudes communes</button>
        <button class="apt-sous-lien" data-apt="speciales">Aptitudes spéciales</button>
@@ -83,7 +101,7 @@ function monterAptitudes(){
      <div class="apt-vue" id="apt-vue-communes"></div>
      <div class="apt-vue" id="apt-vue-speciales" hidden></div>
      <div class="apt-boutons">
-       <button class="mini" id="apt-respec">Réattribuer (${APT_RESPEC.toLocaleString("fr-FR")} ₡)</button>
+       <button class="mini" id="apt-respec">Réattribuer (${respecGratuit() ? "offert" : APT_RESPEC.toLocaleString("fr-FR")+" ₡"})</button>
      </div>`;
   panneau.querySelector("#apt-respec").addEventListener("click", respecApt);
   panneau.querySelectorAll(".apt-sous-lien").forEach(b => b.addEventListener("click", ()=>{
@@ -143,7 +161,7 @@ function majAptitudes(){
     spe.innerHTML = `<p class="vide">Rejoins une faction pour débloquer tes aptitudes spéciales.</p>`;
   }
 
-  const rb = panneau.querySelector("#apt-respec"); if(rb) rb.disabled = e.pris.length === 0 || etat.credits < APT_RESPEC;
+  const rb = panneau.querySelector("#apt-respec"); if(rb) rb.disabled = e.pris.length === 0 || etat.credits < respecCout();
 }
 // Note : pas d'appel au chargement — `etat` n'existe qu'après bootstrap.js.
 // Le premier rendu (et tous les suivants) passe par afficher() dans rendu.js.

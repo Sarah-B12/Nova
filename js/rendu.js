@@ -109,7 +109,13 @@ function majJauge(cle, v){ _majJaugeEl(document.querySelector(`#jauge-${cle}`), 
 
 /* ---------- Sac (grille de 50 places) ---------- */
 /* --- Infobulle d'objet au survol : effets, valeur de marché, durée de vie --- */
-function infoItemHTML(id){
+/* ⚠ v0.94 — `joursForce` : jours restants IMPOSÉS par l'appelant.
+   L'infobulle lisait `joursRestants(id)`, qui ne regarde que les lots DU
+   JOUEUR. Sur une offre du marché, l'objet n'est nulle part chez lui : la
+   bulle affichait la durée de vie à neuf pendant que la ligne, juste à côté,
+   affichait « <1 j ». Le marché passe donc l'échéance de l'offre via
+   `data-jours` (voir `brancherTips`). */
+function infoItemHTML(id, joursForce){
   const it = item(id); if(!it) return "";
   let h = `<div class="itip-nom">${it.nom}</div>`;
   const catLbl = { minerai:"Minerai", organique:"Matière organique", animal:"Matière animale", plante:"Plante", fabrique:"Objet fabriqué" };
@@ -117,7 +123,13 @@ function infoItemHTML(id){
   if(typeof effetTexte==="function"){ const e=effetTexte(id); if(e) h += `<div class="itip-effet">${e}</div>`; }
   const ec=(typeof effetConso==="function")?effetConso(id):null; if(ec){ const parts=Object.keys(ec).map(g=>`+${ec[g]} ${labelJauge(g)}`); h += `<div class="itip-effet">${parts.join(", ")} — cliquer pour utiliser</div>`; }
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]){ const p=PRIX_ITEM[id]; h += `<div class="itip-ligne">Valeur : <b>${p.min}–${p.max} ₡</b> <span class="itip-gris">(moy ${p.moy})</span></div>`; }
-  if(typeof dureeVie==="function"){ let s=`Durée de vie : ${dureeVie(id)} j`; if(typeof joursRestants==="function"){ const jr=joursRestants(id); if(jr!=null) s+=` · ${Math.ceil(jr)} j restant`; } h += `<div class="itip-ligne itip-gris">${s}</div>`; }
+  if(typeof dureeVie==="function"){
+    let s=`Durée de vie : ${dureeVie(id)} j`;
+    const jr = (joursForce!=null) ? joursForce
+             : ((typeof joursRestants==="function") ? joursRestants(id) : null);
+    if(jr!=null) s += (jr<=0) ? ` · <b>périmé</b>` : ` · ${Math.ceil(jr)} j restant`;
+    h += `<div class="itip-ligne itip-gris">${s}</div>`;
+  }
   return h;
 }
 let _itip=null;
@@ -133,12 +145,17 @@ function itemTip(){ if(!_itip){ _itip=document.createElement("div"); _itip.id="i
     });
     window.addEventListener("scroll", ()=>{ if(_itip) _itip.hidden=true; }, true);
   } return _itip; }
-function montrerItemTip(el, id){ const html=infoItemHTML(id); if(!html) return; const t=itemTip(); t.innerHTML=html; t.hidden=false;
+function montrerItemTip(el, id, joursForce){ const html=infoItemHTML(id, joursForce); if(!html) return; const t=itemTip(); t.innerHTML=html; t.hidden=false;
   const r=el.getBoundingClientRect(), tw=t.offsetWidth, th=t.offsetHeight;
   let x=r.left+r.width/2-tw/2, y=r.top-th-8; if(y<8) y=r.bottom+8;
   t.style.left=Math.max(8, Math.min(x, innerWidth-tw-8))+"px"; t.style.top=y+"px"; }
 function cacherItemTip(){ if(_itip) _itip.hidden=true; }
-function brancherTips(root){ if(!root || typeof montrerItemTip!=="function") return; root.querySelectorAll("[data-item]").forEach(el=>{ el.addEventListener("mouseenter",()=>montrerItemTip(el, el.dataset.item)); el.addEventListener("mouseleave", cacherItemTip); }); }
+function brancherTips(root){ if(!root || typeof montrerItemTip!=="function") return; root.querySelectorAll("[data-item]").forEach(el=>{
+    // v0.94 : `data-jours` (marché) prime sur les lots du joueur.
+    const jf = (el.dataset.jours!=null && el.dataset.jours!=="") ? parseFloat(el.dataset.jours) : null;
+    el.addEventListener("mouseenter",()=>montrerItemTip(el, el.dataset.item, (jf!=null && isFinite(jf)) ? jf : undefined));
+    el.addEventListener("mouseleave", cacherItemTip);
+  }); }
 
 function majSac(){
   document.querySelector("#sac-cap").textContent = `${placesUtilisees()}/${capaciteSac()} places`;
