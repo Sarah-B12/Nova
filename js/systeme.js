@@ -234,7 +234,17 @@ function xpDansNiveau(total){ return (total|0) - xpCumulPour(niveauDeXp(total));
      restent cohérents, c'est tout l'intérêt de ne pas le mettre au serveur. */
 function majNiveauDepuisXp(){
   if(typeof etat.xpTotal !== "number") return false;   // colonne pas encore lue
-  if(typeof etat.niveauCredite !== "number") etat.niveauCredite = etat.niveau || 1;
+  /* ⚠⚠ v0.94b — LE REPLI NE DOIT PAS S'APPUYER SUR `etat.niveau`. C'était le
+     bug : `niveau` venant d'être retiré de CLES_SERVEUR, il disparaît de
+     `donnees` à la PREMIÈRE sauvegarde. Au chargement SUIVANT, `hydraterEtat`
+     repart du défaut de `nouvelEtat()` — niveau 1 — et le registre croyait
+     qu'aucun point n'avait jamais été distribué : huit montées de niveau
+     rejouées d'un coup, +24 points offerts. En l'absence de registre, la seule
+     hypothèse sûre est que TOUT EST DÉJÀ CRÉDITÉ : on ne redonne rien pour le
+     passé, on ne crédite que ce qui monte à partir de maintenant.
+     ⚠ Ne jamais remplacer ce repli par une valeur tirée de `donnees` : c'est
+       précisément ce qui n'y est plus. */
+  if(typeof etat.niveauCredite !== "number") etat.niveauCredite = niveauDeXp(etat.xpTotal);
   const n = niveauDeXp(etat.xpTotal);
   etat.niveau = n;
   etat.xp     = xpDansNiveau(etat.xpTotal);
