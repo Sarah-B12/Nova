@@ -636,9 +636,18 @@ async function _expResoudre(){
 async function syncEffetsCombat(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   try{ const { data } = await sb.rpc("consommer_effets");
-    if(data && data.xp && typeof gagnerXp==="function"){
-      gagnerXp(data.xp);
+    if(data && data.xp){
+      /* ⚠⚠ v0.94 — NE PLUS APPELER gagnerXp() ICI. `consommer_effets()` crédite
+         désormais `profils.xp` dans la MÊME transaction que la suppression de
+         la ligne : l'XP est déjà en base quand cette réponse arrive. La
+         rajouter la compterait deux fois. On adopte le total annoncé.
+         Repli `gagnerXp` : serveur pas encore à jour (xp_total absent). */
+      if(typeof data.xp_total === "number" && typeof adopterXpTotal==="function") adopterXpTotal(data.xp_total);
+      else if(typeof gagnerXp==="function") gagnerXp(data.xp);
       journal(`Expérience de campagne : +${data.xp} XP.`,"gain");
+      // L'XP est en base ; ce qui doit être écrit ici, ce sont les POINTS
+      // crédités par la montée de niveau, qui vivent dans donnees.
+      if(typeof sauverMaintenant==="function") await sauverMaintenant();
     }
     if(data && data.energie){
       // data.energie est NÉGATIF (coût). L'appliquer en local ne servait à rien :
@@ -682,7 +691,13 @@ async function syncEffetsCombat(){
         const onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
         // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
         journal((typeof joliserItems==="function") ? joliserItems(ev.texte) : ev.texte, ton, onglet); });
-      if(typeof sauvegarder==="function") sauvegarder();
+      /* ⚠ v0.94 — `consommer_evenements` EFFACE côté serveur : ces lignes
+         n'existent plus que dans `donnees`. Un `sauvegarder()` différé de 2,5 s
+         suffisait à les perdre si l'onglet se fermait — c'est ce qui a fait
+         disparaître les comptes rendus de duel d'un testeur, alors que
+         l'historique de l'arène, lui, est une table serveur et a survécu. */
+      if(typeof sauverMaintenant==="function") await sauverMaintenant();
+      else if(typeof sauvegarder==="function") sauvegarder();
     }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }

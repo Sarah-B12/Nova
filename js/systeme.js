@@ -206,23 +206,78 @@ function majJournal(){
 }
 
 /* ---------- Niveaux ---------- */
+/* ⚠⚠ v0.94 — L'XP EST UNE DONNÉE SERVEUR. AVANT : `etat.xp` et `etat.niveau`
+   vivaient dans `donnees`, et `consommer_effets()` — une lecture DESTRUCTRICE —
+   déposait l'XP d'un duel dans cette mémoire-là sans que rien ne la sauvegarde.
+   Un onglet fermé ou un conflit de révision, et le niveau redescendait : un
+   testeur est repassé de 9 à 8 avec `profils.niveau = 9` en base.
+   MAINTENANT : `profils.xp` porte le TOTAL CUMULÉ et fait foi. Le niveau et
+   l'XP dans le niveau se CALCULENT à partir de lui.
+   ⚠ Le barème reste ici, côté client : le serveur ne range qu'un entier.
+   ⚠ `xp`, `niveau` et `xpTotal` sont dans CLES_SERVEUR : plus jamais persistés
+     dans `donnees`. Ce sont des valeurs dérivées, pas un état à garder. */
 function seuilXp(n){ return 20*n; }
-/* ⚠ `energie` / `energie_maj` sont des COLONNES SERVEUR depuis la Phase 4 : le
-   client ne les pousse plus. Poser etat.energie = 100 ici n'atteignait donc
-   jamais la base — la recharge s'affichait puis retombait dès que
-   agirServeur() réappliquait la valeur du serveur. La montée de niveau passe
-   maintenant par la RPC niveau_monter(), qui recharge côté base.
-   gagnerXp reste SYNCHRONE (une trentaine d'appelants) : la RPC part en
-   arrière-plan et met à jour etat.energie à sa réponse. */
-function gagnerXp(n){
-  etat.xp += n;
+// Total cumulé nécessaire pour ATTEINDRE le niveau n : somme(20k, k=1..n-1).
+function xpCumulPour(n){ return 10*n*(n-1); }
+function niveauDeXp(total){
+  let n = 1;
+  while(n < 999 && (total|0) >= xpCumulPour(n+1)) n++;
+  return n;
+}
+function xpDansNiveau(total){ return (total|0) - xpCumulPour(niveauDeXp(total)); }
+
+/* Recalcule niveau et XP affichée depuis le total serveur, et crédite les
+   points de compétence des niveaux pas encore crédités.
+   ⚠ `niveauCredite` est le registre des points DÉJÀ donnés. Il reste dans
+     `donnees`, avec les compétences qu'il finance : si `donnees` revient en
+     arrière, les points reviennent avec, et sont re-crédités ici. Les deux
+     restent cohérents, c'est tout l'intérêt de ne pas le mettre au serveur. */
+function majNiveauDepuisXp(){
+  if(typeof etat.xpTotal !== "number") return false;   // colonne pas encore lue
+  if(typeof etat.niveauCredite !== "number") etat.niveauCredite = etat.niveau || 1;
+  const n = niveauDeXp(etat.xpTotal);
+  etat.niveau = n;
+  etat.xp     = xpDansNiveau(etat.xpTotal);
   let monte = false;
-  while (etat.xp >= seuilXp(etat.niveau)) {
-    etat.xp -= seuilXp(etat.niveau); etat.niveau++;
-    etat.pointsCompetence += PTS_PAR_NIVEAU; monte = true;
-    journal(`Niveau ${etat.niveau} atteint ! +${PTS_PAR_NIVEAU} points, énergie pleine.`,"gain");
+  while(etat.niveauCredite < n){
+    etat.niveauCredite++;
+    etat.pointsCompetence += PTS_PAR_NIVEAU;
+    monte = true;
+    journal(`Niveau ${etat.niveauCredite} atteint ! +${PTS_PAR_NIVEAU} points, énergie pleine.`,"gain");
   }
-  if(monte) _monterNiveauServeur(etat.niveau);
+  if(monte){ _monterNiveauServeur(n); if(typeof sauvegarder==="function") sauvegarder(); }
+  return monte;
+}
+
+/* Reste SYNCHRONE : une quinzaine d'appelants, aucun n'attend. On applique le
+   gain tout de suite pour l'affichage, et le serveur tranche à sa réponse. */
+function gagnerXp(n){
+  if(!(n > 0)) return;
+  etat.xpTotal = (etat.xpTotal || 0) + n;
+  majNiveauDepuisXp();
+  _pousserXpServeur(n);
+}
+
+/* ⚠ L'INCRÉMENT SE FAIT EN BASE (`xp = xp + n`), pas « je lis, j'ajoute,
+   j'écris » : deux onglets qui gagnent de l'XP en même temps doivent compter
+   tous les deux. On adopte ensuite le total renvoyé, qui fait foi. */
+async function _pousserXpServeur(n){
+  if(typeof SERVEUR_DISPO === "undefined" || !SERVEUR_DISPO) return;
+  try{
+    const { data, error } = await sb.rpc("xp_gagner", { p_n: n|0 });
+    if(error){ if(typeof _catchLog==="function") _catchLog(error, "systeme.js#xp"); return; }
+    if(data && data.ok && typeof data.xp === "number") adopterXpTotal(data.xp);
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "systeme.js#xp2"); }
+}
+
+/* Le serveur annonce un total : on le prend tel quel, SANS rien ajouter.
+   ⚠ Utilisée par `consommer_effets`, qui a DÉJÀ crédité l'XP en base. Y
+     appeler `gagnerXp()` la compterait deux fois. */
+function adopterXpTotal(total){
+  if(typeof total !== "number") return;
+  etat.xpTotal = total;
+  majNiveauDepuisXp();
+  if(typeof afficher==="function") afficher();
 }
 
 async function _monterNiveauServeur(niveau){

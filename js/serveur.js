@@ -226,7 +226,14 @@ const CLES_SERVEUR = [
      périmée au rechargement — console dev visible pour un admin démis, gain de
      Cercle obtenu ailleurs invisible. Même mécanisme que le bug `faction`.
      Elles sont relues à chaque entrée par `appliquerColonnesProfil()`. */
-  "reputation", "cercles", "roleAdmin"
+  "reputation", "cercles", "roleAdmin",
+  /* ⚠ v0.94 — L'XP ET LE NIVEAU. `profils.xp` porte le total cumulé et fait
+     foi ; `niveau` et `xp` s'en DÉDUISENT (systeme.js), `xpTotal` en est la
+     copie de travail. Les persister dans `donnees` était exactement le bug :
+     `profils.niveau` disait 9, `donnees.niveau` disait 8, et personne ne
+     relisait la colonne. ⚠ `niveauCredite`, lui, RESTE dans `donnees` : c'est
+     le registre des points déjà distribués, il doit reculer avec eux. */
+  "xp", "niveau", "xpTotal"
 ];
 
 /* ⚠ v0.92 — LES COLONNES DE `profils` SE RELISENT EN UN SEUL ENDROIT.
@@ -247,6 +254,13 @@ function appliquerColonnesProfil(prof){
   etat.cercles    = prof.cercles || {};
   etat.avatar     = prof.avatar || null;
   if(prof.faction) etat.faction = prof.faction;   // écrite par changer_faction() seule
+  /* v0.94 : le total d'XP fait foi ; niveau et XP affichée en découlent, et les
+     points des niveaux non encore crédités sont donnés ici. ⚠ Règle de
+     CLES_SERVEUR : toute clé qu'on cesse d'écrire doit être relue. */
+  if(typeof prof.xp === "number"){
+    etat.xpTotal = prof.xp;
+    if(typeof majNiveauDepuisXp === "function") majNiveauDepuisXp();
+  }
 }
 
 // Copie de l'état SANS les données serveur : elles vivent dans `inventaire`.
