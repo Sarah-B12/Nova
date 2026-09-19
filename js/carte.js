@@ -77,20 +77,131 @@ function _carteCoord(svg, e){
 /* Renvoie {coutE, coutO, dOpen} pour une destination — la vérité du calcul est
    ici, voyager() s'en sert aussi : deux formules séparées finiraient par
    diverger et l'aperçu deviendrait faux sans prévenir. */
-function coutTrajet(x, y){
-  if(!etat.pos || etat.pos.x===undefined) return null;
+/* ⚠ v0.94b — `depuis` (optionnel) : calculer un trajet depuis un AUTRE point
+   que la position actuelle, pour savoir si le retour sera encore possible une
+   fois arrivé. Tout le reste est inchangé, et surtout : la formule reste ICI,
+   en un seul endroit (voir l'avertissement dans allerA). */
+function coutTrajet(x, y, depuis){
+  const src = depuis || etat.pos;
+  if(!src || src.x===undefined) return null;
   x = Math.max(0, Math.min(MONDE.w, x));
   y = Math.max(0, Math.min(MONDE.h, y));
   const z = ZONE_PROTOCOLE, dp = dist(x, y, z.x, z.y);
   if(dp < z.r){ const a = Math.atan2(y - z.y, x - z.x); x = z.x + Math.cos(a)*z.r; y = z.y + Math.sin(a)*z.r; }
-  const dFull = dist(etat.pos.x, etat.pos.y, x, y);
+  const dFull = dist(src.x, src.y, x, y);
   if(dFull < 6) return null;
-  const dOpen = distanceOuverte(etat.pos, {x, y});
+  const dOpen = distanceOuverte(src, {x, y});
   return {
     dOpen,
     coutE: dOpen>0 ? aptEnergieDeplacement(Math.max(1, Math.round(dOpen/PAS)))   : 0,
     coutO: dOpen>0 ? aptO2Deplacement(coutO2(Math.max(1, Math.round(dOpen/PAS_O2)))) : 0
   };
+}
+
+/* ===========================================================
+   O₂ : LE RETOUR, ET L'APPEL DE DÉTRESSE (v0.94b)
+   ⚠⚠ LE BLOCAGE QU'ON CORRIGE. L'O₂ ne remonte QUE dans le rayon de TA ville
+   (`dans_zone_faction` joint `villes` sur ta faction — une cité étrangère ne
+   te rend rien) ou par une Recharge / un Tank. Aucune régénération dans le
+   temps, contrairement à l'énergie. Et la garde de la v0.58 refuse tout trajet
+   dont le coût atteint l'O₂ restant. À 1 %, un joueur ne pouvait donc plus ni
+   bouger, ni rentrer, ni mourir : le seul état du jeu dont on ne sortait pas
+   en jouant. Un testeur y a passé la soirée.
+   Deux réponses : on PRÉVIENT avant de franchir le point de non-retour, et on
+   SECOURT ceux qui l'ont franchi.
+   ⚠ Une seule destination, ta ville, sur toutes les cartes — présentes et à
+     venir. « La ville la plus proche » déposerait le joueur au sec devant une
+     porte qui ne s'ouvre pas pour lui. */
+const SECOURS_SOL = 500;
+/* ⚠ 500 et pas 200 comme en orbite : une Recharge rend 25 d'O₂ pour ~105 ₡ au
+   marché (340 ₡ en boutique), donc refaire 100 % coûte 420 ₡ au marché. En
+   dessous de ce prix, l'appel de détresse remplacerait l'achat de recharges et
+   la survie n'aurait plus de coût. Plafonné à ce que le joueur possède : il
+   repart quoi qu'il arrive, règle d'or de l'orbite. */
+
+// Destination du remorquage : TA cité. Une escorte te ramène chez toi.
+function villeRetour(){ return (typeof posDefaut==="function") ? posDefaut() : null; }
+
+/* ⚠ v0.94b — LA CITÉ LA PLUS PROCHE, PAS LA SIENNE. L'air se refait dans le
+   rayon de N'IMPORTE QUELLE cité (`air_respirable` côté serveur) : viser sa
+   propre cité annoncerait « retour impossible » à un joueur planté à côté
+   d'une ville étrangère parfaitement respirable. Deux questions distinctes :
+   où puis-je respirer (n'importe où), et où me ramène-t-on (chez moi). */
+function citeLaPlusProche(depuis){
+  if(typeof VILLES!=="object" || !depuis) return null;
+  let best = null;
+  for(const f of Object.keys(VILLES)){
+    const v = VILLES[f];
+    const d = dist(depuis.x, depuis.y, v.x, v.y);
+    if(!best || d < best.d) best = { d, f, x:v.x, y:v.y };
+  }
+  return best;
+}
+function nomCite(f){
+  const e = (typeof FACTIONS!=="undefined" && Array.isArray(FACTIONS)) ? FACTIONS.find(z=>z.id===f) : null;
+  return (e && e.nom) ? e.nom : "une cité";
+}
+
+/* O₂ qu'il faudra pour rejoindre la cité respirable la plus proche depuis
+   `depuis`. null si on ne sait pas, 0 si on y est déjà (trajet < 6 u). */
+function coutRetourO2(depuis){
+  const v = citeLaPlusProche(depuis); if(!v || !depuis) return null;
+  const c = coutTrajet(v.x, v.y, depuis);
+  return c ? c.coutO : 0;
+}
+// Une source d'O₂ dans le sac ? (la liste vient d'EFFET_CONSO, pas d'une copie)
+function o2DansLeSac(){
+  if(typeof EFFET_CONSO!=="object" || !etat.sac) return false;
+  return Object.keys(etat.sac).some(id => (etat.sac[id]|0) > 0
+      && EFFET_CONSO[id] && (EFFET_CONSO[id].o2|0) > 0);
+}
+/* ⚠ v0.94b — LE SECOURS NE S'OUVRE PAS QU'AUX PERDUS DÉFINITIFS. Première
+   version : le bouton n'apparaissait qu'une fois le retour devenu impossible.
+   C'était demander au joueur d'AGGRAVER sa situation — de s'éloigner encore —
+   pour avoir le droit d'être secouru. Un seul refus d'O₂ suffit désormais.
+   Les deux autres conditions tiennent l'abus fermé : hors d'une ville, et rien
+   à respirer dans le sac. Se vider exprès pour 500 ₡ ne fait gagner que le
+   trajet du retour, qui vaut moins que ça en Recharges. */
+let _refusO2 = false;
+
+// Retour devenu impossible : le cas grave, qui ouvre le secours sans attendre.
+function retourImpossible(){
+  const besoin = coutRetourO2(etat.pos);
+  if(besoin==null) return false;
+  return besoin > 0 && besoin >= (etat.jauges ? (etat.jauges.o2|0) : 0);
+}
+function bloqueSansO2(){
+  if(typeof enEcart==="function" && enEcart()) return false;   // l'orbite a son propre secours
+  if(typeof villeActuelle==="function" && villeActuelle()) return false;
+  if(o2DansLeSac()) return false;                              // il lui reste de quoi respirer
+  return _refusO2 || retourImpossible();
+}
+
+async function secoursSol(){
+  if(!bloqueSansO2()){ journal("Tu n'es pas bloqué : tu peux encore rejoindre ta cité.","alerte"); return; }
+  /* ⚠ Pas de dette (décision du 19/09) : on prend ce qu'il a, et l'affaire est
+     close. Une dette supposerait un mécanisme entier — la retenir sur quoi, et
+     jusqu'à quand — pour un joueur qui est, par définition, déjà à sec. */
+  const frais = Math.min(SECOURS_SOL, Math.max(0, etat.credits||0));
+  if(!confirm(`Appel de détresse : une escorte vient te chercher et te ramène chez toi.\n\nCoût : ${frais} ₡${frais<SECOURS_SOL?" — tout ce qu'il te reste":` (tarif : ${SECOURS_SOL} ₡)`}.\n\nContinuer ?`)) return;
+  const v = villeRetour(); if(!v) return;
+  /* ⚠ Les crédits se débitent en mémoire puis se poussent : c'est la file
+     `pousserCredits()` qui les porte au serveur (voir `_creditsEnAttente`).
+     Même geste exact que le secours orbital. */
+  etat.credits = Math.max(0, (etat.credits||0) - frais);
+  if(typeof pousserCredits==="function") pousserCredits();
+  etat.pos = { x:v.x, y:v.y };
+  /* ⚠ LA POSITION PART AVANT TOUT LE RESTE. `agir()` relit `pos_x/pos_y` EN
+     BASE pour décider si tu respires (dans_zone_faction) : appelée avant que la
+     position ne soit écrite, elle te croirait encore au milieu de nulle part et
+     ne te rendrait pas ton O₂. Même piège qu'en v0.58 avec les patrouilles. */
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  // Coût nul : le seul but est que le serveur constate qu'on est en ville.
+  if(typeof agirServeur==="function") await agirServeur({ cout:0, motif:"secours_sol" });
+  _refusO2 = false;   // il est rentré : le bouton se referme
+  journal(`Appel de détresse : une escorte te ramène à ta cité. −${frais} ₡. Refais tes réserves d'O₂ avant de repartir.`,"alerte","voyage");
+  if(typeof majApresDeplacement==="function") majApresDeplacement();
+  if(typeof afficher==="function") afficher();
 }
 
 /* Le point est-il sur l'image, et non dans une bande vide du SVG ? */
@@ -107,9 +218,14 @@ function _apercuCout(x, y){
   else {
     const manqueE = (etat.energie|0) < c.coutE;
     const manqueO = (etat.jauges && (etat.jauges.o2|0) <= c.coutO);   // même règle que voyager()
+    // v0.94b : le point de non-retour, annoncé AVANT le clic.
+    const retour = manqueO ? null : coutRetourO2({ x, y });
+    const resteApres = (etat.jauges ? (etat.jauges.o2|0) : 0) - c.coutO;
+    const sansRetour = (retour != null && retour > 0 && retour >= resteApres);
     h = `<span class="${manqueE?"ap-ko":"ap-ok"}">−${c.coutE} énergie</span>`
       + `<span class="${manqueO?"ap-ko":"ap-ok"}">−${c.coutO} O₂</span>`
-      + (manqueE||manqueO ? `<span class="ap-ko">insuffisant</span>` : "");
+      + (manqueE||manqueO ? `<span class="ap-ko">insuffisant</span>`
+         : sansRetour ? `<span class="ap-ko">retour impossible</span>` : "");
   }
   if(h !== _apercuDer){ _apercuDer = h; z.innerHTML = h; }   // évite de réécrire à chaque pixel
 }
@@ -173,6 +289,20 @@ function majCarte(){
   if(!etat.pos || etat.pos.x===undefined) etat.pos=posDefaut();
   const ce=document.querySelector("#carte-energie"); if(ce){ const e=Math.floor(etat.energie); ce.textContent=e; document.querySelector("#cj-energie").classList.toggle("bas", e<20); }
   const co=document.querySelector("#carte-o2"); if(co){ const o=Math.floor(etat.jauges.o2); co.textContent=o; document.querySelector("#cj-o2").classList.toggle("bas", o<20); }
+  /* v0.94b — le bouton n'apparaît QUE si le joueur est réellement coincé, et
+     il est créé ici plutôt que dans index.html pour rester avec sa condition :
+     un bouton toujours présent serait un taxi à 500 ₡. */
+  const barre = document.querySelector("#carte-distances");
+  let bs = document.querySelector("#carte-secours");
+  if(bloqueSansO2()){
+    if(!bs && barre && barre.parentElement){
+      bs = document.createElement("button");
+      bs.id = "carte-secours"; bs.className = "mini danger";
+      bs.textContent = "Appel de détresse";
+      bs.addEventListener("click", secoursSol);
+      barre.parentElement.insertBefore(bs, barre);
+    }
+  } else if(bs){ bs.remove(); }
   const av=document.querySelector("#avatar");
   if(av){ const col=(FACTIONS.find(f=>f.id===etat.faction)||{}).couleur||"#ff9a44";
     av.innerHTML=`<circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${etat.pos.x}" cy="${etat.pos.y}" r="6" fill="${col}"/>`; }
@@ -214,7 +344,22 @@ async function voyager(x, y){
   /* ⚠ v0.58 — l'aperçu annonçait « insuffisant » mais rien n'arrêtait le trajet :
      agir() amenait l'O₂ à 0 et le joueur MOURAIT en route, d'un seul clic. */
   if(coutO > 0 && etat.jauges && coutO >= (etat.jauges.o2|0)){
-    journal(`Pas assez d'O₂ pour ce trajet (−${coutO}, il t'en reste ${etat.jauges.o2|0}) : tu suffoquerais en route. Avance par étapes ou recharge ton oxygène.`,"alerte"); return;
+    /* v0.94b — le message disait de recharger sans dire OÙ : l'O₂ ne remonte
+       que dans le rayon de TA cité, ou par une Recharge / un Tank. */
+    journal(`Pas assez d'O₂ pour ce trajet (−${coutO}, il t'en reste ${etat.jauges.o2|0}) : tu suffoquerais en route. Avance par étapes, respire une Recharge, ou entre dans une cité, la tienne ou non — c'est là que l'air se refait.`,"alerte");
+    _refusO2 = true;   // v0.94b : un refus suffit à ouvrir l'appel de détresse
+    if(bloqueSansO2()) journal(`Si tu ne peux plus rejoindre aucune cité, lance un appel de détresse depuis la carte (${SECOURS_SOL} ₡, ou ce qu'il te reste).`,"alerte");
+    if(typeof majCarte==="function") majCarte();   // fait apparaître le bouton tout de suite
+    return;
+  }
+  /* ⚠ v0.94b — LE POINT DE NON-RETOUR. On AVERTIT, on n'interdit pas :
+     interdire reproduirait le blocage un pas plus tôt, et le joueur peut avoir
+     ses raisons (une Recharge dans le sac, un gisement à visiter). */
+  const _reste  = (etat.jauges ? (etat.jauges.o2|0) : 0) - coutO;
+  const _retour = coutRetourO2({ x, y });
+  if(_retour != null && _retour > 0 && _retour >= _reste){
+    const pv = citeLaPlusProche({ x, y });
+    if(!confirm(`Après ce trajet il te restera ${Math.max(0,_reste)} d'O₂, et il en faut ${_retour} pour rejoindre ${pv?nomCite(pv.f):"une cité"}, la plus proche de là-bas.\n\nTu ne pourras plus respirer sans recharge. Continuer ?`)) return;
   }
   if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
   // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.
