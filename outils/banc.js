@@ -1,4 +1,4 @@
-// Banc d'essai (facultatif) : cd outils && npm i jsdom@24 acorn acorn-walk && node banc.js .. lent|rapide|unitaire
+// Banc d'essai (facultatif) : cd outils && npm i jsdom@24 acorn acorn-walk && node banc.js .. lent|rapide|unitaire|mvt
 // Banc d'essai : charge index.html dans jsdom avec un faux Supabase.
 // Usage : node banc.js <racine> <scenario>
 const fs = require("fs"), path = require("path");
@@ -8,6 +8,7 @@ const RAC = process.argv[2], SCEN = process.argv[3] || "lent";
 const DELAIS = {
   lent:   { profil: 2500, sac: 100, jauges: 100 },   // réseau mobile : le profil arrive APRÈS la minuterie de 1,2 s
   rapide: { profil: 50,   sac: 100, jauges: 100 },
+  mvt: { profil: 50, sac: 50, jauges: 50 },
   unitaire: { profil: 50, sac: 50, jauges: 50 },
 }[SCEN];
 
@@ -97,7 +98,7 @@ const dom = new JSDOM(html, {
 });
 setTimeout(() => {
   const w = dom.window;
-  if(SCEN === "unitaire"){ console.log(JSON.stringify(w.eval(fs.readFileSync(__dirname + "/unitaire.js", "utf8")), null, 1)); process.exit(0); }
+  if(SCEN === "unitaire" || SCEN === "mvt"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
   const e = w.eval("etat");
   const res = {
     scenario: SCEN,

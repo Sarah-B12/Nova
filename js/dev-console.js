@@ -576,6 +576,11 @@ function _devAfficherFiche(p){
     <div class="dev-bloc"><h4>Journal du joueur</h4>
       <div class="dev-champ"><button class="mini" id="f-journal">Afficher les 200 dernières entrées</button></div>
       <div id="f-journal-zone"></div>
+    </div>
+
+    <div class="dev-bloc"><h4>Mouvements (objets et crédits, 7 jours)</h4>
+      <div class="dev-champ"><button class="mini" id="f-mouvements">Afficher</button></div>
+      <div id="f-mouvements-zone"></div>
     </div>`;
 
   if(!document.querySelector("#dev-fiche-style")){
@@ -622,6 +627,11 @@ function _devAfficherFiche(p){
       { p_profil: p.id, p_item: id, p_qte: q, p_motif: "console staff" });
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
     journal(`[STAFF] ${data.donne}× ${item(id).nom} à ${p.nom}${data.partiel?" (sac plein)":""}.`,"gain"); rafraichir();
+  });
+
+  // v0.96 — rendu partagé avec la page profil (profil-page.js)
+  z.querySelector("#f-mouvements").addEventListener("click", ()=>{
+    if(typeof afficherMouvementsStaff === "function") afficherMouvementsStaff(z.querySelector("#f-mouvements-zone"), p.id);
   });
 
   z.querySelector("#f-journal").addEventListener("click", async ()=>{

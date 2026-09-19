@@ -188,12 +188,13 @@ async function ouvrirPageProfil(nom){
         <p>Niveau : <b>${p.niveau}</b></p>
         ${credLigne}
         <div id="pp-jauges"></div>
-        <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button>` : ""}</div>
+        <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button><button class="mini" data-mvtstaff="${p.id}">Mouvements</button>` : ""}</div>
       </div>
     </div>
     <div class="rep-badges" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
     <div id="pp-terrain" hidden></div>
     <div id="pp-journal-staff" hidden></div>
+    <div id="pp-mouvements-staff" hidden><h3>Mouvements (objets et crédits, 7 jours)</h3><div class="pp-mvt"></div></div>
     <h2 style="margin-top:20px">Description RP</h2>
     <div class="pp-desc">${desc}</div>
     <div class="pp-bas">
@@ -218,6 +219,11 @@ async function ouvrirPageProfil(nom){
   // que pour eux, et la RPC revérifie de toute façon).
   const bjs = m.querySelector("[data-jrnstaff]");
   if(bjs) bjs.addEventListener("click", ()=>_ppJournalStaff(bjs.dataset.jrnstaff));
+  const bmv = m.querySelector("[data-mvtstaff]");   // v0.96
+  if(bmv) bmv.addEventListener("click", ()=>{
+    const zm = m.querySelector("#pp-mouvements-staff"); if(!zm) return;
+    _mvtStyle(); zm.hidden = false; afficherMouvementsStaff(zm.querySelector(".pp-mvt"), bmv.dataset.mvtstaff);
+  });
   const bte = m.querySelector("[data-terrain]");
   if(bte) bte.addEventListener("click", ()=>{
     const z = document.querySelector("#pp-terrain");
@@ -345,6 +351,83 @@ async function _ppJournalStaff(profilId){
     if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#journalStaff");
     z.innerHTML = `<h3>Journal du joueur</h3><p class="itip-gris">Erreur de chargement.</p>`;
   }
+}
+
+
+/* ===========================================================
+   v0.96 — MOUVEMENTS D'UN JOUEUR (staff) : objets ET crédits, 7 jours.
+   Source : table `mouvement_log`, remplie par des triggers sur `inventaire`
+   et `profils.credits` — donc TOUS les chemins, sans exception.
+   ⚠ UNE SEULE fonction de rendu pour les DEUX consoles (page profil et
+   console dev). Le journal, lui, est rendu deux fois (profil-page.js et
+   dev-console.js) : ne pas reproduire cette duplication ici.
+   Colonnes : quand · quoi · ± · où · par quelle RPC (· motif) · date du lot.
+   =========================================================== */
+function _mvtStyle(){
+  if(document.querySelector("#mvt-staff-style")) return;
+  const st=document.createElement("style"); st.id="mvt-staff-style";
+  st.textContent = `
+    #pp-mouvements-staff{ margin-top:16px; border:1px solid var(--edge,#24344d);
+      border-radius:10px; background:rgba(255,255,255,.03); padding:12px; }
+    #pp-mouvements-staff[hidden]{ display:none !important; }
+    #pp-mouvements-staff h3{ margin:0 0 8px; font-size:14px; color:var(--orange-hi,#ffb06a); }
+    .mvt-tete{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:6px; font-size:12px; }
+    .mvt-zone{ max-height:320px; overflow:auto; }
+    .mvt-t{ width:100%; border-collapse:collapse; font-family:"Space Mono",monospace; font-size:11px; }
+    .mvt-t td{ padding:2px 5px; border-bottom:1px solid rgba(255,255,255,.05); white-space:nowrap; }
+    .mvt-t td.mvt-src{ white-space:normal; }
+    .mvt-dim{ color:var(--texte-2,#9fb3c8); }
+    .mvt-plus{ color:#8bd450; text-align:right; } .mvt-moins{ color:#ff8a3d; text-align:right; }`;
+  document.head.appendChild(st);
+}
+function _mvtNom(id){
+  if(id === "credits") return "₡ Crédits";
+  const it = (typeof item === "function") ? item(id) : null;
+  return (it && it.nom) || id;
+}
+function _mvtDate(ms, avecHeure){
+  if(!ms) return "—";
+  const d = new Date(ms);
+  return avecHeure
+    ? d.toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit" })
+    : d.toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+async function afficherMouvementsStaff(z, profilId){
+  if(!z) return;
+  _mvtStyle();
+  z.innerHTML = `<p class="mvt-dim">Chargement…</p>`;
+  let data = null, error = null;
+  try{ ({ data, error } = await sb.rpc("admin_mouvements", { p_profil: profilId, p_limite: 500 })); }
+  catch(e){ error = e; if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#mouvements"); }
+  if(error || !data || !data.ok){
+    const motif = (data && data.err) || (error && error.message) || "réponse inattendue";
+    console.error("[admin_mouvements]", motif, error || data);
+    z.innerHTML = `<p class="mvt-dim">Consultation impossible — ${echapper(String(motif))}</p>`;
+    return;
+  }
+  const tous = data.mouvements || [];
+  const ids = [...new Set(tous.map(m => m.item))].sort((a,b) => _mvtNom(a).localeCompare(_mvtNom(b)));
+  const options = `<option value="">Tout (${tous.length})</option>`
+    + ids.map(id => `<option value="${echapper(id)}">${echapper(_mvtNom(id))} (${tous.filter(m=>m.item===id).length})</option>`).join("");
+  z.innerHTML = `<div class="mvt-tete"><select class="mvt-filtre">${options}</select>
+      <span class="mvt-dim">${data.total} mouvement(s) sur ${data.jours||7} j${data.total > tous.length ? `, ${tous.length} affichés` : ""}</span></div>
+    <div class="mvt-zone"></div>`;
+  const zone = z.querySelector(".mvt-zone"), sel = z.querySelector(".mvt-filtre");
+  const rendre = () => {
+    const f = sel.value, vis = f ? tous.filter(m => m.item === f) : tous;
+    if(!vis.length){ zone.innerHTML = `<p class="mvt-dim">Aucun mouvement.</p>`; return; }
+    zone.innerHTML = `<table class="mvt-t">${vis.map(m => {
+      const plus = m.delta > 0;
+      const lot = m.lot ? `<span class="mvt-dim" title="Lot acquis le ${echapper(new Date(m.lot).toLocaleString("fr-FR"))}"> · lot ${_mvtDate(m.lot, false)}</span>` : "";
+      return `<tr><td class="mvt-dim">${_mvtDate(m.d, true)}</td>`
+        + `<td>${echapper(_mvtNom(m.item))}</td>`
+        + `<td class="${plus ? "mvt-plus" : "mvt-moins"}">${plus ? "+" : ""}${m.delta}</td>`
+        + `<td class="mvt-dim">${echapper(m.lieu || "")}</td>`
+        + `<td class="mvt-src">${echapper(m.source || "?")}${m.motif ? ` · <i>${echapper(m.motif)}</i>` : ""}${lot}</td></tr>`;
+    }).join("")}</table>`;
+  };
+  sel.addEventListener("change", rendre);
+  rendre();
 }
 
 
