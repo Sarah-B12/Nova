@@ -53,18 +53,30 @@ function _categoriser(t){
    (événements hors ligne) sans qu'il faille repasser du SQL. */
 const _RE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{1F1E6}-\u{1F1FF}]/gu;
 function sansEmoji(t){ return String(t).replace(_RE_EMOJI, "").replace(/\s{2,}/g, " ").trim(); }
-function journal(t, type="", cat=null){
+/* ⚠ v0.94b — `quand` (optionnel) : l'heure RÉELLE du fait, pour les évènements
+   serveur. Sans lui, le client horodatait à la LECTURE : tout ce qui s'était
+   accumulé depuis la dernière synchro portait la même seconde, et se rangeait
+   au-dessus d'actions pourtant postérieures. Un testeur a ainsi lu une évasion
+   AVANT l'emprisonnement qui l'avait causée. */
+function journal(t, type="", cat=null, quand=null){
   if(!etat.journal) etat.journal=[];
+  const d = (typeof quand==="number" && isFinite(quand)) ? quand : Date.now();
   t = sansEmoji(t);
   /* ⚠ Entrées identiques qui se suivent : on incrémente un compteur au lieu
      d'empiler. Acheter dix graines produisait dix lignes rigoureusement
      semblables, qui noyaient le reste du journal. */
   const der = etat.journal[0];
   if(der && der.t === t && der.type === type){
-    der.n = (der.n || 1) + 1; der.d = Date.now();
+    der.n = (der.n || 1) + 1; der.d = Math.max(der.d||0, d);
     majJournal(); _bulle(t, type); return;
   }
-  etat.journal.unshift({ t, type, cat: cat || _categoriser(t), d: Date.now() });
+  /* Le journal est trié du plus récent au plus ancien. Une entrée datée du
+     passé ne peut donc PAS être simplement empilée en tête : on la glisse à sa
+     place. ⚠ Sans ça, corriger l'heure aurait affiché la bonne date au mauvais
+     endroit — plus trompeur encore que le bug d'origine. */
+  const e = { t, type, cat: cat || _categoriser(t), d };
+  let i = 0; while(i < etat.journal.length && (etat.journal[i].d||0) > d) i++;
+  etat.journal.splice(i, 0, e);
   _purgerJournal();
   majJournal();
   _bulle(t, type);          // retour immédiat : le journal seul passe inaperçu
@@ -176,6 +188,10 @@ function _journalStyle(){
     .jf-b.actif{ color:var(--orange-hi,#ffb060); border-color:var(--orange,#ff8a3d); }
     #journal{ max-height:340px; overflow:auto; }
     .j-n{ font-family:"Space Mono",monospace; font-size:10px; font-weight:700; color:var(--orange-hi,#ffb060); }
+    /* v0.94b : l'heure de chaque entrée. Discrète, largeur fixe pour que les
+       lignes restent alignées, et invisible à la copie ? non : elle part avec
+       le texte, c'est justement ce qu'on veut pour les rapports de bug. */
+    .j-h{ font-family:"Space Mono",monospace; font-size:9px; color:var(--sourdine); margin-right:6px; opacity:.75; }
     .j-cat{ display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; border-radius:5px; margin-right:6px; vertical-align:middle; text-transform:uppercase; letter-spacing:.4px; }
     .j-systeme{ background:#3a4a5a; color:#cdd8e6; } .j-quete{ background:#6b53d6; color:#fff; }
     .j-minage{ background:#8a6a3a; color:#ffe1b0; } .j-agri{ background:#3f7a42; color:#dfffcf; }
@@ -185,6 +201,18 @@ function _journalStyle(){
     .msg.poste{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
   `;
   document.head.appendChild(st);
+}
+/* v0.94b — L'HEURE DE CHAQUE ENTRÉE. Elle existait dans les données (`e.d`)
+   mais n'était affichée nulle part : impossible de situer un évènement, et
+   impossible pour un testeur de rapporter un enchaînement.
+   Aujourd'hui → « 00:54 ». Un autre jour → « 19/09 00:54 », parce que le
+   journal garde plusieurs jours et qu'une heure seule y serait trompeuse. */
+function _heureJ(d){
+  if(!d) return "";
+  const t = new Date(d), n = new Date();
+  const hh = String(t.getHours()).padStart(2,"0") + ":" + String(t.getMinutes()).padStart(2,"0");
+  const memeJour = t.getDate()===n.getDate() && t.getMonth()===n.getMonth() && t.getFullYear()===n.getFullYear();
+  return memeJour ? hh : `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")} ${hh}`;
 }
 function majJournal(){
   const z=document.querySelector("#journal"); if(!z) return;
@@ -201,7 +229,7 @@ function majJournal(){
   }
   const list=etat.journal.filter(e=>_journalFiltre==="tout"||e.cat===_journalFiltre).slice(0,80);
   z.innerHTML = list.length
-    ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
+    ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-h">${_heureJ(e.d)}</span><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
     : `<p class="vide" style="margin:6px 0">Aucune entrée${_journalFiltre!=="tout"?" dans cette catégorie":""}.</p>`;
 }
 

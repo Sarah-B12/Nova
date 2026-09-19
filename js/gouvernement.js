@@ -690,7 +690,12 @@ async function syncEffetsCombat(){
         // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.
         const onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
         // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
-        journal((typeof joliserItems==="function") ? joliserItems(ev.texte) : ev.texte, ton, onglet); });
+        // v0.94b : `quand` = l'heure réelle du fait (`evenements.cree_le`),
+        // et non celle de cette lecture. Repli sur maintenant si le serveur
+        // n'est pas encore à jour.
+        const q = ev.quand ? new Date(ev.quand).getTime() : null;
+        journal((typeof joliserItems==="function") ? joliserItems(ev.texte) : ev.texte, ton, onglet,
+                (q && isFinite(q)) ? q : null); });
       /* ⚠ v0.94 — `consommer_evenements` EFFACE côté serveur : ces lignes
          n'existent plus que dans `donnees`. Un `sauvegarder()` différé de 2,5 s
          suffisait à les perdre si l'onglet se fermait — c'est ce qui a fait

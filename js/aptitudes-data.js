@@ -38,7 +38,13 @@ const APT_TRONC = [
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
     { id:"tr4", nom:"Fléau du Protocole", effet:"Contre le Protocole : +10 % de victoire et +25 % de butin en patrouille ; force ×1,25 en expédition contre lui.", deblocage:true }
   ]},
-  { id:"ombre", nom:"Ombre", noeuds:[
+  /* ⚠ v0.94b — RENOMMÉE « Furtivité ». « Ombre » est aussi le nom du rôle
+     d'espion au gouvernement (GOUV_ROLES) : deux choses sans rapport portaient
+     le même mot, dans deux écrans voisins.
+     ⚠ L'IDENTIFIANT reste `ombre`, et les nœuds restent om1..om4 : ce sont eux
+       qui sont écrits dans `donnees.aptitudes.pris`. Renommer l'id effacerait
+       les aptitudes déjà prises par tout le monde. Seul le libellé change. */
+  { id:"ombre", nom:"Furtivité", noeuds:[
     { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
     { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'énergie et d'O₂ ; butin de patrouille +25 %." },
     { id:"om3", nom:"Pas léger",  effet:"Coût énergie de déplacement −20 %." },

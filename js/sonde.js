@@ -111,7 +111,7 @@ function _sondeGagne(){
   const g = alea(SONDE_GAIN[0], SONDE_GAIN[1]) + ((typeof bonusCredits==="function") ? bonusCredits() : 0);
   etat.credits += g;
   if(typeof gagnerXp==="function") gagnerXp(10);
-  journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris.`,"gain");
+  journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris, +10 XP.`,"gain");
   _sondeFin();
 }
 function _sondePerdu(){

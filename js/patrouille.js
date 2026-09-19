@@ -13,6 +13,14 @@ const PATROUILLE_TAUX          = 0.15;   // probabilité de base par déplacemen
 const PATROUILLE_TAUX_DISCRET  = 0.10;   // avec Discrétion (om1)
 const PATROUILLE_DROP_TAUX     = 0.35;   // chance de récupérer de la tech sur une patrouille vaincue
 const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx (seule source ordinaire du jeu)
+/* ⚠ v0.94b — L'XP DES PATROUILLES ÉTAIT DÉJÀ DONNÉE, mais INVISIBLE :
+   `gagnerXp()` ne journalise rien, et le message ne parlait que des crédits.
+   Un testeur a donc demandé « un peu d'XP en gagnant contre une patrouille »
+   alors qu'il en recevait dix depuis toujours. Les montants ne changent pas,
+   on les ANNONCE — et ils sont nommés ici plutôt qu'écrits en dur dans deux
+   fichiers, pour ne pas créer un barème en double de plus. */
+const XP_PATROUILLE      = 10;   // vaincue au combat (actions.js)
+const XP_PATROUILLE_HACK = 8;    // piratée sans dégâts (ici)
 const ITEM_HACK = "fab_ordinateur_de_hacking";
 const PATROUILLE_DROPS = ["fab_composant_simple","fab_circuit_imprime","fab_cablage","voltane","silite"];
 
@@ -118,8 +126,8 @@ async function patrouilleHacker(){
   const p = Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500);   // Intrusion + Intelligence
   if(Math.random() < p){
     const g = aptButinCombat(alea(10,22)+bonusCredits()); etat.credits += g;
-    const drop = await butinPatrouille(); gagnerXp(8);
-    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}. Aucun dégât.`,"gain");
+    const drop = await butinPatrouille(); gagnerXp(XP_PATROUILLE_HACK);
+    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}, +${XP_PATROUILLE_HACK} XP. Aucun dégât.`,"gain");
     apresAction();
   } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); await resoudreCombat({}); }
 }

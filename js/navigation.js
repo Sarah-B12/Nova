@@ -171,7 +171,20 @@ async function connecter(){
   const { error } = await seConnecter(email, mdp);
   if(error){ authErreur(_authMsg(error)); return; }
   const prof = await chargerDepuisServeur();
-  if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); if(typeof prof.credits==="number"){ etat.credits=prof.credits; if(typeof initCredits==="function") initCredits(prof.credits); } if(typeof prof.reputation==="number") etat.reputation=prof.reputation; etat.roleAdmin=prof.role_admin||null; etat.cercles=prof.cercles||{}; if(prof.faction) etat.faction=prof.faction; /* COLONNE : cf. bootstrap.js */ }
+  /* ⚠⚠ v0.94b — CETTE LIGNE RELISAIT LES COLONNES À LA MAIN. Le correctif n°6
+     de la v0.92 avait créé `appliquerColonnesProfil()` pour qu'il n'y ait
+     qu'UN endroit où les colonnes serveur reviennent dans `etat`… et n'avait
+     été appliqué que dans `bootstrap.js`. Les deux copies sont restées
+     équivalentes jusqu'à ce que la v0.94 ajoute `xp` à la liste : depuis,
+     une connexion EXPLICITE (par ce chemin) laissait `etat.xpTotal` vide,
+     `majNiveauDepuisXp()` sortait aussitôt, et le joueur s'affichait
+     « Niv 1 · XP 0/20 » — rien de perdu en base, mais de quoi faire peur.
+     ⚠ NE JAMAIS recopier ici ce que fait `appliquerColonnesProfil` : toute
+       colonne ajoutée à CLES_SERVEUR doit être relue à UN SEUL endroit. */
+  if(prof && prof.donnees && prof.donnees.inscrit){
+    etat = hydraterEtat(prof.donnees);
+    if(typeof appliquerColonnesProfil==="function") appliquerColonnesProfil(prof);
+  }
   else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); if(typeof _premiereFaction==="function") await _premiereFaction(f.id); await sauverSurServeur(); }
   if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();

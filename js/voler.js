@@ -24,7 +24,42 @@ function _apris(id){ return !!(etat.aptitudes && Array.isArray(etat.aptitudes.pr
 function aDiscretion(){ return _apris("om1"); }
 function aIntrusion(){ return _apris("om4"); }
 function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK_VOL || etat.equipement.arme2===ITEM_HACK_VOL)); }
-function _enVille(){ return (typeof enZoneFaction==="function") && enZoneFaction(); }
+/* ⚠ v0.94b — LE VOL S'OUVRE HORS DE SILÈNE. Avant : « rends-toi dans une ville
+   de faction », donc rien au Perchoir ni, demain, sur les sous-cartes.
+   La règle est maintenant : on vole les gens qui sont LÀ — dans la même cité
+   sur Silène, dans le même secteur ailleurs. C'est le serveur qui compte les
+   présents (`presents_ici`), avec la même règle exactement.
+   ⚠ Le BUTIN reste simulé (`genererCible`) : cette ouverture ne fabrique pas
+     le vrai PvP, elle place seulement le rideau au bon endroit. */
+function _enVille(){
+  if(typeof enEcart==="function" && enEcart()) return true;          // Perchoir & secteurs
+  return (typeof enZoneFaction==="function") && enZoneFaction();
+}
+function _lieuVolNom(){
+  if(typeof enEcart==="function" && enEcart()) return "ici";
+  return "cette ville";
+}
+/* Prison du lieu : sa cité sur Silène, le Perchoir dans l'Écart.
+   ⚠ `perchoir` n'est PAS une faction. Aucun gouvernement n'y siège, donc
+     `gracier` (qui exige un Régent de la faction) n'y trouvera jamais
+     personne : on s'en évade ou on attend. C'est la règle voulue. */
+function _factionPrisonIci(){
+  if(typeof enEcart==="function" && enEcart()) return "perchoir";
+  return (typeof villeActuelle==="function" ? villeActuelle() : null) || etat.faction;
+}
+/* Y a-t-il quelqu'un à voler ? ⚠ Contrôlé AVANT toute dépense : personne =
+   pas de mini-jeu, pas d'énergie perdue. */
+async function _ilYADuMonde(){
+  if(typeof sb==="undefined" || !sb) return true;   // hors ligne : on ne bloque pas
+  try{
+    const { data, error } = await sb.rpc("presents_ici");
+    if(error){ console.warn("[vol] presents_ici :", error.message); return true; }
+    if(!data || !data.ok) return true;
+    if((data.n|0) > 0) return true;
+    journal(`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,"alerte","vol");
+    return false;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"voler.js#presents"); return true; }
+}
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
 /* ⚠⚠ v0.94 — LA PRISON NE TENAIT QUE LA MOITIÉ DU JEU.
    `agir()` refuse en prison, donc tout ce qui passe par elle était bloqué
@@ -61,7 +96,7 @@ function _rpcFireAndForget(nom, args, repere){
     .catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, repere); });
 }
 function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; _rpcFireAndForget("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)},"voler.js#emprisonner"); if(typeof sauvegarder==="function") sauvegarder(); }
-function _emprisonner(){ emprisonnerJoueur((typeof villeActuelle==="function"?villeActuelle():etat.faction)||etat.faction, _vjm()); }
+function _emprisonner(){ emprisonnerJoueur(_factionPrisonIci(), _vjm()); }
 function _melange(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 /* ---------- Cible simulée ---------- */
@@ -94,8 +129,9 @@ function _piocherObjets(sac, cap, agi){
 /* ---------- Actions ---------- */
 async function tenterVoler(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
-  if(!_enVille()){ journal("Va dans une ville pour cibler quelqu'un.","alerte"); return; }
+  if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
   if(!aDiscretion()){ journal("Il te faut l'aptitude Discrétion pour voler.","alerte"); return; }
+  if(!await _ilYADuMonde()) return;
   const c=genererCible(); if(_cibleProtegee(c)) return;
   if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniVol(
@@ -117,9 +153,10 @@ async function tenterVoler(){
 }
 async function tenterHacker(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
-  if(!_enVille()){ journal("Va dans une ville pour cibler quelqu'un.","alerte"); return; }
+  if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
   if(!_ordiEquipe()){ journal("Équipe un Ordinateur de hacking pour hacker.","alerte"); return; }
   if(!aIntrusion()){ journal("Il te faut l'aptitude Intrusion pour hacker.","alerte"); return; }
+  if(!await _ilYADuMonde()) return;
   const c=genererCible(); if(_cibleProtegee(c)) return;
   if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniHack(
@@ -487,7 +524,7 @@ function majVoler(){
   const z=document.querySelector("#voler-vue"); if(!z) return;
   _hackStyle();
   if(_volTimer){ clearInterval(_volTimer); _volTimer=null; }
-  if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents dans une ville</b>. Rends-toi dans une ville de faction.</p>`; return; }
+  if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents là où tu te trouves</b> : dans une cité sur Silène, au <b>Perchoir</b> hors de Silène. Rends-toi dans l'un ou l'autre.</p>`; return; }
   if(enPrison()){
     z.innerHTML=`<div class="vol-prison">⛓️ <b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.<div style="margin-top:10px"><button class="mini" id="vol-evasion">Tenter une évasion (−10% énergie)</button></div><p class="itip-gris" style="margin-top:6px">Chance selon Agilité + Intelligence. Échec → tu restes en prison.</p></div>`;
     const _be=z.querySelector("#vol-evasion"); if(_be) _be.addEventListener("click", tenterEvasion);
@@ -496,7 +533,7 @@ function majVoler(){
   }
   const dV=aDiscretion(), dH=_ordiEquipe()&&aIntrusion(), e=Math.floor(etat.energie);
   z.innerHTML=`
-    <p class="vide">Cible un <b>joueur au hasard</b> présent dans cette ville. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
+    <p class="vide">Cible un <b>joueur au hasard</b> présent ${(typeof enEcart==="function"&&enEcart())?"au Perchoir":"dans cette ville"}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
@@ -516,7 +553,10 @@ function majVoler(){
 }
 
 /* ---------- Onglet Prison (Centre) ---------- */
-function _factionNom(fid){ const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction"); }
+function _factionNom(fid){
+  if(fid==="perchoir") return "Le Perchoir";   // v0.94b : lieu de détention, pas faction
+  const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction");
+}
 function _avatarMini(){ return `<span class="prison-av"><svg viewBox="0 0 120 130"><path d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/><path d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/><rect x="38" y="46" width="44" height="13" rx="6"/></svg></span>`; }
 function _allerProfil(){ document.querySelectorAll(".panneau").forEach(p=>p.classList.toggle("actif", p.dataset.panneau==="profil")); document.querySelectorAll("[data-onglet]").forEach(o=>o.classList.toggle("actif", o.dataset.onglet==="profil")); }
 async function tenterEvasion(){
@@ -557,7 +597,10 @@ let _prisonFac = null;
 async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   _hackStyle();
-  const ici=(typeof villeActuelle==="function")?villeActuelle():null;
+  /* v0.94b : le Perchoir a sa geôle. Par défaut on montre celle du lieu où
+     l'on est — donc la sienne au sol, le Perchoir là-haut. */
+  const ici=(typeof enEcart==="function"&&enEcart()) ? "perchoir"
+           : ((typeof villeActuelle==="function")?villeActuelle():null);
   const fid = _prisonFac || ici || etat.faction;
   el.innerHTML=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3><p class="vide">Chargement…</p>`;
   let prisonniers=[];
@@ -567,11 +610,17 @@ async function majPrison(el){
   const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
   const estRegent = roles.includes("regent") && fid===etat.faction;   // Régent de SA propre faction, où qu'il soit
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;
-  const opts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).map(f=>`<option value="${f.id}"${f.id===fid?" selected":""}>${f.nom}</option>`).join("");
+  /* v0.94b : le Perchoir figure dans la liste, après les cinq factions.
+     ⚠ Ce n'est pas une faction : personne n'y siège, donc personne n'y gracie.
+       `estRegent` ci-dessus compare déjà `fid` à `etat.faction`, qui ne vaudra
+       jamais "perchoir" — le bouton Gracier y restera grisé pour tout le monde. */
+  const opts=((typeof FACTIONS!=="undefined"?FACTIONS:[]).map(f=>({id:f.id,nom:f.nom}))
+              .concat([{id:"perchoir",nom:"Le Perchoir"}]))
+             .map(f=>`<option value="${f.id}"${f.id===fid?" selected":""}>${f.nom}</option>`).join("");
   let html=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3>
     <div class="actions" style="margin:0 0 8px"><label class="itip-gris">Voir la prison de&nbsp;
       <select id="prison-fac" class="gouv-textarea" style="padding:4px 8px;width:auto">${opts}</select></label></div>
-    <p class="vide">Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier — depuis n'importe où.</p>`;
+    <p class="vide">${fid==="perchoir"?"Le Perchoir enferme qui se fait prendre là-haut. <b>Aucun gouvernement n'y siège : personne ne peut gracier.</b> On s'en évade, ou on attend son heure.":"Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier — depuis n'importe où."}</p>`;
   if(!prisonniers.length) html+=`<p class="vide">Personne en prison ici.</p>`;
   else{
     html+=`<div class="prison-liste">`;

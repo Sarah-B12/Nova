@@ -54,9 +54,10 @@ async function resoudreCombat(opts){
   let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + bonusApt));
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
-    const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(10);
+    const xp = (typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10;
+    const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(xp);
     const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : null;   // récup tech du Protocole
-    journal(`Patrouille du Protocole neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}.`,"gain");
+    journal(`Patrouille du Protocole neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}, +${xp} XP.`,"gain");
   } else {
     /* Santé perdue : ~16 à Force 0, ~5 à Force 200 (+ patrouille costaude).
        Avant : 50 − 0,20×F + cf×0,3, borné 10-55. Divisé par ~3 : un nouveau
@@ -71,8 +72,8 @@ async function resoudreCombat(opts){
     if(typeof equipDegatsMult==="function") ps = ps*equipDegatsMult();
     ps = Math.max(3, aptCombatDegats(Math.round(ps)));
     const pm = Math.max(2, Math.round(ps*0.5));
-    await agirServeur({ jauges:{ sante:-ps, moral:-pm }, motif:"combat_perdu" }); gagnerXp(3);
-    journal(`La patrouille a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}.`,"alerte");
+    await agirServeur({ jauges:{ sante:-ps, moral:-pm }, motif:"combat_perdu" }); gagnerXp(3);   // v0.94b : annoncé ci-dessous
+    journal(`La patrouille a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}. +3 XP quand même.`,"alerte");
   }
   if(typeof consommerMunitions==="function") await consommerMunitions();   // v0.59 : 1 balle par arme à feu, gagné ou perdu
   apresAction();

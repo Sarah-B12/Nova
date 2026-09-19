@@ -349,7 +349,7 @@ async function _rendreMessages(z){
 }
 // Brouillons : les redessins de panneau ne doivent pas effacer une saisie en cours.
 let _msgForm = { dest:"", obj:"", txt:"" };
-let _annForm = { obj:"", txt:"" };
+let _annForm = { obj:"", txt:"", tag:"divers" };
 function _commBrouillon(z, id, cle, obj, evt){
   const n = z.querySelector(id); if(!n) return;
   if(obj[cle]) n.value = obj[cle];
@@ -458,6 +458,24 @@ async function supprimerMessage(type, m, modal){
 /* ---------- Petites annonces (serveur : mur partagé) ---------- */
 const ANNONCE_MAX = 5;
 const ANNONCE_JOURS = 30;
+/* ⚠ v0.94b — TAGS D'ANNONCE : LISTE FERMÉE. Un champ libre donnerait vingt
+   orthographes de « troc » et le filtre ne servirait plus à rien.
+   L'identifiant vit en base (minuscules, sans accent, contrainte SQL
+   `annonces_tag_valide`) ; le LIBELLÉ affiché vit ici — le serveur n'écrit
+   jamais de libellés (règle du §4duodecies).
+   ⚠ Ajouter un tag = DEUX endroits : cette liste ET la contrainte SQL. Sans la
+     contrainte, l'insertion sera refusée et l'annonce perdue. */
+const ANNONCE_TAGS = [
+  { id:"troc",        nom:"Troc" },
+  { id:"recrutement", nom:"Recrutement" },
+  { id:"entraide",    nom:"Entraide" },
+  { id:"quetes",      nom:"Quêtes" },
+  { id:"factions",    nom:"Factions" },
+  { id:"humour",      nom:"Humour" },
+  { id:"divers",      nom:"Divers" }
+];
+function _annTagNom(id){ const t=ANNONCE_TAGS.find(x=>x.id===id); return t?t.nom:"Divers"; }
+let _annFiltre = "tout";
 let _annCache = [];
 async function _chargerAnnonces(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return { toutes:[], miennes:0 };
@@ -469,19 +487,33 @@ async function _chargerAnnonces(){
   const ids=[...new Set(rows.map(a=>a.auteur_id))];
   const info={};
   if(ids.length){ const { data:pubs } = await sb.from("profils_publics").select("id,nom,faction").in("id",ids); for(const p of (pubs||[])) info[p.id]={ nom:p.nom, faction:p.faction }; }
-  const toutes = rows.map(a=>({ id:a.id, objet:a.objet, texte:a.texte, auteur:(info[a.auteur_id]&&info[a.auteur_id].nom)||"(inconnu)", faction:(info[a.auteur_id]&&info[a.auteur_id].faction)||null, moi:a.auteur_id===_monId }));
+  const toutes = rows.map(a=>({ id:a.id, objet:a.objet, texte:a.texte, tag:a.tag||"divers", auteur:(info[a.auteur_id]&&info[a.auteur_id].nom)||"(inconnu)", faction:(info[a.auteur_id]&&info[a.auteur_id].faction)||null, moi:a.auteur_id===_monId }));
   const miennes = toutes.filter(a=>a.moi).length;
   return { toutes, miennes };
 }
 function vueAnnonces(toutes, miennes){
+  const sel = ANNONCE_TAGS.map(t=>`<option value="${t.id}"${t.id===(_annForm.tag||"divers")?" selected":""}>${t.nom}</option>`).join("");
   let h=`<div class="annonce-form">
     <input id="ann-obj" placeholder="Objet de ton annonce" maxlength="50">
     <textarea id="ann-texte" placeholder="Ton annonce…" maxlength="280" rows="3"></textarea>
+    <div class="annonce-form-bas"><label class="itip-gris">Rubrique&nbsp;<select id="ann-tag" class="gouv-textarea" style="padding:4px 8px;width:auto">${sel}</select></label></div>
     <div class="annonce-form-bas"><span class="itip-gris">Tes annonces : ${miennes}/${ANNONCE_MAX} · conservées ${ANNONCE_JOURS} j</span><button class="mini" id="ann-publier">Publier</button></div>
   </div>`;
+  /* Le filtre ne montre que les rubriques RÉELLEMENT présentes, avec leur
+     compte : une barre de sept boutons dont cinq vides serait du décor. */
+  const parTag = {}; for(const a of toutes) parTag[a.tag||"divers"] = (parTag[a.tag||"divers"]||0)+1;
+  const dispo = ANNONCE_TAGS.filter(t=>parTag[t.id]);
+  if(dispo.length > 1){
+    h+=`<div class="journal-filtres" id="ann-filtres">`
+      + `<button class="jf-b${_annFiltre==="tout"?" actif":""}" data-af="tout">Toutes (${toutes.length})</button>`
+      + dispo.map(t=>`<button class="jf-b${_annFiltre===t.id?" actif":""}" data-af="${t.id}">${t.nom} (${parTag[t.id]})</button>`).join("")
+      + `</div>`;
+  }
+  const vues = toutes.filter(a=>_annFiltre==="tout" || (a.tag||"divers")===_annFiltre);
   h+=`<div class="annonce-mur">`;
   if(!toutes.length) h+=`<p class="vide">Aucune annonce pour l'instant. Sois le premier à publier !</p>`;
-  for(const a of toutes) h+=_carteAnnonce(a);
+  else if(!vues.length) h+=`<p class="vide">Aucune annonce dans cette rubrique.</p>`;
+  for(const a of vues) h+=_carteAnnonce(a);
   return h+`</div>`;
 }
 /* CARNET — bloc-notes personnel. Vit dans etat.carnet, donc dans `donnees` :
@@ -596,7 +628,7 @@ let _annMiennes = 0;
 function _carteAnnonce(a){
   const fac = a.faction ? _facNomComm(a.faction) : "";
   return `<div class="annonce-carte${a.moi?" moi":""}">
-    <div class="annonce-obj">${(a.objet||"(sans objet)").replace(/</g,"&lt;")}</div>
+    <div class="annonce-obj"><span class="j-cat j-social">${_annTagNom(a.tag)}</span> ${(a.objet||"(sans objet)").replace(/</g,"&lt;")}</div>
     <div class="annonce-txt">${(a.texte||"").replace(/</g,"&lt;")}</div>
     <div class="annonce-sign">— <button class="comm-nom" data-profil="${echapper(a.auteur||"")}">${echapper(a.auteur||"?")}</button>${fac?` · ${fac}`:""}${a.moi?` <button class="annonce-suppr" data-suppr="${a.id}">supprimer</button>`:""}${(!a.moi && typeof estAdmin==="function" && estAdmin())?` <button class="annonce-suppr" data-admann="${a.id}" style="color:#ff5257">✕ modérer</button>`:""}</div>
   </div>`;
@@ -604,20 +636,28 @@ function _carteAnnonce(a){
 function brancherAnnonces(z){
   _commBrouillon(z, "#ann-obj",   "obj", _annForm);
   _commBrouillon(z, "#ann-texte", "txt", _annForm);
+  const tg=z.querySelector("#ann-tag"); if(tg) tg.addEventListener("change",()=>{ _annForm.tag=tg.value; });
+  z.querySelectorAll("[data-af]").forEach(x=>x.addEventListener("click",()=>{ _annFiltre=x.dataset.af; majComm(); }));
   const b=z.querySelector("#ann-publier"); if(b) b.addEventListener("click", publierAnnonce);
   z.querySelectorAll("[data-suppr]").forEach(x=>x.addEventListener("click",()=>supprimerAnnonce(x.dataset.suppr)));
   z.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>voirProfilJoueur(x.dataset.profil)));
   z.querySelectorAll("[data-admann]").forEach(x=>x.addEventListener("click",async()=>{ try{ await sb.rpc("admin_suppr_annonce",{p_id:Number(x.dataset.admann)}); journal("Annonce supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#3"); } majComm(); }));
 }
 async function publierAnnonce(){
-  const obj=(document.querySelector("#ann-obj").value||"").trim(); _annForm={ obj:"", txt:"" };
+  const obj=(document.querySelector("#ann-obj").value||"").trim();
+  const tagEl=document.querySelector("#ann-tag");
+  // ⚠ Repli sur "divers" : un tag inconnu serait REFUSÉ par la contrainte SQL
+  //    et l'annonce perdue avec le texte déjà saisi.
+  let tag=(tagEl&&tagEl.value)||_annForm.tag||"divers";
+  if(!ANNONCE_TAGS.some(t=>t.id===tag)) tag="divers";
+  _annForm={ obj:"", txt:"", tag };
   const txt=(document.querySelector("#ann-texte").value||"").trim();
   if(!obj){ journal("Donne un objet à ton annonce.","alerte"); return; }
   if(!txt){ journal("Ton annonce est vide.","alerte"); return; }
   if(_annMiennes>=ANNONCE_MAX){ journal(`Maximum ${ANNONCE_MAX} annonces — supprime-en une d'abord.`,"alerte"); return; }
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
   const s=await sessionActuelle(); if(!s) return;
-  const { error } = await sb.from("annonces").insert({ auteur_id:s.user.id, objet:obj, texte:txt });
+  const { error } = await sb.from("annonces").insert({ auteur_id:s.user.id, objet:obj, texte:txt, tag });
   if(error){ console.warn("[comm] publication:",error.message); journal("Échec de la publication.","alerte"); return; }
   journal("Annonce publiée.","gain"); majComm();
 }
