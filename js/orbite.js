@@ -34,7 +34,6 @@
    ⚠ L'identifiant technique ne change PAS : `profils.secteur` vaut toujours
    'ecart', et `enEcart()` garde son nom. Seuls les textes bougent. */
 const SECTEUR_NOM = "Nielle";
-const ECART_NOM   = SECTEUR_NOM;   // ancien nom, conservé pour ne rien casser
 
 /* Coût du saut Silène ⇄ L'Écart. C'est une SORTIE D'ATMOSPHÈRE, pas un vol
    d'orbite : distance fixe, donc coût fixe en unités de vol. Le carburant
@@ -53,9 +52,6 @@ function coutSaut(){
   return { litres: Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1)),
            energie: SAUT_ENERGIE + (v.energie||0) * 2,
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
-}
-function _texteSaut(c){
-  return `${c.litres} L de ${(typeof item==="function" && item(c.carb)) ? item(c.carb).nom : "carburant"} et ${c.energie} % d'énergie`;
 }
 
 function enEcart(){ return etat.secteur === "ecart"; }

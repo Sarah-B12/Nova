@@ -60,29 +60,36 @@ const ESPACE_MONDE = { w: 2400, h: 1600 };
 const ESPACE_FOND  = "images/carte_espace_1.png";
 
 /* Positions posées au mode placement (console dev → Placement carte spatiale).
-   Pour les rejouer : ouvrir le mode, glisser, « Copier le bloc », coller ici. */
+   Pour les rejouer : ouvrir le mode, glisser, « Copier le bloc », coller ici.
+
+   ⚠ v0.95 — AUCUN COMMENTAIRE DANS LE TABLEAU. `placementExport()` le régénère
+   en entier : tout commentaire placé entre les crochets disparaît au premier
+   « Copier le bloc ». Les notes par lieu vivent donc ICI, au-dessus :
+     base            halo = liseré lumineux (les images sombres se perdent sur
+                     un fond d'étoiles). Valeur = couleur CSS. Réservé aux lieux
+                     qui doivent SE REPÉRER : la base d'abord.
+     planete_bleue   ⚠ RÉSERVÉE À L'ARC SUIVANT : reste un `lieu`, mais ne mène
+                     nulle part pour l'instant.
+     trou_noir       ⚠ AUCUN nom officiel : les registres d'AREPO s'arrêtent là.
+                     Verrou porté de q15 à q20 — le trou noir ouvre la carte
+                     SUIVANTE, pas celle-ci.
+     portail         ⚠ LEURRE : ne mène à rien, jamais. Non répertorié,
+                     seulement numéroté zéro. */
 const ESPACE_LIEUX = [
-  /* halo : liseré lumineux autour de l'objet (les images sombres se perdent
-     sur un fond d'étoiles). Valeur = couleur CSS. Réservé aux lieux qui
-     doivent SE REPÉRER : la base d'abord. */
   { id:"base", nom:"Le Perchoir", officiel:"Relais Nielle-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
     usage:"Auberge · Boutique · Poste · Quêtes", desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
   { id:"planete_chaude", nom:"La Braise", officiel:"Ancolie", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
     usage:"Descente au sol · zone chaude", desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },
   { id:"planete_froide", nom:"Le Suaire", officiel:"Gypsophile", img:"planete_froide_1.png", x:203, y:967, t:312, type:"lieu",
     usage:"Descente au sol · zone froide", desc:"Blanche jusqu'à l'horizon. Rien n'y bouge, et c'est le problème." },
-  /* ⚠ RÉSERVÉE À L'ARC SUIVANT : reste un `lieu`, mais ne mène nulle part pour l'instant. */
   { id:"planete_bleue", nom:"Les Deux Sœurs", officiel:"Consoude", img:"planete_bleue.png", x:1093, y:316, t:312, type:"lieu",
     usage:"À venir", desc:"De loin, on ne sait plus laquelle tourne autour de l'autre." },
   { id:"planete_cassee", nom:"La Cassée", officiel:"Nielle-4", img:"planete_cassee.png", x:2150, y:864, t:406, type:"lieu",
     usage:"À venir", desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
   { id:"etoile", nom:null, libelle:"Une étoile", officiel:"Digitale", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
     usage:"", desc:"" },
-  /* ⚠ AUCUN nom officiel : les registres d'AREPO s'arrêtent là. Verrou porté de
-     q15 à q20 — le trou noir ouvre la carte SUIVANTE, pas celle-ci. */
   { id:"trou_noir", nom:"La Gorge", officiel:null, img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"q20",
     usage:"Verrouillé", desc:"Elle avale la lumière sans un bruit. Personne n'en est revenu pour le raconter." },
-  /* ⚠ LEURRE : ne mène à rien, jamais. Non répertorié, seulement numéroté zéro. */
   { id:"portail", nom:"L'Arche", officiel:"Structure NL-0", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
     usage:"Inerte", desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
   { id:"epave", nom:"La Carcasse", officiel:"NL-217", img:"ruine_vaisseau.png", x:747, y:1270, t:133, type:"lieu",

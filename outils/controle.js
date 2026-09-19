@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ===========================================================
-   NOVA EPIC — CONTRÔLE AVANT DÉPLOIEMENT                (v0.92)
+   NOVA EPIC — CONTRÔLE AVANT DÉPLOIEMENT                (v0.95)
 
    À lancer à la racine du projet (là où se trouve index.html) :
        node outils/controle.js
@@ -227,6 +227,110 @@ for(const [nom, s] of Object.entries({ "index.html": html, ...sources })){
   if(re.test(s)){ ko(nom + " contient un chemin absolu"); abs++; }
 }
 if(!abs) ok("aucun chemin absolu");
+
+/* ---------- Outil : clés de premier niveau d'un objet littéral global ----------
+   Lit `const NOM = { a:…, b:…, "c":… }` sur la source NETTOYÉE (chaînes
+   effacées) : les clés sont donc des identifiants nus. Suffit pour les tables
+   de ce projet, qui n'utilisent pas de clés calculées. */
+function clesObjet(nom){
+  for(const f of fichiers){
+    const s = propre[f];
+    const m = new RegExp("^const\\s+" + nom + "\\s*=\\s*\\{", "m").exec(s);
+    if(!m) continue;
+    const cles = []; let i = m.index + m[0].length, prof = 1, debut = i;
+    for(; i < s.length && prof > 0; i++){
+      const c = s[i];
+      if(c === "{" || c === "[" || c === "(") prof++;
+      else if(c === "}" || c === "]" || c === ")") prof--;
+      else if(prof === 1 && c === ":"){
+        const k = /([A-Za-z_$][A-Za-z0-9_$]*)\s*$/.exec(s.slice(debut, i));
+        if(k) cles.push(k[1]);
+      }
+      if(prof === 1 && c === ",") debut = i + 1;
+    }
+    return { f, cles };
+  }
+  return null;
+}
+
+/* ---------- 7. Globales déclarées et jamais lues (v0.95) ----------
+   Piège n°14 : une constante orpheline est la TRACE d'un bloc disparu —
+   c'est `SONDE_PV_RIPOSTE` qui a trahi les trois options mortes de la sonde.
+   Avant de supprimer un orphelin, chercher ce qui l'utilisait. */
+titre("7. Globales déclarées et jamais lues");
+const ORPHELINS_ASSUMES = {
+  _saisieEnCours:   "garde-fou anti-redessin, prêt à brancher (pièges n°20 et 22)",
+  prochainResetJeu: "minuit parisien exact, changement d'heure compris — pour les futurs « reviens demain »"
+};
+const toutPropre = Object.values(propre).join("\n") + "\n" + html;
+let orph = 0;
+for(const f of fichiers){
+  const re = /^(?:async\s+)?function\s+([A-Za-z0-9_$]+)|^(?:const|let|var)\s+([A-Za-z0-9_$]+)/gm;
+  let m;
+  while((m = re.exec(sources[f]))){
+    const nom = m[1] || m[2];
+    if(ORPHELINS_ASSUMES[nom]) continue;
+    const n = (toutPropre.match(new RegExp("(^|[^\\w$.]|\\.\\.\\.)" + nom.replace(/\$/g, "\\$") + "(?![\\w$])", "g")) || []).length;
+    if(n <= 1){ ko(nom + " (" + f + ") n'est lu nulle part"); orph++; }
+  }
+}
+if(!orph) ok("aucune globale orpheline (hors " + Object.keys(ORPHELINS_ASSUMES).length + " assumées)");
+
+/* ---------- 8. Registre des structures (v0.95) ----------
+   Une structure existe à CINQ endroits : STRUCTURES, IMG, REPARATION,
+   normaliserParcelles (qui lit désormais STRUCTURES) et le `case` de
+   reparer_structure côté SERVEUR — celui-là, aucun script client ne le voit. */
+titre("8. Registre des structures (STRUCTURES ↔ IMG ↔ REPARATION)");
+{
+  const S = clesObjet("STRUCTURES"), I = clesObjet("IMG"), R = clesObjet("REPARATION");
+  if(!S || !I || !R) ko("table introuvable : " + [!S&&"STRUCTURES", !I&&"IMG", !R&&"REPARATION"].filter(Boolean).join(", "));
+  else {
+    let e = 0;
+    for(const t of S.cles){
+      if(!I.cles.includes(t)){ ko("structure « " + t + " » sans image dans IMG (" + I.f + ")"); e++; }
+      if(!R.cles.includes(t)){ ko("structure « " + t + " » sans matières dans REPARATION (" + R.f + ")"); e++; }
+    }
+    for(const t of R.cles) if(t !== "maison" && !S.cles.includes(t)){ ko("REPARATION connaît « " + t + " », absent de STRUCTURES"); e++; }
+    if(!e) ok(S.cles.length + " structures + logement couverts. ⚠ Penser au `case` de reparer_structure (serveur).");
+  }
+}
+
+/* ---------- 9. MOTIFS_ACTION ↔ motifs réellement envoyés (v0.95) ----------
+   La remise d'énergie des aptitudes ne s'applique qu'aux motifs de cette
+   liste. Un motif renommé d'un côté seulement perd la remise, sans erreur. */
+titre("9. MOTIFS_ACTION ↔ motifs envoyés à agir()");
+{
+  const src = Object.values(sources).join("\n");
+  const m = /const\s+MOTIFS_ACTION\s*=\s*new\s+Set\(\s*\[([^\]]*)\]/.exec(src);
+  if(!m) ko("MOTIFS_ACTION introuvable");
+  else {
+    const liste = (m[1].match(/"([a-z_]+)"/g) || []).map(x => x.slice(1, -1));
+    const envoyes = new Set((src.match(/motif\s*:\s*"([a-z_]+)"/g) || []).map(x => x.split('"')[1]));
+    const morts = liste.filter(x => !envoyes.has(x));
+    if(morts.length) morts.forEach(x => ko("MOTIFS_ACTION contient « " + x + " », qu'aucun appel n'envoie"));
+    else ok(liste.length + " motifs, tous envoyés quelque part");
+  }
+}
+
+/* ---------- 10. `.catch` / `.finally` sur un appel Supabase (v0.95) ----------
+   Piège n°26 : `sb.rpc()` est un thenable PARESSEUX, sans catch ni finally.
+   `sb.rpc(…).catch(…)` lève un TypeError synchrone et la requête ne part
+   jamais. Seuls `await` et `Promise.resolve(sb.rpc(…))` sont sûrs. */
+titre("10. .catch / .finally sur un appel Supabase");
+{
+  let e = 0;
+  for(const f of fichiers){
+    const s = propre[f];
+    const re = /\bsb\s*\.\s*(?:rpc|from|auth)\b[^;]*?\)\s*\.\s*(catch|finally)\s*\(/g;
+    let m;
+    while((m = re.exec(s))){
+      const avant = s.slice(Math.max(0, m.index - 20), m.index);
+      if(/Promise\.resolve\(\s*$/.test(avant)) continue;
+      ko(f + ":" + (s.slice(0, m.index).split("\n").length) + " — ." + m[1] + "() sur un appel Supabase"); e++;
+    }
+  }
+  if(!e) ok("aucun");
+}
 
 /* ---------- Verdict ---------- */
 console.log("\n" + "═".repeat(60));

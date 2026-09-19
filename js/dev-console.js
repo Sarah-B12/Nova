@@ -137,26 +137,6 @@ function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={d
 function devResetQuetes(){ etat.quetes={done:[],active:null}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
 
 /* ---------- Rendu ---------- */
-function _devCartePerso(){
-  const pos = etat.pos ? `${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}` : "—";
-  const cree = etat.creeLe ? new Date(etat.creeLe).toLocaleString("fr-FR") : "—";
-  return `<div class="dev-carte">
-    <div class="dev-carte-tete"><b>${etat.nom||"(sans pseudo)"}</b> <span class="qte">${etat.faction||"—"} · Niv ${etat.niveau}</span></div>
-    <div class="dev-grid">
-      <span>Crédits</span><b>${etat.credits} ₡</b>
-      <span>Énergie</span><b>${Math.floor(etat.energie)} %</b>
-      <span>Position</span><b>${pos}</b>
-      <span>IP</span><b class="dev-dim">— (backend requis)</b>
-      <span>Compte créé</span><b>${cree}</b>
-      <span>État</span><b>${etat.enPause?"⏸ EN PAUSE":"actif"}</b>
-      <span>Permis vaisseau</span><b>${etat.permisVaisseau?"✅ oui":"— non"}</b>
-    </div>
-    <div class="dev-bloc" style="margin-top:12px"><h4>Quêtes (debug)</h4>
-      <div class="dev-champ"><select id="dev-quete-sel">${(typeof QUETES!=="undefined"?QUETES:[]).map(q=>`<option value="${q.id}">${q.id} — ${q.nom}${(etat.quetes&&etat.quetes.done&&etat.quetes.done.includes(q.id))?" ✓ faite":((etat.quetes&&etat.quetes.active&&etat.quetes.active.id===q.id)?" ⏳ en cours":"")}</option>`).join("")}</select><button class="mini" id="dev-quete-reset">Réinitialiser</button></div>
-      <button class="mini" id="dev-quete-reset-all" style="margin-top:6px">Tout réinitialiser (quêtes)</button>
-    </div>
-  </div>`;
-}
 /* Mode tranquillité — onglet Recherche, donc accessible aux DEUX consoles
    (dev et admin), comme la fiche joueur. L'état vit dans profils.tranquillite,
    colonne protégée par le trigger : un joueur ne peut pas se l'accorder. */

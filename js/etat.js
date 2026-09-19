@@ -33,7 +33,6 @@ function nouvelEtat(){
 }
 
 /* ---------- Utilitaires ---------- */
-function borne(v){ return Math.max(0, Math.min(MAX, v)); }
 function alea(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 function bonusCredits(){ return Math.floor(intelligenceEffective()/5); }
 // Chance de « doubler une trouvaille » = Intelligence (jusqu'à ~20 % à 200) + Drone récupérateur (+15 %). Plafond 40 %.
@@ -89,6 +88,12 @@ function hydraterEtat(s){
        écrites en contiennent : on les neutralise ici, sinon le correctif ne
        prendrait effet qu'après la première réécriture. */
     reputation:0, cercles:{}, roleAdmin:null,
+    /* ⚠ v0.95 — même raison : la prison vient de mon_etat_prison(), les valeurs
+       de travail de leur synchro (voir CLES_SERVEUR / CLES_TRANSITOIRES). Les
+       sauvegardes déjà écrites en contiennent : on les neutralise ici. */
+    prisonJusqua:0, prisonFaction:null,
+    _jourReelMs:undefined, _pauseResteMin:undefined, _pauseResteMax:undefined, _pauseMinJ:undefined, _pauseMaxJ:undefined,
+    _aRoleGouv:undefined, _jaugesEchec:undefined, _sacEchec:undefined,
     competences:{...base.competences,...(s.competences||{})},
     /* ⚠ On ne restaure PAS s.jauges : o2/sante/moral sont des colonnes serveur,
        lues par chargerJaugesServeur() au démarrage. Une copie persistée
@@ -104,7 +109,11 @@ function hydraterEtat(s){
        par la fenêtre. */
     quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null,
              verrous:(s.quetes&&s.quetes.verrous&&typeof s.quetes.verrous==="object")?s.quetes.verrous:{} },
-    terrain:{ parcelles: normaliserParcelles(s.terrain) },
+    /* ⚠ v0.95 — `terrain` n'était reconstruit QU'AVEC `parcelles` : tout autre
+       champ (futur) disparaissait au rechargement. On part de ce qui existe.
+       `structures` est l'ancien nom de `parcelles` : normaliserParcelles() le lit
+       encore en repli, on ne le recopie pas. */
+    terrain:{ ...((s.terrain && typeof s.terrain==="object") ? s.terrain : {}), structures:undefined, parcelles: normaliserParcelles(s.terrain) },
     creeLe: s.creeLe || Date.now(),
     energie: (typeof s.energie==="number" ? s.energie : 100),
     energieMaj: s.energieMaj || Date.now() };
@@ -113,5 +122,4 @@ function charger(){
   try{ const brut=localStorage.getItem(CLE); if(brut) return hydraterEtat(JSON.parse(brut)); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "etat.js#2"); }
   return nouvelEtat();
 }
-function reinitialiser(){ if(!confirm("Effacer la partie locale et te déconnecter ?"))return; try{localStorage.removeItem(CLE);}catch(e){ if(typeof _catchLog==="function") _catchLog(e, "etat.js#3"); } if(typeof seDeconnecter==="function"){ seDeconnecter().finally(()=>location.reload()); } else { etat=nouvelEtat(); document.querySelector("#journal").innerHTML=""; afficher(); (typeof ouvrirAuth==="function"?ouvrirAuth:ouvrirInscription)(); } }
 

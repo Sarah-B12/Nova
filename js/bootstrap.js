@@ -3,6 +3,18 @@
    Chargé en dernier : toutes les données et fonctions sont déjà définies.
    =========================================================== */
 let etat = charger();
+/* ⚠ v0.95 — `etat` vient ici de localStorage, donc de la DERNIÈRE session.
+   `demarrer()` le REMPLACE par l'objet relu du serveur (`etat = hydraterEtat(…)`).
+   Toute synchro partie avant ce remplacement écrit dans l'ANCIEN objet, et
+   l'hydratation remet ensuite sac, lots et jauges aux défauts : le joueur voyait
+   un sac vide et 100 % partout jusqu'à la relecture suivante (60 s).
+   C'était le cas de `setTimeout(syncApresConnexion, 1200)` sur réseau lent, et
+   de `visibilitychange` quand Chrome restaure l'onglet en arrière-plan.
+   Règle : aucune synchro serveur tant que `_etatPret` est faux. Il se lève dans
+   `demarrer()`, sur TOUTES ses branches, juste après que `etat` a trouvé sa
+   valeur définitive. */
+let _etatPret = false;
+function _pretASynchro(){ return _etatPret && !!(etat && etat.inscrit); }
 
 /* ---------- Onglets ---------- */
 document.querySelectorAll(".onglet").forEach(o => o.addEventListener("click", () => {
@@ -76,10 +88,20 @@ construireCompetences(); construireCarte();
     const session = await sessionActuelle();
     if(session){
       const prof = await chargerDepuisServeur();
-      if(prof && prof.donnees && prof.donnees.inscrit){ etat = hydraterEtat(prof.donnees); appliquerColonnesProfil(prof); /* v0.92 : relecture des colonnes, source unique dans serveur.js */ afficher(); journal("Systèmes en ligne. Surveille ton énergie."); if(typeof compterNotifs==="function") compterNotifs(); if(typeof compterPoste==="function") compterPoste(); if(typeof compterAnnonce==="function") compterAnnonce(); if(typeof syncPrison==="function") syncPrison(); if(typeof syncEffetsCombat==="function") syncEffetsCombat(); if(!etat.avatar && typeof ouvrirAvatar==="function") ouvrirAvatar({obligatoire:true}); /* rattrapage : inscription interrompue avant le choix */ }
-      else { etat = nouvelEtat(); afficher(); ouvrirEntree(); }
-    } else { etat = nouvelEtat(); afficher(); ouvrirEntree(); }
+      if(prof && prof.donnees && prof.donnees.inscrit){
+        etat = hydraterEtat(prof.donnees); appliquerColonnesProfil(prof); /* v0.92 : relecture des colonnes, source unique dans serveur.js */
+        _etatPret = true;
+        afficher(); journal("Systèmes en ligne. Surveille ton énergie.");
+        if(typeof compterNotifs==="function") compterNotifs(); if(typeof compterPoste==="function") compterPoste(); if(typeof compterAnnonce==="function") compterAnnonce();
+        /* v0.95 — syncPrison et syncEffetsCombat sont DANS syncApresConnexion :
+           les appeler aussi ici les faisait partir deux fois. */
+        await syncApresConnexion();
+        if(!etat.avatar && typeof ouvrirAvatar==="function") ouvrirAvatar({obligatoire:true}); /* rattrapage : inscription interrompue avant le choix */
+      }
+      else { etat = nouvelEtat(); _etatPret = true; afficher(); ouvrirEntree(); }
+    } else { etat = nouvelEtat(); _etatPret = true; afficher(); ouvrirEntree(); }
   } else {
+    _etatPret = true;
     afficher();
     if(!etat.inscrit) ouvrirEntree(); else journal("Mode local (serveur indisponible).","alerte");
   }
@@ -96,15 +118,15 @@ setInterval(() => { if(etat.inscrit && typeof compterNotifs==="function") compte
 setInterval(() => { if(etat.inscrit && typeof pousserCredits==="function") pousserCredits(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof compterPoste==="function") compterPoste(); }, 60000);
 setInterval(() => { if(etat.inscrit && typeof compterAnnonce==="function") compterAnnonce(); }, 60000);
-setInterval(() => { if(etat.inscrit && typeof syncPrison==="function") syncPrison(); }, 60000);
-setInterval(() => { if(etat.inscrit && typeof syncEffetsCombat==="function") syncEffetsCombat(); }, 60000);
+setInterval(() => { if(_pretASynchro() && typeof syncPrison==="function") syncPrison(); }, 60000);
+setInterval(() => { if(_pretASynchro() && typeof syncEffetsCombat==="function") syncEffetsCombat(); }, 60000);
 /* v0.66 — le sac ne se relisait qu'au CHARGEMENT : un objet offert par la
    console du staff, ou tout ajout venu du serveur, n'apparaissait qu'après un
    rafraîchissement manuel. On relit périodiquement (sac_lire est peu coûteux),
    et dès que l'onglet revient au premier plan. */
-setInterval(() => { if(etat.inscrit && typeof chargerStocksServeur==="function") chargerStocksServeur(); }, 60000);
+setInterval(() => { if(_pretASynchro() && typeof chargerStocksServeur==="function") chargerStocksServeur(); }, 60000);
 document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden || !etat.inscrit) return;
+  if(document.hidden || !_pretASynchro()) return;
   if(typeof chargerStocksServeur==="function") chargerStocksServeur();
   if(typeof rechargerCredits==="function")     rechargerCredits();
   if(typeof chargerIntegrite==="function")     chargerIntegrite();
@@ -122,8 +144,12 @@ document.addEventListener("visibilitychange", ()=>{
    refresh ». La synchronisation est donc une fonction, appelée ici ET après
    chaque connexion ou inscription (navigation.js). */
 async function syncApresConnexion(){
-  if(!etat.inscrit) return;
+  if(!_pretASynchro()) return;
   const t = [];
+  /* v0.95 — la prison est une donnée serveur (table `prison`), plus persistée
+     dans `donnees` : elle se relit ici, sur les DEUX chemins d'entrée. La
+     connexion explicite (navigation.js) ne la relisait qu'à la minuterie. */
+  if(typeof syncPrison==="function") t.push(syncPrison());
   if(typeof chargerStocksServeur==="function") t.push(chargerStocksServeur());
   if(typeof chargerJaugesServeur==="function") t.push(chargerJaugesServeur());   // jauges serveur
   if(typeof _syncPause==="function") t.push(_syncPause());                        // état de pause serveur
@@ -146,4 +172,5 @@ async function syncApresConnexion(){
      `_mortInfo` soit connu) et après l'écran bloquant. */
   if(typeof secoursOrbite==="function") secoursOrbite();
 }
-setTimeout(syncApresConnexion, 1200);
+/* ⚠ v0.95 — plus de `setTimeout(syncApresConnexion, 1200)` : `demarrer()` l'appelle
+   APRÈS l'hydratation. Un délai n'ordonne rien, un `await` si. */

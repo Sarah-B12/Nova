@@ -41,7 +41,6 @@ function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0)
 
 /* ---------- Oxygène ---------- */
 function aptO2Bonus(){ return _apt("sv1") ? 1 : 0; }                            // Poumons d'acier −1 (appliqué dans coutO2)
-function aptO2Explore(cout){ return Math.max(1, Math.round(cout * (_apt("om2") ? 0.9 : 1))); }   // Repérage −10 % O₂ à l'exploration
 
 /* ---------- Régénération passive (O₂ / santé / moral) ; l'énergie passe par regenEnergie ---------- */
 function regenPassif(){

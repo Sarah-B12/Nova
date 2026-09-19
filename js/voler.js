@@ -200,37 +200,7 @@ function _hackChrono(m, temps){
   const fin=Date.now()+temps, el=m.querySelector("#hk-chrono"); _hackClear();
   _hackTimer=setInterval(()=>{ const r=fin-Date.now(); if(el) el.textContent=_vfmt(r); if(r<=0) _hackFin(false); },200);
 }
-function _genCode(){ const ch="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const seg=()=>Array.from({length:4},()=>ch[Math.floor(Math.random()*ch.length)]).join(""); return seg()+"-"+seg()+"-"+seg(); }
-function _genTok(){ const ch="0123456789ABCDEF"; return Array.from({length:3},()=>ch[Math.floor(Math.random()*ch.length)]).join(""); }
 
-function _miniCopie(m, temps){
-  const code=_genCode(); m.hidden=false;
-  m.innerHTML=_hackCadre("🖥 Recopie le code d'accès",
-    `<p class="hk-sous">Retape exactement le code avant la fin du temps.</p><p class="hk-code">${code}</p>
-     <div class="hk-rep"><input id="hk-copie" placeholder="Recopie ici…" autocomplete="off" spellcheck="false"><button class="mini" id="hk-copie-ok">Valider</button></div>`);
-  const c=m.querySelector("#hk-copie"), b=m.querySelector("#hk-copie-ok");
-  const go=()=>{ if((c.value||"").trim().toUpperCase()===code) _hackFin(true); else { c.classList.add("hk-err"); setTimeout(()=>c.classList.remove("hk-err"),300); } };
-  b.addEventListener("click",go); c.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); setTimeout(()=>c.focus(),50);
-  _hackChrono(m, temps);
-}
-function _miniFils(m, temps){
-  const couleurs=["#ff5257","#5aa8e6","#8bd450","#ffb060"]; const n=couleurs.length;
-  const g=_melange(couleurs.slice()), d=_melange(couleurs.slice());
-  const port=(c,s,i)=>`<button class="hk-port" data-c="${c}" data-s="${s}" style="--c:${c}"></button>`;
-  m.hidden=false;
-  m.innerHTML=_hackCadre("🖥 Relie les fils (entrée → sortie)",
-    `<p class="hk-sous">Clique un fil à gauche puis la même couleur à droite. Relie-les tous.</p>
-     <div class="hk-fils"><div class="hk-col">${g.map(c=>port(c,"g")).join("")}</div><div class="hk-col">${d.map(c=>port(c,"d")).join("")}</div></div>`);
-  let sel=null, faits=0;
-  m.querySelectorAll(".hk-port").forEach(p=>p.addEventListener("click",()=>{
-    if(p.classList.contains("hk-done")) return;
-    if(p.dataset.s==="g"){ m.querySelectorAll('.hk-port[data-s="g"]').forEach(x=>x.classList.remove("hk-sel")); sel=p; p.classList.add("hk-sel"); return; }
-    if(!sel) return;
-    if(sel.dataset.c===p.dataset.c){ sel.classList.add("hk-done"); p.classList.add("hk-done"); sel.classList.remove("hk-sel"); sel=null; if(++faits>=n) _hackFin(true); }
-    else { p.classList.add("hk-err"); setTimeout(()=>p.classList.remove("hk-err"),300); }
-  }));
-  _hackChrono(m, temps);
-}
 /* labyrinthe à bascule : maze aléatoire (génération), incliner aux flèches ou au pavé */
 const LAB_M = 13;   // taille logique (impair) — plus grand = plus difficile
 function _genMaze(M){
@@ -558,19 +528,32 @@ function _factionNom(fid){
   const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction");
 }
 function _avatarMini(){ return `<span class="prison-av"><svg viewBox="0 0 120 130"><path d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/><path d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/><rect x="38" y="46" width="44" height="13" rx="6"/></svg></span>`; }
-function _allerProfil(){ document.querySelectorAll(".panneau").forEach(p=>p.classList.toggle("actif", p.dataset.panneau==="profil")); document.querySelectorAll("[data-onglet]").forEach(o=>o.classList.toggle("actif", o.dataset.onglet==="profil")); }
 async function tenterEvasion(){
   if(!enPrison()) return;
   if((etat.energie||0) < 10){ journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte"); return; }
-  // agir() refuse normalement d'agir en prison : l'évasion est la seule
-  // exception, d'où enPrison:true.
-  if(!await agirServeur({ cout:10, motif:"evasion", enPrison:true })) return;
+  /* ⚠ v0.95 — LE TIRAGE SE FAIT AU SERVEUR. Le client tirait lui-même au
+     sort puis appelait `liberer_moi()` : n'importe quel prisonnier pouvait
+     l'appeler depuis F12 et sortir. `tenter_evasion()` débite les 10 %
+     d'énergie, tire, et libère — tout ou rien, en une transaction.
+     Le client n'envoie que son score (Agilité + Intelligence EFFECTIVES :
+     équipement, boisson et moral compris, que le serveur ne sait pas
+     recalculer). La chance reste plafonnée à 60 % côté serveur.
+     `liberer_moi()` n'est plus exécutable par les joueurs. */
   const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
   const intel=(typeof intelligenceEffective==="function")?intelligenceEffective():5;
-  const p=Math.min(0.6, 0.12 + (agi+intel)*0.01);
-  if(Math.random() < p){
+  let data=null;
+  try{ ({ data } = await sb.rpc("tenter_evasion", { p_score: Math.round(agi+intel) })); }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#evasion"); }
+  if(!data || !data.ok){
+    const err=data && data.err;
+    if(err==="energie") journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte");
+    else if(err==="libre"){ etat.prisonJusqua=0; etat.prisonFaction=null; journal("Tu n'es plus en prison.","gain"); }
+    else journal("Le serveur n'a pas répondu — réessaie.","alerte");
+    if(typeof afficher==="function") afficher(); majVoler(); return;
+  }
+  if(typeof data.energie==="number"){ etat.energie=data.energie; etat.energieMaj=Date.now(); }
+  if(data.reussi){
     etat.prisonJusqua=0; etat.prisonFaction=null;
-    _rpcFireAndForget("liberer_moi", {}, "voler.js#evasion");   // ⚠ voir _rpcFireAndForget : pas de .catch sur sb.rpc
     journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain","vol");
   } else {
     journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte","vol");

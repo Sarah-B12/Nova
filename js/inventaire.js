@@ -206,13 +206,6 @@ function ajouterAuSac(id, n){
   }
   return place;
 }
-// Retire une unité et nettoie l'ordre si la pile est vide.
-function retirerDuSac(id, n=1){
-  console.warn("[obsolète] retirerDuSac : utiliser agirServeur({retirer:{...}}) — désynchronise le serveur.");
-  if(!etat.sac[id]) return;
-  etat.sac[id]-=n;
-  if(etat.sac[id]<=0){ delete etat.sac[id]; etat.sacOrdre=etat.sacOrdre.filter(x=>x!==id); if(etat.sacDate) delete etat.sacDate[id]; }
-}
 // Réordonne le sac (glisser-déposer) : place dragId à l'emplacement de cibleId.
 let dragId=null;
 function reordonnerSac(dId, cibleId){

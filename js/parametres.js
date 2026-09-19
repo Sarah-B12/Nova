@@ -5,10 +5,11 @@
    JOUR_MS est passé en temps réel (24 h) et vaut `config.jour_ms`.
    =========================================================== */
 const FACTION_COOLDOWN_J   = 30;    // jours entre deux changements de faction
+/* ⚠ v0.95 — PAUSE_MIN_J / PAUSE_MAX_J ne sont plus que des REPLIS : les vraies
+   valeurs sont `config.pause_min_j` / `pause_max_j`, renvoyées par pause_etat()
+   et lues par _pMinJ() / _pMaxJ(). */
 const PAUSE_MIN_J          = 3;     // pause minimale (anti-abus anti-vol)
 const PAUSE_MAX_J          = 90;    // pause maximale (sortie auto ensuite, par le cron)
-const APPARENCE_COOLDOWN_J = 180;   // 6 mois — repli d'affichage seulement
-const APPARENCE_COUT       = 5000;  // repli d'affichage : le vrai coût vient de config.apparence_cout
 
 /* ⚠ Le verrou d'apparence est détenu par le SERVEUR (profils.apparence_le +
    RPC apparence_etat). `etat.apparenceLe` n'était jamais écrit : le texte
@@ -30,7 +31,17 @@ async function chargerApparenceEtat(force){
   majParametres();
 }
 
-function _pjm(){ return (typeof JOUR_MS!=="undefined") ? JOUR_MS : 86400000; }
+/* ⚠ v0.95 — JOUR RÉEL, pas jour de jeu. Tout ce que formate _pfmtJours() est
+   une échéance RÉELLE fixée par le serveur (fin de pause, verrou de faction,
+   verrou d'apparence). Elle était divisée par JOUR_MS : juste tant que
+   JOUR_MS vaut 24 h, faux dès qu'on l'accélère pour tester (piège n°16).
+   `_jourReel()` (pause.js) renvoie la durée annoncée par pause_etat(). */
+/* v0.95 — délai entre deux changements de faction : `config.faction_jours`,
+   renvoyé par faction_etat(). FACTION_COOLDOWN_J n'est plus qu'un repli. */
+function _facJours(){ return (_facEtat && typeof _facEtat.jours==="number") ? _facEtat.jours : FACTION_COOLDOWN_J; }
+function _pMinJ(){ return (typeof etat._pauseMinJ==="number") ? etat._pauseMinJ : PAUSE_MIN_J; }
+function _pMaxJ(){ return (typeof etat._pauseMaxJ==="number") ? etat._pauseMaxJ : PAUSE_MAX_J; }
+function _pjm(){ return (typeof _jourReel==="function") ? _jourReel() : 86400000; }
 function _pfmtJours(ms){ ms=Math.max(0,ms); const j=ms/_pjm(); if(j>=1) return `${Math.floor(j)} j`; const h=Math.ceil(j*24); return `${h} h`; }
 /* ⚠ Le cooldown de faction et le blocage d'équilibrage sont détenus par le
    SERVEUR (profils.faction_le + config.faction_bloquee + RPC faction_etat).
@@ -64,6 +75,8 @@ async function _syncPause(){
     const { data } = await sb.rpc("pause_etat");
     if(data && data.ok){
       if(data.jour_reel_ms) etat._jourReelMs = data.jour_reel_ms;   // durée d'un jour RÉEL
+      if(typeof data.min_j === "number") etat._pauseMinJ = data.min_j;   // v0.95 : bornes lues au serveur
+      if(typeof data.max_j === "number") etat._pauseMaxJ = data.max_j;
       etat.enPause = !!data.en_pause;
       etat.pauseLe = data.en_pause ? (Date.now() - (data.depuis_ms||0)) : 0;
       etat._pauseResteMin = data.reste_min_ms || 0;
@@ -100,8 +113,8 @@ function verifPauseAuto(){ /* serveur */ }
 async function basculerPause(){
   if(!etat.enPause){
     const ok = await _pauseConfirm("Mettre en pause ?", [
-      `Minimum <b>${PAUSE_MIN_J} jours</b> — impossible de reprendre avant.`,
-      `Maximum <b>${PAUSE_MAX_J} jours</b> — sortie automatique ensuite.`,
+      `Minimum <b>${_pMinJ()} jours</b> — impossible de reprendre avant.`,
+      `Maximum <b>${_pMaxJ()} jours</b> — sortie automatique ensuite.`,
       "Aucune action possible pendant la pause.",
       "Ton personnage ne décline pas et ne peut être ni volé ni attaqué."
     ], "Mettre en pause");
@@ -117,7 +130,7 @@ async function basculerPause(){
     const { data } = await sb.rpc("pause_sortir");
     if(!data || !data.ok){
       const r = (data && data.reste_min_ms) || 0;
-      journal(`Reprise impossible avant ${_pfmtJours(r)} (pause minimale ${PAUSE_MIN_J} j).`,"alerte");
+      journal(`Reprise impossible avant ${_pfmtJours(r)} (pause minimale ${_pMinJ()} j).`,"alerte");
       return;
     }
     await _syncPause();
@@ -147,7 +160,7 @@ async function changerFaction(fid){
   const p=peutChangerFaction(); if(!p.ok){ journal(p.raison,"alerte"); return; }
   const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null;
   if(!f || f.id===etat.faction) return;
-  if(!confirm(`Rejoindre ${f.nom} ? Tu déménages dans sa ville. Prochain changement possible seulement dans ${FACTION_COOLDOWN_J} jours.`)) return;
+  if(!confirm(`Rejoindre ${f.nom} ? Tu déménages dans sa ville. Prochain changement possible seulement dans ${_facJours()} jours.`)) return;
 
   const { data, error } = await sb.rpc("changer_faction", { p_faction: f.id });
   if(error){ journal("Échec : "+error.message,"alerte"); return; }
@@ -261,11 +274,14 @@ function majParametres(){
   // Pause
   let pauseP, pauseBtn;
   if(etat.enPause){
-    const reste=PAUSE_MIN_J*_pjm()-enPauseDepuis(); const restMax=PAUSE_MAX_J*_pjm()-enPauseDepuis();
+    /* v0.95 — restes lus au SERVEUR (pause_etat, via _syncPause) ; le calcul
+       local ne sert plus que de repli avant la première synchro. */
+    const reste   = (typeof etat._pauseResteMin==="number") ? etat._pauseResteMin : _pMinJ()*_pjm()-enPauseDepuis();
+    const restMax = (typeof etat._pauseResteMax==="number") ? etat._pauseResteMax : _pMaxJ()*_pjm()-enPauseDepuis();
     pauseP=`En pause depuis ${_pfmtJours(enPauseDepuis())}. Sortie automatique dans ${_pfmtJours(restMax)}.`;
     pauseBtn=`<button id="param-pause"${reste>0?" disabled":""}>${reste>0?`Reprendre — dans ${_pfmtJours(reste)}`:"Reprendre"}</button>`;
   } else {
-    pauseP=`Gèle toutes les actions. Minimum ${PAUSE_MIN_J} j, maximum ${PAUSE_MAX_J} j (sortie auto, puis déclin).`;
+    pauseP=`Gèle toutes les actions. Minimum ${_pMinJ()} j, maximum ${_pMaxJ()} j (sortie auto, puis déclin).`;
     pauseBtn=`<button id="param-pause">Mettre en pause</button>`;
   }
   // Faction — état serveur (chargé une fois, puis mis en cache)
@@ -275,7 +291,7 @@ function majParametres(){
   const factionCtrl = pf.ok
     ? `<span class="param-inline"><select id="param-faction-sel">${fOpts}</select><button id="param-faction-btn">Changer</button></span>`
     : `<button disabled>Indisponible</button>`;
-  const factionP = pf.ok ? `Déménagement inclus. Ensuite bloqué ${FACTION_COOLDOWN_J} j.` : pf.raison;
+  const factionP = pf.ok ? `Déménagement inclus. Ensuite bloqué ${_facJours()} j.` : pf.raison;
   // Apparence — état serveur (chargé une fois, puis mis en cache)
   if(!_appEtat) chargerApparenceEtat();
   const ae = _appEtat;

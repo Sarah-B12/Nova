@@ -132,7 +132,6 @@ const _SID = (function(){
 })();
 let _creditsServeur = null;
 function initCredits(v){ _creditsServeur = (typeof v==="number") ? v : null; }
-function marquerCredits(v){ if(typeof v==="number") _creditsServeur = v; }
 /* Applique au serveur l'écart de crédits accumulé côté client (delta), et récupère
    la valeur autoritative (qui inclut d'éventuelles ventes encaissées entre-temps). */
 /* ⚠ FILE D'ATTENTE DES CRÉDITS (v0.58). Trois défauts corrigés :
@@ -233,7 +232,27 @@ const CLES_SERVEUR = [
      `profils.niveau` disait 9, `donnees.niveau` disait 8, et personne ne
      relisait la colonne. ⚠ `niveauCredite`, lui, RESTE dans `donnees` : c'est
      le registre des points déjà distribués, il doit reculer avec eux. */
-  "xp", "niveau", "xpTotal"
+  "xp", "niveau", "xpTotal",
+  /* ⚠ v0.95 — LA PRISON. La table `prison` fait foi (mon_etat_prison) ; ces
+     deux clés n'en sont que le reflet. Persistées, elles affichaient au
+     rechargement la cellule de la veille — ou la liberté d'hier — le temps que
+     syncPrison() réponde. Réécrites par syncPrison(), appelée dans
+     syncApresConnexion() sur les deux chemins d'entrée, puis toutes les 60 s. */
+  "prisonJusqua", "prisonFaction"
+];
+/* ⚠ v0.95 — VALEURS DE TRAVAIL, jamais persistées. Ce ne sont pas des données
+   serveur au sens de CLES_SERVEUR (certaines sont de simples drapeaux), mais
+   elles ne valent que pour la page qui les a calculées : rechargées, elles
+   montraient l'état de la veille (décompte de pause périmé, onglet Bureau
+   affiché ou masqué à tort). Chacune est réécrite par sa synchro :
+   `_jourReelMs`, `_pauseResteMin/Max` → _syncPause() · `_aRoleGouv` → formations.js
+   · `_jaugesEchec` → chargerJaugesServeur() · `_sacEchec` → chargerStocksServeur().
+   ⚠ `_pauseCumulApplique` n'est PAS ici, et ne doit jamais y venir : c'est un
+   REGISTRE (ce qui a déjà été décalé), il doit survivre au rechargement —
+   sinon le dégel de pause serait réappliqué à chaque visite. */
+const CLES_TRANSITOIRES = [
+  "_jourReelMs", "_pauseResteMin", "_pauseResteMax", "_pauseMinJ", "_pauseMaxJ",
+  "_aRoleGouv", "_jaugesEchec", "_sacEchec"
 ];
 
 /* ⚠ v0.92 — LES COLONNES DE `profils` SE RELISENT EN UN SEUL ENDROIT.
@@ -267,6 +286,7 @@ function appliquerColonnesProfil(prof){
 function _etatSansStocks(){
   const c = Object.assign({}, etat);
   for(const k of CLES_SERVEUR) delete c[k];
+  for(const k of CLES_TRANSITOIRES) delete c[k];
   return c;
 }
 

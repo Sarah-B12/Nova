@@ -2,8 +2,6 @@
    CARTE — Carte continue d'Maar : construction, mise à jour, voyage, ouverture/fermeture.
    =========================================================== */
 /* ---------- Carte continue ---------- */
-const DW = 1500;                       // largeur d'affichage (px) ; le reste défile
-const DH = Math.round(DW * MONDE.h / MONDE.w);
 const PAS = 63;                        // unités par 1 % d'énergie (Toundra->Nomades ≈ 15 %)
 const PAS_O2 = 80;                      // unités par 1 O₂ (déplacement à découvert) — 160 avant v0.53 : le coût
                                         // était 3× moindre que celui en énergie, or l'énergie se régénère seule

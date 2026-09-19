@@ -502,6 +502,9 @@ async function _rendreBureauStratege(el, fac){
     let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
     const cc=etat.cercles||{}; let any=false;
     (typeof CERCLES!=="undefined"?CERCLES:[]).forEach(c=>{ const rp=cc[c.id]||0; if(rp>=50){ any=true;
+      /* ⚠ v0.95 — barème DUPLIQUÉ de mercenaires_engager() (seuils 50/70/90,
+         prix 1500 × (n+1)) : vérifié conforme, BACKEND_PLAN §6. Changer l'un,
+         c'est changer l'autre — sinon le prix affiché n'est pas le prix débité. */
       const mx=rp>=90?3:rp>=70?2:1, cur=mercs[c.id]||0, prix=1500*(cur+1);
       h+=`<div class="gouv-role"><span>${c.ic} <b>${c.nom}</b> <span class="itip-gris">${cur}/${mx} engagé(s)</span></span><span class="comm-btns">${cur<mx?`<button class="mini" data-merc="${c.id}">Engager (${prix} ₡)</button>`:""}${cur>0?`<button class="mini danger" data-mercr="${c.id}">Rompre</button>`:""}</span></div>`;
     }});
@@ -562,22 +565,6 @@ async function _expCreer(el){
     else journal("Création impossible.","alerte"); return; }
   _expForm={ cible:"", obj:"", jours:"1", desc:"" };
   journal("Expédition créée.","gain"); if(typeof majCentre==="function") majCentre();
-}
-async function _expParticiper(){
-  let cout=15; try{ const { data } = await sb.rpc("a_fragment",{ p_faction:etat.faction, p_id:"frag_elan" }); if(data===true) cout=12; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#11"); }
-  if((etat.energie||0) < cout){ journal(`Il te faut ≥${cout}% d'énergie pour participer.`,"alerte"); return; }
-  const force=((typeof forceEffective==="function")?forceEffective():0)+((typeof agiliteEffective==="function")?agiliteEffective():0);
-  const { data:res, error } = await sb.rpc("participer_expedition",{ p_force:force });
-  if(error || !res || !res.ok){ const e=res&&res.err;
-    if(e==="pas_encore") journal("La date de l'expédition n'est pas encore passée.","alerte");
-    else if(e==="pas_enrole") journal("Tu n'es pas enrôlé.","alerte");
-    else if(e==="deja_participe") journal("Tu participes déjà.","alerte");
-    else journal("Participation impossible.","alerte"); return; }
-  // ⚠ Code mort : la participation est automatique depuis la refonte des
-  // expéditions (le serveur recrute les enrôlés présents et débite l'énergie).
-  journal(`Tu rejoins l'assaut (−${cout}% énergie).`,"gain");
-  if(typeof afficher==="function") afficher();
-  if(typeof majCentre==="function") majCentre();
 }
 function _expRapportHtml(row){
   const r=row.rapport||{}; const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut du Protocole"};
@@ -660,7 +647,7 @@ async function syncEffetsCombat(){
       if(typeof sauvegarder==="function") sauvegarder();
     }
     if(data && (data.sante||data.moral)){
-      if(!etat.jauges) etat.jauges={o2:90,sante:100,moral:80};
+      if(!etat.jauges) etat.jauges={ ...nouvelEtat().jauges };   // v0.95 : les défauts ont UNE source (etat.js)
       // Les effets de combat modifient des jauges SERVEUR : on passe par agir(),
       // qui borne, enregistre et détecte la mort éventuelle.
       await agirServeur({ jauges:{ sante:(data.sante||0), moral:(data.moral||0) }, motif:"effets_combat" });

@@ -87,7 +87,6 @@ function ouvrirEntree(){
 function fermerEntree(){ const m=document.querySelector("#page-entree"); if(m) m.hidden=true; }
 function ouvrirAuth(){ const m=document.querySelector("#modale-auth"); if(!m) return; m.hidden=false; const tabs=m.querySelector(".auth-tabs"); if(tabs) tabs.style.display="none"; basculerAuth(_authMode);
   const el=document.querySelector(_authMode==="inscription"?"#auth-pseudo":"#auth-email"); if(el) el.focus(); }
-function ouvrirInscription(){ ouvrirAuth(); }                 // compat
 function fermerAuth(){ const m=document.querySelector("#modale-auth"); if(m) m.hidden=true; }
 function authInfo(t){ const e=document.querySelector("#auth-info"); if(e) e.textContent=t; }
 function authErreur(t){ const e=document.querySelector("#auth-erreur"); if(!e) return; if(t){ e.textContent=t; e.hidden=false; } else e.hidden=true; }

@@ -7,7 +7,6 @@
    =========================================================== */
 const APT_CAP_COUT = 2;        // coût du capstone (nœud 4)
 const APT_RESPEC   = 50000;    // coût d'une réattribution complète, en crédits
-const APT_QUETES_V1 = 15;      // nombre de quêtes prévues en v1 (info)
 
 // Un nœud : { id, nom, effet, deblocage?:true }
 // Ordre du plus faible (haut) au plus fort (capstone) — requis par la chaîne stricte.

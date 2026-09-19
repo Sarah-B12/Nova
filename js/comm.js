@@ -6,7 +6,6 @@
 
 // Annuaire : cache des infos PUBLIQUES des joueurs (rempli depuis la vue serveur profils_publics).
 let _annuaire = {};                                       // nom -> { nom, niveau, faction, metier, enLigne }
-function _joueurSim(nom){ return _annuaire[nom] || null; }
 function _presenceEnLigne(da){ return da ? (Date.now()-new Date(da).getTime() < 120000) : false; }   // actif < 2 min
 function _mapProf(r){ return { id:r.id, nom:r.nom, niveau:r.niveau, faction:r.faction, metier:r.formation, enLigne:_presenceEnLigne(r.derniere_activite) }; }
 async function _chercherServeur(q){
@@ -14,12 +13,6 @@ async function _chercherServeur(q){
   const { data, error } = await sb.from("profils_publics").select("*").ilike("nom", "%"+q+"%").neq("nom", etat.nom||"").limit(15);
   if(error){ console.warn("[comm] recherche:", error.message); return []; }
   const arr=(data||[]).map(_mapProf); for(const j of arr) _annuaire[j.nom]=j; return arr;
-}
-async function _chargerAmisServeur(noms){
-  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO || !noms.length) return;
-  const { data, error } = await sb.from("profils_publics").select("*").in("nom", noms);
-  if(error){ console.warn("[comm] annuaire:", error.message); return; }
-  for(const r of (data||[])) _annuaire[r.nom]=_mapProf(r);
 }
 /* Nom affiché de l'onglet social (ex-« Comm »). */
 const ONGLET_RESEAU = "Le Réseau";
@@ -250,7 +243,6 @@ function debloquerJoueur(nom){
 }
 
 /* ---------- Profil (modale) ---------- */
-function _commProfil(){ let m=document.querySelector("#comm-profil"); if(!m){ m=document.createElement("div"); m.id="comm-profil"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) m.hidden=true; }); } return m; }
 function _dateHeure(iso){ if(!iso) return "—"; const d=new Date(iso); const p2=n=>String(n).padStart(2,"0"); return `${p2(d.getDate())}/${p2(d.getMonth()+1)} à ${p2(d.getHours())}:${p2(d.getMinutes())}`; }
 async function _chargerProfilComplet(nom){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return null;
@@ -448,7 +440,16 @@ async function ouvrirMessage(type, i){
 async function supprimerMessage(type, m, modal){
   try{
     if(type==="recus"){ await sb.from("messages").update({efface_a:true}).eq("id",m.id); journal("Message supprimé.","alerte"); }
-    else if(!m.lu){ await sb.from("messages").delete().eq("id",m.id); journal("Message rappelé — retiré aussi chez le destinataire (non lu).","alerte"); }
+    else if(!m.lu){
+      /* ⚠ v0.95 — le rappel n'est permis au serveur QUE tant que le message n'est
+         pas lu (policy messages_suppr). Si le destinataire l'a ouvert entre-temps,
+         la RLS ne lève aucune erreur : elle ne supprime RIEN (BACKEND_PLAN
+         §4terdecies, « l'opération qui ne trouve rien »). On lit donc ce qui a été
+         effacé, et on se replie sur le retrait de sa seule boîte. */
+      const { data:sup } = await sb.from("messages").delete().eq("id",m.id).select("id");
+      if(sup && sup.length) journal("Message rappelé — retiré aussi chez le destinataire (non lu).","alerte");
+      else { await sb.from("messages").update({efface_de:true}).eq("id",m.id); journal("Trop tard pour le rappeler : il vient d'être lu. Retiré de tes envoyés.","alerte"); }
+    }
     else { await sb.from("messages").update({efface_de:true}).eq("id",m.id); journal("Message retiré de tes envoyés.","alerte"); }
   }catch(e){ console.warn("[comm] suppression:",e.message); }
   if(modal) modal.hidden=true;      // null quand on supprime depuis la liste
@@ -658,7 +659,18 @@ async function publierAnnonce(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
   const s=await sessionActuelle(); if(!s) return;
   const { error } = await sb.from("annonces").insert({ auteur_id:s.user.id, objet:obj, texte:txt, tag });
-  if(error){ console.warn("[comm] publication:",error.message); journal("Échec de la publication.","alerte"); return; }
+  /* v0.95 — le trigger `annonces_garde` porte désormais les trois règles côté
+     serveur (prison, plafond, longueurs) : le client les vérifie encore pour
+     prévenir tôt, mais c'est le serveur qui tranche, et il dit pourquoi. */
+  if(error){
+    const m = String(error.message||"");
+    console.warn("[comm] publication:", m);
+    if(m.includes("annonce_prison"))           journal("Impossible de publier depuis une cellule.","alerte");
+    else if(m.includes("annonce_plafond"))     journal(`Maximum ${ANNONCE_MAX} annonces — supprime-en une d'abord.`,"alerte");
+    else if(m.includes("annonce_trop_longue")) journal("Annonce trop longue (objet 50, texte 280 caractères).","alerte");
+    else journal("Échec de la publication.","alerte");
+    return;
+  }
   journal("Annonce publiée.","gain"); majComm();
 }
 async function supprimerAnnonce(id){

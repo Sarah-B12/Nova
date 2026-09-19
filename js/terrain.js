@@ -104,11 +104,9 @@ function prochainResetJeu(){
   const off2 = _decalageFuseau(new Date(cible), FUSEAU_JEU);
   return cible + (off - off2)*60000;            // rattrape un changement d'heure dans l'intervalle
 }
-function msAvantResetJeu(){ return Math.max(0, prochainResetJeu() - Date.now()); }
 const IMG = { mine:"images/mine.png", biodome:"images/biodome.png", enclos:"images/enclos.png", atelier:"images/atelier.png", hangar:"images/hangar.png" };
 const N_PLOTS = 24;                                                 // parcelles (6 × 4), même terrain pour tous
 const PLANT_MAX = 100;         // % de croissance pour récolter une plante
-const REPAS_ADULTE = 4;        // repas (plantes) pour qu'un animal devienne adulte
 const COUT_TERRAIN = { planter:2, elever:2, arroser:2, recolter:3, nourrir:2, tondre:3, batir:5, miner:8 };  // énergie par action (pas d'O₂ : on est dans un cercle)
 const TONTES_MAX = 7;          // au bout de 7 tontes l'animal prend sa retraite
 const N_CASES = 4;             // emplacements dans un bio-dôme / enclos
@@ -128,18 +126,28 @@ function normCases(c){ const a=Array(N_CASES).fill(null); if(Array.isArray(c)) f
    ⚠ Les DEUX emplacements de drones restent explicites (voir drones.js, modèle
    `drones:[slot0, slot1]`) : la longueur du tableau est une règle de jeu, pas
    une donnée à recopier. Un hangar à trois places se déciderait ici. */
+/* ⚠ v0.95 — « type connu » voulait dire « type qui a une branche ci-dessous ».
+   Ajouter une structure à STRUCTURES sans y penser ici la faisait devenir
+   `null` au premier rechargement : bâtiment EFFACÉ, sans erreur. Le registre
+   est désormais STRUCTURES lui-même, plus le logement (bâti hors STRUCTURES,
+   par étapes). Les branches ne servent plus qu'à normaliser.
+   ⚠ Une nouvelle structure doit AUSSI avoir son image (IMG) et ses matières de
+   réparation (REPARATION, integrite.js) — ET sa ligne dans le `case` de
+   reparer_structure côté serveur. `outils/controle.js` vérifie les deux
+   premières ; la troisième ne peut pas l'être d'ici. */
+function typeParcelleConnu(type){ return type === "maison" || Object.prototype.hasOwnProperty.call(STRUCTURES, type); }
 function normaliserParcelles(t){
   const arr = Array(N_PLOTS).fill(null);
   const src = (t && Array.isArray(t.parcelles)) ? t.parcelles : (t && Array.isArray(t.structures)) ? t.structures : [];
   for(let i=0;i<N_PLOTS;i++){
     const s = src[i]; if(!s){ arr[i]=null; continue; }
+    if(!typeParcelleConnu(s.type)){ arr[i]=null; continue; }
+    // Normalisation propre à certains types ; les autres sont gardés tels quels.
     if(s.type==="mine")         arr[i]={ ...s, type:"mine", stock:(typeof s.stock==="number")?s.stock:MINE_MAX, max:(typeof s.max==="number")?s.max:MINE_MAX };
     else if(s.type==="biodome") arr[i]={ ...s, type:"biodome", cases:normCases(s.cases) };
     else if(s.type==="enclos")  arr[i]={ ...s, type:"enclos",  cases:normCases(s.cases) };
-    else if(s.type==="atelier") arr[i]={ ...s, type:"atelier" };
-    else if(s.type==="maison")  arr[i]={ ...s, type:"maison" };
     else if(s.type==="hangar")  arr[i]={ ...s, type:"hangar", drones:[ (s.drones&&s.drones[0])||null, (s.drones&&s.drones[1])||null ] };
-    else arr[i]=null;
+    else                        arr[i]={ ...s, type:s.type };
   }
   return arr;
 }
@@ -204,15 +212,6 @@ async function recolterMine(i){
 // Combien d'un objet possède-t-on (sac + coffre de la maison) ?
 function nbStock(id){ return (etat.sac[id]||0) + ((etat.coffre && etat.coffre[id]) || 0); }
 function possedeStock(id){ return nbStock(id) > 0; }
-// Consomme un objet depuis le sac, sinon le coffre de la maison (vaisseau à venir). Renvoie true si trouvé.
-// ⚠ VESTIGE Phase 3 : piochait directement dans etat.coffre côté client.
-// Remplacé par assurerDansSac() (inventaire.js), qui passe par le serveur.
-// Conservé le temps que les fichiers non encore migrés cessent de l'appeler.
-function consommerStock(id){
-  if((etat.sac[id]||0)>0){ retirerDuSac(id,1); return true; }
-  if(etat.coffre && (etat.coffre[id]||0)>0){ etat.coffre[id]--; if(etat.coffre[id]<=0){ delete etat.coffre[id]; if(etat.coffreDate) delete etat.coffreDate[id]; } return true; }
-  return false;
-}
 async function poserPlante(ci, plId){ if(_refusTerrain()||_refusHS(structSel)) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const gr=graineDe(plId);
   if(!await assurerDansSac(gr,1)){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
@@ -257,7 +256,6 @@ async function poserAnimal(ci, anId){ if(_refusTerrain()||_refusHS(structSel)) r
   const res=await agirServeur({ cout:COUT_TERRAIN.elever, retirer:{ [bb]:1 }, motif:"elever" });
   if(!res) return;
   p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
-function plantesDuSac(){ return etat.sacOrdre.filter(id=>{ const it=item(id); return it&&it.cat==="plante"&&(etat.sac[id]||0)>0; }); }
 async function nourrirCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;

@@ -114,4 +114,3 @@ function apresAction(){ verifierVital(); afficher(); sauvegarder(); }
    version cliente en place produisait une DOUBLE sanction et remettait les
    jauges localement alors que le serveur considère le personnage mort. */
 function verifierVital(){ return; }
-function _verifierVital_ancien(){ if(etat.jauges.o2<=0||etat.jauges.sante<=0){ const p=Math.floor(etat.credits*0.30); etat.credits-=p; etat.retours++; etat.jauges={o2:50,sante:20,moral:20}; if(typeof posDefaut==="function") etat.pos=posDefaut(); journal(`Évacuation d'urgence : retour à ta faction. −${p} ₡. Refais tes réserves (O₂, kit de soin) avant de repartir.`,"alerte"); } }
