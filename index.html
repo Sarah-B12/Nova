@@ -65,7 +65,8 @@
       <button class="mini" id="carte-fermer">Fermer ✕</button>
     </div>
     <div class="zone-carte"><svg id="carte" aria-label="Carte de Silène"></svg></div>
-    <p class="vide" style="text-align:center; margin:8px 0 0">Clique la carte pour t'y déplacer. Le coût s'affiche au survol — sur écran tactile, ouvre <b>Distances</b>.</p>
+    <!-- v1.11 : deux modes, dits explicitement. -->
+    <p class="vide" style="text-align:center; margin:8px 0 0">À la souris : le coût s'affiche au survol, un clic part. <b>Au doigt</b> : un premier tap vise (croix + coût), un second tap au même endroit — ou le bouton <b>Partir</b> — lance le trajet.</p>
   </div>
 </div>
 
@@ -182,7 +183,9 @@
             <div class="fiche-tete">
               <div class="faction-box"><div id="faction-nom">Sans faction</div></div>
               <div class="metier">Métier : <b id="stat-metier">Aucun (en formation)</b></div>
-              <div class="xp-ligne">Sur Silène depuis <b id="stat-age">0 j</b></div>
+              <!-- v1.11 : « Sur Silène » était faux — on va aussi à Triptolème, sur La Braise
+     et dans Le Suaire. Maar est la planète, donc le seul mot toujours vrai. -->
+              <div class="xp-ligne">Sur Maar depuis <b id="stat-age">0 j</b></div>
             </div>
             <div class="fiche-stats">
               <div class="vitaux">

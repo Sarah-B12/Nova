@@ -57,6 +57,8 @@ const JOURNAL_CATS = [
   {id:"tout",nom:"Tout"}, {id:"systeme",nom:"Système"}, {id:"quete",nom:"Quêtes"},
   {id:"minage",nom:"Minage"}, {id:"agri",nom:"Agri./élevage"}, {id:"combat",nom:"Combats"},
   {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"},
+  // v1.11 : deux onglets de plus — l'atelier et la faction encombraient « Système ».
+  {id:"formation",nom:"Formation"}, {id:"faction",nom:"Faction"},
   {id:"poste",nom:"La Poste"},         // v0.69 : séparé du social — colis, envois, retours, refus
   /* v0.91 — déplacements : marche sur Silène, vols dans Triptolème, décollages,
      rentrées, remorquages. Ils noyaient « Système », qui doit rester le journal
@@ -69,17 +71,28 @@ const JOURNAL_RETENTION = 2*86400000;         // 2 jours réels (indépendant de
 // Un cron serveur serait inutile (la prochaine sauvegarde du client réécrit tout le JSON).
 let _journalFiltre = "tout";
 let _journalStyleMonte = false;
+/* ⚠ L'ORDRE FAIT TOUT : la première règle qui accroche gagne. Trois pièges déjà
+   payés — « message » et « envoi » se ressemblent (Poste avant Social) ;
+   « Comm envoyée à tous les Régents » contient « envoyée » (Faction avant
+   Poste) ; « Demande d'ami envoyée » aussi (Social testé avant Poste pour ce
+   cas précis). v1.11 : ajout de « formation » et « faction ». */
 function _categoriser(t){
   const s=(t||"").toLowerCase();
   if(/quête|quete|vieux sorn|glyphe|relais|étape|défi/.test(s)) return "quete";
+  // v1.11 — l'atelier : « Fabriqué : … », « +1 pt de formation », les paliers.
+  if(/fabriqu|formation|atelier|pt de formation|point de formation|palier|apprenti|recette apprise/.test(s)) return "formation";
+  // v1.11 — la faction : expéditions, gouvernement, Cercles, caisse, élections.
+  if(/exp[ée]dition|r[ée]gent|r[ée]gence|gouvernement|architecte|strat[èe]ge|\bombre\b|caisse|cercle|mercenaire|[ée]lection|scrutin|candidat|fragment|faction|coffre de la r[ée]serve|d[ée]fense de la faction/.test(s)) return "faction";
+  // v1.11 — les demandes d'ami passaient dans La Poste à cause de « envoyée ».
+  if(/demande d'ami|\bami\b|amis\b|bloqu[ée]|d[ée]bloqu/.test(s)) return "social";
   if(/vol[ée]|volé|hack|pirat|dérob|prison|démasqu|sonde|siphonn|intrusion|discrétion|cambafre/.test(s)) return "vol";
   if(/combat|patrouille|protocole|vaincu|défaite|assaut|attaqu|blessé|riposte|évacuation/.test(s)) return "combat";
   if(/min[ée]|minage|minerai|filon|extra|foreuse|for[ée]|gisement|foraouse/.test(s)) return "minage";
-  if(/récolt|plant[ée]|sem[ée]|bio-dôme|biodome|serre|animal|élevage|elevage|nourri|enclos|troupeau|traite|tonte|fourrage/.test(s)) return "agri";
+  // v1.11 : + arrosage et pose d'une bête (« Jeune Toisard placé »).
+  if(/récolt|plant[ée]|sem[ée]|arros|bio-dôme|biodome|serre|animal|élevage|elevage|nourri|enclos|troupeau|traite|tonte|fourrage|cuprin|cuirasson|toisard|nourrin/.test(s)) return "agri";
   if(/vendu|achet[ée]|achat|brad[ée]|march[ée]|commission|crédit|₡|revend|boutique|permis/.test(s)) return "eco";
-  // La Poste avant « social » : « message » et « envoi » se ressemblent trop.
   if(/poste|colis|envoi|envoy[ée]|exp[ée]diteur|destinataire|paquet|courrier|contre-remboursement/.test(s)) return "poste";
-  if(/\bami\b|amis|message|annonce|\bmur\b|demande d'ami|bloqu[ée]|débloqu/.test(s)) return "social";
+  if(/message|annonce|\bmur\b/.test(s)) return "social";
   return "systeme";
 }
 /* v0.75 — le journal reste en texte : les emojis (🏪 📮 ⚔️…) juraient avec le

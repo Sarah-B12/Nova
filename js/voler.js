@@ -95,6 +95,25 @@ function _rpcFireAndForget(nom, args, repere){
     .then(r=>{ if(r && r.error) console.warn(`[${repere}] ${nom} :`, r.error.message); })
     .catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, repere); });
 }
+/* v1.11 — RISQUE DE PRISON APRÈS UN ÉCHEC, les deux au même endroit.
+   Avant : vol 45 %, hack 20 %. Le hack cumulait pourtant TOUS les avantages —
+   meilleur butin (jusqu'à 500 ₡ contre 3 objets), anonymat, et moitié moins de
+   prison. Ses prérequis (Ordinateur équipé + Intrusion) ne justifiaient pas un
+   tel écart. Le hack passe à 35 % : il garde 10 points d'avance, ce que paient
+   l'équipement et l'aptitude, mais l'anonymat n'est plus offert par-dessus.
+   ⚠ Ces deux nombres sont affichés au joueur dans les encarts VOLER / HACKER :
+   les changer ici, c'est changer les textes. */
+const RISQUE_PRISON_VOL  = 0.45;
+const RISQUE_PRISON_HACK = 0.35;
+/* v1.11 — L'anonymat du hack n'est plus garanti : 70 % du temps seulement.
+   ⚠ HONNÊTETÉ SUR CE QUE ÇA FAIT AUJOURD'HUI : les cibles sont des PNJ
+   fabriqués par genererCible() — noms tirés d'une liste, sac et solde au
+   hasard. « Démasqué » et « anonyme » sont donc de la NARRATION : aucun joueur
+   ne reçoit rien, personne ne peut se venger. Le seul coût réel d'un échec
+   reste la prison et l'énergie. Ce tirage prendra tout son sens quand on volera
+   de vrais joueurs (chantier « défense contre le vol et le hacking ») : c'est
+   là qu'il faudra brancher la signature sur une vraie conséquence. */
+const CHANCE_ANONYMAT_HACK = 0.70;
 function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; _rpcFireAndForget("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)},"voler.js#emprisonner"); if(typeof sauvegarder==="function") sauvegarder(); }
 function _emprisonner(){ emprisonnerJoueur(_factionPrisonIci(), _vjm()); }
 function _melange(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -147,7 +166,7 @@ async function tenterVoler(){
       }
       apresAction(); majVoler(); },
     ()=>{ journal(`Échec ! ${c.nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte","vol");
-      if(Math.random()<0.45){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte","vol"); }
+      if(Math.random()<RISQUE_PRISON_VOL){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte","vol"); }
       apresAction(); majVoler(); }
   );
 }
@@ -161,9 +180,17 @@ async function tenterHacker(){
   if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
   lancerMiniHack(
     ()=>{ const pct=Math.min(VOL_CAP_CREDITS, 0.12 + intelligenceEffective()/1000); const gain=Math.min(VOL_CAP_ABS, Math.floor(c.credits*pct));
-      etat.credits+=gain; journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. (Son journal ne verra qu'« un anonyme ».)`,"gain","vol"); apresAction(); majVoler(); },
-    ()=>{ journal(`Hack échoué sur ${c.nom}. (Son journal : « un anonyme a tenté de me pirater ».)`,"alerte","vol");
-      if(Math.random()<0.20){ _emprisonner(); journal("Ta trace a été remontée : prison.","alerte","vol"); } apresAction(); majVoler(); }
+      etat.credits+=gain;
+      const anon = Math.random() < CHANCE_ANONYMAT_HACK;
+      journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. `
+        + (anon ? "(Son journal ne verra qu'« un anonyme ».)"
+                : "⚠ Ta signature est passée : son journal porte TON NOM."), "gain", "vol");
+      apresAction(); majVoler(); },
+    ()=>{ const anon = Math.random() < CHANCE_ANONYMAT_HACK;
+      journal(`Hack échoué sur ${c.nom}. `
+        + (anon ? "(Son journal : « un anonyme a tenté de me pirater ».)"
+                : "⚠ Ta signature est passée : il sait QUI a essayé."), "alerte", "vol");
+      if(Math.random()<RISQUE_PRISON_HACK){ _emprisonner(); journal("Ta trace a été remontée : prison.","alerte","vol"); } apresAction(); majVoler(); }
   );
 }
 
@@ -507,13 +534,13 @@ function majVoler(){
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
-        <p>Plus risqué, moins payant. Vole jusqu'à ${VOL_CAP_OBJETS} objets. Échec → <b>démasqué (ton nom)</b> ; gros échec → <b>prison</b>.</p>
+        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets. Échec → <b>démasqué (ton nom)</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
       <div class="vol-carte">
         <h3>🖥 Hacker <span class="qte">· crédits</span></h3>
-        <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Anonyme, risque de prison plus faible.</p>
+        <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Tu restes anonyme <b>${Math.round(CHANCE_ANONYMAT_HACK*100)} % du temps</b> — sinon ta signature passe. Et l'échec coûte cher : <b>${Math.round(RISQUE_PRISON_HACK*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Intelligence = plus de temps). Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
         <button class="mini" id="vol-hacker" ${dH&&e>=VOL_ENERGIE?"":"disabled"}>Hacker</button>
       </div>

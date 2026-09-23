@@ -38,6 +38,7 @@ function construireCarte(){
   // Zone de l'antagoniste (bas-gauche, électrique) — non interactive ; entrée interdite en jeu
   html += `<g class="antagoniste" style="pointer-events:none"><circle cx="${ZONE_PROTOCOLE.x}" cy="${ZONE_PROTOCOLE.y}" r="${ZONE_PROTOCOLE.r}" fill="#8a5cf018" stroke="#8a5cf0" stroke-opacity=".6" stroke-dasharray="5 10"/>
     <text x="${ZONE_PROTOCOLE.x}" y="${ZONE_PROTOCOLE.y + ZONE_PROTOCOLE.r + 38}" text-anchor="middle" class="vlabel" style="fill:#b9a0f0">Le Protocole</text></g>`;
+  html += `<g id="carte-visee" style="pointer-events:none"></g>`;   // v1.11 : la croix du tap tactile
   html += `<g id="avatar"></g>`;
   svg.innerHTML = html;
   /* ⚠ v0.82 — CLIC HORS DE L'IMAGE. La carte fait 2400×1600 et
@@ -47,10 +48,25 @@ function construireCarte(){
      des coordonnées valides (bornées au monde) et le voyage partait — d'où
      des déplacements vers le bord sans l'avoir voulu. On refuse désormais
      tout point hors des limites réelles du monde. */
+  /* ⚠ v1.11 — AU DOIGT, ON VISE D'ABORD, ON PART ENSUITE.
+     Sur écran tactile, `pointermove` et `click` arrivaient dans la même
+     seconde : l'aperçu du coût clignotait et le voyage partait aussitôt. Un
+     tap de travers coûtait de l'énergie et de l'O₂, sans retour possible.
+     Désormais, au doigt : 1er tap = une croix + le coût + un bouton « Partir » ;
+     2e tap au même endroit (ou sur le bouton) = départ. Taper ailleurs déplace
+     la croix.
+     ⚠ LA SOURIS ET LE TRACKPAD NE CHANGENT PAS : le tri se fait sur
+     `pointerType === "touch"`, relevé au `pointerdown` (l'événement `click`
+     n'expose pas ce champ partout). Un trackpad annonce "mouse". */
+  let _dernierPointeur = "mouse";
+  svg.addEventListener("pointerdown", e => { _dernierPointeur = e.pointerType || "mouse"; });
   svg.addEventListener("click", e => {
     const p = _carteCoord(svg, e); if(!p) return;
     if(!_dansLaCarte(p)) return;
-    voyager(p.x, p.y);
+    if(_dernierPointeur !== "touch"){ voyager(p.x, p.y); return; }
+    const c = _aimante(p);                       // tolérance autour des lieux
+    if(_visee && dist(c.x, c.y, _visee.x, _visee.y) < _toleranceTap()){ _partirVisee(); return; }
+    _poserVisee(c.x, c.y);
   });
 
   /* Aperçu du coût AVANT de cliquer. Reprend exactement le calcul de voyager()
@@ -59,11 +75,12 @@ function construireCarte(){
      `pointermove` couvre souris ET stylet ; sur écran tactile il n'y a pas de
      survol, l'aperçu s'affiche alors au premier contact avant le clic. */
   svg.addEventListener("pointermove", e => {
+    if((e.pointerType||"mouse") === "touch") return;   // v1.11 : au doigt, c'est la visée qui affiche
     const p = _carteCoord(svg, e); if(!p) return;
     if(!_dansLaCarte(p)){ _apercuCout(null); return; }
     _apercuCout(p.x, p.y);
   });
-  svg.addEventListener("pointerleave", () => _apercuCout(null));
+  svg.addEventListener("pointerleave", () => { if(!_visee) _apercuCout(null); });
 }
 
 function _carteCoord(svg, e){
@@ -204,6 +221,75 @@ async function secoursSol(){
 
 /* Le point est-il sur l'image, et non dans une bande vide du SVG ? */
 function _dansLaCarte(p){ return p && p.x >= 0 && p.y >= 0 && p.x <= MONDE.w && p.y <= MONDE.h; }
+
+/* ---------- v1.11 — Visée tactile ---------- */
+/* ⚠ DEUX TOLÉRANCES, ET SURTOUT PAS LA MÊME (erreur corrigée le 23/09).
+   · L'aimantation vers un lieu se mesure DANS LE MONDE : 40 unités ≈ 940 m.
+   · Le second tap se mesure À L'ÉCRAN : reconnaître « le même endroit » au
+     pixel du monde est impossible au doigt. Sur un téléphone, la carte fait
+     ~322 px de large pour 2400 unités, donc 40 unités ≈ 5 px — personne ne
+     retape là-dedans. On convertit 44 px (la cible tactile de référence) en
+     unités de monde, selon la taille réelle de la carte à l'écran : ça vaut
+     ~330 unités sur un téléphone et ~110 sur un grand écran. */
+const VISEE_TOLERANCE = 40;          // aimantation vers les cités (unités du monde)
+const VISEE_TAP_PX    = 44;          // marge du second tap (pixels d'écran)
+function _uniteParPixel(){
+  const svg = document.querySelector("#carte"); if(!svg) return 7.5;
+  const r = svg.getBoundingClientRect();
+  if(!r.width || !r.height) return 7.5;
+  // preserveAspectRatio "meet" : l'échelle est la PLUS PETITE des deux.
+  const ech = Math.min(r.width / MONDE.w, r.height / MONDE.h);
+  return ech > 0 ? 1 / ech : 7.5;
+}
+function _toleranceTap(){ return Math.max(VISEE_TOLERANCE, VISEE_TAP_PX * _uniteParPixel()); }
+let _visee = null;
+function _lieuxAimantes(){
+  const l = [];
+  for(const fid in VILLES){ const v = VILLES[fid]; l.push({ x:v.x, y:v.y }); }
+  return l;
+}
+function _aimante(p){
+  let best = null, bd = VISEE_TOLERANCE;
+  for(const l of _lieuxAimantes()){ const d = dist(p.x, p.y, l.x, l.y); if(d < bd){ bd = d; best = l; } }
+  return best ? { x:best.x, y:best.y } : { x:p.x, y:p.y };
+}
+function _dessinerVisee(){
+  const g = document.querySelector("#carte-visee"); if(!g) return;
+  if(!_visee){ g.innerHTML = ""; return; }
+  const a = etat.pos || posDefaut();
+  g.innerHTML = `<line x1="${a.x}" y1="${a.y}" x2="${_visee.x}" y2="${_visee.y}"
+      stroke="#ff9a44" stroke-width="3" stroke-dasharray="14 10" stroke-opacity=".85"/>
+    <circle cx="${_visee.x}" cy="${_visee.y}" r="26" fill="none" stroke="#ff9a44" stroke-width="4"/>
+    <line x1="${_visee.x-38}" y1="${_visee.y}" x2="${_visee.x+38}" y2="${_visee.y}" stroke="#ff9a44" stroke-width="3"/>
+    <line x1="${_visee.x}" y1="${_visee.y-38}" x2="${_visee.x}" y2="${_visee.y+38}" stroke="#ff9a44" stroke-width="3"/>`;
+}
+function _poserVisee(x, y){
+  _visee = { x, y };
+  _dessinerVisee();
+  _apercuCout(x, y);
+  let b = document.querySelector("#carte-partir");
+  if(!b){
+    const z = document.querySelector("#carte-apercu");
+    if(z && z.parentElement){
+      b = document.createElement("button");
+      b.id = "carte-partir"; b.className = "mini";
+      b.addEventListener("click", _partirVisee);
+      z.parentElement.appendChild(b);
+    }
+  }
+  if(b){ const c = (typeof coutTrajet === "function") ? coutTrajet(x, y) : null;
+    b.textContent = c ? `Partir (−${c.coutE} % én.${c.coutO ? ` · −${c.coutO} O₂` : ""})` : "Partir";
+    b.hidden = false; }
+}
+function _effacerVisee(){
+  _visee = null; _dessinerVisee(); _apercuCout(null);
+  const b = document.querySelector("#carte-partir"); if(b) b.hidden = true;
+}
+function _partirVisee(){
+  if(!_visee) return;
+  const v = _visee; _effacerVisee();
+  voyager(v.x, v.y);
+}
 
 let _apercuDer = "";
 function _apercuCout(x, y){
@@ -385,5 +471,7 @@ async function voyager(x, y){
 }
 
 /* ---------- Inscription ---------- */
-function ouvrirCarte(){ document.querySelector("#modale-carte").classList.add("ouverte"); majCarte(); }
-function fermerCarte(){ document.querySelector("#modale-carte").classList.remove("ouverte"); }
+/* v1.11 : la visée tactile ne survit pas à l'ouverture ni à la fermeture —
+   sinon un second tap, plus tard, partirait vers un point oublié. */
+function ouvrirCarte(){ _effacerVisee(); document.querySelector("#modale-carte").classList.add("ouverte"); majCarte(); }
+function fermerCarte(){ _effacerVisee(); document.querySelector("#modale-carte").classList.remove("ouverte"); }

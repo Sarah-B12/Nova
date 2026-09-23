@@ -777,7 +777,7 @@ async function _rendreBureauRegent(el, fac){
    6 h) et de espionnage.js (_espF1/_espF2) : à tenir à jour si ces règles changent. */
 function _legendeDefense(ouvert){
   return `<details class="leg-def"${ouvert?" open":""}><summary>ℹ️ Comprendre la défense : 🛡️ ⚔️ 👁️ ✦</summary><dl>
-    <dt>🛡️ Défense</dt><dd>Chaque point ajoute <b>2,5</b> à la puissance de ta faction quand une expédition ennemie l'attaque. Plein effet avec <b>au moins 3 défenseurs présents</b> en ville, effet partiel en dessous, <b>aucun si personne</b> n'est là. +1 si ta faction détient le fragment du Rempart.</dd>
+    <dt>🛡️ Défense</dt><dd>C'est le <b>bouclier</b> de la faction : la somme des points de défense des objets mis en défense dans la réserve. Chaque point <b>ajoute 2,5 à la force que les assaillants doivent battre</b> — il ne sert qu'en défense, jamais quand c'est ta faction qui attaque. Il compte à plein avec <b>au moins 3 défenseurs présents</b> en ville, à moitié moins en dessous, et <b>pas du tout si personne n'est là</b> : un bouclier ne tient pas tout seul. +1 point si ta faction détient le Fragment de Rempart.</dd>
     <dt>⚔️ Riposte</dt><dd>Quand un <b>Assaut</b> ennemi échoue, chaque point donne <b>5 %</b> de chance (50 % au plus) d'envoyer chaque assaillant <b>6 h en prison</b>. +1 avec le fragment de la Riposte.</dd>
     <dt>👁️ Détection</dt><dd>Complique les mini-jeux de l'<b>Ombre</b> adverse qui espionne ta faction : 0 à 2 facile, 3 à 5 moyen, 6 et plus difficile. Le contre-espionnage ajoute +3.</dd>
     <dt>✦ Signature</dt><dd>Objet propre à ta faction : les autres factions ne peuvent pas le fabriquer.</dd>

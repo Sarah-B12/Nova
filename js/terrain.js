@@ -335,7 +335,7 @@ function majStruct(){
   if(p.type==="mine"){
     const stock=p.stock||0;
     const row=document.createElement("div"); row.className="actions";
-    const b=document.createElement("button"); b.className="mini"; b.textContent="Miner"; b.disabled=stock<=0||placesLibres()<=0; b.addEventListener("click",()=>recolterMine(structSel)); row.appendChild(b);
+    const b=document.createElement("button"); b.className="mini"; b.innerHTML=`Miner <span class="cout">−${COUT_TERRAIN.miner} % én.</span>`; b.disabled=stock<=0||placesLibres()<=0; b.addEventListener("click",()=>recolterMine(structSel)); row.appendChild(b);
     corps.innerHTML=`<p class="vide" style="margin:0 0 10px">Réserve : <b class="or">${stock}</b>/${p.max||MINE_MAX} minerais. Chaque extraction sort jusqu'à ${aptStructureLot(MINE_LOT)} minerais, selon leur rareté.${stock<=0?' <span style="color:var(--coral)">Mine épuisée — à démolir.</span>':''}</p>`;
     corps.appendChild(row); return;
   }
@@ -367,7 +367,14 @@ function renderStructActions(p, el){
   if(structCaseSel==null){ el.innerHTML=`<p class="vide">Clique un emplacement pour le gérer.</p>`; return; }
   const ci=structCaseSel; const c=p.cases[ci];
   const row=document.createElement("div"); row.className="actions";
-  const btn=(label,fn,dis)=>{ const b=document.createElement("button"); b.className="mini"; b.textContent=label; b.disabled=!!dis; b.addEventListener("click",fn); row.appendChild(b); };
+  /* v1.11 — LE PRIX EN ÉNERGIE EST ÉCRIT SUR LE BOUTON (retour testeur : on
+     payait sans savoir). `cout` = clé de COUT_TERRAIN ; rien d'affiché si
+     l'action est gratuite ou si le bouton est un simple rappel (« Arrosé
+     aujourd'hui »). */
+  const btn=(label,fn,dis,cout)=>{ const b=document.createElement("button"); b.className="mini";
+    const e = (cout && COUT_TERRAIN[cout]) ? COUT_TERRAIN[cout] : 0;
+    b.innerHTML = (e && !dis) ? `${echapper(label)} <span class="cout">−${e} % én.</span>` : echapper(label);
+    b.disabled=!!dis; b.addEventListener("click",fn); row.appendChild(b); };
   if(p.type==="biodome"){
     if(!c){
       const dispoP = PLANTES.filter(pl => possedeStock(graineDe(pl.id)));
@@ -378,8 +385,8 @@ function renderStructActions(p, el){
       el.appendChild(listeP); return;
     }
     el.innerHTML=`<p style="margin:0 0 8px"><b>${plante(c.plante).nom}</b> — croissance ${c.croissance}%</p>`;
-    if(c.croissance>=PLANT_MAX) btn("Récolter (5-9)",()=>recolterCase(ci));
-    else btn(memeJour(c.arrose)?"Arrosé aujourd'hui":"Arroser (+"+plante(c.plante).croissance+"%)",()=>arroserCase(ci), memeJour(c.arrose));
+    if(c.croissance>=PLANT_MAX) btn("Récolter (5-9)",()=>recolterCase(ci),false,"recolter");
+    else btn(memeJour(c.arrose)?"Arrosé aujourd'hui":"Arroser (+"+plante(c.plante).croissance+"%)",()=>arroserCase(ci), memeJour(c.arrose), "arroser");
     btn("Retirer",()=>{ if(confirm("Retirer cette plante ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
   } else {
     if(!c){
@@ -392,8 +399,8 @@ function renderStructActions(p, el){
     }
     const a=animal(c.animal); const adulte=c.repas>=a.repasAdulte;
     el.innerHTML=`<p style="margin:0 0 8px"><b>${a.nom}</b> — ${adulte?`adulte · ${c.tontes}/${TONTES_MAX} tontes`:`jeune ${c.repas}/${a.repasAdulte} repas`}</p>`;
-    if(!adulte) btn("Nourrir (1 Ferragave)",()=>nourrirCase(ci), (etat.sac["ferragave"]||0)<=0);
-    else btn(memeJour(c.tonte)?"Tondu aujourd'hui":"Tondre",()=>tondreCase(ci), memeJour(c.tonte));
+    if(!adulte) btn("Nourrir (1 Ferragave)",()=>nourrirCase(ci), (etat.sac["ferragave"]||0)<=0, "nourrir");
+    else btn(memeJour(c.tonte)?"Tondu aujourd'hui":"Tondre",()=>tondreCase(ci), memeJour(c.tonte), "tondre");
     btn("Retirer",()=>{ if(confirm("Retirer cet animal ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
   }
   el.appendChild(row);

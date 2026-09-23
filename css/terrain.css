@@ -51,7 +51,8 @@
   .plot.occupe:hover img { filter:brightness(1.08) drop-shadow(0 3px 6px rgba(0,0,0,.55)); }
   .plot.sel:not(.occupe) { outline:2px solid var(--orange); outline-offset:-2px; }
   .plot.sel.occupe img { filter:drop-shadow(0 0 7px var(--orange)) drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
-  .plot img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); pointer-events:none; }
+  /* v1.11 : 10 px de moins que la case (retour testeur : icônes trop grosses). */
+  .plot img { width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); pointer-events:none; }
   .plot.plot-maison { flex-direction:column; background:rgba(90,168,230,.10); }
   .plot-maison .maison-glyphe { font-size:34px; line-height:1; color:var(--orange-hi); text-shadow:0 0 10px rgba(255,158,84,.5); }
   /* v0.91 — bannière du Garage (La Carcasse), même traitement que le logement.
@@ -117,8 +118,16 @@
    les boutons étaient coupés et inaccessibles. Le contenu défile désormais, et
    en paysage bas les 4 cases tiennent sur une ligne. */
 .cadre-struct { overflow:hidden; }
-#struct-corps { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  scrollbar-gutter:stable; }   /* v1.11 : la place de la barre est réservée, plus de saut */
+#struct-corps { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+/* ⚠ v1.11 — LA BARRE DU PANNEAU CLIGNOTAIT à chaque « Miner » (retour testeur).
+   Le contenu ne déborde pas : il est reconstruit (innerHTML puis appendChild),
+   et le navigateur voit un état intermédiaire d'une image où il déborde. Comme
+   on ne peut pas supprimer cet instant, on supprime la BARRE : le défilement
+   reste possible au doigt et à la molette, seul le rail disparaît.
+   ⚠ Conséquence assumée : en fenêtre basse (paysage, bio-dôme à 4 cases), plus
+   rien n'indique visuellement qu'on peut défiler. Le geste, lui, marche. */
+#struct-corps { scrollbar-width:none; }
+#struct-corps::-webkit-scrollbar { width:0; height:0; }
 /* v1.11 — page gelée pendant qu'une modale de structure est ouverte : c'est
    elle qui faisait clignoter la barre de droite à chaque re-rendu. */
 html.modale-ouverte, html.modale-ouverte body { overflow:hidden; }
