@@ -538,6 +538,10 @@ async function _rendreBureauStratege(el, fac){
     if(hist && hist[0] && hist[0].rapport) h+=`<h4 class="gsec">Dernier compte rendu</h4>`+_expRapportHtml(hist[0]);
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#10"); }
   el.innerHTML=h;
+  /* ⚠ v1.12 — ICI, ET PAS DANS `majBureau` : `#bureau-guet` appartient au corps
+     du Stratège, qui n'est dessiné qu'à cette ligne. Appelé plus tôt, le
+     conteneur n'existait pas encore et l'encart ne s'affichait jamais. */
+  { const zg = el.querySelector("#bureau-guet"); if(zg) _rendreGuet(zg, fac); }
   const br=el.querySelector("#exp-resoudre"); if(br) br.addEventListener("click", _expResoudre);
   const bs=el.querySelector("#exp-suppr"); if(bs) bs.addEventListener("click", _expSupprimer);
   el.querySelectorAll("[data-merc]").forEach(b=>b.addEventListener("click",()=>_mercEngager(b.dataset.merc)));
@@ -812,8 +816,12 @@ const GUET_MOT = { calme:"calme", ordinaire:"ordinaire", dense:"DENSE" };
 async function _rendreGuet(zone, fac){
   if(!zone) return;
   let d = null;
-  try{ const r = await sb.rpc("guet_lire"); d = r.data; }
-  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#guet"); return; }
+  let err = null;
+  try{ const r = await sb.rpc("guet_lire"); d = r.data; err = r.error; }
+  catch(e){ err = e; if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#guet"); }
+  /* Si la RPC n'existe pas encore (SQL v112 pas passé), on le DIT au staff
+     plutôt que de laisser un trou silencieux dans la page. */
+  if(err && !d){ zone.innerHTML = `<p class="itip-gris" style="font-size:12px">Guet indisponible : la fonction <code>guet_lire</code> manque côté serveur (SQL v112 à passer).</p>`; return; }
   if(!d || !d.ok || !d.gouvernement){ zone.innerHTML = ""; return; }
   let h = `<h4 class="gsec">Guet — horaires de patrouille</h4>`;
   if(!d.paye){
@@ -895,8 +903,6 @@ async function majBureau(el){
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
   const zc = el.querySelector("#bureau-cercles");
   if(zc) _rendreCerclesFaction(zc, fac);   // v1.10 : sans await, l'encart arrive quand il arrive
-  const zg = el.querySelector("#bureau-guet");
-  if(zg) _rendreGuet(zg, fac);             // v1.12 : idem pour le guet
   const corps = el.querySelector("#bureau-corps");
   if(_bureauVue==="concertation") await _rendreConcertation(corps, fac);
   else if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);
