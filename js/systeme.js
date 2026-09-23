@@ -2,6 +2,25 @@
    SYSTEME — Systèmes de fond : énergie (régénération), journal d'événements, expérience et niveaux.
    =========================================================== */
 
+/* v1.11 — INFOBULLES AU TOUCHER (retour testeur : « les fenêtres qui s'ouvrent
+   au survol des noms de compétences ne s'affichent pas »).
+   Ces bulles n'existaient qu'en `:hover`, doublé d'un `:focus` — or taper un
+   <span> ne donne pas le focus de façon fiable sur iOS. Sur téléphone et sur
+   tablette, l'information était donc INATTEIGNABLE.
+   Un tap pose `tip-on` sur l'élément ; un tap ailleurs referme tout. Le survol
+   continue de marcher à la souris, sans changement. */
+const TIP_SEL = ".comp-nom, .comp-b, .integrite-note, .ip-sig";
+function _fermerTips(sauf){
+  document.querySelectorAll(".tip-on").forEach(el=>{ if(el!==sauf) el.classList.remove("tip-on"); });
+}
+document.addEventListener("click", ev=>{
+  const cible = ev.target && ev.target.closest ? ev.target.closest(TIP_SEL) : null;
+  if(!cible){ _fermerTips(null); return; }
+  const ouvert = cible.classList.contains("tip-on");
+  _fermerTips(cible);
+  cible.classList.toggle("tip-on", !ouvert);
+}, true);
+
 /* ---------- Énergie ---------- */
 // Coût en % par action (se déplacer en vaisseau coûtera peu ; miner beaucoup).
 const ACTION_COUT = { miner:12, explorer:10, combattre:8, reposer:0 };

@@ -195,7 +195,7 @@ async function _majListesAmis(){
   for(const j of amis) h+=_ligneJoueur(j, { ami:true });
   if(envoyees.length){
     h+=`<h4 class="comm-titre">Demandes envoyées (${envoyees.length})</h4>`;
-    for(const j of envoyees) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><span class="comm-nom" style="cursor:default">${echapper(j.nom)}</span><span class="comm-btns"><span class="itip-gris">en attente</span> <button class="mini danger" data-annule="${echapper(j.nom)}">Annuler</button></span></div>`;
+    for(const j of envoyees) h+=`<div class="comm-ligne"><span class="comm-dot off"></span><button class="comm-nom" data-profil="${echapper(j.nom)}">${echapper(j.nom)}</button><span class="comm-btns"><span class="itip-gris">en attente</span> <button class="mini danger" data-annule="${echapper(j.nom)}">Annuler</button></span></div>`;
   }
   if(etat.bloques.length){
     h+=`<h4 class="comm-titre">Bloqués (${etat.bloques.length})</h4>`;

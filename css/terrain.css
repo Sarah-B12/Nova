@@ -79,7 +79,7 @@
     box-shadow:0 6px 18px rgba(0,0,0,.5); text-align:left; white-space:normal;
     opacity:0; visibility:hidden; transform:translateY(-3px); transition:opacity .12s, transform .12s;
     pointer-events:none; }
-  .ip-sig:hover .ip-bulle { opacity:1; visibility:visible; transform:translateY(0); }
+  .ip-sig:hover .ip-bulle, .ip-sig.tip-on .ip-bulle { opacity:1; visibility:visible; transform:translateY(0); }   /* v1.11 : tap sur tablette/téléphone */
   .ip-bulle .ip-etat { color:currentColor; }
   /* Les deux dernières colonnes de la grille : la bulle sortirait de l'écran. */
   .plot:nth-child(6n) .ip-bulle, .plot:nth-child(6n-1) .ip-bulle { right:auto; left:0; }
@@ -117,7 +117,11 @@
    les boutons étaient coupés et inaccessibles. Le contenu défile désormais, et
    en paysage bas les 4 cases tiennent sur une ligne. */
 .cadre-struct { overflow:hidden; }
-#struct-corps { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+#struct-corps { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable; }   /* v1.11 : la place de la barre est réservée, plus de saut */
+/* v1.11 — page gelée pendant qu'une modale de structure est ouverte : c'est
+   elle qui faisait clignoter la barre de droite à chaque re-rendu. */
+html.modale-ouverte, html.modale-ouverte body { overflow:hidden; }
 @media (orientation:landscape) and (max-height:820px){
   .modale-carte { padding:8px; }
   .cadre-carte { max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); }

@@ -288,8 +288,14 @@ async function tondreCase(ci){
 }
 
 // --- Modale d'une structure (mine / bio-dôme / enclos) ---
-function ouvrirStruct(i){ structSel=i; structCaseSel=null; const m=document.querySelector("#modale-struct"); if(m) m.classList.add("ouverte"); majStruct(); }
-function fermerStruct(){ const m=document.querySelector("#modale-struct"); if(m) m.classList.remove("ouverte"); structSel=null; structCaseSel=null; afficher(); }
+/* v1.11 — BARRE DE DÉFILEMENT QUI CLIGNOTE (retour testeur, sur « Miner »).
+   La modale est en `position:fixed`, mais la PAGE derrière garde son
+   défilement : chaque re-rendu (apresAction → afficher) la fait grandir puis
+   rétrécir d'un cheveu, et la barre apparaît le temps d'une image. On gèle le
+   défilement de la page tant qu'une modale de structure est ouverte, et on le
+   rend en la fermant. */
+function ouvrirStruct(i){ structSel=i; structCaseSel=null; document.documentElement.classList.add("modale-ouverte"); const m=document.querySelector("#modale-struct"); if(m) m.classList.add("ouverte"); majStruct(); }
+function fermerStruct(){ document.documentElement.classList.remove("modale-ouverte"); const m=document.querySelector("#modale-struct"); if(m) m.classList.remove("ouverte"); structSel=null; structCaseSel=null; afficher(); }
 /* v0.75 — « 12/50 » dans les fenêtres de la mine et de l'atelier : on voyait
    trop tard que le sac était plein. */
 function texteSac(){
@@ -405,11 +411,16 @@ function majRecolte(){
     const cell=document.createElement("div");
     cell.className="plot"+(p?" occupe":"")+(plotSel===i?" sel":"");
     if(p && p.type==="maison"){
-      const img = (typeof imgMaison==="function") ? imgMaison(etat.maison.palier) : null;
+      /* v1.11 — MÊME IMAGE DE CHANTIER QUE L'ÉCRAN LOGEMENT. `imgMaison(0)`
+         vaut null tant que la Cabane n'est pas debout : la case affichait le
+         glyphe ⌂ même si `images/maisons/chantier.png` existait. */
+      const img = ((typeof imgMaison==="function") ? imgMaison(etat.maison.palier) : null)
+                || (etat.maison.chantier ? "images/maisons/chantier.png" : null);
       const lbl = etat.maison.chantier ? "Chantier" : nomPalier(etat.maison.palier);
       // Le nom du palier est déjà lisible dans l'infobulle et dans la maison :
       // l'étiquette par-dessus l'image alourdissait le terrain pour rien.
-      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}">`; }
+      /* Si le fichier manque, on retombe sur le glyphe au lieu d'une image cassée. */
+      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}" onerror="this.parentNode.classList.add('plot-maison');this.parentNode.innerHTML='&lt;span class=\'maison-glyphe\'&gt;⌂&lt;/span&gt;&lt;span class=\'badge-plot\'&gt;${lbl}&lt;/span&gt;'">`; }
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {
