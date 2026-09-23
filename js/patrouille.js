@@ -41,10 +41,30 @@ const PATROUILLE_DROPS = [
    couperait l'herbe sous le pied des Biotech, qui en vivent. Le butin doit être
    de la MATIÈRE et des PIÈCES, revendables et retransformables. */
 
+/* v1.12 — LES HEURES NE SE VALENT PLUS. Le serveur tire six segments de 4 h par
+   jour : calme ×0,5, ordinaire ×1, dense ×1,6 (table `patrouille_horaires`).
+   Le client ne connaît que le facteur de L'HEURE EN COURS — on sent qu'il y a
+   du monde dehors, on ne lit pas le programme. Celui-ci s'achète : c'est le
+   guet du Stratège (`guet_payer`, Bureau).
+   ⚠ `chancePatrouille()` est SYNCHRONE (appelée au milieu d'un déplacement) :
+   on garde donc le facteur en mémoire et on le rafraîchit à part. En cas de
+   doute — jamais chargé, hors ligne — il vaut 1 : le comportement d'avant. */
+let _facteurPatrouille = 1;
+async function chargerFacteurPatrouille(){
+  if(typeof sb === "undefined" || !sb) return;
+  try{ const { data } = await sb.rpc("patrouille_facteur");
+    if(data && data.facteur) _facteurPatrouille = Number(data.facteur) || 1;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "patrouille.js#facteur"); }
+}
+/* Un segment dure 4 h : toutes les 10 min suffisent largement, et on relit
+   au retour au premier plan (les minuteries d'un onglet caché sont gelées). */
+setInterval(chargerFacteurPatrouille, 600000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) chargerFacteurPatrouille(); });
+
 function chancePatrouille(){
   const base = (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX;
   const m = (typeof boissonMod==="function") ? boissonMod("patrouille", 1) : 1;   // v0.79 : Poussière de route / Le coup du départ
-  return Math.max(0, Math.min(0.6, base * m));
+  return Math.max(0, Math.min(0.6, base * m * _facteurPatrouille));
 }
 // L'Ordinateur de hacking doit être ÉQUIPÉ (en main) pour pouvoir hacker.
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }

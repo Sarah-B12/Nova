@@ -520,6 +520,7 @@ async function _rendreBureauStratege(el, fac){
        prix 1500 × (n+1)) : changer l'un, c'est changer l'autre. */
     const CERCLE_MERC = "langues";
     const cMerc = (typeof CERCLES!=="undefined" ? CERCLES : []).find(c=>c.id===CERCLE_MERC) || { nom:"Les Langues-violacées", ic:"👅" };
+    h+=`<div id="bureau-guet"></div>`;   // v1.12 : le guet, rempli juste après (RPC)
     h+=`<h4 class="gsec">Mercenaires</h4>`;
     h+=`<p class="itip-gris" style="font-size:12px">Les <b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
     let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
@@ -799,6 +800,57 @@ const CERCLE_EFFETS = {
   eclats:      "La caisse touche 25 % de plus sur chaque taxe du marché — sans que le vendeur paie davantage.",
   racines:     "Tous nos membres regagnent +1 % d'énergie toutes les 2 h, tant qu'ils restent dans notre cercle."
 };
+/* v1.12 — LE GUET DU STRATÈGE. Les patrouilles ne frappent pas pareil à toute
+   heure : six segments de 4 h, tirés chaque jour. Le Stratège paie 300 ₡ à la
+   caisse pour relever le programme du jour ET du lendemain.
+   ⚠ Visible du GOUVERNEMENT SEUL : c'est au Régent de le transmettre (comm de
+   faction). Un simple membre ne voit rien, même en fouillant la page.
+   ⚠ Le paiement vaut pour la journée entière : payer le matin révèle beaucoup
+   plus que payer le soir. C'est l'arbitrage du Stratège. */
+const GUET_SEG = ["00h-04h","04h-08h","08h-12h","12h-16h","16h-20h","20h-24h"];
+const GUET_MOT = { calme:"calme", ordinaire:"ordinaire", dense:"DENSE" };
+async function _rendreGuet(zone, fac){
+  if(!zone) return;
+  let d = null;
+  try{ const r = await sb.rpc("guet_lire"); d = r.data; }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#guet"); return; }
+  if(!d || !d.ok || !d.gouvernement){ zone.innerHTML = ""; return; }
+  let h = `<h4 class="gsec">Guet — horaires de patrouille</h4>`;
+  if(!d.paye){
+    h += `<p class="itip-gris" style="font-size:12px">Les patrouilles ne sortent pas autant à toute heure. Poste un guetteur et tu sauras <b>quand elles seront denses</b> aujourd'hui et demain. Un relevé par jour, payé par la caisse.</p>
+      <div class="actions"><button class="mini" id="guet-payer">Poster un guetteur (${d.prix||300} ₡)</button></div>`;
+  } else {
+    const auj = (typeof jourDeJeu==="function") ? jourDeJeu() : null;
+    const par = {};
+    (d.horaires||[]).forEach(o=>{ (par[o.jour] = par[o.jour] || [])[o.segment] = o.intensite; });
+    h += Object.keys(par).sort().map(j=>{
+      const cases = GUET_SEG.map((lbl,i)=>{
+        const it = par[j][i] || "ordinaire";
+        const c = it==="dense" ? "var(--coral,#ff6b6b)" : (it==="calme" ? "#6fd08a" : "var(--sourdine)");
+        return `<div style="flex:1 1 90px; min-width:0"><div class="itip-gris" style="font-size:11px">${lbl}</div><b style="color:${c}">${GUET_MOT[it]||it}</b></div>`;
+      }).join("");
+      return `<p style="margin:8px 0 2px"><b>${j===auj?"Aujourd'hui":"Demain"}</b> <span class="itip-gris">${j}</span></p>
+        <div style="display:flex; flex-wrap:wrap; gap:6px 10px">${cases}</div>`;
+    }).join("");
+    h += `<p class="itip-gris" style="font-size:12px; margin-top:8px">Le gouvernement est seul à le savoir. Au <b>Régent</b> de prévenir la faction s'il le juge utile.</p>`;
+  }
+  zone.innerHTML = h;
+  const b = zone.querySelector("#guet-payer");
+  if(b) b.addEventListener("click", async ()=>{
+    b.disabled = true;
+    let r = null; try{ r = (await sb.rpc("guet_payer")).data; }catch(e){}
+    if(!r || !r.ok){
+      const e = r && r.err;
+      journal(e==="caisse" ? `La caisse n'a pas les ${r.prix} ₡.` :
+              e==="deja_paye" ? "Un guetteur est déjà posté aujourd'hui." :
+              e==="pas_stratege" ? "Réservé au Stratège." : "Impossible pour l'instant.", "alerte");
+      b.disabled = false; return;
+    }
+    journal(`Guetteur posté : −${r.prix} ₡ de la caisse. Les horaires sont relevés.`, "gain", "faction");
+    _rendreGuet(zone, fac);
+  });
+}
+
 async function _rendreCerclesFaction(zone, fac){
   if(!zone || !fac) return;
   const liste = (typeof CERCLES!=="undefined") ? CERCLES : [];
@@ -843,6 +895,8 @@ async function majBureau(el){
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
   const zc = el.querySelector("#bureau-cercles");
   if(zc) _rendreCerclesFaction(zc, fac);   // v1.10 : sans await, l'encart arrive quand il arrive
+  const zg = el.querySelector("#bureau-guet");
+  if(zg) _rendreGuet(zg, fac);             // v1.12 : idem pour le guet
   const corps = el.querySelector("#bureau-corps");
   if(_bureauVue==="concertation") await _rendreConcertation(corps, fac);
   else if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);

@@ -76,6 +76,15 @@ document.querySelector("#auth-tab-c").addEventListener("click", ()=>basculerAuth
 document.querySelector("#auth-tab-i").addEventListener("click", ()=>basculerAuth("inscription"));
 const _ma=document.querySelector("#modale-auth"); if(_ma) _ma.addEventListener("click", e=>{ if(e.target===_ma) fermerAuth(); });
 const _bdeco=document.querySelector("#btn-deco"); if(_bdeco) _bdeco.addEventListener("click", deconnexion);
+/* v1.11 — au retour d'une déconnexion pour inactivité, on le DIT : sinon le
+   joueur croit à une panne ou à une session expirée toute seule. */
+try{
+  if(sessionStorage.getItem("nova_inactif")){
+    sessionStorage.removeItem("nova_inactif");
+    const zi = document.querySelector("#auth-info");
+    if(zi) zi.innerHTML = "Tu as été déconnecté après <b>30 minutes d'inactivité</b>. Ta partie est sauvegardée : reconnecte-toi, tu retrouveras tout.";
+  }
+}catch(e){}
 const _voir=document.querySelector("#auth-voir"); if(_voir) _voir.addEventListener("change", e=>{ const t=e.target.checked?"text":"password"; ["#auth-mdp","#auth-mdp2"].forEach(s=>{ const el=document.querySelector(s); if(el) el.type=t; }); });
 document.querySelector("#bienvenue-ok").addEventListener("click", fermerBienvenue);
 document.querySelectorAll(".comm-lien").forEach(b => b.addEventListener("click", () => changerComm(b.dataset.comm)));
@@ -164,6 +173,7 @@ async function syncApresConnexion(){
   if(typeof chargerBete==="function")      t.push(chargerBete());          // v1.00 : la bête (Q15)
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
+  if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
