@@ -112,7 +112,7 @@ function changerCentre(c){
 function majCentre(){
   const el = document.querySelector("#centre-corps"); if(!el) return;
   const base = (typeof surBase==="function") && surBase();
-  const chezSoi = base ? true                       // à l'Écart, on consulte SA faction
+  const chezSoi = base ? true                       // au Perchoir, on consulte SA faction
                        : ((typeof villeActuelle==="function") ? villeActuelle()===etat.faction : true);
   /* ⚠ `annonce` est masquée hors de sa faction : on ne lit pas les nouvelles
      des autres, même en visitant leur ville.
@@ -155,7 +155,7 @@ function majCentre(){
   if(centreVue==="guerres"){ if(typeof majExpeditions==="function") majExpeditions(el); return; }
   const titres = { gouvernement:"Gouvernement", votes:"Votes", guerres:"Guerres de faction" };
   const notes = {
-    gouvernement:"Régent, Maréchal et Intendant élus par la faction, avec leurs pouvoirs… à venir.",
+    gouvernement:"Régent, Architecte, Stratège et Ombre élus par la faction, avec leurs pouvoirs… à venir.",   // v1.04 : plus de Maréchal ni d'Intendant
     votes:"Lancer et trancher les décisions de la faction… à venir.",
     guerres:"Déclarer et mener les guerres entre factions, monter des coalitions contre le Protocole… à venir."
   };

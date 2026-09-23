@@ -353,7 +353,7 @@ function majVaisseau(){
   }
   // Liste « à charger » depuis le sac (hors vaisseaux)
   const dl=z.querySelector("#soute-depot");
-  const dispo=TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !estVaisseau(a.id));
+  const dispo=TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !estVaisseau(a.id) && !(typeof estObjetLie==="function" && estObjetLie(a.id)));   // v0.97
   if(!dispo.length){ dl.innerHTML=`<p class="vide">Rien à charger.</p>`; return; }
   for(const it of dispo){ const d=document.createElement("div"); d.className="item-ligne";
     d.innerHTML=`<span>${it.nom} <span class="qte">×${etat.sac[it.id]}</span></span>`;

@@ -1,5 +1,5 @@
 /* ===========================================================
-   LES SONDES — patrouilles automatiques du secteur Nielle (v0.91)
+   LES SONDES — patrouilles automatiques du secteur Triptolème (v0.91)
 
    ⚠ CE NE SONT PAS DES PATROUILLES DU PROTOCOLE. Lui tient un périmètre AU SOL
    et n'a rien à faire en orbite. Ce sont des sondes automatiques d'AREPO
@@ -9,7 +9,7 @@
 
    ⚠ CE QUE ÇA APPORTE AU RÉCIT. Pendant Q1→Q5 le joueur CROIT que le Protocole
    est fait de robots, et l'arc lui apprend patiemment que non : ce sont des
-   gens. À Nielle il rencontre les vraies machines, qui ne se comportent en rien
+   gens. Dans Triptolème il rencontre les vraies machines, qui ne se comportent en rien
    comme le Protocole — elles n'escortent pas, n'appellent pas, n'ont aucune
    procédure d'accueil. Le contraste RENFORCE la révélation de Q5.
 
@@ -18,12 +18,12 @@
    conversation. Tout passe par des traces et des actes.
 
    ⚠ NE JAMAIS LES APPELER « QUARANTAINE » EN JEU : la consigne sanitaire est
-   réservée au second étage (LORE_Protocole.md §6). Le joueur voit des machines
+   réservée au second étage (LORE.md §6). Le joueur voit des machines
    butées, rien de plus. Elles n'ont pas non plus de nom courant — les équipages
    disent « une sonde », point.
    =========================================================== */
 
-const SONDE_TAUX      = 0.15;    // probabilité d'interception par vol dans Nielle
+const SONDE_TAUX      = 0.15;    // probabilité d'interception par vol dans Triptolème
 const SONDE_PV_RIPOSTE= [15, 25];// dégâts quand elle tire la première
 const SONDE_PV_DEFAITE= [25, 40];// dégâts quand on l'attaque et qu'on perd
 const SONDE_GAIN      = [40, 90];// crédits en cas de victoire
@@ -66,14 +66,13 @@ function ouvrirSonde(){
   monterSonde();
   const m = document.querySelector("#sonde-modale");
   const aHack  = (typeof ordiHackEquipe==="function") && ordiHackEquipe();
-  const aSoute = (typeof itemsSoute==="function") && itemsSoute() > 0;
   m.innerHTML = `<div class="patr-cadre">
     <div class="patr-tete">⚠ Sonde automatique</div>
     <p class="patr-desc">Un appareil sans cockpit s'aligne sur toi et se met à ta vitesse. Il n'émet rien qui ressemble à un appel.
       Une lumière balaie ta coque, s'arrête, recommence.</p>
     <div class="patr-choix">
       <button class="patr-opt" data-s="attaquer"><b>Ouvrir le feu</b><span class="patr-sous">La seule option qui rapporte · perdre abîme la coque</span></button>
-      <button class="patr-opt" data-s="scanner"><b>Se laisser scanner</b><span class="patr-sous">${aSoute?"Elle prélèvera un échantillon dans ta soute":"Ta soute est vide — elle ne trouvera rien à prendre"}</span></button>
+      <button class="patr-opt" data-s="scanner"><b>Se laisser scanner</b><span class="patr-sous">Elle prélèvera un objet au hasard, dans ta soute ou dans ton sac</span></button>
       <button class="patr-opt" data-s="deriver"><b>Couper les moteurs et dériver</b><span class="patr-sous">Intelligence · échec = elle tire la première</span></button>
       <button class="patr-opt" data-s="brouiller" ${aHack?"":"disabled"}><b>Brouiller son scanner</b><span class="patr-sous">${aHack?"Ordinateur de hacking équipé · aucun dégât si réussi":"Équipe un Ordinateur de hacking"}</span></button>
     </div>
@@ -111,12 +110,12 @@ function _sondeGagne(){
   const g = alea(SONDE_GAIN[0], SONDE_GAIN[1]) + ((typeof bonusCredits==="function") ? bonusCredits() : 0);
   etat.credits += g;
   if(typeof gagnerXp==="function") gagnerXp(10);
-  journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris, +10 XP.`,"gain");
+  journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris, +10 XP.`,"gain"); if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
 function _sondePerdu(){
   abimerVaisseau(alea(SONDE_PV_DEFAITE[0], SONDE_PV_DEFAITE[1]), "tir de sonde");
-  journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte");
+  journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
 
@@ -145,16 +144,16 @@ async function sondeScanner(){
     d = r && r.data;
   }catch(e){
     if(typeof _catchLog==="function") _catchLog(e, "sonde.js#1");
-    journal("La sonde t'immobilise, puis relâche sans rien prendre — liaison perdue.","alerte");
+    journal("La sonde t'immobilise, puis relâche sans rien prendre — liaison perdue.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
     return;
   }
   if(d && d.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(d.etat);
   if(d && d.pris){
     const it = (typeof item==="function") ? item(d.item) : null;
     const ou = (d.lieu === "soute") ? "ta soute" : "ton sac";
-    journal(`Un bras s'ouvre, fouille ${ou} et ressort avec 1 ${it ? it.nom : d.item}. La sonde se détourne et reprend sa ronde.`,"alerte");
+    journal(`Un bras s'ouvre, fouille ${ou} et ressort avec 1 ${it ? it.nom : d.item}. La sonde se détourne et reprend sa ronde.`,"alerte"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
-    journal("La lumière te balaie une dernière fois. Tu ne transportes rien : elle décroche.","");
+    journal("La lumière te balaie une dernière fois. Tu ne transportes rien : elle décroche.",""); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
 }
@@ -167,10 +166,10 @@ async function sondeDeriver(){
   const int = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
   const p = Math.min(0.90, 0.35 + int/300);
   if(Math.random() < p){
-    journal("Moteurs coupés, signature éteinte. Elle te prend pour un débris, te contourne et poursuit sa route.","gain");
+    journal("Moteurs coupés, signature éteinte. Elle te prend pour un débris, te contourne et poursuit sa route.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
     abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
-    journal("Trop tard : elle avait déjà verrouillé. Elle tire la première, coque touchée.","alerte");
+    journal("Trop tard : elle avait déjà verrouillé. Elle tire la première, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
 }
@@ -186,10 +185,10 @@ async function sondeBrouiller(){
   const bonus = (typeof aIntrusion==="function" && aIntrusion()) ? 0.25 : 0;   // Intrusion (om4)
   const p = Math.min(0.90, 0.45 + int/500 + bonus);
   if(Math.random() < p){
-    journal("Ton ordinateur noie son scanner sous de faux échos. Elle cherche, ne trouve plus rien, et s'éloigne.","gain");
+    journal("Ton ordinateur noie son scanner sous de faux échos. Elle cherche, ne trouve plus rien, et s'éloigne.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
     abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
-    journal("Le brouillage ne prend pas — elle isole ta signature et ouvre le feu.","alerte");
+    journal("Le brouillage ne prend pas — elle isole ta signature et ouvre le feu.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
 }

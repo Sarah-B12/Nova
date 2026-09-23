@@ -79,7 +79,7 @@ async function majArene(){
   const liste = adv.adversaires || [];
   html += `<h4 style="margin:16px 0 6px">Adversaires${typeof adv.restants==="number" ? ` <span class="itip-gris">— ${adv.restants} défis restants aujourd'hui</span>` : ""}</h4>`;
   if(!liste.length){
-    html += `<p class="vide">Personne d'autre n'a encore atteint le Perchoir. Reviens quand l'Écart se sera peuplé.</p>`;
+    html += `<p class="vide">Personne d'autre n'a encore atteint le Perchoir. Reviens quand Triptolème se sera peuplé.</p>`;
   } else {
     html += liste.map(a => {
       const b = ARENE_BANDES[a.bande] || ARENE_BANDES.comparable;
@@ -235,9 +235,9 @@ async function _areneDefier(cible, bouton){
     const { data, error } = await sb.rpc("arene_defier", { p_cible: cible });
     if(error) throw new Error(error.message);
     if(!data || !data.ok){
-      journal(ARENE_ERREURS[data && data.err] || "Le défi n'a pas pu être lancé.", "alerte");
+      journal(ARENE_ERREURS[data && data.err] || "Le défi n'a pas pu être lancé.", "alerte", "combat");
     } else {
-      journal(`Défi envoyé à ${data.nom}. Il a deux jours pour répondre. (−3 % d'énergie)`, "gain");
+      journal(`Défi envoyé à ${data.nom}. Il a deux jours pour répondre. (−3 % d'énergie)`, "gain", "combat");
       /* L'énergie vient d'être prise côté serveur : on relit plutôt que de
          soustraire 3 dans notre coin — deux barèmes valent toujours mieux un. */
       /* ⚠ Pas de `syncEnergie()` : cette fonction n'existe pas dans le projet.
@@ -246,7 +246,7 @@ async function _areneDefier(cible, bouton){
     }
   }catch(e){
     if(typeof _catchLog==="function") _catchLog(e, "arene.js#2");
-    journal("L'arène ne répond pas — ton défi n'a pas été envoyé.", "alerte");
+    journal("L'arène ne répond pas — ton défi n'a pas été envoyé.", "alerte", "combat");
   }
   _areneOccupe = false;
   _areneRafraichir();
@@ -262,9 +262,9 @@ async function _areneRepondre(id, accepte, bouton){
     const { data, error } = await sb.rpc("arene_repondre", { p_defi: Number(id), p_accepte: !!accepte });
     if(error) throw new Error(error.message);
     if(!data || !data.ok){
-      journal(ARENE_ERREURS[data && data.err] || "La réponse n'a pas pu être enregistrée.", "alerte");
+      journal(ARENE_ERREURS[data && data.err] || "La réponse n'a pas pu être enregistrée.", "alerte", "combat");
     } else if(data.statut === "refuse"){
-      journal("Défi décliné.", "");
+      journal("Défi décliné.", "", "combat");
     } else {
       const issue = data.gagne ? "Victoire" : "Défaite";
       const rep   = data.rep > 0 ? " +1 réputation." : "";
@@ -277,7 +277,7 @@ async function _areneRepondre(id, accepte, bouton){
          renvoyée par le serveur. On garde la sienne, qui n'apprend rien sur
          l'adversaire et situe le joueur. */
       journal(`⚔️ ${issue} contre ${data.adversaire} (ta force : ${data.ma_force}).${rep}${bis}`,
-              data.gagne ? "gain" : "alerte");
+              data.gagne ? "gain" : "alerte", "combat");
       /* L'XP est déposée dans `effets_combat` : c'est la synchro habituelle qui
          la ramène et qui gère la montée de niveau. On ne l'ajoute pas ici. */
       if(typeof syncEffetsCombat==="function") await syncEffetsCombat();
@@ -285,7 +285,7 @@ async function _areneRepondre(id, accepte, bouton){
     }
   }catch(e){
     if(typeof _catchLog==="function") _catchLog(e, "arene.js#3");
-    journal("L'arène ne répond pas — réessaie.", "alerte");
+    journal("L'arène ne répond pas — réessaie.", "alerte", "combat");
   }
   _areneOccupe = false;
   _areneRafraichir();

@@ -128,7 +128,12 @@ async function deposerMat(matId, tout){
   finirChantierSiPret();   // v0.92 : la dernière matière peut suffire à conclure
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
-async function travaillerMaison(){
+/* v1.05 — TRAVAIL EN SÉRIE (retour testeur : « 110 actions pour un Palace »).
+   Le coût ne bouge pas — 110 actions restent 110 actions et 330 % d'énergie —
+   mais on ne les clique plus une par une. `n` actions = UN appel serveur, donc
+   une seule dépense d'énergie. Le nombre réellement fait est borné par ce qui
+   est ouvert, ce qui reste à faire, et l'énergie disponible. */
+async function travaillerMaison(n=1){
   const c=etat.maison.chantier; if(!c) return;
   if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   const total=travailTotal(c.cible);
@@ -156,9 +161,12 @@ async function travaillerMaison(){
   if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
   const dispo = travailOuvert(c) - c.travail;
   if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
-  if(!await agirServeur({ cout:TRAVAIL_ENERGIE, motif:"chantier" })) return;
-  c.travail++;
-  if(!finirChantierSiPret()) journal(`Travaux : ${Math.min(c.travail,total)}/${total}.`);
+  if(typeof regenEnergie==="function") regenEnergie();
+  const parEnergie = Math.floor((etat.energie||0) / TRAVAIL_ENERGIE);
+  const k = Math.max(1, Math.min(Math.max(1, n|0), dispo, total - c.travail, Math.max(1, parEnergie)));
+  if(!await agirServeur({ cout:TRAVAIL_ENERGIE*k, motif:"chantier" })) return;
+  c.travail += k;
+  if(!finirChantierSiPret()) journal(`Travaux : ${Math.min(c.travail,total)}/${total}${k>1?` (+${k})`:""}.`);
   apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
 }
 async function demolirMaison(){
@@ -211,8 +219,13 @@ function majMaison(){
     return;
   }
   let html="";
-  const vimg = imgMaison(m.palier);
-  if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt=""></div>`;
+  /* v1.11 — PREMIÈRE CONSTRUCTION : `imgMaison(0)` vaut null, donc l'écran
+     n'avait aucune image tant que la Cabane n'était pas debout. On montre le
+     chantier. Aux paliers suivants, c'est le logement ACTUEL qui reste affiché
+     (on vit dedans pendant qu'on bâtit le suivant). Si le fichier n'existe pas,
+     le cadre disparaît tout seul : rien ne casse. */
+  const vimg = imgMaison(m.palier) || (m.chantier ? "images/maisons/chantier.png" : null);
+  if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt="" onerror="this.parentNode.remove()"></div>`;
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;
@@ -234,7 +247,16 @@ function majMaison(){
        d'infobulle, la raison doit être dans le libellé. */
     const _rienAFaire = dispoTravail <= 0;
     const _faute = _rienAFaire ? "dépose des matières" : (etat.energie < TRAVAIL_ENERGIE ? "énergie insuffisante" : null);
-    html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${(_rienAFaire||etat.energie<TRAVAIL_ENERGIE)?"disabled":""}><span>Travailler</span><span class="cout">${_faute ? _faute : `−${TRAVAIL_ENERGIE} % én. · ${dispoTravail} à faire`}</span></button></div>`;
+    /* v1.05 : deux raccourcis à côté du bouton à l'unité. « Au maximum » fait
+       tout ce que l'énergie et les matières permettent, en une seule fois. */
+    const _bloque = (_rienAFaire || etat.energie < TRAVAIL_ENERGIE);
+    const _max = Math.min(dispoTravail, Math.floor((etat.energie||0) / TRAVAIL_ENERGIE));
+    html += `<div class="actions" style="margin-top:8px"><button class="action" id="maison-travailler" ${_bloque?"disabled":""}><span>Travailler</span><span class="cout">${_faute ? _faute : `−${TRAVAIL_ENERGIE} % én. · ${dispoTravail} à faire`}</span></button></div>`;
+    if(!_bloque && _max > 1){
+      html += `<div class="actions" style="margin-top:6px">`
+        + (_max >= 5 ? `<button class="mini" id="maison-travailler5">Travailler ×5 <span class="qte">−${TRAVAIL_ENERGIE*5} % én.</span></button>` : "")
+        + `<button class="mini" id="maison-travailler-max">Au maximum : ×${_max} <span class="qte">−${TRAVAIL_ENERGIE*_max} % én.</span></button></div>`;
+    }
     html += `<div class="actions" style="margin-top:8px"><button class="mini danger" id="maison-demolir">Annuler / Démolir</button></div>`;
   } else {
     html += `<h3>${nomPalier(m.palier)} <span class="qte">${itemsCoffre()}/${capaciteMaison()} rangement</span></h3>`;
@@ -255,7 +277,9 @@ function majMaison(){
   z.innerHTML=((typeof blocArretMaison==="function") ? blocArretMaison() : "") + _RB + html;
 
   z.querySelectorAll("[data-dep]").forEach(b=>b.addEventListener("click",()=>deposerMat(b.dataset.dep, true)));   // v0.72 : tout ce qui manque, d'un coup
-  const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", travaillerMaison);
+  const bt=z.querySelector("#maison-travailler"); if(bt) bt.addEventListener("click", ()=>travaillerMaison(1));
+  const bt5=z.querySelector("#maison-travailler5"); if(bt5) bt5.addEventListener("click", ()=>travaillerMaison(5));
+  const btm=z.querySelector("#maison-travailler-max"); if(btm) btm.addEventListener("click", ()=>travaillerMaison(999));
   const ba=z.querySelector("#maison-agrandir"); if(ba) ba.addEventListener("click", agrandirMaison);
   const bd=z.querySelector("#maison-demolir"); if(bd) bd.addEventListener("click", demolirMaison);
   const br=z.querySelector("#maison-reparer"); if(br) br.addEventListener("click", ()=>reparerStructure(etat.maison.plot));
@@ -275,7 +299,7 @@ function majMaison(){
       g.appendChild(t);
     }
     const dl=z.querySelector("#depot-liste");
-    const dispo=TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0);
+    const dispo=TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(a.id)));   // v0.97
     if(!dispo.length) dl.innerHTML=`<p class="vide">Rien à déposer.</p>`;
     for(const it of dispo){ const d=document.createElement("div"); d.className="item-ligne";
       d.innerHTML=`<span>${it.nom} <span class="qte">×${etat.sac[it.id]}</span></span>`;

@@ -83,7 +83,7 @@ function placementExport(){
     if(l.halo)   t += `, halo:${q(l.halo)}`;
     if(l.r)      t += `, r:${l.r}`;
     if(l.verrou) t += `, verrou:${q(l.verrou)}`;
-    t += `,\n    usage:${q(l.usage||"")}, desc:${q(l.desc||"")} }`;
+    t += `,\n    usage:${q(l.usage||"")},${l.ici?` ici:${q(l.ici)},`:""} desc:${q(l.desc||"")} }`;   // v1.01 : ici (décor visitable)
     return t;
   });
   return "const ESPACE_LIEUX = [\n" + lignes.join(",\n") + "\n];";

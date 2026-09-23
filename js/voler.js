@@ -4,7 +4,7 @@
      • Voler  : objets. Plus risqué, moins payant. Échec → démasqué (TON NOM).
                 Gros échec → prison. Réussite = Agilité. Prérequis : Discrétion.
      • Hacker : crédits (≤30%). Meilleur, anonyme (« un anonyme » chez la victime).
-                Réussite = MINI-JEU (+ Intelligence). Prérequis : Ordinateur de hacking
+                Réussite = MINI-JEU (Intelligence = plus de temps). Prérequis : Ordinateur de hacking
                 équipé + Intrusion. Risque de prison plus faible.
      • Coûte 15% d'énergie. Cible = un joueur AU HASARD présent dans la ville.
      • Intouchables : équipement porté (armes/armures) + vaisseau équipé.
@@ -39,7 +39,7 @@ function _lieuVolNom(){
   if(typeof enEcart==="function" && enEcart()) return "ici";
   return "cette ville";
 }
-/* Prison du lieu : sa cité sur Silène, le Perchoir dans l'Écart.
+/* Prison du lieu : sa cité sur Silène, le Perchoir à Triptolème.
    ⚠ `perchoir` n'est PAS une faction. Aucun gouvernement n'y siège, donc
      `gracier` (qui exige un Régent de la faction) n'y trouvera jamais
      personne : on s'en évade ou on attend. C'est la règle voulue. */
@@ -508,13 +508,13 @@ function majVoler(){
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
         <p>Plus risqué, moins payant. Vole jusqu'à ${VOL_CAP_OBJETS} objets. Échec → <b>démasqué (ton nom)</b> ; gros échec → <b>prison</b>.</p>
-        <p class="itip-gris">Réussite : mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
+        <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
       <div class="vol-carte">
         <h3>🖥 Hacker <span class="qte">· crédits</span></h3>
         <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Anonyme, risque de prison plus faible.</p>
-        <p class="itip-gris">Réussite : mini-jeu + Intelligence. Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
+        <p class="itip-gris">Réussite : réussir le mini-jeu (Intelligence = plus de temps). Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
         <button class="mini" id="vol-hacker" ${dH&&e>=VOL_ENERGIE?"":"disabled"}>Hacker</button>
       </div>
     </div>`;
@@ -571,38 +571,40 @@ async function syncPrison(){
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
 }
 /* ⚠ v0.76 — ON NE VOYAIT AUCUN PRISONNIER. La vue lisait villeActuelle() : hors
-   d'une ville, fid valait null et la liste était vide ; et il n'y avait aucun
-   moyen de consulter la prison d'une AUTRE faction. Un sélecteur permet
-   désormais de choisir la faction (par défaut : la ville où l'on est, sinon la
-   sienne). La lecture passe par la RPC prison_liste, car la table `prison`
-   n'est pas lisible directement pour les autres factions. */
-let _prisonFac = null;
+   d'une ville, fid valait null et la liste était vide. La lecture passe par la
+   RPC prison_liste, car la table `prison` n'est pas lisible directement.
+   ⚠ v1.02 — LE SÉLECTEUR « Voir la prison de… » EST RETIRÉ (retour testeur) :
+   on ne regardait plus dans une prison, on la choisissait depuis n'importe où.
+   Règle : on voit la prison DU LIEU où l'on se tient — sa cité sur Silène, le
+   Perchoir à Triptolème ; un prisonnier voit la sienne. Hors d'une cité : rien.
+   Seule exception : le RÉGENT garde la vue de SA prison depuis n'importe où,
+   puisqu'il peut gracier à distance (règle inchangée). */
+let _prisonRegentVue = false;   // v1.02 : le Régent, hors de chez lui, a demandé à voir SA prison
 async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   _hackStyle();
-  /* v0.94b : le Perchoir a sa geôle. Par défaut on montre celle du lieu où
-     l'on est — donc la sienne au sol, le Perchoir là-haut. */
-  const ici=(typeof enEcart==="function"&&enEcart()) ? "perchoir"
-           : ((typeof villeActuelle==="function")?villeActuelle():null);
-  const fid = _prisonFac || ici || etat.faction;
-  el.innerHTML=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3><p class="vide">Chargement…</p>`;
+  el.innerHTML=`<h3 style="margin:2px 0">Prison</h3><p class="vide">Chargement…</p>`;
+  const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
+  const regent = roles.includes("regent") && !!etat.faction;
+  const ici = (enPrison() && etat.prisonFaction) ? etat.prisonFaction
+            : ((typeof enEcart==="function"&&enEcart()) ? "perchoir"
+            : ((typeof villeActuelle==="function")?villeActuelle():null));
+  const fid = (regent && (_prisonRegentVue || !ici)) ? etat.faction : ici;
+  const basculeRegent = (regent && ici && ici!==etat.faction)
+    ? `<div class="actions" style="margin:0 0 8px"><button class="mini" id="prison-regent">${fid===etat.faction?`Voir la prison d'ici (${_factionNom(ici)})`:"Voir la prison de ma faction (Régent)"}</button></div>` : "";
+  if(!fid){
+    el.innerHTML=`<h3 style="margin:2px 0">Prison</h3><p class="vide">Tu n'es dans aucune cité. Chaque prison ne se consulte que <b>sur place</b> : rends-toi dans une cité pour voir qui y est enfermé.</p>`;
+    return;
+  }
   let prisonniers=[];
   try{ const { data } = await sb.rpc("prison_liste", { p_faction: fid });
     prisonniers = (data||[]).map(r=>({ id:r.profil_id, nom:r.nom||"(?)", reste:new Date(r.jusqua)-Date.now() }));
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#3"); }
-  const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
-  const estRegent = roles.includes("regent") && fid===etat.faction;   // Régent de SA propre faction, où qu'il soit
+  const estRegent = regent && fid===etat.faction;   // Régent de SA propre faction, où qu'il soit
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;
-  /* v0.94b : le Perchoir figure dans la liste, après les cinq factions.
-     ⚠ Ce n'est pas une faction : personne n'y siège, donc personne n'y gracie.
-       `estRegent` ci-dessus compare déjà `fid` à `etat.faction`, qui ne vaudra
-       jamais "perchoir" — le bouton Gracier y restera grisé pour tout le monde. */
-  const opts=((typeof FACTIONS!=="undefined"?FACTIONS:[]).map(f=>({id:f.id,nom:f.nom}))
-              .concat([{id:"perchoir",nom:"Le Perchoir"}]))
-             .map(f=>`<option value="${f.id}"${f.id===fid?" selected":""}>${f.nom}</option>`).join("");
-  let html=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3>
-    <div class="actions" style="margin:0 0 8px"><label class="itip-gris">Voir la prison de&nbsp;
-      <select id="prison-fac" class="gouv-textarea" style="padding:4px 8px;width:auto">${opts}</select></label></div>
+  /* ⚠ `perchoir` n'est pas une faction : `estRegent` compare `fid` à
+     `etat.faction`, qui ne vaudra jamais "perchoir" — Gracier y reste grisé. */
+  let html=`<h3 style="margin:2px 0">Prison — ${_factionNom(fid)}</h3>${basculeRegent}
     <p class="vide">${fid==="perchoir"?"Le Perchoir enferme qui se fait prendre là-haut. <b>Aucun gouvernement n'y siège : personne ne peut gracier.</b> On s'en évade, ou on attend son heure.":"Quiconque se fait prendre à voler, hacker ou espionner dans cette faction y est enfermé : ni déplacement, ni action. Le <b>Régent</b> de la faction peut gracier — depuis n'importe où."}</p>`;
   if(!prisonniers.length) html+=`<p class="vide">Personne en prison ici.</p>`;
   else{
@@ -618,7 +620,7 @@ async function majPrison(el){
   }
   if(enPrison()) html+=`<div style="margin-top:10px"><button class="mini" id="prison-evasion">Tenter une évasion (−10% énergie)</button> <span class="itip-gris">Chance selon Agilité + Intelligence. Échec → tu restes.</span></div>`;
   el.innerHTML=html;
-  const pf=el.querySelector("#prison-fac"); if(pf) pf.addEventListener("change",()=>{ _prisonFac=pf.value; majPrison(el); });
+  const pr=el.querySelector("#prison-regent"); if(pr) pr.addEventListener("click",()=>{ _prisonRegentVue=!_prisonRegentVue; majPrison(el); });
   const pe=el.querySelector("#prison-evasion"); if(pe) pe.addEventListener("click", tenterEvasion);
   el.querySelectorAll("[data-gracier]").forEach(b=>b.addEventListener("click", async()=>{
     const { data:res, error } = await sb.rpc("gracier",{ p_profil:b.dataset.gracier });

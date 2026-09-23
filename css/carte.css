@@ -14,7 +14,7 @@
   .titre-carte { font-family:"Exo 2",sans-serif; font-weight:700; font-size:16px; color:var(--orange-hi); }
   #carte-lieu { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); font-weight:400; }
   .zone-carte { flex:1; min-height:0; display:flex; }
-  /* ⚠ v0.91 — le bandeau d'info de Nielle passait de DEUX lignes (texte
+  /* ⚠ v0.91 — le bandeau d'info de Triptolème passait de DEUX lignes (texte
      d'accueil) à UNE (aperçu au survol). `.zone-carte` étant en `flex:1`, elle
      récupérait la place libérée et le SVG se redimensionnait : la carte
      semblait zoomer à chaque passage de souris. On lui réserve sa hauteur, et

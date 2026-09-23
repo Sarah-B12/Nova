@@ -1,6 +1,10 @@
 /* ===========================================================
    APTITUDES-DATA — Arbre d'Aptitudes (données pures).
-   Progression par quêtes : 1 point d'Aptitude (PA) par quête.
+   Progression par quêtes. ⚠ v1.01 — RÉPARTITION IRRÉGULIÈRE, calée sur les
+   moments forts (et non plus 1 PA par quête, ni 5 PA en Q2→Q5 puis plus rien) :
+     Q2 (découverte) · Q5 (l'espace) · Q8 et Q12 (les descentes) · Q14
+     (l'émission) · Q15 (la bête) = 6 PA à la fin de Q15, pour 30 PA d'arbre.
+   Les quêtes sont la SEULE source de PA (gagnerPA ← terminerQuete).
    Chaque voie = chaîne linéaire de 4 nœuds ; prérequis = nœud précédent.
    Coûts : nœuds 1-3 = 1 PA ; nœud 4 (capstone) = APT_CAP_COUT.
    Voir Aptitudes_Nova_Epic.md (v0.3) pour le design figé.
@@ -19,19 +23,19 @@ const APT_TRONC = [
     { id:"sv3", nom:"Métabolisme",     effet:"Pertes de santé/moral en cas d'échec −25 %." },
     { id:"sv4", nom:"Endurance",       effet:"Coût en énergie de toutes tes actions −15 %." }
   ]},
-  { id:"prospecteur", nom:"Prospecteur", noeuds:[
+  { id:"prospecteur", nom:"Prospection", noeuds:[
     { id:"pr1", nom:"Filon profond",   effet:"Nouvelles mines : réserve +50 % (500 → 750)." },
     { id:"pr2", nom:"Cultures vivaces",effet:"Bio-dôme : croissance +25 % ; Enclos : +1 produit à la tonte." },
     { id:"pr3", nom:"Œil du mineur",   effet:"+chance de minerais rares en minant." },
     { id:"pr4", nom:"Sac renforcé",    effet:"+15 places de sac (50 → 65)." }
   ]},
-  { id:"artisan", nom:"Artisan", noeuds:[
+  { id:"artisan", nom:"Artisanat", noeuds:[
     { id:"ar1", nom:"Récup d'atelier",   effet:"20 % de chance de récupérer 1 unité de l'ingrédient le plus abondant de la recette." },
     { id:"ar2", nom:"Production en série",effet:"10 % de chance de fabriquer 2 objets pour 1." },
     { id:"ar3", nom:"Apprentissage",     effet:"+1 point de formation bonus par objet fabriqué." },
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
   ]},
-  { id:"traqueur", nom:"Traqueur", noeuds:[
+  { id:"traqueur", nom:"Combativité", noeuds:[
     { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles." },
     { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },

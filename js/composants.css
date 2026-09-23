@@ -350,3 +350,12 @@
 .cartes-paire { display:flex; gap:8px; margin-bottom:8px; }
 .cartes-paire .action { flex:1 1 0; margin-bottom:0; min-width:0; }
 @media (max-width:520px){ .cartes-paire { flex-direction:column; } }
+
+/* v1.11 — Bandeau des perturbations de la Poste. Sert aussi de REPLI si
+   `images/poste_perturbee.png` n'est pas encore déposée : il ne faut jamais
+   qu'une perturbation passe pour une panne. */
+.poste-perturb{ border:1px solid #ff5257; border-radius:10px; padding:10px 12px; margin:0 0 10px;
+  background:linear-gradient(180deg, rgba(255,82,87,.14), rgba(255,82,87,.05)); }
+.poste-perturb-titre{ font-weight:700; letter-spacing:.08em; color:#ff5257; margin-bottom:6px;
+  text-shadow:0 0 8px rgba(255,82,87,.55); }
+.poste-perturb p{ margin:4px 0; font-size:13px; }

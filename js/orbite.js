@@ -21,21 +21,24 @@
 
    On ne passe pas d'une carte à l'autre en cliquant : il faut EMBARQUER.
    `etat.secteur` vaut "silene" (par défaut) ou "ecart". Le départ pose le
-   joueur sur la Base de l'Écart, le retour le repose dans SA cité.
+   joueur sur le Perchoir, le retour le repose dans SA cité.
 
    ⚠ Le serveur, lui, ne connaît que pos_x / pos_y : pour lui, un joueur parti
    en orbite est encore là où il a décollé (donc en ville : air respirable,
    présent en expédition). À traiter côté SQL avant l'ouverture — voir
    PASSATION. En attendant, le retour repose bien le joueur dans sa cité, donc
    la position reste cohérente au sol. */
-/* ⚠ v0.91 — « L'Écart » servait à la fois de nom de SECTEUR et de nom de BASE,
-   ce que le lore contredit : le secteur s'appelle Nielle (LORE_Corporation §4)
-   et « L'Écart » n'était que le nom courant de la base — devenue Le Perchoir.
+/* ⚠ v0.91 — « L'Écart » servait à la fois de nom de SECTEUR et de nom de BASE.
+   v0.97 (LORE.md §9) : la base s'appelle Le Perchoir (officiel : Relais
+   Triptolème-1) ; le SECTEUR s'appelle officiellement « Secteur Triptolème »
+   (ancien « Nielle », abandonné). Décision LORE.md §13 : l'interface affiche
+   « Triptolème » (exception voulue à la règle « officiel réservé aux quêtes »
+   d'espace-data.js, qui vaut pour les LIEUX).
    ⚠ L'identifiant technique ne change PAS : `profils.secteur` vaut toujours
    'ecart', et `enEcart()` garde son nom. Seuls les textes bougent. */
-const SECTEUR_NOM = "Nielle";
+const SECTEUR_NOM = "Triptolème";
 
-/* Coût du saut Silène ⇄ L'Écart. C'est une SORTIE D'ATMOSPHÈRE, pas un vol
+/* Coût du saut Silène ⇄ Triptolème. C'est une SORTIE D'ATMOSPHÈRE, pas un vol
    d'orbite : distance fixe, donc coût fixe en unités de vol. Le carburant
    dépend du vaisseau (conso × unités), l'énergie du pilote.
       Navette légère  : 18 L sur 40  → 2 allers-retours par plein
@@ -56,7 +59,7 @@ function coutSaut(){
 
 function enEcart(){ return etat.secteur === "ecart"; }
 
-/* Sur la Base de l'Écart : c'est elle qui ouvre les services (auberge,
+/* Sur le Perchoir : c'est lui qui ouvre les services (auberge,
    comptoir, poste, gouvernement, quêtes). Ailleurs dans le secteur, on est
    « en vol » et les hubs se ferment, comme en pleine nature sur Silène. */
 /* v0.91 — La Carcasse, comme le Perchoir : un lieu ou les hubs s'ouvrent.
@@ -67,6 +70,7 @@ function enEcart(){ return etat.secteur === "ecart"; }
    C'est arrivé parce que l'appel n'était que dans `volVers` : décollage,
    rentrée et remorquage l'avaient oublié. Un seul point d'entrée, désormais. */
 function majApresDeplacement(){
+  if(typeof queteArrivee==="function") queteArrivee();   // v0.97 : les quêtes ont des étapes en orbite
   if(typeof majHub==="function")   majHub();
   if(typeof majOrbite==="function") majOrbite();
   if(typeof afficher==="function") afficher();
@@ -140,6 +144,18 @@ async function partirVersEcart(){
   etat.secteur   = "ecart";
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
   journal(`Décollage. Arrivée : ${base?base.nom:"la base"} — secteur ${SECTEUR_NOM}.`,"gain","voyage");
+  /* v0.97 — LE CHEMIN VERS Q6. Au premier décollage (tant que Q6 n'est pas COMMENCÉE),
+     la coque encaisse un choc léger et un pilote du Perchoir envoie le joueur chez
+     Galm, à La Carcasse : c'est là que se prennent les quêtes de Triptolème.
+     8 % des PV : assez pour se voir, jamais assez pour franchir le seuil d'avarie. */
+  const _q6Commencee = typeof queteEtat==="function"
+        && (queteEtat().done.includes("q6") || (queteEtat().active && queteEtat().active.id==="q6"));
+  if(!etat.premierSautQ6 && typeof queteEtat==="function" && !_q6Commencee
+     && typeof abimerVaisseau==="function" && typeof pvMax==="function" && etat.vaisseau){
+    etat.premierSautQ6 = true;
+    abimerVaisseau(Math.max(1, Math.round(pvMax()*0.08)), "sortie d'atmosphère");
+    journal("En sortant de l'atmosphère, un choc sourd secoue la coque — quelques plaques ont pris un coup. Au Perchoir, un pilote jette un œil à tes rivets et hausse les épaules : « Va voir Galm, à La Carcasse. Elle rafistole tout ce qui vole. Et elle cherche toujours des bras. »","alerte","voyage");
+  }
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();
   ouvrirOrbite();
@@ -175,7 +191,7 @@ async function revenirVersSilene(){
 }
 
 /* ===========================================================
-   VOL DANS NIELLE — v0.91, brique 1
+   VOL DANS TRIPTOLÈME (ex-« Nielle ») — v0.91, brique 1
    Coût PROPORTIONNEL à la distance, comme sur Silène (`coutTrajet`).
    ⚠ Pas de table de prix entre lieux : 19 objets font 171 paires, et le mode
    placement peut tout déplacer — la table serait fausse au premier glissement.
@@ -250,10 +266,11 @@ async function volVers(l){
   if((etat.carburant||0) < j.cout.litres){
     journal("Impossible de transférer assez de carburant dans le réservoir.","alerte"); return false;
   }
-  if(!await agirServeur({ cout:j.cout.energie, motif:"vol_nielle" })) return false;
+  if(!await agirServeur({ cout:j.cout.energie, motif:"vol_espace" })   /* v0.97 : ex-« vol_nielle ». Aucune fonction serveur ne lit ce motif (vérifié : 0 occurrence) ; hors MOTIFS_ACTION exprès. */) return false;
   etat.carburant = Math.max(0, (etat.carburant||0) - j.cout.litres);
   etat.posEspace = dest;
   journal(`Cap sur ${espaceNom(l)} — ${Math.round(j.cout.d)} u, ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain","voyage");
+  if(l.type === "decor") journal(`${espaceNom(l)} : ${l.ici || "rien, pour l'instant."}`, "", "voyage");   // v1.01
   /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
      un joueur intercepté à mi-parcours ne saurait plus où il est, et les
      dégâts de coque changeraient le coût du vol déjà payé. */
@@ -423,7 +440,7 @@ function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <
 
 /* ===========================================================
    SECOURS — v0.91
-   ⚠ Un joueur sans vaisseau à l'Écart est BLOQUÉ HORS DE LA CARTE PRINCIPALE :
+   ⚠ Un joueur sans vaisseau à Triptolème est BLOQUÉ HORS DE LA CARTE PRINCIPALE :
    il ne peut ni descendre, ni miner, ni cultiver, ni même mourir utilement.
    C'est une impasse, pas une difficulté. Le cas devient courant depuis que la
    Navette de réserve expire au bout de dix jours.
@@ -472,7 +489,7 @@ async function secoursOrbite(){
   const aSec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
   if(etat.vaisseau && !cloue && !aSec) return false;       // il lui reste un moyen de rentrer
   /* ⚠ ORDRE AVEC LA MORT. Un joueur mort est derrière un écran bloquant : le
-     redescendre pendant ce temps contredirait la règle « mourir à l'Écart ne
+     redescendre pendant ce temps contredirait la règle « mourir à Triptolème ne
      fait pas descendre », et il se réveillerait chez lui sans avoir rien payé.
      On attend donc la résurrection — `ressusciter` rappelle le secours juste
      après, et il joue à ce moment-là, dans le bon ordre : on se réveille à la
@@ -526,7 +543,14 @@ function orbiteDebloquee(){ return etat.espace1===true && !!etat.vaisseau; }
 /* Le bouton n'apparaît que si tout est réuni */
 function majBoutonOrbite(){
   const b=document.querySelector("#ouvrir-orbite"); if(!b) return;
-  const ok = orbiteDebloquee();
+  /* v0.98 — au sol de La Braise : ni carte de Silène ni carte de l'orbite,
+     seulement la carte de la planète (on remonte par le vaisseau). */
+  const bb=document.querySelector("#ouvrir-braise");
+  const surf = (typeof enSurface==="function") && enSurface();
+  if(bb){ bb.hidden = !surf; bb.style.display = surf ? "" : "none";
+    const c=(typeof surfaceCfg==="function")?surfaceCfg():null; const sp=bb.querySelector("span");
+    if(sp && c) sp.textContent = `Carte — ${c.nom}`; }
+  const ok = orbiteDebloquee() && !surf;
   b.hidden = !ok;
   // button.action impose display:flex, qui l'emporterait sur l'attribut hidden.
   b.style.display = ok ? "" : "none";
@@ -539,10 +563,10 @@ function majBoutonOrbite(){
   }
   // La carte de Silène n'a pas de sens depuis l'orbite.
   const bc=document.querySelector("#ouvrir-carte");
-  if(bc){ const loin = enEcart();
+  if(bc){ const loin = enEcart() || surf;
     bc.disabled = loin;
     bc.style.opacity = loin ? ".45" : "";
-    const c2=bc.querySelector(".cout"); if(c2) c2.textContent = loin ? "tu es en orbite" : "se déplacer"; }
+    const c2=bc.querySelector(".cout"); if(c2) c2.textContent = surf ? "tu es sur La Braise" : (loin ? "tu es en orbite" : "se déplacer"); }
 }
 
 /* ⚠ v0.83 — les destinations dessinées « à la main » (rectangles, cercles)
@@ -611,6 +635,7 @@ function majOrbite(){
   }
   /* v0.88 — marqueur du joueur, comme sur Silène (carte.js) : sans lui, on ne
      sait pas où l'on est dans le secteur. Dessiné EN DERNIER, donc au-dessus. */
+  if(!_placementActif && typeof marqueursQueteEspaceHtml==="function") html += marqueursQueteEspaceHtml();   // v0.97
   if(etat.posEspace && !_placementActif){
     const col = (FACTIONS.find(f=>f.id===etat.faction)||{}).couleur || "#ff9a44";   // même source que carte.js
     const px = etat.posEspace.x, py = etat.posEspace.y;
@@ -676,17 +701,21 @@ function majOrbite(){
       if(_placementActif) return;                 // en placement, le clic sert à glisser
       const l = espaceLieu(g.dataset.lieu); if(!l) return;
       const z=document.querySelector("#orbite-info"); if(!z) return;
-      // v0.91 : le décor répond, mais ne mène nulle part. Il n'est plus muet.
+      /* v1.01 — LE DÉCOR SE VISITE. Avant, il répondait « rien qui mérite le
+         carburant d'un détour » : on n'y allait jamais, et on n'y dépensait rien.
+         Désormais on y vole comme vers un lieu (même coût, mêmes sondes) et on
+         constate sur place qu'il n'y a rien — pour l'instant (`ici`, espace-data). */
       if(l.type === "decor"){
-        z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Rien qui mérite le carburant d'un détour."}</span>`;
-        return;
+        if(surLieuEspace(l)){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">Tu y es. ${l.ici||"Rien, pour l'instant."}</span>`; return; }
+        if(!enEcart()){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`; return; }
+        volVers(l); return;
       }
       if(l.verrou){
         z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
         return;
       }
       /* v0.91 — le bandeau annonce le coût du vol et propose de partir.
-         ⚠ Le bouton n'apparaît QUE si l'on est à l'Écart : depuis Silène, la
+         ⚠ Le bouton n'apparaît QUE si l'on est à Triptolème : depuis Silène, la
          carte spatiale se consulte mais ne se parcourt pas. */
       /* ⚠ v0.91 — AUCUN BOUTON DANS CE BANDEAU. Il est à hauteur fixe : une
          ligne de trop ne se rogne pas, elle DISPARAÎT, et le bouton avec.

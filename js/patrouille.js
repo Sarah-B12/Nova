@@ -91,7 +91,8 @@ function ouvrirPatrouille(){
   monterPatrouille();
   const m = document.querySelector("#patrouille-modale");
   const aHack  = ordiHackEquipe();
-  const aObjet = placesUtilisees() > 0;
+  // v0.97 — un objet lié ne se sacrifie pas : il ne compte pas comme « de quoi faire diversion ».
+  const aObjet = (etat.sacOrdre||[]).some(id => (etat.sac[id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(id)));
   m.innerHTML = `<div class="patr-cadre">
     <div class="patr-tete">⚠ Patrouille du Protocole</div>
     <p class="patr-desc">Une patrouille de sentinelles du Protocole te barre la route. Que fais-tu ?</p>
@@ -134,7 +135,7 @@ async function patrouilleHacker(){
 
 function patrouilleDiversionListe(){
   const m = document.querySelector("#patrouille-modale");
-  const stacks = (etat.sacOrdre||[]).filter(id => (etat.sac[id]||0)>0);
+  const stacks = (etat.sacOrdre||[]).filter(id => (etat.sac[id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(id)));   // v0.97
   let html = `<div class="patr-cadre">
     <div class="patr-tete">⚠ Créer une diversion</div>
     <p class="patr-desc">Choisis un objet à abandonner pour détourner la patrouille et filer.</p>

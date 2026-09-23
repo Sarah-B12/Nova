@@ -169,7 +169,7 @@ function retourImpossible(){
   return besoin > 0 && besoin >= (etat.jauges ? (etat.jauges.o2|0) : 0);
 }
 function bloqueSansO2(){
-  if(typeof enEcart==="function" && enEcart()) return false;   // l'orbite a son propre secours
+  if(typeof horsSilene==="function" && horsSilene()) return false;   // l'orbite et les planètes ont leurs propres règles (v0.98)
   if(typeof villeActuelle==="function" && villeActuelle()) return false;
   if(o2DansLeSac()) return false;                              // il lui reste de quoi respirer
   return _refusO2 || retourImpossible();

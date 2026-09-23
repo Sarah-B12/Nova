@@ -130,7 +130,7 @@ function _ligneJoueur(j, o){
      spatiale c'est une information utile (on sait qui peut nous retrouver là-
      haut), et sur un inconnu ce serait de la surveillance. */
   const secteurNom = (j.secteur && j.secteur !== "silene")
-    ? (typeof SECTEUR_NOM !== "undefined" ? SECTEUR_NOM : "Nielle") : "Silène";
+    ? (typeof SECTEUR_NOM !== "undefined" ? SECTEUR_NOM : "Triptolème") : "Silène";
   const ou = o.ami ? ` · <span class="comm-ou">Sur ${secteurNom}</span>` : "";
   const infos = o.ami
     ? `<span class="comm-meta">niv. ${j.niveau}${cred} · ${j.metier||"—"} · ${fac}${ou}</span>`

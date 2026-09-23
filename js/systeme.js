@@ -5,11 +5,26 @@
 /* ---------- Énergie ---------- */
 // Coût en % par action (se déplacer en vaisseau coûtera peu ; miner beaucoup).
 const ACTION_COUT = { miner:12, explorer:10, combattre:8, reposer:0 };
+/* v1.10 — RACINES : +0,5 %/h (soit +1 % toutes les 2 h) quand on se trouve dans
+   le cercle de SA PROPRE faction. ⚠ BARÈME DUPLIQUÉ de `energie_serveur`
+   (BACKEND_PLAN §6) : le serveur fait foi, ceci n'est que l'affichage entre
+   deux synchros. Le drapeau vient de la RPC `cercle_actif`, lue à la connexion
+   (un membre du gouvernement à 50+ suffit, quel que soit son poste). */
+let _racinesActif = false;
+async function chargerRacines(){
+  if(typeof sb==="undefined" || !sb || !etat.faction) return;
+  try{ const { data } = await sb.rpc("cercle_actif",{ p_faction:etat.faction, p_cercle:"racines" });
+    _racinesActif = (data|0) >= 50;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "systeme.js#racines"); }
+}
+function regenRacines(){
+  return (_racinesActif && typeof villeActuelle==="function" && villeActuelle()===etat.faction) ? 0.5 : 0;
+}
 // Régénération : +10 %/heure. Recalculée en continu, y compris hors ligne.
 function regenEnergie(){
   const now = Date.now();
   const heures = (now - etat.energieMaj) / 3600000;
-  if (heures > 0) { etat.energie = Math.min(100, etat.energie + heures * (10 + aptRegenEnergie())); etat.energieMaj = now; }
+  if (heures > 0) { etat.energie = Math.min(100, etat.energie + heures * (10 + aptRegenEnergie() + regenRacines())); etat.energieMaj = now; }
 }
 // Dépense l'énergie d'une action ; refuse (et prévient) si insuffisant.
 function depenserEnergie(cout){
@@ -24,7 +39,7 @@ const JOURNAL_CATS = [
   {id:"minage",nom:"Minage"}, {id:"agri",nom:"Agri./élevage"}, {id:"combat",nom:"Combats"},
   {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"},
   {id:"poste",nom:"La Poste"},         // v0.69 : séparé du social — colis, envois, retours, refus
-  /* v0.91 — déplacements : marche sur Silène, vols dans Nielle, décollages,
+  /* v0.91 — déplacements : marche sur Silène, vols dans Triptolème, décollages,
      rentrées, remorquages. Ils noyaient « Système », qui doit rester le journal
      des choses qu'on n'a pas demandées. */
   {id:"voyage",nom:"Voyage"}
@@ -161,7 +176,15 @@ function _bulle(t, type){
    superposaient aux boutons. On vide la pile à chaque changement de vue. */
 function fermerToutesBulles(){
   const z=document.querySelector("#bulles"); if(!z) return;
-  [...z.children].forEach(b=>_bulleFermer(b, true));
+  [...z.children].forEach(b=>{ if(!b.classList.contains("tenace")) _bulleFermer(b, true); });
+}
+/* v1.00 — BULLE TENACE : la dernière bulle survit au changement de vue et
+   reste plus longtemps. Sert à la sonde : la rencontre se résout en plein vol,
+   puis l'arrivée change de vue et effaçait le récit avant qu'on le lise. */
+const BULLE_TENACE_MS = 9000;
+function bulleTenace(){
+  const b=_bulleDerEl; if(!b || !b.parentNode) return;
+  b.classList.add("tenace"); clearTimeout(b._t); b._t=setTimeout(()=>_bulleFermer(b), BULLE_TENACE_MS);
 }
 function _bulleFermer(b, tout_de_suite){
   if(!b || !b.parentNode) return;
@@ -214,8 +237,20 @@ function _heureJ(d){
   const memeJour = t.getDate()===n.getDate() && t.getMonth()===n.getMonth() && t.getFullYear()===n.getFullYear();
   return memeJour ? hh : `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")} ${hh}`;
 }
+/* v1.00 — COPIER LE JOURNAL. L'affichage inverse l'ordre (column-reverse :
+   le plus récent en bas) mais la copie suivait l'ordre du DOM : un testeur
+   collait son journal à l'envers sur son mur. On recompose le texte dans
+   l'ordre AFFICHÉ, ligne par ligne. */
+function _journalCopie(ev){
+  const z=ev.currentTarget, sel=window.getSelection && window.getSelection(); if(!sel || sel.isCollapsed) return;
+  const lignes=[...z.querySelectorAll(".msg")].filter(m=>sel.containsNode(m, true));
+  if(lignes.length < 2 || !ev.clipboardData) return;   // une seule ligne : la copie normale convient
+  const txt=lignes.reverse().map(m=>[...m.childNodes].map(n=>(n.textContent||"").trim()).filter(Boolean).join(" ")).join("\n");
+  ev.clipboardData.setData("text/plain", txt); ev.preventDefault();
+}
 function majJournal(){
   const z=document.querySelector("#journal"); if(!z) return;
+  if(!z.dataset.copie){ z.dataset.copie="1"; z.addEventListener("copy", _journalCopie); }
   _journalStyle();
   if(!etat.journal) etat.journal=[];
   _purgerJournal();

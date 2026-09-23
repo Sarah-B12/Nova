@@ -86,12 +86,15 @@ function ecranMort(){
         const { data } = await sb.rpc("ressusciter");
         if(!data || !data.ok){ journal("Résurrection impossible.","alerte"); b.disabled = false; return; }
         /* On se réaligne entièrement sur le serveur : position, jauges, crédits.
-           ⚠ v0.91 — mourir à l'Écart ne fait PAS redescendre : sinon se laisser
+           ⚠ v0.91 — mourir à Triptolème ne fait PAS redescendre : sinon se laisser
            mourir serait le moyen le moins cher de rentrer, sans carburant ni
            énergie. Le serveur renvoie alors `pos:null` et on ne touche ni à
            `etat.pos` ni à `etat.secteur` ; on se réveille à la base, vaisseau
            intact, et on redescend par ses propres moyens. */
         if(data.pos && typeof data.pos.x === "number") etat.pos = { x:data.pos.x, y:data.pos.y };
+        /* v0.98 — mourir à la SURFACE d'une planète ramène au Perchoir : le serveur
+           renvoie secteur 'ecart'. On s'aligne, et on oublie la position au sol. */
+        if(data.secteur && data.secteur !== etat.secteur){ etat.secteur = data.secteur; etat.surface = null; }
         const enOrbite = (data.secteur && data.secteur !== "silene");
         if(enOrbite){
           const b = (typeof espaceLieu==="function") ? espaceLieu("base") : null;

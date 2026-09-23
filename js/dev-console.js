@@ -134,7 +134,8 @@ function devPermis(){ etat.permisVaisseau = !etat.permisVaisseau; journal(`[DEV]
 function devEspace1(){ etat.espace1 = !etat.espace1; journal(`[DEV] route vers l'orbite ${etat.espace1?"ouverte":"fermée"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
 function _devRafraichirQuetes(){ if(typeof rafraichirQuetes==="function") rafraichirQuetes(); else if(typeof afficher==="function") afficher(); }
 function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={done:[],active:null}); q.done=(q.done||[]).filter(x=>x!==id); if(q.active&&q.active.id===id) q.active=null; journal(`[DEV] quête ${id} réinitialisée.`,"gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
-function devResetQuetes(){ etat.quetes={done:[],active:null}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
+/* v1.03 : `paRecu` survit à la remise à zéro (les PA ne se touchent qu'une fois). */
+function devResetQuetes(){ const pr=(etat.quetes&&etat.quetes.paRecu)||[]; etat.quetes={done:[],active:null,paRecu:pr}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
 
 /* ---------- Rendu ---------- */
 /* Mode tranquillité — onglet Recherche, donc accessible aux DEUX consoles
@@ -286,7 +287,7 @@ function majDev(){
     });
     const bso=av.querySelector("#dev-sonde");
     if(bso) bso.addEventListener("click", ()=>{
-      if(typeof enEcart!=="function" || !enEcart()){ journal("[dev] Il faut être dans le secteur Nielle.","alerte"); return; }
+      if(typeof enEcart!=="function" || !enEcart()){ journal("[dev] Il faut être dans le secteur Triptolème.","alerte"); return; }
       if(typeof ouvrirSonde==="function") ouvrirSonde();
     });
     const bcr=av.querySelector("#dev-coque-ok");
@@ -552,6 +553,7 @@ function _devAfficherFiche(p){
         <tr><td>Compte créé</td><td colspan="3">${dh(p.cree_le)} · dernière activité ${dh(p.derniere_activite)}</td></tr>
         <tr><td>E-mail</td><td colspan="3" class="dev-note">${echapper(p.email||"—")}</td></tr>
         <tr><td>État</td><td colspan="3">${etatTxt}</td></tr>
+        <tr><td>Compagnon</td><td colspan="3"><span id="f-bete">…</span> <button class="mini" id="f-bete-renommer" hidden>Renommer</button></td></tr>
       </table>
     </div>
 
@@ -571,6 +573,18 @@ function _devAfficherFiche(p){
       <div class="dev-champ"><select id="f-item">${opts}</select>
         <input id="f-qte" type="number" value="1" min="1" style="max-width:64px">
         <button class="mini" id="f-item-btn">Donner</button></div>
+    </div>
+
+    <div class="dev-bloc"><h4>Quêtes</h4>
+      <div class="dev-champ"><select id="f-quete">
+          <option value="">— Toutes les quêtes —</option>
+          ${(typeof QUETES!=="undefined"?QUETES:[]).map(q=>`<option value="${q.id}">${q.id.toUpperCase()} — ${echapper(q.nom)}</option>`).join("")}
+        </select>
+        <label class="dev-note" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="f-quete-affut"> effacer aussi les jours d'affût</label>
+        <button class="mini" id="f-quete-verrou">Lever le verrou d'échec</button>
+        <button class="mini danger" id="f-quete-btn">Rendre rejouable</button></div>
+      <p class="dev-note"><b>Lever le verrou</b> : la quête choisie (ou toutes) redevient jouable tout de suite, sans attendre les 8 h — la progression n'est pas touchée.<br>
+      <b>Rendre rejouable</b> : la quête repart à zéro (abandonnée si en cours). Les <b>PA</b> et les <b>points de Cercle</b> déjà gagnés ne seront pas reversés ; la bête reste. Le joueur connecté devra recharger sa page.</p>
     </div>
 
     <div class="dev-bloc"><h4>Journal du joueur</h4>
@@ -596,6 +610,24 @@ function _devAfficherFiche(p){
     const maj = (data && data.ok && (data.profils||[]).find(x=>x.id===p.id));
     if(maj) _devAfficherFiche(maj);
   };
+
+  /* v1.00 — la bête du joueur (Q15). Le joueur ne peut jamais la renommer ;
+     le staff oui (admin_renommer_bete, tracé dans admin_log). */
+  (async ()=>{
+    const el=z.querySelector("#f-bete"), br=z.querySelector("#f-bete-renommer"); if(!el) return;
+    const b = (typeof beteDe==="function") ? await beteDe(p.id) : null;
+    if(!b){ el.textContent="aucun"; return; }
+    const i = (typeof beteInfo==="function") ? beteInfo(b.espece) : null;
+    el.innerHTML = `<b>${echapper(b.nom)}</b> <span class="dev-note">(${i?i.nom:b.espece})</span>`; br.hidden=false;
+    br.addEventListener("click", async ()=>{
+      const n = prompt(`Nouveau nom pour le compagnon de ${p.nom} (2 à 20 lettres ; espaces, tirets, apostrophes entre deux lettres) :`, b.nom);
+      if(n==null) return;
+      if(typeof beteNomValide==="function" && !beteNomValide(n)){ alert("Nom refusé : 2 à 20 lettres, espaces, tirets ou apostrophes seulement entre deux lettres."); return; }
+      const { data, error } = await sb.rpc("admin_renommer_bete", { p_profil: p.id, p_nom: n });
+      if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+      journal(`[STAFF] Compagnon de ${p.nom} renommé : ${data.ancien} → ${data.nom}.`,"alerte"); rafraichir();
+    });
+  })();
 
   z.querySelector("#f-soigner").addEventListener("click", async ()=>{
     if(!confirm(`Remettre santé, moral, O₂ et énergie de ${p.nom} à 100 % ?`)) return;
@@ -627,6 +659,30 @@ function _devAfficherFiche(p){
       { p_profil: p.id, p_item: id, p_qte: q, p_motif: "console staff" });
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
     journal(`[STAFF] ${data.donne}× ${item(id).nom} à ${p.nom}${data.partiel?" (sac plein)":""}.`,"gain"); rafraichir();
+  });
+
+  /* v1.03 — remise à zéro d'une quête POUR UN AUTRE JOUEUR (RPC admin_reset_quete).
+     ⚠ Elle incrémente `_rev` : l'onglet du joueur, s'il est ouvert, se verra
+     refuser sa prochaine sauvegarde et lui demandera de recharger. Sans ça, il
+     réécrirait son ancienne progression par-dessus la remise à zéro. */
+  z.querySelector("#f-quete-btn").addEventListener("click", async ()=>{
+    const qid = z.querySelector("#f-quete").value || null;
+    const affut = !!z.querySelector("#f-quete-affut").checked;
+    const quoi = qid ? qid.toUpperCase() : "TOUTES les quêtes";
+    if(!confirm(`Rendre ${quoi} rejouable pour ${p.nom} ?${affut?"\nLes jours d'affût déjà tenus seront effacés.":""}`)) return;
+    const { data, error } = await sb.rpc("admin_reset_quete",
+      { p_profil: p.id, p_quete: qid, p_affut: affut });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${quoi} remise à zéro pour ${p.nom}${data.affut_efface?` (${data.affut_efface} jour(s) d'affût effacé(s))`:""}.`,"alerte");
+  });
+
+  /* v1.04 — lever le verrou d'échec (8 h) sans toucher à la progression.
+     Marche aussi sur soi-même : il suffit de chercher son propre pseudo. */
+  z.querySelector("#f-quete-verrou").addEventListener("click", async ()=>{
+    const qid = z.querySelector("#f-quete").value || null;
+    const { data, error } = await sb.rpc("admin_debloquer_quete", { p_profil: p.id, p_quete: qid });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(data.leves ? `[STAFF] ${data.leves} verrou(s) levé(s) pour ${p.nom}.` : `[STAFF] ${p.nom} n'avait aucun verrou${qid?" sur "+qid.toUpperCase():""}.`, "gain");
   });
 
   // v0.96 — rendu partagé avec la page profil (profil-page.js)

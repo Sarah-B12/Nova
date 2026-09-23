@@ -22,10 +22,16 @@
     .poste-types input[type=radio]{ width:18px; height:18px; min-width:18px; flex:0 0 18px;
       margin:0; padding:0; accent-color:var(--orange,#ff8a3d); }
     .poste-envoi input:-webkit-autofill{ -webkit-box-shadow:0 0 0 40px #0f1830 inset !important; -webkit-text-fill-color:var(--texte,#dfe8f2) !important; }
-    .poste-envoi #poste-qte{ width:80px; } .poste-envoi #poste-prix{ width:180px; }
+    /* v1.02 — chaque chiffre a son étiquette (retour testeur : « 1 / 1 » et « 0 »
+       côte à côte, sans rien dire de ce qu'ils étaient). */
+    .poste-champs{ display:flex; flex-wrap:wrap; gap:10px; margin-top:9px; }
+    .poste-champ{ display:flex; flex-direction:column; gap:4px; flex:1 1 140px; min-width:0; font-size:12px; color:var(--sourdine); }
+    .poste-champ.qte{ flex:0 1 130px; }
+    .poste-champ-titre{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .poste-champ-note{ font-size:11px; opacity:.85; min-height:14px; }
     .poste-types{ display:flex; flex-wrap:wrap; gap:12px; }
     .poste-types label{ display:flex; align-items:center; gap:7px; cursor:pointer; font-size:14px; white-space:nowrap; }
-    .poste-dispo{ font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); margin-left:-4px; }
+    .poste-dispo{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
     .hub-banniere{ width:100%; max-height:150px; object-fit:cover; border-radius:10px; margin-bottom:12px; display:block; }
   `;
   document.head.appendChild(st);
@@ -54,12 +60,37 @@ function _ligneEnvoye(o){
 let _posteMonId = null;
 let _postePrec = -1;
 
-function _posteBanniere(){ return `<img src="images/poste.png" alt="La Poste" class="hub-banniere" onerror="this.remove()">`; }
+/* v1.11 — PERTURBATIONS DU RÉSEAU. Cinq jours par mois, tirés au hasard et sans
+   prévenir : 48 h avant qu'un envoi soit retirable, et taxe triplée. L'état
+   vient du serveur (`poste_perturbee`) ; le client ne fait que l'afficher.
+   ⚠ La taxe envoyée au serveur reste le BARÈME NORMAL (`p_taxe`) : c'est
+   `poste_envoyer` qui multiplie. Ici, on ne multiplie que l'AFFICHAGE. */
+let _postePert = null;
+let _posteAvertiSession = false;
+function _postePerturbee(){ return !!(_postePert && _postePert.active); }
+function _posteMultTaxe(){ return _postePerturbee() ? (_postePert.taxe_mult||3) : 1; }
+function _posteBanniere(){
+  if(!_postePerturbee())
+    return `<img src="images/poste.png" alt="La Poste" class="hub-banniere" onerror="this.remove()">`;
+  /* L'image perturbée peut ne pas être encore déposée : le bandeau de repli
+     dit la même chose, pour qu'on ne prenne jamais ça pour une panne. */
+  return `<img src="images/poste_perturbee.png" alt="La Poste — perturbations" class="hub-banniere" onerror="this.remove()">
+    <div class="poste-perturb">
+      <div class="poste-perturb-titre">⚠ PERTURBATIONS DU RÉSEAU</div>
+      <p>Les relais dérivent. Pendant <b>5 jours</b>, tout ce que tu envoies met <b>48 h</b> à arriver chez le destinataire, et la <b>taxe est triplée</b>.</p>
+      <p>Pour ce qui presse, passe par le <b>marché</b> : il est ouvert et immédiat.</p>
+    </div>`;
+}
 
 async function _chargerPoste(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return [];
   const s=await sessionActuelle(); if(!s) return []; _posteMonId=s.user.id;
   try{ await sb.rpc("poste_purge"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#1"); }
+  try{ const { data } = await sb.rpc("poste_perturbee"); _postePert = data || null; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#pert"); }
+  if(_postePerturbee() && !_posteAvertiSession){
+    _posteAvertiSession = true;
+    journal("La Poste est perturbée : 48 h de retard sur les envois et taxe triplée. Le marché, lui, reste immédiat.","alerte");
+  }
   const { data, error } = await sb.from("poste").select("*").order("cree_le",{ascending:false});
   if(error){ console.warn("[poste]", error.message); return []; }
   const rows=data||[]; const ids=new Set(); rows.forEach(r=>{ ids.add(r.de_id); ids.add(r.a_id); });
@@ -90,8 +121,14 @@ async function majPoste(){
   _brancherPoste(z);
 }
 
+function _posteEnRoute(o){ return !!(o.dispo_le && new Date(o.dispo_le).getTime() > Date.now()); }   // v1.11
 function _ligneRecu(o){
   const quand = (typeof _dateHeure==="function") ? _dateHeure(o.echeance) : "";
+  if(_posteEnRoute(o)){
+    const quoi = o.type==="credits" ? `<b>${o.montant} ₡</b>`
+      : (o.type==="cadeau" ? "🎁 un <b>cadeau</b>" : `<b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite}`);
+    return `<div class="poste-ligne"><span class="poste-txt">${quoi} de <b>${echapper(o.deNom||"?")}</b> — <b>en route</b><span class="itip-gris" style="display:block;font-size:11px">réseau perturbé : disponible dans ${_resteAvant(o.dispo_le)}</span></span></div>`;
+  }
   let desc;
   if(o.type==="credits") desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${o.montant} ₡</b>`;
   else if(o.type==="cadeau") desc = `🎁 Un <b>cadeau</b> de <b>${echapper(o.deNom||"?")}</b> (contenu caché)`;
@@ -107,7 +144,7 @@ function _ligneRetour(o){
 }
 
 function _vueEnvoyer(){
-  const sac = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0);
+  const sac = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(a.id)));   // v0.97
   const opts = sac.map(a=>`<option value="${a.id}">${a.nom} (×${etat.sac[a.id]})</option>`).join("");
   return `<div class="poste-envoi">
     <input type="text" id="poste-dest" placeholder="Destinataire (pseudo)" maxlength="24">
@@ -118,11 +155,18 @@ function _vueEnvoyer(){
     </div>
     <div id="poste-bloc-objet">
       ${sac.length?`<select id="poste-item">${opts}</select>
-      <input type="number" id="poste-qte" min="1" value="1" title="Quantité" style="max-width:70px"><span class="poste-dispo" id="poste-dispo"></span>
-      <input type="number" id="poste-prix" min="0" value="0" title="Prix à payer par le destinataire (0 = gratuit)" placeholder="Prix (0=gratuit)">`
+      <div class="poste-champs">
+        <label class="poste-champ qte"><span class="poste-champ-titre">Quantité</span>
+          <input type="number" id="poste-qte" min="1" value="1" inputmode="numeric">
+          <span class="poste-champ-note poste-dispo" id="poste-dispo"></span></label>
+        <label class="poste-champ" id="poste-prix-lbl"><span class="poste-champ-titre">Prix à payer (₡)</span>
+          <input type="number" id="poste-prix" min="0" value="0" inputmode="numeric">
+          <span class="poste-champ-note">payé par le destinataire · 0 = gratuit</span></label>
+      </div>`
       :`<p class="vide">Ton sac est vide.</p>`}
     </div>
-    <div id="poste-bloc-credits" hidden><input type="number" id="poste-montant" min="1" value="100" placeholder="Montant en crédits"></div>
+    <div id="poste-bloc-credits" hidden><label class="poste-champ"><span class="poste-champ-titre">Montant à envoyer (₡)</span>
+      <input type="number" id="poste-montant" min="1" value="100" inputmode="numeric"></label></div>
     <p class="itip-gris" id="poste-taxe">Taxe : —</p>
     <button class="mini" id="poste-envoyer-btn">Envoyer</button>
   </div>`;
@@ -138,7 +182,7 @@ function _brancherPoste(z){
     const t=_posteTypeChoisi(z);
     const bo=z.querySelector("#poste-bloc-objet"), bc=z.querySelector("#poste-bloc-credits");
     if(bo) bo.hidden = (t==="credits"); if(bc) bc.hidden = (t!=="credits");
-    const pp=z.querySelector("#poste-prix"); if(pp) pp.style.display = (t==="cadeau")?"none":"";   // cadeau = gratuit
+    const pp=z.querySelector("#poste-prix-lbl"); if(pp) pp.style.display = (t==="cadeau")?"none":"";   // cadeau = gratuit
     maj();
   }));
   ["#poste-item","#poste-qte","#poste-montant"].forEach(s=>{ const el=z.querySelector(s); if(el) el.addEventListener("input", maj); });
@@ -181,15 +225,15 @@ function _posteBornerQte(z, id, ecrire){
   c.max = dispo || 1;
   if(ecrire && String(q) !== c.value) c.value = q;
   const d = z.querySelector("#poste-dispo");
-  if(d) d.textContent = dispo ? `/ ${dispo}` : "";
+  if(d) d.textContent = dispo ? `${dispo} dans le sac` : "";   // v1.02 : « / 1 » ne disait rien
   return q;
 }
 
-/* v0.87 — depuis la Base de l'Écart, tout transite par un vaisseau : la taxe
+/* v0.87 — depuis le Perchoir (Triptolème), tout transite par un vaisseau : la taxe
    passe de 10 % à 25 %. Une seule constante, reprise par l'affichage ET par
    l'envoi, pour qu'ils ne divergent jamais. */
 /* v0.91 — taxes revues à la baisse : 10 % → 5 % sur Silène, 25 % → 15 % depuis
-   l'Écart. L'écart entre les deux reste net (le triple), mais l'envoi cesse
+   Triptolème. L'écart entre les deux reste net (le triple), mais l'envoi cesse
    d'être dissuasif au point que personne ne s'en serve. */
 function tauxPoste(){ return ((typeof surBase==="function") && surBase()) ? 0.15 : 0.05; }
 function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(tauxPoste()*(p.moy||0)*qte):0; }
@@ -197,15 +241,17 @@ function _majTaxe(z){
   const t=_posteTypeChoisi(z); const el=z.querySelector("#poste-taxe"); if(!el) return;
   /* v0.91 — la réserve de la v0.87 est levée : `poste_envoyer` lit désormais
      `profils.secteur` et applique le MÊME barème aux crédits qu'aux objets
-     (5 % au sol, 15 % depuis l'Écart). L'affichage peut donc enfin dire vrai
+     (5 % au sol, 15 % depuis Triptolème). L'affichage peut donc enfin dire vrai
      dans les deux cas.
      ⚠ Le client ne transmet toujours pas la taxe sur les crédits (p_taxe:0) :
      c'est le serveur qui la calcule. `tauxPoste()` ne sert qu'à l'AFFICHAGE —
      les deux barèmes doivent rester d'accord, ici et dans le SQL. */
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0;
-    const tx=Math.ceil(tauxPoste()*m);
-    el.innerHTML=`Coût total : <b>${m + tx} ₡</b> (${m} + taxe ${tx} ₡, soit ${Math.round(tauxPoste()*100)} %).`; }
-  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id, !!_posteFige); el.innerHTML=`Taxe d'envoi : <b>${_taxeObjet(id,q)} ₡</b> (${Math.round(tauxPoste()*100)} % du prix de base).`; }
+    const tx=Math.ceil(tauxPoste()*m)*_posteMultTaxe();   // v1.11 : affichage triplé si perturbé
+    el.innerHTML=`Coût total : <b>${m + tx} ₡</b> (${m} + taxe ${tx} ₡, soit ${Math.round(tauxPoste()*100)*_posteMultTaxe()} %)${_postePerturbee()?" — <b>taxe triplée</b> (réseau perturbé)":""}.`; }
+  else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id, !!_posteFige);
+    const tx=_taxeObjet(id,q)*_posteMultTaxe();   // v1.11 : affichage triplé si perturbé
+    el.innerHTML=`Taxe d'envoi : <b>${tx} ₡</b> (${Math.round(tauxPoste()*100)*_posteMultTaxe()} % du prix de base)${_postePerturbee()?" — <b>taxe triplée</b>, colis remis dans 48 h (réseau perturbé)":""}.`; }
 }
 
 async function posteEnvoyer(){
@@ -251,6 +297,7 @@ async function posteRecuperer(id){
   if(o.statut==="attente" && o.type==="objet" && o.montant>0 && etat.credits < o.montant){ journal(`Il faut ${o.montant} ₡ pour récupérer cet objet.`,"alerte"); return; }
   if(typeof pousserCredits==="function") await pousserCredits();
   const { data:res, error } = await sb.rpc("poste_recuperer", { p_id: Number(id) });
+  if(res && res.err==="en_transit"){ journal(`Ce colis est encore en route (réseau perturbé) : disponible dans ${_resteAvant(res.dispo_le)}.`,"alerte"); return; }   // v1.11
   if(error || !res || !res.ok){
     if(res && res.err==="fonds") journal(`Crédits insuffisants (${res.cout} ₡).`,"alerte");
     else if(res && res.err==="sac_plein") journal("Sac plein — fais de la place avant de récupérer.","alerte");

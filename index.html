@@ -70,6 +70,24 @@
 </div>
 
 <!-- v0.82 : coût des trajets sans survol (écrans tactiles). -->
+<!-- v0.98 : sous-carte de La Braise (braise.js). Même charpente que la carte de Silène. -->
+<div class="modale-carte" id="modale-braise" aria-hidden="true">
+  <div class="cadre-carte">
+    <div class="barre-carte">
+      <div class="titre-carte" id="surface-titre">La Braise</div>
+      <div class="carte-jauges">
+        <span class="cj">Énergie <b id="braise-energie">100</b>%</span>
+        <span class="cj">O₂ <b id="braise-o2">100</b></span>
+      </div>
+      <button class="mini" id="braise-bord">Monter à bord</button>
+      <button class="mini" id="braise-decoller">Décoller</button>
+      <button class="mini" id="braise-fermer">Fermer ✕</button>
+    </div>
+    <div class="zone-carte"><svg id="carte-braise" aria-label="Carte de la planète"></svg></div>
+    <p class="vide" id="braise-info" style="text-align:center; margin:8px 0 0"></p>
+  </div>
+</div>
+
 <div class="modale-carte" id="modale-distances" aria-hidden="true">
   <div class="cadre-carte" style="max-width:720px">
     <div class="barre-carte">
@@ -83,7 +101,7 @@
 <div class="modale-carte" id="modale-orbite" aria-hidden="true">
   <div class="cadre-carte">
     <div class="barre-carte">
-      <div class="titre-carte">Secteur Nielle <span id="orbite-vaisseau" class="itip-gris"></span></div>
+      <div class="titre-carte">Secteur Triptolème <span id="orbite-vaisseau" class="itip-gris"></span></div>
       <button class="mini" id="orbite-distances">Distances</button>
       <button class="mini" id="orbite-retour" hidden style="display:none">Redescendre sur Silène</button>
       <button class="mini" id="orbite-fermer">Fermer ✕</button>
@@ -144,7 +162,7 @@
         <!-- ⚠ v0.91 — « Comm » devient « Le Réseau ». L'identifiant technique
              `data-onglet="comm"` ne change PAS : tout le code (bootstrap.js,
              changerComm, commVue, les classes CSS .comm-*) s'y réfère. Même
-             règle que Nielle et Le Perchoir — seuls les textes bougent. -->
+             règle que Triptolème et Le Perchoir — seuls les textes bougent. -->
         <button class="onglet" data-onglet="comm">Le Réseau</button>
         <button class="onglet" data-onglet="parametres">Paramètres</button>
       </div>
@@ -209,7 +227,9 @@
        ligne et les fait passer l'une sous l'autre sur petit écran. -->
   <div class="cartes-paire">
         <button class="action" id="ouvrir-carte"><span>Carte de Silène</span><span class="cout">se déplacer</span></button>
-        <button class="action" id="ouvrir-orbite" style="display:none" hidden><span>Partir pour Nielle</span><span class="cout">en vaisseau</span></button>
+        <button class="action" id="ouvrir-orbite" style="display:none" hidden><span>Partir pour Triptolème</span><span class="cout">en vaisseau</span></button>
+        <!-- v0.98 : la sous-carte de La Braise (visible seulement au sol de La Braise, voir majBoutonOrbite). -->
+        <button class="action" id="ouvrir-braise" style="display:none" hidden><span>Carte de La Braise</span><span class="cout">au sol, sans air</span></button>
   </div>
         <p id="region-info" style="margin:0 0 12px; font-size:14px"></p>
 
@@ -222,17 +242,20 @@
           <button class="hub-lien" data-hub="boutique">La Boutique</button>
           <button class="hub-lien" data-hub="quete">Quêtes</button>
           <button class="hub-lien" data-hub="voler">Voler / Hacker</button>
-          <!-- v0.91 — La Carcasse. Un lieu de Nielle réutilise la MÊME charpente
+          <!-- v0.91 — La Carcasse. Un lieu de Triptolème réutilise la MÊME charpente
                de hubs que les cités et le Perchoir : c'est `majHub()` qui décide
                lesquels sont visibles selon l'endroit. Q6 s'y passe, elle n'aura
                qu'à activer `quete` dans la liste de ce lieu. -->
           <button class="hub-lien" data-hub="garage">Le Garage</button>
           <button class="hub-lien" data-hub="gisement">Le Gisement</button>
+          <!-- v0.98 — en orbite au-dessus de La Braise : la descente. -->
+          <button class="hub-lien" data-hub="descente">La Braise</button>
           <!-- v0.92 — L'Arène : uniquement au Perchoir, voir majHub(). -->
           <button class="hub-lien" data-hub="arene">L'Arène</button>
         </div>
 
         <div class="hub-vue" id="hub-quete" hidden></div>
+        <div class="hub-vue" id="hub-descente" hidden></div>
 
         <div class="hub-vue" id="hub-inn" hidden>
           <div class="inn-banniere"><img src="images/inn.png" alt="" onerror="this.remove()"><span>Auberge</span></div>
@@ -270,7 +293,7 @@
             <button class="sous-lien" data-centre="guerres">Expéditions</button>
             <!-- ⚠ v0.91 — BAR RETIRÉ DE SILÈNE. Ses effets sont puissants et il
                  n'a jamais trouvé sa place ici : il sera retravaillé pour une
-                 carte ultérieure, ni Silène ni Nielle. `js/bar.js` est laissé
+                 carte ultérieure, ni Silène ni Triptolème. `js/bar.js` est laissé
                  INTACT, seul l'accès disparaît — il suffira de rétablir ce
                  bouton (ou d'en poser un ailleurs) pour le rouvrir.
                  Les boissons déjà actives courent jusqu'à leur expiration. -->
@@ -381,6 +404,7 @@
 <script src="js/espace-data.js"></script>
 <script src="js/placement.js"></script>
 <script src="js/orbite.js"></script>
+<script src="js/braise.js"></script>
 <script src="js/sonde.js"></script>
 <script src="js/garage.js"></script>
 <script src="js/formations.js"></script>

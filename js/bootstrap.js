@@ -91,7 +91,7 @@ construireCompetences(); construireCarte();
       if(prof && prof.donnees && prof.donnees.inscrit){
         etat = hydraterEtat(prof.donnees); appliquerColonnesProfil(prof); /* v0.92 : relecture des colonnes, source unique dans serveur.js */
         _etatPret = true;
-        afficher(); journal("Systèmes en ligne. Surveille ton énergie.");
+        afficher(); journal("Systèmes en ligne.");
         if(typeof compterNotifs==="function") compterNotifs(); if(typeof compterPoste==="function") compterPoste(); if(typeof compterAnnonce==="function") compterAnnonce();
         /* v0.95 — syncPrison et syncEffetsCombat sont DANS syncApresConnexion :
            les appeler aussi ici les faisait partir deux fois. */
@@ -130,7 +130,7 @@ document.addEventListener("visibilitychange", ()=>{
   if(typeof chargerStocksServeur==="function") chargerStocksServeur();
   if(typeof rechargerCredits==="function")     rechargerCredits();
   if(typeof chargerIntegrite==="function")     chargerIntegrite();
-  /* v0.91 — filet de sécurité : si le joueur se retrouve à l'Écart SANS
+  /* v0.91 — filet de sécurité : si le joueur se retrouve à Triptolème SANS
      vaisseau par un chemin qu'on n'a pas prévu (vendu, posté, périmé au sac,
      session interrompue au mauvais moment), le secours le redescend. */
   if(typeof secoursOrbite==="function") secoursOrbite();
@@ -161,13 +161,16 @@ async function syncApresConnexion(){
   if(typeof syncEffetsCombat==="function") t.push(syncEffetsCombat());
   if(typeof boissonCharger==="function")  t.push(boissonCharger());        // v0.77 : effet de boisson en cours
   if(typeof chargerIntegrite==="function") t.push(chargerIntegrite());     // v0.91 : dégâts subis pendant l'absence
+  if(typeof chargerBete==="function")      t.push(chargerBete());          // v1.00 : la bête (Q15)
+  if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
+  if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause
   if(typeof majEcranMort==="function")  majEcranMort();    // écran bloquant si mort
   /* ⚠ v0.91 — le filet de secours était UNIQUEMENT dans `visibilitychange`,
      qui ne se déclenche pas au chargement d'une page : un joueur qui rouvrait
-     le jeu bloqué à l'Écart sans vaisseau y restait tant qu'il ne changeait
+     le jeu bloqué à Triptolème sans vaisseau y restait tant qu'il ne changeait
      pas d'onglet. Il joue donc ici aussi, APRÈS `syncMort` (donc après que
      `_mortInfo` soit connu) et après l'écran bloquant. */
   if(typeof secoursOrbite==="function") secoursOrbite();

@@ -81,7 +81,14 @@ function _lotVolable(id, dispo){
 
 /* Reporte une date d'acquisition en gardant la plus ANCIENNE (empêche de « rafraîchir » un objet en le déplaçant). */
 function reporterDate(map, id, ts){ if(ts==null) return; map[id] = (map[id]!=null) ? Math.min(map[id], ts) : ts; }
-function _verbeUsure(it){ return (it && (it.cat==="plante" || it.cat==="organique" || it.type==="conso")) ? "a péri" : "s'est usé"; }
+/* v1.00 — « a péri » pour une plante déjà coupée, dans un sac : un testeur l'a
+   relevé. ⚠ v1.02 — « 6× Nectine s'est gâté » : l'accord boitait (genre, nombre).
+   Le joueur devient le sujet et « c'est » ne s'accorde pas :
+   « Tu jettes 6× Nectine de ton sac : c'est périmé. » (choix de l'autrice, 22/09) */
+function _verbeUsure(it){
+  if(it && (it.cat==="plante" || it.cat==="organique" || it.type==="conso")) return "c'est périmé";
+  return "c'est usé";
+}
 
 /* --- Péremption : sac, coffre de la maison ET équipement porté (au temps). --- */
 /* ⚠ PHASE 4 : sac / coffre / soute appartiennent au SERVEUR. On ne supprime
@@ -132,6 +139,8 @@ async function majUsure(){
   for(const l of (etat.lots||[])){
     if(!l || !(l.qte > 0)) continue;
     if(l.lieu === "equipe") continue;   // l'équipement porté s'use à part (etat.equipementDate)
+    // v0.97 — un objet lié ne périt pas (le serveur refuserait tout le lot).
+    if(typeof estObjetLie==="function" && estObjetLie(l.item)) continue;
     const dv = (typeof dureeVie==="function") ? dureeVie(l.item) : null;
     if(dv == null) continue;
     /* v0.91 — le lot d'un vaisseau rangé porte la date du jour où il est sorti
@@ -145,12 +154,12 @@ async function majUsure(){
     }
     if(now - ref > dv * JOUR_MS){
       const it = (typeof item==="function") ? item(l.item) : null;
-      const ou = l.lieu==="coffre" ? " (rangement de la maison)" : (l.lieu==="soute" ? " (soute du vaisseau)" : " et a disparu du sac");
+      const ou = l.lieu==="coffre" ? "du rangement de la maison" : (l.lieu==="soute" ? "de la soute du vaisseau" : "de ton sac");
       // ⚠ Le message n'est PAS écrit ici : on l'écrira seulement si le serveur
       // confirme la suppression. Sinon le joueur lisait un deuil qui n'avait
       // pas eu lieu — et le relisait à CHAQUE connexion, en doublons.
       expires.push({ item:l.item, lieu:l.lieu, acquis:l.acquis,
-                     _msg:`${l.qte}× ${it?it.nom:l.item} ${_verbeUsure(it)}${ou}.` });
+                     _msg:`Tu jettes ${l.qte}× ${it?it.nom:l.item} ${ou} : ${_verbeUsure(it)}.` });
     }
   }
   if(expires.length && typeof sb !== "undefined"){
@@ -188,7 +197,7 @@ async function majUsure(){
         if(now - dr.pose > dureeVie(did)*JOUR_MS){
           const it = item(did);
           p.drones[si] = null;
-          journal(`${it?it.nom:"Un drone"} s'est usé et a cessé de fonctionner.`,"alerte"); perte = true;
+          journal(`Usure : ${it?it.nom:"un drone"} a cessé de fonctionner.`,"alerte"); perte = true;
         }
       });
     }
@@ -204,7 +213,7 @@ async function majUsure(){
       const it = item(id);
       if(!await _detruireEquipeServeur(id)) continue;   // échec : on réessaiera au prochain passage
       etat.equipement[slot] = null; delete etat.equipementDate[slot];
-      journal(`${it?it.nom:id} s'est usé et a lâché.`,"alerte"); perte = true;
+      journal(`Usure : ${it?it.nom:id} a lâché.`,"alerte"); perte = true;
     }
   }
   /* v0.91 — Navette de réserve : échéance absolue. Les exemplaires qui traînent
@@ -244,7 +253,7 @@ async function majUsure(){
       if(etaitCadeau) etat.navetteFin = 0;   // v0.91 : l'échéance a joué, on la referme
       journal(etaitCadeau
         ? "La Navette de réserve a rendu l'âme — dix jours, c'était ce qu'elle avait à donner. Soute vidée dans le sac (ce qui tenait)."
-        : `${it?it.nom:"Ton vaisseau"} s'est usé et a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
+        : `Usure : ${it?it.nom:"ton vaisseau"} a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
       if(typeof secoursOrbite === "function") await secoursOrbite();
     }
   }

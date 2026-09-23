@@ -107,6 +107,21 @@ function _marcheGardeScroll(){
   });
 }
 
+/* ⚠ v1.05 — LA CAISSE NE PAIE QUE CE QUI SERT À LA DÉFENSE (retour testeur :
+   l'Architecte pouvait acheter n'importe quoi avec l'argent de la faction).
+   La liste de référence est `defense_recettes` : tout composant qui entre dans
+   un objet de défense, et rien d'autre. Elle est lue une fois par page.
+   ⚠ Ceinture côté serveur à ajouter dans `acheter_offre_faction` : sans elle,
+   la console du navigateur contourne ce filtre (BACKEND_PLAN, à faire). */
+let _composantsDefense = null;
+async function _chargerComposantsDefense(){
+  try{
+    const { data } = await sb.from("defense_recettes").select("composant_id");
+    _composantsDefense = new Set((data||[]).map(r=>r.composant_id));
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "marche.js#composants"); }
+}
+function _utileALaDefense(id){ return !!(_composantsDefense && _composantsDefense.has(id)); }
+
 async function renderMarche(){
   if(typeof cacherItemTip==="function") cacherItemTip();
   const z = document.querySelector("#marche-vue"); if(!z) return;
@@ -115,6 +130,7 @@ async function renderMarche(){
   if(!faction){ z.innerHTML = `<p class="vide">Rends-toi dans une <b>ville de faction</b> (onglet Planète) pour accéder à son marché. Chaque faction a le sien.</p>`; return; }
   if(!z.innerHTML.trim()) z.innerHTML = `<p class="vide">Chargement du marché…</p>`;   // v0.94 : pas d'effondrement en cours de route
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; _marcheMonId=s?s.user.id:null;
+  if(!_composantsDefense) await _chargerComposantsDefense();   // v1.05 : une fois par page
   try{ const {data}=await sb.from("gouvernement").select("profil_id").eq("faction",etat.faction).eq("role","architecte").maybeSingle(); _estArchitecte=!!(data && data.profil_id===_marcheMonId); }catch(e){ _estArchitecte=false; }
   await _syncCredits();
   _offresCache = await _chargerOffres(faction);
@@ -164,7 +180,7 @@ async function renderMarche(){
     html += `<div class="marche-ligne" data-item="${iid}"${_j!=null?` data-jours="${_j.toFixed(3)}"`:""}><span class="marche-ic">${iconeItem(iid)}</span>`
       + `<span class="marche-nom">${item(iid).nom}${_offreBadge(o)}<span class="qte">${detail}</span></span>`
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
-      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${_estArchitecte?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
+      + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${(_estArchitecte && _utileALaDefense(iid))?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }
   html += `</div>`;
   z.innerHTML = html;
@@ -212,6 +228,7 @@ async function acheterOffreFaction(offreId){
     if(e==="caisse") journal(`Caisse insuffisante (${res.cout} ₡).`,"alerte");
     else if(e==="reserve_pleine") journal("Réserve de faction pleine (50).","alerte");
     else if(e==="pas_architecte") journal("Réservé à l'Architecte.","alerte");
+    else if(e==="pas_defense") journal("La caisse ne paie que les composants qui entrent dans un objet de défense.","alerte");
     else if(e==="introuvable") journal("Offre indisponible.","alerte");
     else journal("Achat faction impossible.","alerte");
     renderMarche(); return;
@@ -250,7 +267,7 @@ async function mettreEnVente(id, prix, qte){
   }
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
   if(etat.pas) etat.pas.vendu=true;   // solde déjà appliqué par rpcAvecSolde
-  journal(`Mis en vente à ${FACTIONS.find(f=>f.id===faction).nom} : ${qte}× ${item(id).nom} à ${prix} ₡ (taxe ${res.taxe} ₡).`,"gain");
+  journal(`Mis en vente à ${FACTIONS.find(f=>f.id===faction).nom} : ${qte}× ${item(id).nom} à ${prix} ₡ (taxe ${res.taxe} ₡)${res.bonus_eclats ? ` — les Éclats ajoutent ${res.bonus_eclats} ₡ à la caisse` : ""}.`,"gain");   // v1.10
   apresAction(); renderMarche(); ouvrirVente();
 }
 

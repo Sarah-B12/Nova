@@ -47,6 +47,11 @@ function _ppStyle(){
     .pp-tete h2{ margin:0; }
     .pp-haut{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
     .pp-haut .pp-portrait{ width:200px; aspect-ratio:3/4; flex:0 0 auto; }
+    .pp-portraits{ display:flex; gap:10px; align-items:flex-end; flex:0 1 auto; max-width:100%; }
+    .pp-portraits .pp-portrait{ flex:0 1 200px; min-width:0; }
+    .pp-bete{ flex:0 1 140px; min-width:90px; text-align:center; }
+    .pp-bete img{ width:100%; aspect-ratio:1; object-fit:contain; display:block; filter:drop-shadow(0 0 10px rgba(232,240,200,.25)); }
+    .pp-bete-nom{ font-weight:700; margin-top:4px; }
     .pp-info{ flex:1; min-width:220px; }
     .pp-info p{ margin:4px 0; }
     .pp-nom{ font-size:22px; font-weight:700; color:var(--orange-hi,#ffb060); }
@@ -169,6 +174,9 @@ async function ouvrirPageProfil(nom){
   const estAmi = !moi && credits!=null;
   const estBloque = etat.bloques.includes(nom);
   const enLigne = (typeof _presenceEnLigne==="function") ? _presenceEnLigne(p.derniere_activite) : false;
+  // v1.00 — la bête (Q15), à côté de l'avatar. Pour soi : le reflet chargé à la connexion.
+  const bete = moi ? (etat.bete || null) : ((typeof beteDe==="function") ? await beteDe(p.id) : null);
+  if(_ppNom!==nom) return;
   const L = (typeof _avCouches==="function") ? _avCouches(p.avatar) : [];
   const portrait = L.length ? L.map(c=>_avImg(c,"av-couche")).join("") : `<div class="av-x-grand">?</div>`;
   const desc = (p.description_rp && p.description_rp.trim()) ? ((typeof renduDescription==="function")?renduDescription(p.description_rp):p.description_rp.replace(/</g,"&lt;")) : `<p class="vide">Aucune description.</p>`;
@@ -179,7 +187,7 @@ async function ouvrirPageProfil(nom){
   m.innerHTML = `<div class="pp-wrap">
     <div class="pp-tete"><button class="mini" id="pp-retour">← Retour</button><h2>Profil</h2></div>
     <div class="pp-haut">
-      <div class="pp-portrait av-portrait">${portrait}</div>
+      <div class="pp-portraits"><div class="pp-portrait av-portrait">${portrait}</div>${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div>
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
@@ -191,7 +199,7 @@ async function ouvrirPageProfil(nom){
         <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button><button class="mini" data-mvtstaff="${p.id}">Mouvements</button>` : ""}</div>
       </div>
     </div>
-    <div class="rep-badges" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
+    <div class="rep-badges grand" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
     <div id="pp-terrain" hidden></div>
     <div id="pp-journal-staff" hidden></div>
     <div id="pp-mouvements-staff" hidden><h3>Mouvements (objets et crédits, 7 jours)</h3><div class="pp-mvt"></div></div>

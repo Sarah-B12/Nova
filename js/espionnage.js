@@ -140,10 +140,13 @@ async function hackerProtocoleDepuisCarte(){
   if(typeof enPrison==="function" && enPrison()){ journal("Impossible : tu es en prison.","alerte"); return; }
   let d; try{ const r=await sb.rpc("hack_protocole_dispo"); d=r.data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#3"); }
   if(!d || !d.ombre){ journal("Seule l'Ombre de ta faction peut hacker le Protocole.","alerte"); return; }
-  if(d.restant<=0){ journal("Ta faction a déjà tenté de hacker le Protocole aujourd'hui.","alerte"); return; }
+  /* v1.09 — la limite n'est plus toujours 1 : les Veilleurs (50+ chez un membre
+     du gouvernement) en donnent une seconde. Le serveur renvoie `limite`. */
+  if(d.restant<=0){ journal(`Ta faction a déjà fait ses ${d.limite||1} tentative(s) de hack du Protocole pour aujourd'hui.`,"alerte"); return; }
+  if(d.veilleurs && d.restant>1) journal("Les Veilleurs t'ouvrent une tentative de plus aujourd'hui.","gain","vol");
   const reussi=await _lancerHackProto();
   const { data:res, error } = await sb.rpc("hacker_protocole",{ p_reussi:reussi });
-  if(error || !res || !res.ok){ if(res&&res.err==="limite") journal("Déjà tenté aujourd'hui.","alerte"); else journal("Hack impossible.","alerte"); return; }
+  if(error || !res || !res.ok){ if(res&&res.err==="limite") journal(`Déjà ${(res.limite||1)} tentative(s) faite(s) aujourd'hui.`,"alerte"); else journal("Hack impossible.","alerte"); return; }
   if(res.reussi && typeof gagnerXp==="function") gagnerXp(8);
   if(res.reussi){
     const L=hpLecture(res.info, res.valeur);

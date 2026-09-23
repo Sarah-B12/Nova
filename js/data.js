@@ -100,7 +100,7 @@ const BOUTIQUE = [
 ];
 const CAT_BOUTIQUE = [ { id:"graines", nom:"Graines" }, { id:"bebes", nom:"Bébés animaux" }, { id:"conso", nom:"Consommables" } ];
 
-/* ---- Comptoir de la Base de l'Écart (v0.87) ----
+/* ---- Comptoir du Perchoir, à Triptolème (v0.87) ----
    Ni graines ni bêtes : là-haut on vend de quoi TENIR et REPARTIR. Les prix
    sont volontairement lourds — acheter aux Biotech ou au marché d'une faction
    doit rester le bon calcul. Le comptoir est le filet, pas la solution. */
@@ -131,7 +131,17 @@ const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom
 /* v0.91 — le Kit de réparation n'appartient à aucune des familles ci-dessus :
    ni consommable de survie, ni matière, ni vivant. Il est déclaré à part. */
 const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", cat:"vaisseau", poids:1 } ];
-const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS];
+/* v0.97 — OBJETS DE QUÊTE LIÉS. Ils ne quittent JAMAIS le sac : ni vente,
+   ni marché, ni Poste, ni coffre/soute, ni drones, ni diversion, ni péremption,
+   ni vol ; conservés à la mort.
+   ⚠ La SOURCE DE VÉRITÉ est serveur : table `objets_lies` + trigger
+   `inventaire_objet_lie` (v097_objets_lies.sql). OBJETS_LIES n'en est que le
+   REFLET, pour masquer les boutons : toute entrée ajoutée ici doit l'être là-bas
+   (BACKEND_PLAN §6 et §14). Sans l'entrée serveur, rien n'est protégé. */
+const OBJETS_QUETE = [ { id:"bouture", nom:"Bouture de silène", type:"quete", cat:"quete", poids:1 } ];
+const OBJETS_LIES = new Set(["bouture"]);
+function estObjetLie(id){ return OBJETS_LIES.has(id); }
+const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS, ...OBJETS_QUETE];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
@@ -226,7 +236,52 @@ function imgPlanteJeune(plId){ return PLANTE_JEUNE.has(plId) ? `images/plantes/$
 // Réutilisé par l'enclos (bébé vs adulte) ET par les bébés animaux de la boutique (même visuel que le bébé).
 const ANIMAL_IMG = new Set(["cuprin","cuirasson","toisard","nourrin"]);
 function imgAnimal(anId, adulte){ return ANIMAL_IMG.has(anId) ? `images/animaux/${anId}_${adulte?"adulte":"bebe"}.png` : null; }
+/* La bouture ne réagit pas à la lumière mais au SIGNAL (LORE.md §10) :
+   allumée partout à Silène et près du Muet, éteinte ailleurs.
+   📌 Q15 : pulser plus fort au bout du bras est. */
+/* v1.00 — LES CINQ BÊTES (LORE §7, Q15). Une par joueur, pour la vie, choisie à
+   l'étape 6 de Q15. Serveur : table `betes` (v100_betes.sql) — l'espèce y est
+   un identifiant ; ⚠ la liste des identifiants est dupliquée dans la contrainte
+   `betes.espece` et dans `bete_adopter`. Pas d'effet de jeu (chantier séparé). */
+const BETES = [
+  { id:"chaume",     nom:"le Chaume",     cercle:"racines",     img:"images/betes/chaume.png" },
+  { id:"braisillon", nom:"le Braisillon", cercle:"eclats",      img:"images/betes/braisillon.png" },
+  { id:"sentinelle", nom:"la Sentinelle", cercle:"veilleurs",   img:"images/betes/sentinelle.png" },
+  { id:"goupille",   nom:"la Goupille",   cercle:"assembleurs", img:"images/betes/goupille.png" },
+  { id:"iris",       nom:"l'Iris",        cercle:"langues",     img:"images/betes/iris.png" }
+];
+function beteInfo(id){ return BETES.find(b=>b.id===id) || null; }
+/* Même règle que public.bete_nom_valide (serveur) : 2 à 20 caractères, lettres
+   (accents compris), espaces / tirets / apostrophes seulement entre deux lettres. */
+const BETE_NOM_RE = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ]+([ '’-][A-Za-zÀ-ÖØ-öø-ÿŒœ]+)*$/;
+function beteNomNormal(s){ return String(s||"").trim().replace(/\s+/g," "); }
+function beteNomValide(s){ const n=beteNomNormal(s); return n.length>=2 && n.length<=20 && BETE_NOM_RE.test(n); }
+/* Lecture serveur (lisible par tout joueur connecté). Renvoie {espece,nom} ou null. */
+async function beteDe(profilId){
+  if(!profilId || typeof sb==="undefined" || !sb) return null;
+  try{ const { data, error } = await sb.from("betes").select("espece,nom").eq("profil_id", profilId).maybeSingle();
+       if(error){ console.warn("[bete] lecture:", error.message); return null; } return data || null; }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "data.js#beteDe"); return null; }
+}
+/* À la connexion : etat.bete est un REFLET de la table (CLES_SERVEUR), jamais persisté. */
+async function chargerBete(){
+  const s = (typeof sessionActuelle==="function") ? await sessionActuelle() : null; if(!s) return;
+  etat.bete = await beteDe(s.user.id);
+}
+/* Vignette pour une fiche de profil : image + nom + espèce. */
+function beteVignetteHtml(b){
+  const i = b && beteInfo(b.espece); if(!i) return "";
+  const nom = String(b.nom||"").replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+  return `<div class="pp-bete"><img src="${i.img}" alt="" onerror="this.remove()"><div class="pp-bete-nom">${nom}</div><div class="itip-gris">${i.nom}</div></div>`;
+}
+function imgBouture(){
+  // v0.97 — allumée aussi près du Muet (Q7) : le signal ne vient pas que de Silène.
+  const auMuet = (typeof surLieuEspace==="function" && typeof espaceLieu==="function") && surLieuEspace(espaceLieu("antenne"));
+  const ailleurs = horsSilene() && !auMuet;   // v0.98 : éteinte aussi sur La Braise (planète stérilisée)
+  return ailleurs ? "images/items/bouture_eteinte.png" : "images/items/bouture_allumee.png";
+}
 function iconeItem(id){
+  if(id === "bouture") return `<img src="${imgBouture()}" alt="">`;
   if(IMG_ITEM[id]) return `<img src="${IMG_ITEM[id]}" alt="">`;
   if(SVG[id]) return SVG[id];
   if(id.indexOf("graine_")===0){ const j=imgPlanteJeune(id.slice(7)); return j ? `<img src="${j}" alt="">` : ICONE_GRAINE; }
@@ -261,10 +316,15 @@ function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2, y1-y2); }
 function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x, y:v.y}; }
 // Ville dont on est dans le rayon (ou null).
 /* ⚠ v0.87 — `etat.pos` n'est PAS modifié au décollage : sans ce garde-fou, un
-   joueur parti à l'Écart resterait « dans sa ville » pour tout le client
+   joueur parti à Triptolème resterait « dans sa ville » pour tout le client
    (repos, marché, terrain…). Même règle que dans_zone_faction côté serveur. */
+/* v0.98 — hors de Silène = en orbite OU à la surface d'une planète. ⚠ Ne pas
+   utiliser enEcart() pour dire « pas sur Silène » : sur La Braise, enEcart()
+   est faux, et le joueur serait resté « dans sa ville » (etat.pos inchangé). */
+function horsSilene(){ return !!(typeof etat!=="undefined" && etat && etat.secteur && etat.secteur !== "silene"); }
+function enSurface(){ return !!(typeof etat!=="undefined" && etat && (etat.secteur === "braise" || etat.secteur === "suaire")); }
 function villeActuelle(){
-  if(typeof enEcart==="function" && enEcart()) return null;
+  if(horsSilene()) return null;
   if(!etat.pos) return null;
   for(const fid in VILLES){ const v=VILLES[fid]; if(dist(etat.pos.x,etat.pos.y,v.x,v.y)<=v.r) return fid; }
   return null;
@@ -281,8 +341,9 @@ function materiauMaison(){ return "cendrite"; }
 const ZONE_CHAUDE = { x:1225, y:325, r:350 };
 const ZONE_FROIDE = { x:1920, y:355, r:350 };
 function _dansZoneTh(z){ return !!(typeof etat!=="undefined" && etat && etat.pos && Math.hypot(etat.pos.x-z.x, etat.pos.y-z.y) <= z.r); }
-function enZoneChaude(){ return _dansZoneTh(ZONE_CHAUDE); }
-function enZoneFroide(){ return _dansZoneTh(ZONE_FROIDE); }
+// v0.98 — La Braise est tout entière zone chaude, Le Suaire tout entier zone froide.
+function enZoneChaude(){ if(typeof etat!=="undefined" && etat && etat.secteur==="braise") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_CHAUDE); }
+function enZoneFroide(){ if(typeof etat!=="undefined" && etat && etat.secteur==="suaire") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_FROIDE); }
 function tirerMatiere(bonusRare=0){
   const pool = MINERAIS.map(m => ({ id:m.id, p: m.poids + (m.poids<20 ? bonusRare : 0) }));
   const total = pool.reduce((a,b)=>a+b.p,0);

@@ -9,7 +9,7 @@ async function reposer(){
   if(etat.enPause){ journal("Personnage en pause.","alerte"); return; }
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const ville = (typeof villeActuelle==="function") ? villeActuelle() : null;
-  const base  = (typeof surBase==="function") && surBase();     // v0.87 : l'auberge de l'Écart
+  const base  = (typeof surBase==="function") && surBase();     // v0.87 : l'auberge du Perchoir (Triptolème)
   if(!ville && !base){ journal("Repos possible seulement en ville, ou à l'auberge de la base.","alerte"); return; }
   if(memeJour(etat.reposLe)){ journal("Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   /* v0.91 — logement à l'arrêt : on dort encore dans sa ville, mais pas chez
@@ -69,11 +69,15 @@ async function resoudreCombat(opts){
     const esq = opts.embuscade ? 0 : Math.min(0.6, agiliteEffective()/400 + (typeof equipEsquive==="function"?equipEsquive()/100:0));
     const esquive = Math.random() < esq; if(esquive) ps = Math.round(ps*0.35);
     // Armure (équipement) puis aptitudes (Cuirasse, Trempe, Métabolisme) ; plancher 3.
+    /* v1.00 — la part absorbée par l'armure est AFFICHÉE : un testeur a cru ses
+       protections inutiles (l'écart venait d'une esquive au combat précédent). */
+    const psAvantArmure = ps;
     if(typeof equipDegatsMult==="function") ps = ps*equipDegatsMult();
+    const absorbe = Math.max(0, Math.round(psAvantArmure) - Math.round(ps));
     ps = Math.max(3, aptCombatDegats(Math.round(ps)));
     const pm = Math.max(2, Math.round(ps*0.5));
     await agirServeur({ jauges:{ sante:-ps, moral:-pm }, motif:"combat_perdu" }); gagnerXp(3);   // v0.94b : annoncé ci-dessous
-    journal(`La patrouille a pris le dessus : −${ps} santé, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}. +3 XP quand même.`,"alerte");
+    journal(`La patrouille a pris le dessus : −${ps} santé${absorbe>0?` (armure : −${absorbe})`:""}, −${pm} moral${esquive?" (esquive !)":""}${opts.embuscade?" (embuscade !)":""}. +3 XP quand même.`,"alerte");
   }
   if(typeof consommerMunitions==="function") await consommerMunitions();   // v0.59 : 1 balle par arme à feu, gagné ou perdu
   apresAction();

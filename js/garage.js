@@ -1,5 +1,5 @@
 /* ===========================================================
-   LES ÉCRANS DES LIEUX DE NIELLE — Le Garage, Le Gisement (v0.91)
+   LES ÉCRANS DES LIEUX DE TRIPTOLÈME — Le Garage, Le Gisement (v0.91)
 
    ⚠ RÈGLE : tout lieu du secteur qui offre un SERVICE a son onglet. Le bandeau
    sous la carte est à hauteur fixe et ne peut porter aucun bouton — une ligne
@@ -8,11 +8,11 @@
 
    LE GARAGE — La Carcasse
 
-   Premier lieu de Nielle à avoir un ÉCRAN plutôt qu'un simple bouton sur la
+   Premier lieu de Triptolème à avoir un ÉCRAN plutôt qu'un simple bouton sur la
    carte. Il réutilise la charpente de hubs des cités et du Perchoir : c'est
    `majHub()` (navigation.js) qui décide lesquels sont visibles selon l'endroit.
 
-   ⚠ POURQUOI UN HUB ET PAS UN ÉCRAN SUR MESURE. `LORE_Corporation.md` §4bis
+   ⚠ POURQUOI UN HUB ET PAS UN ÉCRAN SUR MESURE. `LORE.md` §9
    prévoit DEUX quêtes par lieu dans l'arc Q6→Q15, et Q6 se passe précisément
    ici. Le jour où il faudra y ajouter un onglet Quêtes, il n'y aura qu'à
    basculer `quete:true` dans la liste de ce lieu — rien à refondre.

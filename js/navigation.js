@@ -8,7 +8,7 @@ function montrerHub(h){
   document.querySelectorAll(".hub-vue").forEach(el => el.hidden = (el.id !== "hub-"+h));
   document.querySelectorAll(".hub-lien").forEach(b => b.classList.toggle("actif", b.dataset.hub===h));
 }
-function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); }
+function changerHub(h){ montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -21,16 +21,26 @@ function majHub(){
      est là pour grossir — l'arc Q6→Q15 prévoit DEUX quêtes par lieu. */
   const carcasse = (typeof surCarcasse==="function") && surCarcasse();
   const gravier  = (typeof surGravier==="function")  && surGravier();
-  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false };
-  const dispo = carcasse
-    ? { ...vide, garage:true }
+  const auDessusBraise = (typeof surOrbiteBraise==="function") && surOrbiteBraise();   // v0.98 : La Braise OU Le Suaire
+  // v0.99 — l'onglet de descente porte le nom de la planète survolée.
+  { const bl=document.querySelector('.hub-lien[data-hub="descente"]'), c=(typeof surfaceCfg==="function"&&typeof surOrbitePlanete==="function")?surfaceCfg(surOrbitePlanete()):null; if(bl && c) bl.textContent=c.nom; }
+  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false, descente:false };
+  const qEnCours = (typeof queteActive==="function" && !!queteActive());
+  const dispo = auDessusBraise
+    ? { ...vide, descente:true, quete:qEnCours }
+    : (typeof enSurface==="function" && enSurface())
+    ? { ...vide, quete:qEnCours }                // v0.98 : au sol d'une planète, pas de service
+    : carcasse
+    ? { ...vide, garage:true, quete:true }   // v0.97 : Galm donne les quêtes Q6→
     : gravier
-    ? { ...vide, gisement:true }
+    ? { ...vide, gisement:true, quete:(typeof queteActive==="function" && !!queteActive()) }
     : base
     /* v0.92 — L'ARÈNE n'existe qu'au Perchoir. `arene_adversaires()` refuse de
        toute façon ceux qui n'ont pas fini Q5, mais l'onglet ne doit pas
        s'afficher ailleurs : un service visible et vide est pire qu'absent. */
-    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:true, garage:false, arene:true }
+    /* v0.97 — plus de quêtes AU Perchoir : elles se prennent à La Carcasse. L'onglet
+       n'y reste que pour suivre une quête EN COURS. */
+    ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:(typeof queteActive==="function" && !!queteActive()), garage:false, arene:true }
     : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false, arene:false,
         boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
         quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };

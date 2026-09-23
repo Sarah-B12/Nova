@@ -98,6 +98,11 @@ async function agirServeur(o){
 // Déplace un objet entre sac / coffre / soute (le sac est toujours l'intermédiaire).
 async function rangerServeur(id, n, vers, depuis){
   if(typeof sb === "undefined") return null;
+  // v0.97 — un objet lié ne quitte pas le sac (le serveur le refuserait de toute façon).
+  if((depuis||"sac") === "sac" && typeof estObjetLie==="function" && estObjetLie(id)){
+    const it = (typeof item==="function") ? item(id) : null;
+    journal(`${it ? it.nom : "Cet objet"} ne quitte pas ton sac.`,"alerte"); return null;
+  }
   try{
     const { data, error } = await sb.rpc("ranger",
       { p_item:id, p_qte:n, p_vers:vers, p_depuis:depuis||"sac" });
@@ -250,6 +255,7 @@ function lotsAffichage(lieu){
 /* Badge « Xj » d'un lot précis (et non du plus ancien de l'objet). */
 function badgeLot(lot){
   if(!lot || lot.acquis==null || typeof dureeVie!=="function") return "";
+  if(typeof estObjetLie==="function" && estObjetLie(lot.item)) return "";   // v0.97 : ne périt pas
   const jr = Math.max(0, dureeVie(lot.item) - (Date.now()-lot.acquis)/JOUR_MS);
   const cls = jr<1 ? "critique" : (jr < dureeVie(lot.item)/2 ? "faible" : "");
   return `<span class="usure ${cls}">${Math.ceil(jr)}j</span>`;

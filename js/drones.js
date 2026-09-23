@@ -104,7 +104,7 @@ function renderHangar(corps){
      asynchrone, deux passes se chevaucheraient et nourriraient deux fois. */
 let _dronesOccupe = false;
 
-function _droneSurSilene(){ return !(typeof enEcart==="function" && enEcart()); }
+function _droneSurSilene(){ return !(typeof horsSilene==="function" && horsSilene()); }   // v0.98 : La Braise aussi
 // Ce que le drone peut PRENDRE : le coffre, plus le sac si le joueur est sur Silène.
 function _droneDispo(id){
   return ((etat.coffre && etat.coffre[id]) || 0)

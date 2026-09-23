@@ -51,6 +51,21 @@
     .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
     .rep-badge{ cursor:default; }
+    /* v1.11 — SUR LA PAGE PROFIL (la sienne et celle qu'on visite), les blasons
+       sont dessinés : 34 px les rendait illisibles. Le bandeau du HUD, lui, ne
+       bouge pas — il doit rester compact. La classe "grand" est posée par
+       profil-page.js. (Pas d'accent grave ici : on est dans un gabarit.) */
+    .rep-badges.grand{ gap:14px; }
+    .rep-badges.grand .rep-img{ width:64px; height:64px;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+    .rep-badges.grand .rep-ic{ font-size:40px; }
+    .rep-badges.grand .rep-n{ font-size:15px; }
+    /* Six blasons (faction + cinq Cercles) doivent tenir sur UNE ligne en
+       390 px : 6 × 46 + 5 × 8 = 316 px. Au-delà, la 6e passe seule à la ligne. */
+    @media (max-width:420px){ .rep-badges.grand{ gap:8px; }
+      .rep-badges.grand .rep-img{ width:46px; height:46px; }
+      .rep-badges.grand .rep-ic{ font-size:28px; }
+      .rep-badges.grand .rep-n{ font-size:13px; } }
     .conc-fil{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:7px;
       border:1px solid var(--line); border-radius:10px; background:#0b1224; padding:10px; }
     .conc-msg{ background:#0f1830; border:1px solid var(--line); border-radius:9px 3px 9px 3px;
@@ -497,18 +512,24 @@ async function _rendreBureauStratege(el, fac){
   } else h+=`<p class="vide">Aucune expédition en cours.</p>`;
   h+=_htmlObjectifsExplication();
   if(estStrat){
+    /* ⚠ v1.07 — UN SEUL CERCLE DONNE DES MERCENAIRES : les Langues-violacées.
+       Avant, les cinq en donnaient (jusqu'à 15 mercenaires). Et ce n'est plus
+       la réputation du Stratège qui compte, mais la MEILLEURE du gouvernement
+       — Régent, Architecte, Stratège ou Ombre (RPC cercle_actif, v1.05).
+       ⚠ Barème DUPLIQUÉ de mercenaires_engager() (seuils 50/70/90 → 1/2/3,
+       prix 1500 × (n+1)) : changer l'un, c'est changer l'autre. */
+    const CERCLE_MERC = "langues";
+    const cMerc = (typeof CERCLES!=="undefined" ? CERCLES : []).find(c=>c.id===CERCLE_MERC) || { nom:"Les Langues-violacées", ic:"👅" };
     h+=`<h4 class="gsec">Mercenaires</h4>`;
-    h+=`<p class="itip-gris" style="font-size:12px">Dès <b>50</b> de réputation dans un Cercle, engage ses mercenaires (payés par la <b>caisse</b>). Ils renforcent l'attaque ET la défense de la faction (+10 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
+    h+=`<p class="itip-gris" style="font-size:12px">Les <b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
     let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
-    const cc=etat.cercles||{}; let any=false;
-    (typeof CERCLES!=="undefined"?CERCLES:[]).forEach(c=>{ const rp=cc[c.id]||0; if(rp>=50){ any=true;
-      /* ⚠ v0.95 — barème DUPLIQUÉ de mercenaires_engager() (seuils 50/70/90,
-         prix 1500 × (n+1)) : vérifié conforme, BACKEND_PLAN §6. Changer l'un,
-         c'est changer l'autre — sinon le prix affiché n'est pas le prix débité. */
-      const mx=rp>=90?3:rp>=70?2:1, cur=mercs[c.id]||0, prix=1500*(cur+1);
-      h+=`<div class="gouv-role"><span>${c.ic} <b>${c.nom}</b> <span class="itip-gris">${cur}/${mx} engagé(s)</span></span><span class="comm-btns">${cur<mx?`<button class="mini" data-merc="${c.id}">Engager (${prix} ₡)</button>`:""}${cur>0?`<button class="mini danger" data-mercr="${c.id}">Rompre</button>`:""}</span></div>`;
-    }});
-    if(!any) h+=`<p class="vide">Aucun Cercle à ≥50 de réputation. Gagnes-en via les quêtes.</p>`;
+    let rp=0; try{ const { data } = await sb.rpc("cercle_actif",{ p_faction:fac, p_cercle:CERCLE_MERC }); rp=data|0; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9b"); }
+    if(rp>=50){
+      const mx=rp>=90?3:rp>=70?2:1, cur=mercs[CERCLE_MERC]||0, prix=1500*(cur+1);
+      h+=`<div class="gouv-role"><span>${cMerc.ic} <b>${cMerc.nom}</b> <span class="itip-gris">${cur}/${mx} engagé(s) · réputation ${rp}</span></span><span class="comm-btns">${cur<mx?`<button class="mini" data-merc="${CERCLE_MERC}">Engager (${prix} ₡)</button>`:""}${cur>0?`<button class="mini danger" data-mercr="${CERCLE_MERC}">Rompre</button>`:""}</span></div>`;
+    } else {
+      h+=`<p class="vide">Personne au gouvernement n'a 50 de réputation chez ${cMerc.nom}. Ça se gagne par les choix de quêtes.</p>`;
+    }
   }
   try{
     const { data:hist } = await sb.from("expeditions").select("cible,objectif,date_prevue,rapport")
@@ -541,8 +562,9 @@ async function _mercEngager(cercle){
   if(error || !res || !res.ok){ const e=res&&res.err;
     if(e==="max") journal("Maximum de mercenaires atteint pour ce Cercle.","alerte");
     else if(e==="caisse") journal(`Caisse insuffisante (${res.prix} ₡).`,"alerte");
-    else if(e==="rep") journal("Réputation de Cercle insuffisante (50 min).","alerte");
+    else if(e==="rep") journal("Personne au gouvernement n'a 50 de réputation chez les Langues-violacées.","alerte");
     else if(e==="pas_stratege") journal("Réservé au Stratège.","alerte");
+    else if(e==="pas_langues") journal("Seules les Langues-violacées louent des mercenaires.","alerte");   // v1.07
     else journal("Engagement impossible.","alerte"); return; }
   journal(`Mercenaires engagés (−${res.prix} ₡ de la caisse).`,"gain"); if(typeof majCentre==="function") majCentre();
 }
@@ -631,7 +653,11 @@ async function syncEffetsCombat(){
          Repli `gagnerXp` : serveur pas encore à jour (xp_total absent). */
       if(typeof data.xp_total === "number" && typeof adopterXpTotal==="function") adopterXpTotal(data.xp_total);
       else if(typeof gagnerXp==="function") gagnerXp(data.xp);
-      journal(`Expérience de campagne : +${data.xp} XP.`,"gain");
+      /* v1.05 — dans l'onglet COMBAT du journal, et plus dans Système : cette
+         ligne arrivait seule, loin du compte rendu de l'expédition (déposé par
+         le serveur en catégorie « combat »). Un testeur ne voyait donc que
+         « +5 XP », sans savoir qui avait été attaqué ni qui avait gagné. */
+      journal(`Expérience de campagne : +${data.xp} XP.`,"gain","combat");
       // L'XP est en base ; ce qui doit être écrit ici, ce sont les POINTS
       // crédités par la montée de niveau, qui vivent dans donnees.
       if(typeof sauverMaintenant==="function") await sauverMaintenant();
@@ -759,6 +785,40 @@ function _legendeDefense(ouvert){
     <dt>Usure</dt><dd>Chaque objet expire au bout de sa durée. Un <b>Sabotage</b> ou un <b>Assaut</b> ennemi réussi ronge cette durée, jusqu'à détruire l'objet.</dd>
   </dl></details>`;
 }
+/* v1.10 — ENCART « CERCLES DE LA FACTION », dans chaque bureau.
+   Les cinq avantages ne se voyaient que dans leurs effets : personne au
+   gouvernement ne savait ce que sa faction avait gagné. La porte d'entrée est
+   `cercle_actif(faction, cercle)` : le meilleur score AU GOUVERNEMENT, 0 s'il
+   est sous 50. Les paliers 50/70/90 ne jouent que pour les mercenaires.
+   ⚠ Les textes ci-dessous DÉCRIVENT des règles serveur (BACKEND_PLAN §23 à §26).
+   Changer une règle, c'est changer la phrase. */
+const CERCLE_EFFETS = {
+  langues:     "Le Stratège peut engager des mercenaires (1 à 50, 2 à 70, 3 à 90), payés par la caisse. +5 en attaque et en défense chacun.",
+  assembleurs: "Quand notre défense est abîmée, le coffre récupère 1 pièce, parfois 2, dans les débris.",
+  veilleurs:   "L'Ombre a 2 tentatives de hack du Protocole par 24 h au lieu d'une.",
+  eclats:      "La caisse touche 25 % de plus sur chaque taxe du marché — sans que le vendeur paie davantage.",
+  racines:     "Tous nos membres regagnent +1 % d'énergie toutes les 2 h, tant qu'ils restent dans notre cercle."
+};
+async function _rendreCerclesFaction(zone, fac){
+  if(!zone || !fac) return;
+  const liste = (typeof CERCLES!=="undefined") ? CERCLES : [];
+  let scores = [];
+  try{
+    scores = await Promise.all(liste.map(async c=>{
+      try{ const { data } = await sb.rpc("cercle_actif",{ p_faction:fac, p_cercle:c.id }); return data|0; }
+      catch(e){ return 0; }
+    }));
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#cercles"); return; }
+  const actifs = liste.map((c,i)=>({ c, n:scores[i] })).filter(x=>x.n>=50);
+  let h = `<details class="leg-def"><summary>◈ Cercles de la faction (${actifs.length}/5)</summary>`;
+  if(!actifs.length){
+    h += `<p class="itip-gris">Aucun. Un avantage s'ouvre dès qu'un membre du gouvernement — <b>n'importe lequel des quatre</b> — atteint <b>50</b> de réputation dans un Cercle. Ça se gagne par les choix de quêtes.</p>`;
+  } else {
+    h += `<dl>` + actifs.map(x=>`<dt>${x.c.ic} ${x.c.nom} <span class="itip-gris">${x.n}</span></dt><dd>${CERCLE_EFFETS[x.c.id]||""}</dd>`).join("") + `</dl>`;
+    if(actifs.length < 5) h += `<p class="itip-gris">Les autres s'ouvriront si quelqu'un du gouvernement y atteint 50.</p>`;
+  }
+  zone.innerHTML = h + `</details>`;
+}
 async function majBureau(el){
   if(!el) return;
   const fac = etat.faction;
@@ -774,10 +834,15 @@ async function majBureau(el){
   if(!_bureauVue || !bureaux.includes(_bureauVue)) _bureauVue = bureaux[0];
   let h="";
   if(bureaux.length>1) h += `<div class="bur-menu">`+bureaux.map(b=>`<button class="bur-lien${_bureauVue===b?" actif":""}" data-bur="${b}">${_bureauNom(b)}</button>`).join("")+`</div>`;
-  if(_bureauVue !== "concertation") h += _legendeDefense(false);   // v0.59 : même légende dans chaque bureau
+  if(_bureauVue !== "concertation"){
+    h += _legendeDefense(false);        // v0.59 : même légende dans chaque bureau
+    h += `<div id="bureau-cercles"></div>`;   // v1.10 : rempli juste après (RPC)
+  }
   h += `<div id="bureau-corps"></div>`;
   el.innerHTML = h;
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
+  const zc = el.querySelector("#bureau-cercles");
+  if(zc) _rendreCerclesFaction(zc, fac);   // v1.10 : sans await, l'encart arrive quand il arrive
   const corps = el.querySelector("#bureau-corps");
   if(_bureauVue==="concertation") await _rendreConcertation(corps, fac);
   else if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);

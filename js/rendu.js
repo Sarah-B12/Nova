@@ -123,7 +123,9 @@ function infoItemHTML(id, joursForce){
   if(typeof effetTexte==="function"){ const e=effetTexte(id); if(e) h += `<div class="itip-effet">${e}</div>`; }
   const ec=(typeof effetConso==="function")?effetConso(id):null; if(ec){ const parts=Object.keys(ec).map(g=>`+${ec[g]} ${labelJauge(g)}`); h += `<div class="itip-effet">${parts.join(", ")} — cliquer pour utiliser</div>`; }
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]){ const p=PRIX_ITEM[id]; h += `<div class="itip-ligne">Valeur : <b>${p.min}–${p.max} ₡</b> <span class="itip-gris">(moy ${p.moy})</span></div>`; }
-  if(typeof dureeVie==="function"){
+  if(typeof estObjetLie==="function" && estObjetLie(id)){
+    h += `<div class="itip-effet">Objet de quête — lié à toi. Il ne se vend pas, ne se range pas, ne se perd pas, et il te suit même dans la mort.</div>`;
+  } else if(typeof dureeVie==="function"){
     let s=`Durée de vie : ${dureeVie(id)} j`;
     const jr = (joursForce!=null) ? joursForce
              : ((typeof joursRestants==="function") ? joursRestants(id) : null);
@@ -187,7 +189,7 @@ function majSac(){
       // Tout objet finit par disparaître, y compris ceux à 30 jours : on affiche
       // donc le badge pour TOUS. Le masquer au-delà de 30 j ne prévenait que pour
       // une partie de l'inventaire, ce qui trompait plus que ça n'informait.
-      const badgeUsure = (jr!=null)
+      const badgeUsure = (jr!=null && !(typeof estObjetLie==="function" && estObjetLie(id)))
         ? `<span class="usure ${jr<1?"critique":jr<dureeVie(id)/2?"faible":""}">${Math.ceil(jr)}j</span>`
         : "";
       t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${lot.qte}</span>${badgeUsure}`;
