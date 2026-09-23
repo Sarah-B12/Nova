@@ -11,7 +11,8 @@
    =========================================================== */
 const PATROUILLE_TAUX          = 0.15;   // probabilité de base par déplacement à découvert
 const PATROUILLE_TAUX_DISCRET  = 0.10;   // avec Discrétion (om1)
-const PATROUILLE_DROP_TAUX     = 0.35;   // chance de récupérer de la tech sur une patrouille vaincue
+const PATROUILLE_DROP_TAUX     = 0.55;   // v1.11 : 0,35 → 0,55 (butin plus souvent)
+const PATROUILLE_DROP_DOUBLE   = 0.25;   // v1.11 : et, dans ce cas, 1 fois sur 4 un SECOND objet
 const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx (seule source ordinaire du jeu)
 /* ⚠ v0.94b — L'XP DES PATROUILLES ÉTAIT DÉJÀ DONNÉE, mais INVISIBLE :
    `gagnerXp()` ne journalise rien, et le message ne parlait que des crédits.
@@ -22,7 +23,23 @@ const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx 
 const XP_PATROUILLE      = 10;   // vaincue au combat (actions.js)
 const XP_PATROUILLE_HACK = 8;    // piratée sans dégâts (ici)
 const ITEM_HACK = "fab_ordinateur_de_hacking";
-const PATROUILLE_DROPS = ["fab_composant_simple","fab_circuit_imprime","fab_cablage","voltane","silite"];
+/* v1.11 — BUTIN ÉLARGI (demande de l'autrice : « que ça renfloue le marché »).
+   Une patrouille vaincue lâchait 5 objets possibles ; elle en lâche désormais
+   15, tous de DÉBUT ou de MILIEU de formation — lingots, fils, panneaux,
+   consommables courants. ⚠ Volontairement AUCUN objet de fin de formation, ni
+   arme lourde, ni vaisseau : ce sont des patrouilleurs dépouillés, pas un
+   entrepôt. ⚠ Ces objets se revendent : garder la liste au ras des matières
+   premières, sinon le marché n'a plus besoin des artisans. */
+const PATROUILLE_DROPS = [
+  "fab_composant_simple","fab_circuit_imprime","fab_cablage","voltane","silite",
+  "fab_fil","fab_lingot_de_voltane","fab_lingot_de_givrite","fab_lingot_de_cendrite",
+  "fab_panneau_de_sylve","fab_plaque_de_coque","fab_biofil_renforce",
+  "fab_panneau_composite","fab_composant_avance","fab_servomoteur"
+];
+/* ⚠ AUCUN CONSOMMABLE dans cette liste (décision du 23/09) : ration, kit de
+   soin, recharge d'O₂ se consomment et se rachètent — les faire tomber gratuit
+   couperait l'herbe sous le pied des Biotech, qui en vivent. Le butin doit être
+   de la MATIÈRE et des PIÈCES, revendables et retransformables. */
 
 function chancePatrouille(){
   const base = (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX;
@@ -33,20 +50,32 @@ function chancePatrouille(){
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }
 
 // Butin technologique d'une patrouille neutralisée (chance + place au sac). Renvoie l'id lâché ou null.
+/* ⚠ Renvoie un TABLEAU d'identifiants depuis la v1.11 (0, 1 ou 2 objets) :
+   les appelants (actions.js, le hack de patrouille) l'affichent en liste. */
 async function butinPatrouille(){
-  if(placesLibres() <= 0) return null;
-  let id = null;
+  if(placesLibres() <= 0) return [];
   // Cristal de Nyx : butin très rare du Protocole (seule source ordinaire, en attendant les zones/l'espace).
-  if(Math.random() < PATROUILLE_CRISTAL && typeof item==="function" && item("cristal")) id = "cristal";
-  else {
-    if(Math.random() > PATROUILLE_DROP_TAUX) return null;
-    const pool = PATROUILLE_DROPS.filter(x => typeof item==="function" && item(x));
-    if(!pool.length) return null;
-    id = pool[alea(0, pool.length-1)];
+  if(Math.random() < PATROUILLE_CRISTAL && typeof item==="function" && item("cristal")){
+    const rc = await agirServeur({ ajouter:{ cristal:1 }, motif:"patrouille" });
+    return (rc && (rc.ajoutes||{}).cristal) ? ["cristal"] : [];
   }
-  const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"patrouille" });
-  if(!r || !(r.ajoutes||{})[id]) return null;
-  return id;
+  if(Math.random() > PATROUILLE_DROP_TAUX) return [];
+  const pool = PATROUILLE_DROPS.filter(x => typeof item==="function" && item(x));
+  if(!pool.length) return [];
+  const gains = {};
+  const n = (Math.random() < PATROUILLE_DROP_DOUBLE && placesLibres() > 1) ? 2 : 1;
+  for(let k=0; k<n; k++){ const id = pool[alea(0, pool.length-1)]; gains[id] = (gains[id]||0) + 1; }
+  const r = await agirServeur({ ajouter:gains, motif:"patrouille" });
+  const pris = (r && r.ajoutes) ? r.ajoutes : {};
+  const liste = [];
+  for(const id in pris) for(let k=0; k<pris[id]; k++) liste.push(id);
+  return liste;
+}
+/* Rend « 2× Fil, 1× Lingot de voltane » à partir de la liste. */
+function _butinTexte(liste){
+  if(!liste || !liste.length) return "";
+  const n = {}; for(const id of liste) n[id] = (n[id]||0) + 1;
+  return Object.keys(n).map(id => `+${n[id]} ${item(id) ? item(id).nom : id}`).join(", ");
 }
 
 // Tentée à chaque déplacement à découvert.
@@ -127,8 +156,8 @@ async function patrouilleHacker(){
   const p = Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500);   // Intrusion + Intelligence
   if(Math.random() < p){
     const g = aptButinCombat(alea(10,22)+bonusCredits()); etat.credits += g;
-    const drop = await butinPatrouille(); gagnerXp(XP_PATROUILLE_HACK);
-    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}, +${XP_PATROUILLE_HACK} XP. Aucun dégât.`,"gain");
+    const drop = await butinPatrouille(); gagnerXp(XP_PATROUILLE_HACK);   // v1.11 : tableau
+    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop.length?`, ${_butinTexte(drop)}`:""}, +${XP_PATROUILLE_HACK} XP. Aucun dégât.`,"gain");
     apresAction();
   } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); await resoudreCombat({}); }
 }

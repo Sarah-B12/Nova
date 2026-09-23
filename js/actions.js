@@ -56,8 +56,9 @@ async function resoudreCombat(opts){
   if(Math.random() < pWin){
     const xp = (typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10;
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(xp);
-    const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : null;   // récup tech du Protocole
-    journal(`Patrouille du Protocole neutralisée : +${g} ₡${drop?`, +1 ${item(drop).nom}`:""}, +${xp} XP.`,"gain");
+    const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : [];   // v1.11 : liste d'objets
+    const btn = (typeof _butinTexte==="function") ? _butinTexte(drop) : "";
+    journal(`Patrouille du Protocole neutralisée : +${g} ₡${btn?`, ${btn}`:""}, +${xp} XP.`,"gain");
   } else {
     /* Santé perdue : ~16 à Force 0, ~5 à Force 200 (+ patrouille costaude).
        Avant : 50 − 0,20×F + cf×0,3, borné 10-55. Divisé par ~3 : un nouveau

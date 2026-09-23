@@ -7,6 +7,13 @@ const PRIX_ITEM = {
   silite: { min:5, moy:7, max:13 }, // Silite
   givrite: { min:10, moy:14, max:25 }, // Givrite
   cristal: { min:1000, moy:2500, max:4000 }, // Cristal de Nyx
+  /* v1.11 — Cristal de Sélénite : la matière la PLUS RARE du jeu, devant le
+     Cristal de Nyx (1000/2500/4000). Son gisement, à Triptolème, ne donnera
+     rien la plupart du temps — comme Le Gravier, mais plus dur. Il verrouille
+     TREIZE objets de fin de formation, dont le Supraconducteur, donc son prix
+     tire toute la fin de l'arbre : le doubler par rapport au Nyx, c'est dire
+     au marché que ces objets-là sont des pièces d'orfèvre. */
+  selenite: { min:2200, moy:5000, max:8000 },
   /* ⚠ v0.91 — Kit de réparation. Il ne se VEND qu'au comptoir du Perchoir, à
      450 ₡. Le marché encadrant les prix (min/max), un plafond à 330 ₡ rend
      l'aller-retour marchand DÉFINITIVEMENT non rentable : acheter en haut pour

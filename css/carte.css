@@ -89,7 +89,16 @@
   /* La barre passe à la ligne au lieu de pousser le cadre. */
   .barre-carte { flex-wrap:wrap; gap:6px 10px; }
   .titre-carte { flex:1 1 100%; }        /* le titre prend sa ligne, plus de pliage mot à mot */
-  .carte-jauges { flex:1 1 auto; gap:12px; }
+  /* ⚠ v1.11 — `.carte-jauges` est en `white-space:nowrap` et ne pouvait pas
+     rétrécir : depuis que la visée tactile y ajoute l'aperçu du coût ET le
+     bouton « Partir », le groupe devenait plus large que l'écran et repoussait
+     le cadre hors du téléphone (même symptôme qu'en v0.92, nouvelle cause).
+     Ici, le groupe a le droit de passer à la ligne, et le bouton « Partir »
+     prend une ligne à lui : rien ne dépasse, et la carte garde sa taille.
+     ⚠ Sous 640 px UNIQUEMENT — l'ordinateur ne bouge pas d'un pixel. */
+  .carte-jauges { flex:1 1 100%; gap:8px 12px; flex-wrap:wrap; white-space:normal; min-width:0; }
+  .cj-apercu { flex:1 1 auto; min-width:0; }
+  #carte-partir { flex:1 1 100%; }
 
   /* Le menu latéral de la carte stellaire passe au-dessus, en rangée. */
   .corps-carte { flex-direction:column; }

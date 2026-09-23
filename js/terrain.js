@@ -11,7 +11,7 @@ const STRUCTURES = {
   // pas ce qu'elles produisent — c'est la bête qu'on achète et qu'on place.
   enclos:  { nom:"Enclos",   prix:250, desc:"Cuprin, Cuirasson, Toisard, Nourrin" },
   atelier: { nom:"Atelier",  prix:300, desc:"fabriquer les objets de ta formation" },
-  hangar:  { nom:"Hangar à drones", prix:350, desc:"automatise un bio-dôme ou un enclos" }
+  hangar:  { nom:"Hangar à drones", prix:350, desc:"abrite les drones d'automatisation (à acheter en plus)" }
 };
 const MINE_MAX = 500;      // réserve d'une mine à sa construction
 const MINE_LOT = 6;        // minerais extraits par action « Miner »

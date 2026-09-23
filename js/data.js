@@ -33,12 +33,21 @@ const MATIERES = [
   { id:"silite",   nom:"Silite",   type:"matiere", cat:"minerai", poids:18 },
   { id:"givrite",  nom:"Givrite",  type:"matiere", cat:"minerai", poids:9  },
   { id:"cristal",  nom:"Cristal de Nyx", type:"matiere", cat:"minerai", poids:0.5 },
+  /* v1.11 — CRISTAL DE SÉLÉNITE : verrouille les objets de FIN de formation
+     (armures lourdes, singularité, supraconducteur, IA, implants, coque et
+     cockpit blindés, vaisseau maître). Pierre pâle et laiteuse, en aiguilles.
+     ⚠ Il vient de TRIPTOLÈME, pas de Silène : comme le Cristal de Nyx, il est
+     EXCLU du pool de minage au sol (voir MINERAIS juste en dessous).
+     ⚠ PLUS RARE QUE LE NYX (décision du 23/09) : son gisement ne donnera rien
+     la plupart du temps. 📌 Gisement et icône restent À FAIRE — en attendant,
+     les treize recettes qui l'exigent sont infabricables. */
+  { id:"selenite", nom:"Cristal de Sélénite", type:"matiere", cat:"minerai", poids:0.5 },
   { id:"biofibre", nom:"Biofibre", type:"matiere", cat:"organique" },
   { id:"filaine",  nom:"Filaine",  type:"matiere", cat:"animal" },
   { id:"cuir",     nom:"Cuir",     type:"matiere", cat:"animal" },
   { id:"proteines",nom:"Protéines",type:"matiere", cat:"animal" }
 ];
-const MINERAIS = MATIERES.filter(m => m.cat === "minerai" && m.id !== "cristal");   // Cristal de Nyx : PAS dans le pool de minage (butin de patrouille uniquement)
+const MINERAIS = MATIERES.filter(m => m.cat === "minerai" && m.id !== "cristal" && m.id !== "selenite");   // Cristal de Nyx : PAS dans le pool de minage (butin de patrouille uniquement)
 // Plantes cultivées dans le bio-dôme (croissance = % gagné par arrosage quotidien).
 // Noms et images provisoires — à remplacer quand tu me donneras tes visuels.
 const PLANTES = [
@@ -151,7 +160,7 @@ const IMG_ITEM = {
   kit_reparation:"images/items/plaque_coque.png",
   cendrite:"images/items/cendrite.png", voltane:"images/items/voltane.png",
   silite:"images/items/silite.png",     givrite:"images/items/givrite.png",
-  cristal:"images/items/cristal.png",   biofibre:"images/items/biofibre.png",
+  cristal:"images/items/cristal.png",   selenite:"images/items/selenite.png",   biofibre:"images/items/biofibre.png",
   filaine:"images/items/filaine.png",   sylve:"images/items/sylve.png",
   sporelle:"images/items/sporelle.png", nectine:"images/items/nectine.png", ferragave:"images/items/ferragave.png",
   proteines:"images/items/proteines.png",

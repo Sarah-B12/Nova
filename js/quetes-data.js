@@ -64,7 +64,7 @@ const QUETES = [
         arrivee:[
           "La roche tiède fume doucement sous tes bottes. Un relais à demi enfoui clignote dans la caillasse ; une voix synthétique en jaillit, distordue, dans une langue que tu n'as jamais entendue : des consonnes sèches, des voyelles plates, une grammaire de formulaire. Elle se stabilise sur deux mots qu'elle répète en boucle.",
           "« Toutes unités », traduit Sorn dans ton oreille, sans même réfléchir. « Elle dit : toutes unités. Encore et encore. »",
-          "Ta radio crachote. « T'es arrivé ? Étonnant. Le relais va vouloir que tu lui répètes ce qu'il vient de dire — c'est comme ça qu'ils vérifient qu'on les a reçus. Réponds, je lui passe ta voix en ancien. »"
+          "Ta radio crachote. « Bien, t'y es. Le relais va vouloir que tu lui répètes ce qu'il vient de dire — c'est comme ça qu'ils vérifient qu'on les a reçus. Réponds, je lui passe ta voix en ancien. »"
         ],
         /* ⚠ Était une devinette (« je grandis en dévorant… ») : contenu
            interchangeable, aucun lien avec Silène ni le Protocole. Devient
@@ -81,7 +81,7 @@ const QUETES = [
           ] } },
 
       /* ---- 2. La borne givrée — ATTENTE (non ratable) ---- */
-      { indice:"Le froid, maintenant. Lisière sud de la cité de glace, là où l'eau refuse encore de prendre. Cherche dans ce secteur.",
+      { indice:"Le froid, maintenant. Lisière sud de la cité de glace, là où la neige cesse d'être poudreuse et commence à crisser. Cherche dans ce secteur.",
         cible:{ x:1960, y:600, r:80 }, leurres:[ {x:700,y:300,r:80}, {x:1150,y:1050,r:80}, {x:2000,y:1300,r:80} ],
         image:"images/quetes/q1/2.png",
         arrivee:[

@@ -24,11 +24,11 @@ const FORMATIONS = {
       [110,"Munitions à ions ×10","2 Lingot de Givrite, 1 Lingot de Silite"],
       [120,"Fusil à ions","4 Lingot de Givrite, 1 Composant avancé, 1 Cellule d'énergie"],
       [130,"Tourelle de vaisseau","1 Fusil à ions, 3 Munitions à ions, 1 Servomoteur"],
-      [140,"Casque lourd","2 Lingot de Givrite, 1 Biofil renforcé"],
-      [150,"Plastron lourd","3 Lingot de Givrite, 1 Combinaison pressurisée, 1 Panneau renforcé"],
-      [160,"Jambières lourdes","2 Lingot de Givrite, 2 Biofil renforcé"],
-      [170,"Lame à singularité","1 Cristal de Nyx, 1 Lingot de Givrite, 2 Panneau composite"],
-      [180,"Canon à singularité","3 Cristal de Nyx, 2 Lingot de Givrite, 3 Panneau composite, 1 Biofil renforcé"]
+      [140,"Casque lourd","2 Lingot de Givrite, 1 Biofil renforcé, 1 Cristal de Sélénite"],
+      [150,"Plastron lourd","3 Lingot de Givrite, 1 Combinaison pressurisée, 1 Panneau renforcé, 1 Cristal de Sélénite"],
+      [160,"Jambières lourdes","2 Lingot de Givrite, 2 Biofil renforcé, 1 Cristal de Sélénite"],
+      [170,"Lame à singularité","1 Cristal de Nyx, 1 Cristal de Sélénite, 1 Lingot de Givrite, 2 Panneau composite"],
+      [180,"Canon à singularité","3 Cristal de Nyx, 2 Cristal de Sélénite, 2 Lingot de Givrite, 3 Panneau composite, 1 Biofil renforcé"]
     ]
   },
   ingenieur: {
@@ -45,8 +45,8 @@ const FORMATIONS = {
       [70,"Panneau composite","2 Panneau renforcé, 1 Lingot de Voltane"],
       [80,"Noyau de calcul","2 Composant avancé, 1 Circuit imprimé, 1 Cristal de Nyx"],
       [90,"Ordinateur de hacking","1 Noyau de calcul, 1 Composant avancé, 1 Fil"],
-      [100,"Supraconducteur","2 Lingot de Voltane, 1 Lingot de Givrite, 1 Composant avancé, 1 Biofil renforcé"],
-      [110,"IA d'assistance","2 Noyau de calcul, 1 Cristal de Nyx, 1 Supraconducteur"],
+      [100,"Supraconducteur","2 Lingot de Voltane, 1 Lingot de Givrite, 1 Composant avancé, 1 Biofil renforcé, 1 Cristal de Sélénite"],
+      [110,"IA d'assistance","2 Noyau de calcul, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Supraconducteur"],
       [120,"Drone de récolte","1 Servomoteur, 1 IA d'assistance, 1 Composant simple, 2 Biogel"],
       [130,"Drone d'élevage","1 Servomoteur, 1 IA d'assistance, 1 Composant avancé, 1 Kit de soin"],
       [140,"Drone récupérateur","1 Servomoteur, 1 IA d'assistance, 4 Composant avancé"],
@@ -71,9 +71,9 @@ const FORMATIONS = {
       [110,"Biofil renforcé","4 Fil, 1 Biofibre"],
       [120,"Combinaison pressurisée","1 Tank à oxygène, 1 Biofil renforcé, 1 Cellule d'énergie"],
       [130,"Biocarburant raffiné","2 Biocarburant, 1 Composant avancé"],
-      [140,"Implant de force","3 Biofil renforcé, 1 Cristal de Nyx, 1 Antidote"],
-      [150,"Implant d'agilité","3 Biofil renforcé, 1 Cristal de Nyx, 1 Stimulant"],
-      [160,"Implant maitre","3 Biofil renforcé, 3 Cristal de Nyx, 1 Antidote, 1 Stimulant"]
+      [140,"Implant de force","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote"],
+      [150,"Implant d'agilité","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Stimulant"],
+      [160,"Implant maitre","3 Biofil renforcé, 3 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote, 1 Stimulant"]
     ]
   },
   constructeur: {
@@ -91,10 +91,10 @@ const FORMATIONS = {
       [80,"Bloc de propulsion","2 Moteur basique, 1 Réservoir, 1 Composant avancé, 1 Lingot de Silite"],
       [90,"Soute cargo","3 Plaque de coque, 1 Panneau renforcé"],
       [100,"Vaisseau Cargo","3 Plaque de coque, 1 Cockpit léger, 1 Moteur basique, 1 Bloc de propulsion, 1 Soute cargo"],
-      [110,"Coque blindée","3 Plaque de coque, 1 Panneau composite"],
-      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir"],
+      [110,"Coque blindée","3 Plaque de coque, 1 Panneau composite, 1 Cristal de Sélénite"],
+      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir, 1 Cristal de Sélénite"],
       [130,"Moteur à distorsion","1 Moteur basique, 3 Lingot de Givrite, 1 Cristal de Nyx"],
-      [140,"Vaisseau maitre","1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 3 Cristal de Nyx"]
+      [140,"Vaisseau maitre","1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 3 Cristal de Nyx, 1 Cristal de Sélénite"]
     ]
   }
 };
