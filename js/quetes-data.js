@@ -1032,13 +1032,13 @@ const QUETES = [
           texte:["La cendre de La Braise colle à tout. Ce que tu remontes, tu l'auras sous les yeux longtemps."],
           options:[
             { texte:"Les graines calcinées de la couche de racines. Pour Adaya : elle saura dire ce que c'était.",
-              cercles:{ racines:5, assembleurs:-2 },
+              cercles:{ racines:5 },
               journal:"Tu as gardé une poignée de graines noires, intactes sous la cendre. Adaya voudra les voir." },
             { texte:"Le module de mémoire de la borne. Démonté, il dira peut-être comment AREPO « ferme » un secteur.",
-              cercles:{ assembleurs:5, racines:-3 },
+              cercles:{ assembleurs:5 },
               journal:"Tu as démonté le module de mémoire de la borne. Il est lourd, et il est tiède." },
             { texte:"Rien. Seulement noter la profondeur de la couche de cendre, et le texte de la borne, mot pour mot.",
-              cercles:{ veilleurs:5, eclats:-2 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as tout noté et rien pris. ESSAI CLOS. SECTEUR FERMÉ. C'est dans ton carnet." }
           ],
           reussite:[
@@ -1187,13 +1187,13 @@ const QUETES = [
           texte:["La station attend. Toi, tu as encore de l'air pour un moment. Ce que tu fais ici, personne ne le verra — sauf Sorn, qui écoute."],
           options:[
             { texte:"Recopier le journal et l'ordre, mot pour mot, en ancien, pour que Sorn les ait sous les yeux.",
-              cercles:{ langues:5, eclats:-2 },
+              cercles:{ langues:5 },
               journal:"Tu as recopié le journal de la station et l'ordre final. Sorn dit qu'il les lira à Adaya. Il a dit « à Adaya », sans s'en rendre compte." },
             { texte:"Arracher ce qui se revend — le pupitre, les câbles, le métal qui ne rouille pas. Qu'elle ne soit plus prête pour rien.",
-              cercles:{ eclats:5, veilleurs:-5, langues:-3 },
+              cercles:{ eclats:5 },
               journal:"Tu as dépouillé la station. Elle ne sera plus jamais prête pour quoi que ce soit." },
             { texte:"Ne toucher à rien, et graver sur la porte ce qui s'est passé ici, pour ceux qui viendront après.",
-              cercles:{ veilleurs:5, eclats:-3 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as gravé sur la porte : « Ici, on a fermé une planète en fleurs. 41 minutes. » Quelqu'un le lira." }
           ],
           reussite:[
@@ -1342,13 +1342,13 @@ const QUETES = [
           texte:["Trois siècles de nuits de Silène, dans ton vaisseau. Ce qui en sortira dépend de toi."],
           options:[
             { texte:"Les envoyer à Adaya. Elle a passé sa vie à regarder la ligne d'en bas ; elle mérite de la voir d'en haut.",
-              cercles:{ racines:5, langues:-2 },
+              cercles:{ racines:5 },
               journal:"Tu as envoyé les relevés à Adaya. Elle n'a répondu qu'un mot : « Merci. » Puis, une heure plus tard : « Deux bouts. »" },
             { texte:"Démonter l'optique de la sonde : voir comment AREPO regardait ses champs d'aussi haut.",
-              cercles:{ assembleurs:5, veilleurs:-3 },
+              cercles:{ assembleurs:5 },
               journal:"Tu as démonté l'optique de la sonde Ortie. Elle voyait assez fin pour compter les tiges de la ligne." },
             { texte:"Déchiffrer les en-têtes des relevés : où ils partaient, qui devait les lire, et depuis quand personne ne les lit plus.",
-              cercles:{ langues:5, racines:-2 },
+              cercles:{ langues:5 },
               journal:"Tu as déchiffré les en-têtes : BUREAU DES CULTURES, TRIPTOLÈME. Une adresse. Quelque part, il y a eu quelqu'un pour lire ça." }
           ],
           reussite:[
@@ -1491,13 +1491,13 @@ const QUETES = [
           texte:["Personne n'est venu ici depuis que l'équipage est parti. Ce que tu fais maintenant, le vaisseau ne s'en souviendra pas."],
           options:[
             { texte:"Tout photographier, le ber, la coque, le journal, et le rapporter à Galm comme promis. Rien d'autre.",
-              cercles:{ veilleurs:5, racines:-2 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as rapporté les photos à Galm. Elle les a épinglées au-dessus de son établi, à côté des relevés. Elle ne les regarde pas souvent. Elle sait qu'elles sont là." },
             { texte:"Ouvrir une trappe de service et étudier comment ce vaisseau est fait. Il a tenu trois siècles en sommeil.",
-              cercles:{ assembleurs:5, veilleurs:-3 },
+              cercles:{ assembleurs:5 },
               journal:"Tu as passé des heures dans les entrailles du vaisseau. Tout est prêt, tout est propre. Il suffirait d'une phrase pour qu'il parte." },
             { texte:"Graver sur sa coque, sous « AFFECTATION — MAAR-3 », une seule ligne : « Ils attendent encore. »",
-              cercles:{ racines:5, assembleurs:-3 },
+              cercles:{ racines:5 },
               journal:"Tu as gravé la ligne sur la coque. Si quelqu'un revient un jour réveiller ce vaisseau, il saura qu'il y a des gens au bout." }
           ],
           reussite:[
@@ -1643,13 +1643,13 @@ const QUETES = [
           texte:["Le froid ronge ta combinaison. Il faut remonter. Ce que tu laisses ici y restera encore trois cents ans."],
           options:[
             { texte:"Prendre un seul bocal de silène d'origine, pour Adaya. Une graine d'avant tout le reste.",
-              cercles:{ racines:5, veilleurs:-2 },
+              cercles:{ racines:5 },
               journal:"Tu as emporté un bocal de silène d'origine. Adaya a pleuré à la radio, sans essayer de le cacher." },
             { texte:"Ne toucher à rien, et relever chaque rangée : quelles espèces, combien, lesquelles portent « essai clos ».",
-              cercles:{ veilleurs:5, eclats:-3 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as relevé les rayonnages, rangée après rangée. La liste est longue. Beaucoup d'« essai clos »." },
             { texte:"Remplir ton sac de bocaux rares. Des graines d'AREPO, gelées depuis trois siècles : des collectionneurs paieraient une fortune.",
-              cercles:{ eclats:5, racines:-5, veilleurs:-3 },
+              cercles:{ eclats:5 },
               journal:"Tu as rempli ton sac de bocaux. Le rayonnage, derrière toi, a des trous, maintenant." }
           ],
           reussite:[
@@ -1816,13 +1816,13 @@ const QUETES = [
           texte:["C'est la seule trace, en trois siècles, de ce que l'équipe de Vareck a vu. Ce que tu en fais, les deux familles le sauront."],
           options:[
             { texte:"L'emporter, et la remettre à Adaya et à Sorn, ensemble. Elle est à leurs familles plus qu'à AREPO.",
-              cercles:{ racines:5, veilleurs:-3 },
+              cercles:{ racines:5 },
               journal:"Tu as rapporté la note de Vareck. Adaya et Sorn l'ont posée sur la table de la serre, entre eux deux, et l'ont regardée longtemps." },
             { texte:"La recopier mot pour mot, en ancien et en traduction, et laisser l'original dans son dossier, à sa place.",
-              cercles:{ langues:5, racines:-2 },
+              cercles:{ langues:5 },
               journal:"Tu as recopié la note, et remis l'original à sa place, sous son tampon. Il y a maintenant deux exemplaires de ce que Vareck a vu." },
             { texte:"Arracher le tampon « classé sans suite », et laisser la note ouverte sur le pupitre, pour le prochain qui viendra.",
-              cercles:{ veilleurs:5, langues:-2 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as arraché le tampon. La note de Vareck est ouverte sur le pupitre des Archives, lisible pour qui descendra." }
           ],
           reussite:[
@@ -1993,13 +1993,13 @@ const QUETES = [
           texte:["Le message de Sorn, E. est dans la mémoire du relais. Tu peux le laisser dormir, le faire entendre, ou le garder."],
           options:[
             { texte:"Le traduire en langue de tous les jours et l'envoyer dans toutes les cités de Silène. Que chacun sache ce que les quatre-vingts ont fait.",
-              cercles:{ langues:5, veilleurs:-5 },
+              cercles:{ langues:5 },
               journal:"Tu as fait traduire le message de Sorn, E. et l'as envoyé dans toutes les cités. Au Rhizome, quelqu'un l'a affiché sur la porte des serres." },
             { texte:"Le brancher en boucle sur le relais, en phase avec la cadence, pour qu'il passe sur le réseau à chaque cycle d'appel.",
-              cercles:{ assembleurs:5, langues:-3 },
+              cercles:{ assembleurs:5 },
               journal:"Tu as branché le message en boucle. À chaque cycle d'appel, maintenant, il passe sur le réseau, porté par la vague." },
             { texte:"Le garder pour Sorn et Adaya seulement. Les quatre-vingts ont tenu leur secret trois siècles ; ce n'est pas à toi de le crier.",
-              cercles:{ veilleurs:5, langues:-3 },
+              cercles:{ veilleurs:5 },
               journal:"Tu as gardé le message pour les deux familles. Le secret des quatre-vingts reste un secret — mais il a, enfin, des gardiens qui savent pourquoi." }
           ],
           reussite:[
