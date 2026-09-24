@@ -770,7 +770,7 @@ function _wireChoix(z,d){
     if(!await _payerCoutQ(o.cout)){ liberer(); return; }
     await _appliquerCerclesQ(o.cercles);
     const ef=_cerclesTexteQ(o.cercles);   // annoncé seulement une fois le choix fait
-    if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","social");
+    if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13 : onglet Quêtes
     // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
     if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
     journal(o.journal || "Ton choix est scellé.","gain");
@@ -827,7 +827,7 @@ function _wireNommer(z, d, o){
     if(!a._beteCercle){
       await _appliquerCerclesQ(opt.cercles);
       a._beteCercle=true; sauvegarder();
-      const ef=_cerclesTexteQ(opt.cercles); if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","social");
+      const ef=_cerclesTexteQ(opt.cercles); if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13
     }
     journal(opt.journal || `${data.nom} te suit désormais.`, "gain");
     reussirDefi();
@@ -841,6 +841,25 @@ function _wireNommer(z, d, o){
      en dessous             → échec, l'étape se verrouille 8 h (VERROU_DEFI_H)
    La compétence qui l'emporte choisit le récit ET le Cercle qui gagne des points. */
 const COMBAT_CERCLES = { force:"racines", agilite:"langues", intelligence:"assembleurs" };
+/* v1.14 — ÉGALITÉ DE COMPÉTENCES : à qui va la réputation ?
+   Avant, `best` retombait sur la Force dès qu'il y avait égalité — donc sur les
+   Racines, qui étaient discrètement avantagées chez les joueurs équilibrés.
+   Règle voulue (23/09) : parmi les compétences À ÉGALITÉ, on crédite le Cercle
+   où l'on a DÉJÀ le plus de réputation ; si ces Cercles sont eux aussi à
+   égalité, tirage au sort. Les fortes deviennent plus fortes, sans que le hasard
+   décide à la place du joueur. */
+function _cercleCombat(st, cerclesMap){
+  const m = cerclesMap || COMBAT_CERCLES;
+  const max = Math.max(st.force, st.agilite, st.intelligence);
+  const exaequo = ["force","agilite","intelligence"].filter(k => st[k] === max);
+  const cercles = [...new Set(exaequo.map(k => m[k]).filter(Boolean))];
+  if(!cercles.length) return null;
+  if(cercles.length === 1) return cercles[0];
+  const rep = c => (etat.cercles && etat.cercles[c]) || 0;
+  const mieux = Math.max(...cercles.map(rep));
+  const tetes = cercles.filter(c => rep(c) === mieux);
+  return tetes[Math.floor(Math.random() * tetes.length)];   // égalité de réputation : au hasard
+}
 function _combatStats(){
   const f = (typeof forceEffective==="function") ? forceEffective() : (etat.competences.force||0);
   const a = (typeof agiliteEffective==="function") ? agiliteEffective() : (etat.competences.agilite||0);
@@ -878,8 +897,20 @@ function _wireCombat(z,d){
       perte=Math.round((p-st.val)/p*40)+5;
       await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
     }
-    const cercle=(d.cercles&&d.cercles[st.best])||COMBAT_CERCLES[st.best];
-    if(cercle && typeof _appliquerCerclesQ==="function") await _appliquerCerclesQ({ [cercle]: (d.gain||2) });
+    /* ⚠ v1.13 — LE GAIN DU COMBAT EST MAINTENANT ANNONCÉ. Il l'était pour les
+       choix, pas ici : un testeur a vu son blason bouger sans comprendre
+       pourquoi (+2 Langues après Q4). Le Cercle dépend de la compétence qui a
+       emporté le combat — Force → Racines, Agilité → Langues, Intelligence →
+       Assembleurs — donc on le dit, sinon c'est illisible. */
+    const cercle=_cercleCombat(st, d.cercles);   // v1.14 : départage en cas d'égalité
+    if(cercle && typeof _appliquerCerclesQ==="function"){
+      const gain = d.gain||2;
+      await _appliquerCerclesQ({ [cercle]: gain });
+      const ef = _cerclesTexteQ({ [cercle]: gain });
+      const _libCompet = { racines:"la Force", langues:"l'Agilité", assembleurs:"l'Intelligence" };
+      const par = _libCompet[cercle] || "ta meilleure compétence";
+      if(ef) journal(`Emporté par ${par} : ${ef}.`,"gain","quete");
+    }
     if(typeof gagnerXp==="function") gagnerXp(d.xp||8);
     journal(perte>0 ? `Victoire arrachée (−${perte} santé).` : "Victoire nette.", perte>0?"alerte":"gain");
     if(typeof afficher==="function") afficher();
