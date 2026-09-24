@@ -1530,12 +1530,24 @@ function marqueursQueteCarteHtml(carte){
        + _triRelevesHtml(carte);   // v0.98 : relevés de triangulation
 }
 /* Clic près d'un repère d'une sous-carte : on va à son centre (comme repereQueteSous sur Silène). */
+/* ⚠ v1.15 — L'AIMANTATION NE DOIT PAS ANNULER LES DÉPLACEMENTS DANS LA ZONE.
+   Elle ramenait le clic au centre du repère dès qu'on cliquait à moins de
+   `cible.r + 50`. Or `r` délimite la ZONE OÙ L'ÉTAPE EST VALIDE, pas une marge
+   de visée : aux Solfatares (Q8 étape 3) elle vaut **300**, si bien que tout
+   clic dans le cratère renvoyait au même point — et la triangulation, qui
+   exige des relevés en PLUSIEURS endroits, devenait impossible (signalé par un
+   testeur le 24/09).
+   L'aimantation sert à ne pas rater un repère qu'on vise : 60 unités suffisent.
+   Au-delà, on va exactement où l'on a cliqué. */
+const REPERE_AIMANT = 60;
 function repereQueteSousCarte(carte, x, y){
   const a=queteActive(); const e=etapeActive(); if(!a || a._resolu || !e || !e.cible) return null;
   let best=null, bd=Infinity;
   for(const p0 of _ptsQuete(e)){
     const p=_cibleResolue(p0); if(!p || p.carte!==carte) continue;
-    const d=Math.hypot(x-p.x, y-p.y); if(d <= p.r+50 && d < bd){ bd=d; best=p; }
+    const d=Math.hypot(x-p.x, y-p.y);
+    const marge=Math.min(p.r, REPERE_AIMANT);   // jamais plus que le rayon lui-même
+    if(d <= marge && d < bd){ bd=d; best=p; }
   }
   return best;
 }
