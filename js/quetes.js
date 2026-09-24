@@ -1540,8 +1540,18 @@ function marqueursQueteCarteHtml(carte){
    L'aimantation sert à ne pas rater un repère qu'on vise : 60 unités suffisent.
    Au-delà, on va exactement où l'on a cliqué. */
 const REPERE_AIMANT = 60;
+/* ⚠ v1.15b — L'AIMANT NE JOUE QUE POUR ARRIVER, JAMAIS UNE FOIS SUR PLACE.
+   Réduire sa portée à 60 ne suffisait pas : un relevé de triangulation doit
+   être à 30 unités du précédent, donc un aimant de 60 les avale encore. Le
+   testeur tournait entre trois points près du centre, l'aimant reprenant la
+   main dès qu'il approchait (photo du 24/09).
+   Règle : si le joueur est DÉJÀ dans la zone de l'étape, plus aucune
+   aimantation — il s'y déplace au pixel. L'aimant sert à ne pas rater le
+   repère quand on vient de loin ; sur place, il ne sert plus qu'à gêner.
+   Vaut pour la triangulation, la chasse et l'affût. */
 function repereQueteSousCarte(carte, x, y){
   const a=queteActive(); const e=etapeActive(); if(!a || a._resolu || !e || !e.cible) return null;
+  if(typeof _dansCible==="function" && _dansCible(e.cible)) return null;
   let best=null, bd=Infinity;
   for(const p0 of _ptsQuete(e)){
     const p=_cibleResolue(p0); if(!p || p.carte!==carte) continue;
