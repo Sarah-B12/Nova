@@ -339,11 +339,52 @@ function majDev(){
         <div class="dev-champ"><input id="dev-adm-pseudo" placeholder="Pseudo"><select id="dev-adm-role"><option value="admin">Admin</option><option value="dev">Dev</option><option value="">Aucun</option></select><button class="mini" id="dev-adm-btn">Définir</button></div></div>`;
       h += `<div class="dev-bloc"><h4>Phase élection (test)</h4><div class="dev-champ"><button class="mini" data-phase="depot">Dépôt</button><button class="mini" data-phase="vote">Vote</button><button class="mini" data-phase="resultat">Résultat</button><button class="mini" data-phase="">Auto (date)</button></div><div class="dev-champ" style="margin-top:6px"><button class="mini danger" id="dev-reset-elec">Réinitialiser le cycle (test)</button></div></div>`;
       h += `<div class="dev-bloc"><h4>Protocole (debug)</h4><div id="dev-proto"><p class="dev-note">Chargement…</p></div></div>`;
+      /* v1.13 — APPARENCE : ouvrir / fermer le verrou. Ici, dans les outils DEV
+         (pas dans la console admin, décision du 23/09). Vide = sur soi ; un
+         pseudo = sur ce joueur. Le verrou est côté serveur, donc ouvrir
+         l'éditeur ne suffirait pas : c'est `profils.apparence_le` qu'on bouge. */
+      h += `<div class="dev-bloc"><h4>Apparence — verrou</h4>
+        <div class="dev-champ"><input id="dev-app-pseudo" placeholder="Pseudo (vide = moi)">
+          <button class="mini" id="dev-app-lire">Voir l'état</button></div>
+        <div class="dev-champ" style="margin-top:6px">
+          <button class="mini" data-app="ouvrir">Ouvrir (gratuit)</button>
+          <button class="mini" data-app="expirer">Ouvrir (payant)</button>
+          <button class="mini danger" data-app="fermer">Refermer</button></div>
+        <p class="dev-note" id="dev-app-etat">—</p>
+        <p class="dev-note"><b>Ouvrir (gratuit)</b> : le serveur croit à un premier choix — aucun coût, et <b>le genre redevient modifiable</b>. <b>Ouvrir (payant)</b> : le verrou est écoulé mais le régime normal s'applique — genre figé, 5 000 ₡. <b>Refermer</b> : reverrouillé 180 jours. Tracé dans le journal admin.</p></div>`;
       h += `<div class="dev-bloc"><h4>Staff actuel</h4><div id="dev-staff"><p class="dev-note">Chargement…</p></div></div>`;
       h += `<div class="dev-bloc"><h4>Expédition (test)</h4><p class="dev-note">Avance l'échéance de l'expédition de ta faction à <b>maintenant</b>. Le cron la résoudra à la minute suivante, exactement comme en vrai.</p><div class="dev-champ"><button class="mini" id="dev-exp-avancer">Avancer l'échéance à maintenant</button></div></div>`;
       // (Le journal admin a son propre onglet — l'onglet Gouvernement était trop long.)
     }
     g.innerHTML = h;
+    /* v1.13 — branchement du bloc Apparence. */
+    const _appZ = g.querySelector("#dev-app-etat");
+    const _appDire = (d)=>{
+      if(!_appZ) return;
+      if(!d || !d.ok){ _appZ.textContent = "Échec : " + ((d && d.err) || "?"); return; }
+      _appZ.innerHTML = d.gratuit
+        ? `<b>${echapper(d.nom)}</b> — <b style="color:#6fd08a">ouverte</b>, changement gratuit, genre modifiable.`
+        : (d.verrou
+            ? `<b>${echapper(d.nom)}</b> — <b style="color:var(--coral,#ff6b6b)">verrouillée</b> jusqu'au ${new Date(d.prochain).toLocaleString()}.`
+            : `<b>${echapper(d.nom)}</b> — <b>déverrouillée</b> (régime normal : 5 000 ₡, genre figé).`);
+    };
+    const _appAppel = async (mode)=>{
+      const pseudo = (g.querySelector("#dev-app-pseudo")||{}).value || "";
+      let pid = null;
+      if(pseudo.trim()){
+        try{ const { data } = await sb.from("profils").select("id").eq("nom", pseudo.trim()).maybeSingle();
+          if(!data){ _appZ.textContent = "Joueur introuvable."; return; }
+          pid = data.id;
+        }catch(e){ _appZ.textContent = "Recherche impossible."; return; }
+      }
+      let d = null;
+      try{ d = (await sb.rpc("admin_apparence", { p_profil: pid, p_mode: mode })).data; }
+      catch(e){ if(typeof _catchLog==="function") _catchLog(e, "dev-console.js#apparence"); }
+      _appDire(d);
+      if(d && d.ok && mode !== "lire") journal(`[DEV] Apparence ${mode} pour ${d.nom}.`, "alerte");
+    };
+    const _appLire = g.querySelector("#dev-app-lire"); if(_appLire) _appLire.addEventListener("click", ()=>_appAppel("lire"));
+    g.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click", ()=>_appAppel(b.dataset.app)));
     g.querySelector("#dev-nom-btn").addEventListener("click", devNommer);
     const ab=g.querySelector("#dev-adm-btn"); if(ab) ab.addEventListener("click", devDefinirRole);
     if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
