@@ -134,6 +134,8 @@
      `pointer:coarse` ne vise QUE le doigt : à la souris, rien ne bouge. */
   @media (pointer:coarse){
     button.mini { min-height:40px; padding:9px 14px; }
+    /* v1.15 : le ✕ des relevés est collé à sa ligne de texte — 44 px pleins. */
+    button.mini.q-tri-eff { min-height:44px; min-width:44px; }
     .sous-lien, .bur-lien, .onglet, .comm-btns button { min-height:40px; }
     input[type="radio"], input[type="checkbox"] { width:20px; height:20px; }
     label:has(> input[type="radio"]), label:has(> input[type="checkbox"]) { min-height:40px; display:inline-flex; align-items:center; gap:6px; }

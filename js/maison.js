@@ -245,8 +245,26 @@ function majMaison(){
        un cas il manquait des matières, dans l'autre il ne manquait rien du
        tout. C'est le piège n°3 du projet — un bouton désactivé ne porte pas
        d'infobulle, la raison doit être dans le libellé. */
+    /* ⚠ v1.15 — DIRE COMBIEN IL MANQUE. Le travail s'ouvre au prorata des
+       matières déposées : `actions × déposé / besoin`. Sur une Cabane (14 unités
+       pour 8 actions), déposer UNE matière ouvre `floor(8/14)` = **0** action —
+       le bouton restait grisé sur un laconique « dépose des matières », et on
+       croyait à un bug (retour de l'autrice, 24/09). On calcule donc le nombre
+       d'unités qui manquent pour ouvrir la PROCHAINE action, et on l'écrit. */
     const _rienAFaire = dispoTravail <= 0;
-    const _faute = _rienAFaire ? "dépose des matières" : (etat.energie < TRAVAIL_ENERGIE ? "énergie insuffisante" : null);
+    let _faute = null;
+    if(_rienAFaire){
+      const r = recetteMaison(c.cible) || {};
+      const besoin = Object.values(r).reduce((a,b)=>a+b,0);
+      const total  = travailTotal(c.cible);
+      const depose = deposeTotal(c);
+      // Unités nécessaires pour que `floor(total × déposé / besoin)` dépasse le travail déjà fait.
+      const vise   = Math.ceil((c.travail + 1) * besoin / total);
+      const manque = Math.max(1, vise - depose);
+      _faute = (besoin > 0 && total > 0)
+        ? `dépose encore ${manque} matière${manque>1?"s":""} (${depose}/${besoin})`
+        : "dépose des matières";
+    } else if(etat.energie < TRAVAIL_ENERGIE){ _faute = "énergie insuffisante"; }
     /* v1.05 : deux raccourcis à côté du bouton à l'unité. « Au maximum » fait
        tout ce que l'énergie et les matières permettent, en une seule fois. */
     const _bloque = (_rienAFaire || etat.energie < TRAVAIL_ENERGIE);

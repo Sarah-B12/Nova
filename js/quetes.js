@@ -1296,10 +1296,30 @@ function _wireTriangulation(z, d){
   const t=_triEtat(d); if(!t) return;
   const e=etapeActive(), carte=(_cibleResolue(e.cible)||{}).carte||"silene";
   const liste=z.querySelector("#q-tri-liste");
+  /* v1.15c — EFFACER UN RELEVÉ (demande d'un testeur) : au bout de huit ou dix
+     pastilles, la carte devient illisible et on ne distingue plus les fortes
+     des faibles. On ne perd que de l'information — le déplacement, lui, est
+     déjà payé — donc rien à protéger côté serveur. */
   const dessiner=()=>{
     liste.innerHTML = t.releves.length
-      ? t.releves.map((r,i)=>`Relevé ${i+1} : <b>${r.f}</b> <span style="opacity:.7">(${r.x}, ${r.y})</span>`).join("<br>") + `<br>Fouilles ratées : ${t.ratees}/${F}`
+      ? t.releves.map((r,i)=>`<div style="display:flex; align-items:center; gap:8px; margin:2px 0">`
+          + `<span style="flex:1 1 auto">Relevé ${i+1} : <b>${r.f}</b> <span style="opacity:.7">(${r.x}, ${r.y})</span></span>`
+          + `<button class="mini q-tri-eff" data-tri-eff="${i}" title="Effacer ce relevé">✕ Effacer</button></div>`).join("")
+        + `<div style="margin-top:4px">Fouilles ratées : ${t.ratees}/${F}</div>`
       : "Aucun relevé pour l'instant.";
+    liste.querySelectorAll("[data-tri-eff]").forEach(b=>b.addEventListener("click", (ev)=>{
+      const i = Number(b.dataset.triEff);
+      const r = t.releves[i]; if(!r) return;
+      /* ⚠ Au doigt, on confirme : le bouton est à 40 px d'une ligne de texte, et
+         un relevé effacé par erreur coûte un déplacement (énergie + O₂) pour le
+         refaire. À la souris, pas de fenêtre — le geste est précis. */
+      const auDoigt = (ev && ev.pointerType === "touch")
+        || (!ev.pointerType && window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
+      if(auDoigt && !confirm(`Effacer le relevé ${i+1} (force ${r.f}) ?`)) return;
+      t.releves.splice(i, 1); sauvegarder();
+      journal(`Relevé effacé (force ${r.f}). Tu peux relever à nouveau ici.`, "", "quete");
+      dessiner();
+    }));
     if(typeof majCarteBraise==="function" && (carte==="braise" || carte==="suaire")) majCarteBraise();
     if(typeof majOrbite==="function" && carte==="espace") majOrbite();
   };
