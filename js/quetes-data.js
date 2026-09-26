@@ -122,7 +122,7 @@ const QUETES = [
         cible:{ x:620, y:1000, r:80 }, leurres:[ {x:1300,y:1250,r:80}, {x:900,y:220,r:80}, {x:1700,y:1150,r:80} ],
         image:"images/quetes/q1/4.png",
         arrivee:[
-          "L'anneau du Protocole occupe tout l'horizon, violet et silencieux. Aucune silhouette sur la crête, aucun mouvement — et c'est pire que s'il y en avait. On raconte dans toutes les cités que les gens qu'on emmène d'ici ne reviennent pas.",
+          "L'anneau du Protocole occupe tout l'horizon, violet et silencieux. Aucune silhouette sur la crête, aucun mouvement — et c'est plus inquiétant que s'il y en avait. On raconte dans toutes les cités que les gens qu'on emmène d'ici ne reviennent pas.",
           "La dernière balise est plantée là, face à lui, comme un piquet de garde qu'on aurait oublié de relever.",
           "Elle ne pose pas de devinette. Elle affiche les trois bribes que tu as ramassées, bout à bout, avec un trou à la fin — et elle attend que tu combles le trou."
         ],
@@ -586,7 +586,7 @@ const QUETES = [
         arrivee:[
           "Le dépôt a survécu à tout, y compris à la fin du monde qui l'employait. Derrière une vitre blindée, des rechanges alignés au cordeau, et un terminal de facturation d'une politesse insupportable.",
           "La coursive qui y mène surplombe le quai. Tu y arrives au mauvais moment — ou au bon.",
-          "En bas, une lumière ambre s'allume sur toute la longueur du quai. Puis une seconde. Puis une troisième, et la cadence s'installe : celle que tu as reproduite sur les corolles, à la fleur près.",
+          "En bas, le quai s'illumine d'une lumière ambrée sur toute sa longueur. Puis une seconde. Puis une troisième, et la cadence s'installe : celle que tu as reproduite sur les corolles, à la fleur près.",
           "APPEL D'EMBARQUEMENT — PERSONNEL NON ÉVACUÉ — PRÉSENTEZ-VOUS AU POINT DE RASSEMBLEMENT.",
           "Ils sont onze. Ils se rangent le long de la ligne jaune, à intervalles réguliers, et ils attendent. Personne ne vient. Ils attendent quand même, le temps qu'il faut, parce que c'est le temps prévu.",
           "Puis les lumières s'éteignent dans l'ordre inverse, et l'un d'eux fait un geste. Ils décrochent leurs casques.",
@@ -1187,7 +1187,7 @@ const QUETES = [
           texte:["La station attend. Toi, tu as encore de l'air pour un moment. Ce que tu fais ici, personne ne le verra — sauf Sorn, qui écoute."],
           options:[
             { texte:"Recopier le journal et l'ordre, mot pour mot, en ancien, pour que Sorn les ait sous les yeux.",
-              cercles:{ langues:5 },
+              cercles:{ assembleurs:5 },
               journal:"Tu as recopié le journal de la station et l'ordre final. Sorn dit qu'il les lira à Adaya. Il a dit « à Adaya », sans s'en rendre compte." },
             { texte:"Arracher ce qui se revend — le pupitre, les câbles, le métal qui ne rouille pas. Qu'elle ne soit plus prête pour rien.",
               cercles:{ eclats:5 },
@@ -1712,7 +1712,7 @@ const QUETES = [
           "Tu tapes MAAR-3. Le terminal réfléchit, longtemps, puis affiche une ligne — et commence déjà à l'effacer : il est réglé pour économiser son écran, et il n'a pas été réglé par quelqu'un de patient.",
           "« Retiens », dit Adaya. « Moi j'ai jamais eu de mémoire pour les chiffres. »"
         ],
-        defi:{ type:"memoire", duree:6000,
+        defi:{ type:"memoire", duree:8000   /* v1.19 : 6 → 8 s + bouton « Afficher » (retour testeur) */,
           info:["DOSSIER MAAR-3 (SILÈNE)", "TRAVÉE NORD — CASIER 212"],
           texte:["Le terminal affiche l'emplacement du dossier de Silène, puis l'efface."],
           question:"« Quel est le numéro du casier ? »",
@@ -1971,7 +1971,7 @@ const QUETES = [
           "Quelqu'un a répondu. Pas la direction. Pas une machine : les machines d'AREPO n'accusent pas réception de ce genre de message. Quelqu'un, quelque part sur le réseau, a entendu, et a voulu que l'émetteur le sache.",
           "La ligne est déjà en train de s'effacer. Tu n'auras qu'un regard."
         ],
-        defi:{ type:"memoire", duree:5000,
+        defi:{ type:"memoire", duree:7000   /* v1.19 : 5 → 7 s + bouton « Afficher » */,
           info:["ACCUSÉ DE RÉCEPTION — MANUEL", "ORIGINE : QUAI MAAR-3 — OPÉRATEUR : 42-U1F"],
           texte:["Une ligne d'accusé de réception s'affiche en bas de l'écran, puis s'efface."],
           question:"« Quel était le matricule de l'opérateur ? »",

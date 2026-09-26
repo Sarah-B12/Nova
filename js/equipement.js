@@ -184,7 +184,9 @@ async function equiper(id, slot){
   if(etat.equipement[slot]){ if(!await desequiper(slot, true)) return; }   // libère l'emplacement d'abord
   // L'objet passe dans le lieu « equipe » : le serveur connaît l'arsenal porté
   // et peut calculer force_combat sans croire le client sur parole.
-  if(!await rangerServeur(id, 1, "equipe", "sac")) return;
+  _equipEnCours = true;   // v1.17 : la réconciliation ne doit pas placer l'objet ailleurs pendant ce temps
+  let okR; try{ okR = await rangerServeur(id, 1, "equipe", "sac"); } finally { _equipEnCours = false; }
+  if(!okR) return;
   const ts = Date.now();
   etat.equipement[slot] = id;
   if(typeof reporterDate==="function"){ etat.equipementDate=etat.equipementDate||{}; etat.equipementDate[slot]=ts||Date.now(); }
@@ -201,6 +203,71 @@ async function desequiper(slot, silencieux){
   etat.equipement[slot] = null; if(etat.equipementDate) delete etat.equipementDate[slot];
   if(!silencieux){ apresAction(); majEquipement(); }
   return true;
+}
+
+/* ⚠⚠ v1.17 — RÉCONCILIATION DES EMPLACEMENTS (bug « équipement incohérent »).
+   DEUX vérités cohabitaient sans jamais se comparer :
+     · `etat.equipement` (quel objet dans quel emplacement) — dans `donnees`,
+       écrit par sauver_profil ;
+     · le lieu `equipe` de la table `inventaire` — ce que le SERVEUR croit porté,
+       qui compte dans force_combat_serveur et que `ranger` exige.
+   Qu'une sauvegarde soit refusée, qu'une lecture arrive en retard, et elles
+   divergeaient : objet « équipé » à l'écran mais absent du serveur (→ `manque`
+   en le retirant), ou porté pour le serveur mais dans aucun emplacement
+   (→ invisible, et la Force affichée s'effondre).
+   Le SERVEUR fait foi sur QUOI est porté ; le client ne garde que le choix de
+   l'emplacement. Appelée par _appliquerEtatStocks() quand la réponse contient
+   `equipe`. */
+let _equipEnCours = false;
+const _equipRenvoyes = new Set();   // objets déjà renvoyés au sac dans cette page (anti-boucle)
+function _porteServeur(){
+  const e = etat.equipeServeur;
+  const m = {};
+  if(Array.isArray(e)) e.forEach(l => { if(l && l.item) m[l.item] = (m[l.item]||0) + (Number(l.qte||l.quantite)||0); });
+  else if(e && typeof e === "object") for(const k in e) m[k] = Number(e[k])||0;
+  return m;
+}
+function _slotLibrePour(id){
+  const cat = slotEquip(id); if(!cat) return null;
+  if(cat === "arme"){
+    if(estDeuxMains(id)) return (!etat.equipement.arme && !etat.equipement.arme2) ? "arme" : null;
+    for(const s of ["arme","arme2"]) if(!etat.equipement[s] && !armeSlotBloque(s)) return s;
+    return null;
+  }
+  const s = EQUIP_SLOTS.find(x => x.cat === cat);
+  return (s && !etat.equipement[s.id]) ? s.id : null;
+}
+function reconcilierEquipement(){
+  if(!etat || typeof EQUIP_SLOTS === "undefined") return;
+  etat.equipement = etat.equipement || {};
+  const porte = _porteServeur();
+  const reste = Object.assign({}, porte);
+  const retires = [], places = [], renvoyes = [];
+  // 1. Emplacements qui montrent un objet que le serveur ne porte pas (ou plus).
+  for(const s of EQUIP_SLOTS){
+    const id = etat.equipement[s.id]; if(!id) continue;
+    if((reste[id]||0) > 0) reste[id]--;
+    else { etat.equipement[s.id] = null; if(etat.equipementDate) delete etat.equipementDate[s.id]; retires.push(id); }
+  }
+  // 2. Objets portés par le serveur qu'aucun emplacement ne montre.
+  if(!_equipEnCours){
+    for(const id in reste){
+      for(let n = reste[id]; n > 0; n--){
+        const slot = _slotLibrePour(id);
+        if(slot){ etat.equipement[slot] = id; places.push(id); continue; }
+        // Aucune place : on le rend au sac (une fois par page, sinon boucle).
+        if(!_equipRenvoyes.has(id) && typeof rangerServeur === "function"){
+          _equipRenvoyes.add(id); renvoyes.push(id);
+          setTimeout(() => { rangerServeur(id, 1, "sac", "equipe"); }, 0);
+        }
+      }
+    }
+  }
+  if(retires.length || places.length || renvoyes.length){
+    console.warn("[equipement] réaligné sur le serveur :", { retires, places, renvoyes, porte });
+    if(typeof _diagSync === "function") _diagSync("equip_reconcilie", { retires, places, renvoyes }, true);
+    if(typeof majEquipement === "function") majEquipement();
+  }
 }
 
 /* ---------- Rendu : corps centré + sélecteur au clic ---------- */

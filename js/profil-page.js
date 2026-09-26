@@ -326,7 +326,10 @@ async function _ppJournalStaff(profilId){
   z.hidden = false;
   z.innerHTML = `<h3>Journal du joueur</h3><p class="itip-gris">Chargement…</p>`;
   try{
-    const { data, error } = await sb.rpc("admin_journal_joueur", { p_profil: profilId, p_limite: 200 });
+    /* ⚠ v1.16 — 200 NE SUFFISAIT PAS : le journal d'un joueur en garde **300**
+   (vérifié le 26/09 sur un compte réel), donc le staff n'en voyait que les
+   deux tiers et croyait à une troncature. On demande tout, plus une marge. */
+    const { data, error } = await sb.rpc("admin_journal_joueur", { p_profil: profilId, p_limite: 400 });
     if(error || !data || !data.ok){
       // On affiche la VRAIE cause : « consultation impossible » sans motif
       // oblige à deviner, et c'est exactement ce qu'on veut éviter.
@@ -461,7 +464,8 @@ function _ppStyleTerrain(){
     #pp-terrain .ppt-case{ position:relative; border:1px dashed rgba(150,180,220,.22);
       border-radius:8px; display:grid; place-items:center; }
     #pp-terrain .ppt-case.plein{ border:1px solid transparent; }
-    #pp-terrain .ppt-case img{ width:100%; height:100%; object-fit:contain; display:block; }
+    /* v1.16 : mêmes proportions que son propre terrain (−10 px sur la case). */
+    #pp-terrain .ppt-case img{ width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain; display:block; margin:auto; }
     #pp-terrain .ppt-glyphe{ font-size:18px; }
   `;
   document.head.appendChild(st);
@@ -494,9 +498,19 @@ async function _ppTerrain(profilId){
         const std = ["cabane","petite_maison","maison","villa","palace"];
         const nom5 = ["tente1","tente2","tente3","tente4","tente5"];
         const pal = data.palier || 0;
+        /* v1.16 — LE CHANTIER MANQUAIT ICI. L'écran Logement et la case du
+           terrain affichent `images/maisons/chantier.png` tant que la Cabane
+           n'est pas debout ; la vitrine d'un autre joueur, elle, montrait un
+           simple 🏠 — donc on ne voyait pas qu'il construisait.
+           ⚠ `chantier` est renvoyé par `profil_terrain` depuis la v1.16
+           (v116_profil_terrain_chantier.sql) : sans ce SQL, on retombe sur
+           le glyphe 🏠, sans rien casser. */
+        const enChantier = !!data.chantier;
         dedans = (pal >= 1 && pal <= 5)
           ? `<img src="images/maisons/${(data.faction==="nomades"?nom5:std)[pal-1]}.png" alt="Maison" onerror="this.replaceWith(document.createTextNode('🏠'))">`
-          : `<span class="ppt-glyphe">🏠</span>`;
+          : (enChantier
+              ? `<img src="images/maisons/chantier.png" alt="Chantier" onerror="this.replaceWith(document.createTextNode('🏗'))">`
+              : `<span class="ppt-glyphe">🏠</span>`);
       } else if(IMGT[p.type]){
         dedans = `<img src="${IMGT[p.type]}" alt="${nom}">`;
       } else {

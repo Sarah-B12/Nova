@@ -16,8 +16,19 @@ const SAC_MAX = 50;
    d'acquisition). Le client ne tient plus aucune date — etat.sacDate,
    coffreDate et souteDate ne servent plus qu'à l'affichage historique et
    seront retirés. La péremption se calcule sur etat.lots. */
-function _appliquerEtatStocks(e){
+/* ⚠⚠ v1.17 — LECTURE PÉRIMÉE (bug « équipement incohérent », 24/09).
+   `chargerStocksServeur()` part toutes les 60 s ET au retour au premier plan.
+   Si un `ranger`/`agir` est appliqué PENDANT qu'une lecture est en vol, la
+   lecture revient avec l'état d'AVANT et l'écrasait : l'objet qu'on vient
+   d'équiper réapparaissait dans le sac, le joueur le rééquipait, et le serveur
+   répondait `manque` (« Tu n'as pas cet objet là où tu crois »).
+   Règle : toute application qui N'EST PAS une lecture incrémente ce compteur ;
+   une lecture partie avant un changement est jetée (la réponse de la mutation
+   fait déjà foi, et la prochaine lecture repassera). */
+let _stocksGen = 0;
+function _appliquerEtatStocks(e, opt){
   if(!e) return;
+  if(!(opt && opt.lecture)) _stocksGen++;
   // Les lots viennent TOUJOURS du serveur : jamais de localStorage, jamais de donnees.
   etat.sac    = e.sac    || {};
   etat.coffre = e.coffre || {};
@@ -30,6 +41,10 @@ function _appliquerEtatStocks(e){
   // vides et on ajoute les nouvelles à la fin.
   etat.sacOrdre = (etat.sacOrdre||[]).filter(id => (etat.sac[id]||0) > 0);
   Object.keys(etat.sac).forEach(id => { if(!etat.sacOrdre.includes(id)) etat.sacOrdre.push(id); });
+  /* v1.17 — les EMPLACEMENTS (etat.equipement, dans donnees) suivent ce que le
+     serveur porte réellement (lieu `equipe`). Seulement si la réponse contient
+     `equipe` : une réponse sans ce champ ne dit rien de l'équipement. */
+  if(Object.prototype.hasOwnProperty.call(e, "equipe") && typeof reconcilierEquipement === "function") reconcilierEquipement();
 }
 
 // Action atomique. Renvoie la réponse du serveur, ou null si refusée.
@@ -111,7 +126,13 @@ async function rangerServeur(id, n, vers, depuis){
       if(err === "coffre_plein")   journal("Rangement plein — agrandis ton logement.","alerte");
       else if(err === "soute_plein") journal("Soute pleine.","alerte");
       else if(err === "sac_plein")   journal("Sac plein.","alerte");
-      else if(err === "manque")      journal("Tu n'as pas cet objet là où tu crois.","alerte");
+      else if(err === "manque"){
+        /* v1.17 — l'écran était en retard sur le serveur : on relit tout de
+           suite (la relecture réaligne aussi les emplacements d'équipement). */
+        journal("Ton inventaire n'était pas à jour à l'écran — il vient d'être relu. Réessaie.","alerte");
+        if(typeof _diagSync === "function") _diagSync("ranger_manque", { item:id, vers, depuis:depuis||"sac", ecran:(etat[depuis||"sac"]||{})[id]||0 }, true);
+        chargerStocksServeur().then(()=>{ if(typeof afficher==="function") afficher(); if(typeof majEquipement==="function") majEquipement(); });
+      }
       else journal("Déplacement refusé par le serveur.","alerte");
       return null;
     }
@@ -175,10 +196,16 @@ async function chargerStocksServeur(){
         const ses = await sessionActuelle();
         if(!ses){ await new Promise(r=>setTimeout(r, 400 * (i+1))); continue; }
       }
+      const gen0 = _stocksGen;
       const { data, error } = await sb.rpc("sac_lire");
       if(error) throw error;
       if(!data) throw new Error("sac_lire : réponse vide");
-      _appliquerEtatStocks(data);
+      if(_stocksGen !== gen0){
+        // v1.17 : un changement est arrivé pendant la lecture → elle est périmée.
+        if(typeof _diagSync === "function") _diagSync("sac_lire_perime", { gen0, gen:_stocksGen });
+        return data;
+      }
+      _appliquerEtatStocks(data, { lecture:true });
       etat._sacEchec = false;
       return data;
     }catch(e){

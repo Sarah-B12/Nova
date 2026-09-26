@@ -10,6 +10,9 @@ const DELAIS = {
   rapide: { profil: 50,   sac: 100, jauges: 100 },
   mvt: { profil: 50, sac: 50, jauges: 50 },
   unitaire: { profil: 50, sac: 50, jauges: 50 },
+  sync: { profil: 50, sac: 50, jauges: 50 },   // v1.17 : bugs de synchro (sync.js)
+  retours: { profil: 50, sac: 50, jauges: 50 }, // v1.19 : retours testeurs (retours.js)
+  sondes: { profil: 50, sac: 50, jauges: 50 },  // v1.20 : gain des sondes (sondes.js)
 }[SCEN];
 
 const donnees = {
@@ -98,7 +101,7 @@ const dom = new JSDOM(html, {
 });
 setTimeout(() => {
   const w = dom.window;
-  if(SCEN === "unitaire" || SCEN === "mvt"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
+  if(SCEN === "unitaire" || SCEN === "mvt" || SCEN === "sync" || SCEN === "retours" || SCEN === "sondes"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
   const e = w.eval("etat");
   const res = {
     scenario: SCEN,

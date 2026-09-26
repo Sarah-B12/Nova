@@ -108,7 +108,13 @@ function hydraterEtat(s){
        pénalité d'échec s'effacerait à chaque F5 — l'exploit corrigé reviendrait
        par la fenêtre. */
     quetes:{ done:(s.quetes&&Array.isArray(s.quetes.done))?s.quetes.done:[], active:(s.quetes&&s.quetes.active)||null,
-             verrous:(s.quetes&&s.quetes.verrous&&typeof s.quetes.verrous==="object")?s.quetes.verrous:{} },
+             verrous:(s.quetes&&s.quetes.verrous&&typeof s.quetes.verrous==="object")?s.quetes.verrous:{},
+             /* ⚠ v1.17 — `paRecu` (v1.03) n'était PAS listé : perdu à chaque
+                rechargement, puis reconstruit depuis `done` par queteEtat().
+                Après une remise à zéro par le staff (quête retirée de `done`),
+                la quête repayait donc ses PA. Absent = on laisse queteEtat()
+                le reconstruire, comme avant. */
+             ...((s.quetes && Array.isArray(s.quetes.paRecu)) ? { paRecu:s.quetes.paRecu } : {}) },
     /* ⚠ v0.95 — `terrain` n'était reconstruit QU'AVEC `parcelles` : tout autre
        champ (futur) disparaissait au rechargement. On part de ce qui existe.
        `structures` est l'ancien nom de `parcelles` : normaliserParcelles() le lit

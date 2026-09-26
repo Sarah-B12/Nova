@@ -253,6 +253,12 @@ function _journalStyle(){
     .j-combat{ background:#9c3d3d; color:#ffd6d6; } .j-vol{ background:#7a3a7a; color:#ffd6ff; }
     .j-eco{ background:#2f6f6f; color:#d6ffff; } .j-social{ background:#3a5aa0; color:#d6e4ff; }
     .j-voyage{ background:#2f5a7a; color:#cfe8ff; }
+    /* v1.16 — TROIS ÉTIQUETTES N'AVAIENT AUCUNE COULEUR : « La Poste » existait
+       depuis la v0.69, « Formation » et « Faction » depuis la v1.11. Sans règle,
+       elles s'affichaient nues, et on croyait à un défaut d'affichage. */
+    .j-poste{ background:#7a4a2f; color:#ffd9bd; }
+    .j-formation{ background:#4a5f2f; color:#e6ffc9; }
+    .j-faction{ background:#6a4a8a; color:#ecd9ff; }
     .msg.poste{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
   `;
   document.head.appendChild(st);

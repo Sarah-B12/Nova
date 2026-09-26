@@ -13,6 +13,32 @@ function _catchLog(e, ou){
   try{ console.warn("[ignoré]", ou || "?", "→", (e && (e.message || e.error_description)) || e); }catch(_){ if(typeof _catchLog==="function") _catchLog(_, "serveur.js#2"); }
 }
 
+/* ⚠ v1.17 — JOURNAL DE SYNCHRONISATION (instrumentation des bugs 1 et 3).
+   Chaque événement de synchro (chargement, conflit, reprise, lecture périmée,
+   équipement réaligné) est gardé dans localStorage (`nova_diag`, 80 derniers) —
+   lisible en F12 par `novaDiag()`. Les événements RARES et graves (`envoyer`)
+   partent aussi dans la table `diag_sync` (SQL v117), pour les voir sans le
+   téléphone du testeur. Un échec d'envoi est muet : c'est un journal, pas une
+   fonction du jeu. */
+function _diagSync(type, detail, envoyer){
+  let e;
+  try{ e = { t:Date.now(), type, sid:(typeof _SID!=="undefined"?_SID:null),
+              rev:(typeof _rev!=="undefined"?_rev:null), majSync:(typeof _majSync!=="undefined"?_majSync:null),
+              quete:(typeof etat!=="undefined" && etat && etat.quetes && etat.quetes.active) ? (etat.quetes.active.id+"/"+etat.quetes.active.etape) : null,
+              visible:(typeof document!=="undefined") ? !document.hidden : null,
+              ageMin:(typeof performance!=="undefined") ? Math.round(performance.now()/60000) : null,
+              detail: detail || null }; }catch(_){ e = { t:Date.now(), type, detail: detail || null }; }
+  try{ const l = JSON.parse(localStorage.getItem("nova_diag")||"[]"); l.push(e); while(l.length > 80) l.shift(); localStorage.setItem("nova_diag", JSON.stringify(l)); }catch(_){}
+  if(envoyer && typeof sb!=="undefined" && sb){
+    (async ()=>{ try{
+      const { data } = await sb.auth.getSession(); const uid = data && data.session && data.session.user.id; if(!uid) return;
+      await sb.from("diag_sync").insert({ profil_id:uid, source:"client", type, detail:e });
+    }catch(_){} })();
+  }
+}
+// F12 : novaDiag() affiche le journal de synchro de ce navigateur.
+function novaDiag(){ try{ const l = JSON.parse(localStorage.getItem("nova_diag")||"[]"); console.table(l.map(e=>({ quand:new Date(e.t).toLocaleString(), type:e.type, rev:e.rev, majSync:e.majSync, quete:e.quete, sid:e.sid, visible:e.visible, ageMin:e.ageMin, detail:JSON.stringify(e.detail) }))); return l.length; }catch(e){ return 0; } }
+
 /* ===========================================================
    SERVEUR — Connexion Supabase (Phase 1 : comptes + sauvegarde serveur).
    La clé « anon » est PUBLIQUE (prévue pour le navigateur) — c'est la RLS qui protège.
@@ -82,6 +108,8 @@ async function chargerDepuisServeur(){
      mien. Toutes les valeurs comparées viennent du serveur — aucune horloge
      de client n'entre dans la décision. */
   _majSync = (data && data.donnees && Number(data.donnees._maj)) || 0;
+  _diagSync("chargement", { rev:_rev, maj:_majSync, sidBase:(data && data.donnees && data.donnees._sid) || null,
+                            queteBase:(data && data.donnees && data.donnees.quetes && data.donnees.quetes.active) ? data.donnees.quetes.active.id+"/"+data.donnees.quetes.active.etape : null });
   /* ⚠ v0.92b — À PARTIR D'ICI SEULEMENT, CETTE PAGE A LE DROIT D'ÉCRIRE.
      Voir `sauverSurServeur()`. Posé même si `data` est nul (compte sans profil) :
      ce qui compte n'est pas d'avoir trouvé un profil, c'est d'avoir DEMANDÉ. */
@@ -315,11 +343,30 @@ async function _premiereFaction(fid){
    global : la dernière contient déjà tout). */
 let _majSync = 0;                 // v0.92 : horodatage serveur de ma dernière synchro (voir chargerDepuisServeur)
 let _profilLu = false;            // v0.92b : le serveur a-t-il été interrogé dans CETTE page ? (voir sauverSurServeur)
+/* v1.17 — écran bloquant « page périmée ». Rien derrière n'est cliquable : tout
+   ce qu'on y ferait serait perdu. Le seul geste possible est de recharger. */
+function _gelerPage(){
+  _pageGelee = true;
+  try{ clearTimeout(_sauveTimer); }catch(e){}
+  if(typeof document === "undefined" || document.querySelector("#page-perimee")) return;
+  const d = document.createElement("div");
+  d.id = "page-perimee";
+  d.style.cssText = "position:fixed; inset:0; z-index:99999; background:rgba(6,10,20,.94);"
+    + "display:flex; align-items:center; justify-content:center; padding:20px;";
+  d.innerHTML = `<div style="max-width:420px; background:#0e162a; border:1px solid #ff9a44; border-radius:14px; padding:18px 18px 14px; text-align:center; line-height:1.45">
+    <div style="font-size:1.1em; margin-bottom:8px"><b>Cette page n'est plus à jour</b></div>
+    <div style="margin-bottom:14px">Ta partie a avancé ailleurs : un autre onglet, un autre appareil, ou une page restaurée par ton navigateur.<br><br>Pour ne rien effacer, cette page n'enregistre plus. Recharge-la pour reprendre la bonne version.</div>
+    <button class="mini" id="page-perimee-btn" style="font-size:1.05em; padding:8px 18px">Recharger</button></div>`;
+  (document.body || document.documentElement).appendChild(d);
+  const b = d.querySelector("#page-perimee-btn");
+  if(b) b.addEventListener("click", ()=>{ try{ location.reload(); }catch(e){} });
+}
 /* Seul cas légitime de levée manuelle : l'inscription, où l'état vient d'être
    créé localement et où il n'y a aucun profil à lire. */
 function marquerProfilLu(){ _profilLu = true; }
 let _sauveFile = Promise.resolve();
 let _sauveEnAttente = null;
+let _pageGelee = false;           // v1.17 : vrai quand le serveur a refusé cette page (voir _gelerPage)
 function sauverSurServeur(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return Promise.resolve();
   /* ⚠⚠ v0.92b — UNE PAGE QUI N'A PAS LU LE PROFIL N'A RIEN À DIRE AU SERVEUR.
@@ -338,12 +385,20 @@ function sauverSurServeur(){
     console.warn("[serveur] sauvegarde ignorée : le profil n'a pas encore été lu dans cette page.");
     return Promise.resolve();
   }
-  if(_sauveEnAttente) return _sauveEnAttente;       // déjà une en attente : elle emportera nos changements
-  _sauveEnAttente = _sauveFile.then(_sauverMaintenantInterne, _sauverMaintenantInterne)
-                              .then(r=>{ _sauveEnAttente=null; return r; },
-                                    e=>{ _sauveEnAttente=null; throw e; });
-  _sauveFile = _sauveEnAttente.catch(()=>{});
-  return _sauveEnAttente;
+  if(_pageGelee) return Promise.resolve();          // v1.17 : page périmée, elle ne parle plus au serveur
+  /* ⚠ v1.17 — « en attente » veut dire PAS ENCORE PARTIE. Avant, la promesse
+     restait marquée en attente pendant toute son exécution : un changement fait
+     pendant qu'une sauvegarde était en vol (une quête acceptée, une étape
+     franchie) se raccrochait à elle… alors qu'elle avait déjà pris sa photo de
+     l'état. `sauverMaintenant()` rendait la main en croyant le changement parti.
+     On libère la place dès que la sauvegarde démarre : l'appel suivant en
+     programme une nouvelle, qui partira juste après. */
+  if(_sauveEnAttente) return _sauveEnAttente;       // pas encore partie : elle emportera nos changements
+  const lancer = () => { _sauveEnAttente = null; return _sauverMaintenantInterne(); };
+  const p = _sauveFile.then(lancer, lancer);
+  _sauveEnAttente = p;
+  _sauveFile = p.catch(()=>{});
+  return p;
 }
 async function _sauverMaintenantInterne(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
@@ -405,6 +460,8 @@ async function _sauverMaintenantInterne(){
      l'égalité tient et l'ancien comportement est conservé. */
   if(res && res.err === "conflit" && res.sid && res.sid === _SID){
     const majSrv = Number(res.maj) || 0;
+    _diagSync(majSrv > _majSync ? "conflit_meme_sid_refuse" : "conflit_meme_sid_repris",
+              { revSrv:res.rev, majSrv, sidSrv:res.sid }, true);
     if(majSrv > _majSync){
       console.warn("[serveur] reprise REFUSÉE : la base est plus récente que mon état",
                    "(serveur", majSrv, "> ma synchro", _majSync, ") — je n'écrase pas.");
@@ -427,12 +484,17 @@ async function _sauverMaintenantInterne(){
     console.warn("[serveur] sauvegarde refusée : version plus récente en base (rev serveur", res.rev, "> locale", _rev, ")");
     if(!_conflitSignale){
       _conflitSignale = true;
-      if(typeof journal==="function") journal("Ta partie est ouverte ailleurs (autre navigateur ou appareil) et a avancé de son côté. Recharge la page pour récupérer la version à jour — cet onglet n'enregistre plus, pour ne rien effacer.","alerte");
-      /* ⚠ v0.92b — NE PLUS AFFIRMER « un autre appareil ». C'est vrai parfois,
-         faux souvent : un onglet restauré par le navigateur produit le même
-         conflit tout seul. Le message dit maintenant ce qu'on SAIT — cette
-         page est en retard — et pas ce qu'on suppose. */
-      try{ alert("Cette page n'est plus à jour : ta partie a avancé ailleurs (un autre onglet, un autre appareil, ou une session restaurée par ton navigateur).\n\nRecharge-la pour reprendre la bonne version. En attendant, cet onglet n'enregistre plus — c'est ce qui protège ta progression."); }catch(e){}
+      _diagSync("conflit_refuse", { revSrv:res.rev, majSrv:res.maj, sidSrv:res.sid }, true);
+      if(typeof journal==="function") journal("Cette page n'est plus à jour : ta partie a avancé ailleurs. Recharge-la pour reprendre la bonne version.","alerte");
+      /* ⚠⚠ v1.17 — BUG « QUÊTE DISPARUE, À RÉ-ACCEPTER » (24/09).
+         Ici, avant, un simple alert(). Or un alert() lancé par un onglet en
+         ARRIÈRE-PLAN est avalé par les navigateurs mobiles, et même vu, il se
+         ferme d'un doigt : le joueur continuait à jouer dans une page qui
+         n'enregistrait PLUS RIEN de ce qui vit dans `donnees` (quêtes, terrain,
+         emplacements d'équipement…), tandis que les RPC (sac, crédits) passaient
+         encore. Au rechargement suivant, la quête acceptée entre-temps avait
+         disparu. La page se BLOQUE maintenant jusqu'au rechargement. */
+      _gelerPage();
     }
     return;
   }

@@ -639,6 +639,8 @@ async function _expResoudre(){
   else if(res.succes){
     if(res.objectif==="sabotage") journal(`${on} RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.objets_touches} objet(s) endommagé(s)${res.objets_detruits?`, ${res.objets_detruits} détruit(s)`:""}.`,"gain");
     else journal(`${on} RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.butin} ₡ (${res.part_coffre} coffre, ${res.part_joueurs} partagés)${res.objets_touches?` · ${res.objets_touches} objet(s) sabotés`:""}.`,"gain");
+    // v1.18 : le terrain des absents adverses.
+    if(res.absents_touches) journal(`${res.absents_touches} absent(s) de la faction adverse ont vu leur terrain abîmé (−${res.perte_integrite} % d'intégrité).`,"gain");
   }
   else{ journal(`${on} ÉCHOUÉ (${res.p_att} vs ${res.p_def}). La défense a tenu.`,"alerte"); }
   if(typeof rechargerCredits==="function") await rechargerCredits();
@@ -896,11 +898,25 @@ async function majBureau(el){
   if(bureaux.length>1) h += `<div class="bur-menu">`+bureaux.map(b=>`<button class="bur-lien${_bureauVue===b?" actif":""}" data-bur="${b}">${_bureauNom(b)}</button>`).join("")+`</div>`;
   if(_bureauVue !== "concertation"){
     h += _legendeDefense(false);        // v0.59 : même légende dans chaque bureau
+    h += `<div id="bureau-caisse" class="gouv-caisse" style="margin:0 0 8px"></div>`;   // v1.16
     h += `<div id="bureau-cercles"></div>`;   // v1.10 : rempli juste après (RPC)
   }
   h += `<div id="bureau-corps"></div>`;
   el.innerHTML = h;
   el.querySelectorAll("[data-bur]").forEach(b=>b.addEventListener("click",()=>{ _bureauVue=b.dataset.bur; majBureau(el); }));
+  /* v1.16 — LE COFFRE DANS CHAQUE BUREAU (demande de l'autrice). Tous les
+     postes dépensent la caisse — guetteurs, mercenaires, composants de défense,
+     dons — et devaient revenir à l'écran Gouvernement pour connaître le solde.
+     ⚠ `solde = null` veut dire « pas le droit de savoir » (policy `caisse_voir`),
+     pas « zéro » : hors de sa faction, on n'affiche rien plutôt qu'un faux 0. */
+  (async ()=>{
+    const zk = el.querySelector("#bureau-caisse"); if(!zk) return;
+    let solde = null;
+    try{ const { data } = await sb.from("caisses").select("solde").eq("faction", fac).maybeSingle();
+      if(data && typeof data.solde === "number") solde = data.solde;
+    }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#caisse"); }
+    zk.innerHTML = (solde === null) ? "" : `<span>Coffre de la faction</span><b class="or">${solde} ₡</b>`;
+  })();
   const zc = el.querySelector("#bureau-cercles");
   if(zc) _rendreCerclesFaction(zc, fac);   // v1.10 : sans await, l'encart arrive quand il arrive
   const corps = el.querySelector("#bureau-corps");

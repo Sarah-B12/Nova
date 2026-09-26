@@ -26,7 +26,14 @@
 const SONDE_TAUX      = 0.15;    // probabilité d'interception par vol dans Triptolème
 const SONDE_PV_RIPOSTE= [15, 25];// dégâts quand elle tire la première
 const SONDE_PV_DEFAITE= [25, 40];// dégâts quand on l'attaque et qu'on perd
-const SONDE_GAIN      = [40, 90];// crédits en cas de victoire
+/* ⚠ v1.20 — LE GAIN EST FIXÉ PAR LE SERVEUR (RPC sonde_victoire). Les sondes
+   étaient trop rentables : 40–90 ₡ par duel, sans coût ni limite, et le client
+   décidait seul du montant. Désormais : 1re victoire du jour de jeu 40–90 ₡,
+   les suivantes ÷3 (13–30 ₡), 0 ₡ au-delà de 10 victoires payées ; + bonus
+   d'Intelligence lu par le serveur. Ouvrir le feu coûte SONDE_ENERGIE, gagné
+   ou perdu. Barème dupliqué ici pour l'affichage seulement : il fait foi côté
+   serveur (BACKEND_PLAN §36). */
+const SONDE_ENERGIE   = 5;       // % d'énergie pour ouvrir le feu
 
 /* ⚠ Butin en CRÉDITS uniquement, jamais d'objet — et surtout pas de Cristal de
    Nyx : Le Gravier doit rester la seule source fiable du secteur, sinon son
@@ -71,7 +78,9 @@ function ouvrirSonde(){
     <p class="patr-desc">Un appareil sans cockpit s'aligne sur toi et se met à ta vitesse. Il n'émet rien qui ressemble à un appel.
       Une lumière balaie ta coque, s'arrête, recommence.</p>
     <div class="patr-choix">
-      <button class="patr-opt" data-s="attaquer"><b>Ouvrir le feu</b><span class="patr-sous">La seule option qui rapporte · perdre abîme la coque</span></button>
+      <button class="patr-opt" data-s="attaquer" ${(etat.energie||0) < SONDE_ENERGIE ? "disabled" : ""}><b>Ouvrir le feu</b><span class="patr-sous">${(etat.energie||0) < SONDE_ENERGIE
+        ? `Pas assez d'énergie (${SONDE_ENERGIE} % requis)`
+        : `La seule option qui rapporte — surtout la première du jour · ${SONDE_ENERGIE} % d'énergie · perdre abîme la coque`}</span></button>
       <button class="patr-opt" data-s="scanner"><b>Se laisser scanner</b><span class="patr-sous">Elle prélèvera un objet au hasard, dans ta soute ou dans ton sac</span></button>
       <button class="patr-opt" data-s="deriver"><b>Couper les moteurs et dériver</b><span class="patr-sous">Intelligence · échec = elle tire la première</span></button>
       <button class="patr-opt" data-s="brouiller" ${aHack?"":"disabled"}><b>Brouiller son scanner</b><span class="patr-sous">${aHack?"Ordinateur de hacking équipé · aucun dégât si réussi":"Équipe un Ordinateur de hacking"}</span></button>
@@ -104,13 +113,30 @@ function _sondeFin(){
 
 /* ---------- Ouvrir le feu ---------- */
 async function sondeCombat(){
+  /* v1.20 — l'énergie est débitée AVANT le duel, gagné ou perdu. Si le serveur
+     refuse (plus assez d'énergie), agirServeur() l'a déjà dit : on rouvre la
+     rencontre pour que le joueur choisisse une autre issue. */
+  const r = await agirServeur({ cout:SONDE_ENERGIE, motif:"sonde" });
+  if(!r){ ouvrirSonde(); return; }
   lancerTirSonde(_sondeGagne, _sondePerdu);
 }
-function _sondeGagne(){
-  const g = alea(SONDE_GAIN[0], SONDE_GAIN[1]) + ((typeof bonusCredits==="function") ? bonusCredits() : 0);
-  etat.credits += g;
+async function _sondeGagne(){
+  let d = null;
+  try{
+    const r = await rpcAvecSolde("sonde_victoire", {});   // applique le solde renvoyé
+    if(r && r.error) throw new Error(r.error.message);
+    d = r && r.data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "sonde.js#victoire"); }
   if(typeof gagnerXp==="function") gagnerXp(10);
-  journal(`La sonde se disloque. Tu récupères ${g} ₡ de pièces revendables dans les débris, +10 XP.`,"gain"); if(typeof bulleTenace==="function") bulleTenace();
+  if(!d || !d.ok){
+    journal("La sonde se disloque. Le serveur n'a pas répondu : aucun crédit versé. +10 XP.","alerte");
+  } else if(d.gain > 0){
+    journal(`La sonde se disloque. Tu récupères ${d.gain} ₡ de pièces revendables dans les débris, +10 XP.`
+      + (d.rang === 1 ? "" : " La première sonde du jour rapporte davantage."),"gain");
+  } else {
+    journal("La sonde se disloque. Rien de revendable dans les débris aujourd'hui — tu en as déjà trop rapporté. +10 XP.","");
+  }
+  if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
 function _sondePerdu(){

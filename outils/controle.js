@@ -260,7 +260,8 @@ function clesObjet(nom){
 titre("7. Globales déclarées et jamais lues");
 const ORPHELINS_ASSUMES = {
   _saisieEnCours:   "garde-fou anti-redessin, prêt à brancher (pièges n°20 et 22)",
-  prochainResetJeu: "minuit parisien exact, changement d'heure compris — pour les futurs « reviens demain »"
+  prochainResetJeu: "minuit parisien exact, changement d'heure compris — pour les futurs « reviens demain »",
+  novaDiag:         "commande de console (F12) : lit le journal de synchro v1.17"
 };
 const toutPropre = Object.values(propre).join("\n") + "\n" + html;
 let orph = 0;

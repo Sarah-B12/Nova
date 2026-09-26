@@ -178,18 +178,22 @@ function accepterQuete(id){
   const q=queteData(id); if(!q || queteEtat().done.includes(id)) return;
   queteEtat().active={ id, etape:0, _sur:false, _resolu:false, _echecLe:0, _attenteLe:0, _memVue:false };
   journal(`Quête acceptée : ${q.nom}. Onglet Quêtes → suis l'objectif.`,"gain");
-  sauvegarder(); rafraichirQuetes();
+  /* v1.17 — part TOUT DE SUITE au serveur, comme une étape franchie : avec la
+     minuterie de 2,5 s, un changement d'appli dans l'intervalle pouvait la perdre. */
+  sauvegarder(); if(typeof sauverMaintenant==="function") sauverMaintenant(); rafraichirQuetes();
 }
 function abandonnerQuete(){
   if(!queteActive()) return;
   // v0.91 : le message ne promet plus une remise à zéro complète — les verrous restent.
   if(!confirm("Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué jusqu'à minuit.")) return;
+  // v1.17 : trace, pour distinguer dans `diag_sync` un abandon voulu d'une quête perdue.
+  if(typeof _diagSync==="function") _diagSync("quete_abandonnee", { id:queteActive().id, etape:queteActive().etape }, true);
   queteEtat().active=null; journal("Quête abandonnée.","alerte");
-  sauvegarder(); rafraichirQuetes();
+  sauvegarder(); if(typeof sauverMaintenant==="function") sauverMaintenant(); rafraichirQuetes();
 }
 async function avancerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id);
-  a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; a._trav=null;
+  a.etape++; a._sur=false; a._resolu=false; a._echecLe=0; a._attenteLe=0; a._memVue=false; a._memDebut=0; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; a._trav=null;
   a._chasse=null; a._affut=null; a._calq=null; a._loup=null; a._bete=null; a._beteCercle=null;   // v1.00
   /* v1.02 — l'état des mini-jeux générés était remis à zéro à l'ÉCHEC mais pas en
      passant à l'étape suivante : une 2ᵉ triangulation / tuyauterie / labyrinthe dans
@@ -263,7 +267,7 @@ function reussirDefi(){ const a=queteActive(); if(!a) return; a._resolu=true; a.
 function echouerDefi(msg){ const a=queteActive(); if(!a) return;
   a._echecLe=Date.now();
   _verrous()[_cleVerrou(a)] = Date.now();   // v0.91 : le verrou survit à l'abandon
-  a._memVue=false; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; a._trav=null; a._tuy=null; a._tri=null; a._lab=null;
+  a._memVue=false; a._memDebut=0; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; a._trav=null; a._tuy=null; a._tri=null; a._lab=null;
   a._calq=null; a._loup=null;   // v1.00 : une partie ratée repart de zéro
   journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
 
@@ -692,7 +696,7 @@ function _coutTexteQ(cout){ if(!cout) return ""; const p=[];
 }
 function _cerclesTexteQ(cercles){ if(!cercles) return ""; const p=[];
   for(const k in cercles){ const c=(typeof CERCLES!=="undefined")?CERCLES.find(x=>x.id===k):null; const v=cercles[k]; p.push(`${v>0?"+":""}${v} ${c?c.nom:k}`); }
-  return p.length?("→ "+p.join(", ")):"";
+  return p.length ? p.join(", ") : "";   // v1.16 : plus de flèche (retour testeur)
 }
 /* ⚠ v1.01 — FAILLE FERMÉE : cercles_ajouter acceptait n'importe quel montant.
    Chaque gain est désormais rattaché à l'ÉTAPE de quête en cours (« q7:4 »),
@@ -713,10 +717,12 @@ async function _appliquerCerclesQ(cercles){ if(!cercles) return;
      (persisté dans `donnees`) et cerclesRejouer() le renvoie à la connexion.
      Sans risque de doublon : le serveur ne paie une clé d'étape qu'une fois. */
   const r = await _envoyerCercles(cle, cercles);
-  if(r === "ok") return;
-  if(r === "refuse"){ etat.cercles = avant; return; }
+  if(r === "ok") return true;
+  if(r === "deja"){ etat.cercles = avant; return false; }   // v1.16 : étape déjà payée, on ne ment pas
+  if(r === "refuse"){ etat.cercles = avant; return false; }
   if(!etat.cerclesAttente || typeof etat.cerclesAttente!=="object") etat.cerclesAttente={};
   etat.cerclesAttente[cle] = cercles; sauvegarder();
+  return true;   // hors ligne : le gain partira plus tard, on l'annonce
 }
 /* "ok" (payé, ou déjà payé) · "refuse" (le serveur dit non : inutile d'insister) · "echec" (réseau). */
 async function _envoyerCercles(cle, cercles){
@@ -724,6 +730,13 @@ async function _envoyerCercles(cle, cercles){
   let data=null, error=null;
   try{ ({ data, error } = await sb.rpc("cercles_ajouter", { p_deltas: cercles, p_cle: cle })); }catch(e){ error=e; }
   if(error || !data) return "echec";
+  /* v1.16 — ÉTAPE DÉJÀ PAYÉE. En abandonnant puis reprenant une quête, on
+     repassait par le même choix : le serveur refusait de payer deux fois (clé
+     `cercles_gains`) mais le client annonçait quand même le gain. Le joueur
+     lisait « +5 Les Veilleurs » sans rien recevoir. On le distingue maintenant,
+     et l'appelant se tait. ⚠ La règle « une étape ne paie qu'une fois » est
+     VOULUE : c'est ce qui empêche de farmer un Cercle en boucle. */
+  if(data.ok && data.deja){ if(data.cercles) etat.cercles = data.cercles; return "deja"; }
   if(data.ok){ if(data.cercles) etat.cercles = data.cercles; return "ok"; }
   console.warn("[cercles] refusé :", data.err); return "refuse";
 }
@@ -768,9 +781,9 @@ function _wireChoix(z,d){
     if(o.bete){ const a=queteActive(); if(!a) return; a._bete={ i:parseInt(b.dataset.choix,10) }; sauvegarder(); rafraichirQuetes(); return; }
     if(!_coutQ_ok(o.cout)){ journal("Ressources insuffisantes pour ce choix.","alerte"); liberer(); return; }
     if(!await _payerCoutQ(o.cout)){ liberer(); return; }
-    await _appliquerCerclesQ(o.cercles);
-    const ef=_cerclesTexteQ(o.cercles);   // annoncé seulement une fois le choix fait
-    if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13 : onglet Quêtes
+    const paye = await _appliquerCerclesQ(o.cercles);
+    const ef=_cerclesTexteQ(o.cercles);   // annoncé seulement une fois le choix fait, et seulement s'il a lieu
+    if(ef && paye) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13 : onglet Quêtes
     // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
     if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
     journal(o.journal || "Ton choix est scellé.","gain");
@@ -825,9 +838,9 @@ function _wireNommer(z, d, o){
     }
     etat.bete = { espece:data.espece, nom:data.nom };
     if(!a._beteCercle){
-      await _appliquerCerclesQ(opt.cercles);
+      const _payeBete = await _appliquerCerclesQ(opt.cercles);
       a._beteCercle=true; sauvegarder();
-      const ef=_cerclesTexteQ(opt.cercles); if(ef) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13
+      const ef=_cerclesTexteQ(opt.cercles); if(ef && _payeBete) journal(`Ton choix te rapproche de : ${ef}.`,"gain","quete");   // v1.13
     }
     journal(opt.journal || `${data.nom} te suit désormais.`, "gain");
     reussirDefi();
@@ -870,12 +883,20 @@ function _combatStats(){
 function _htmlCombat(d){
   const st=_combatStats(); const p=d.puissance||30;
   const noms={force:"Force",agilite:"Agilité",intelligence:"Intelligence"};
-  const jauge=Math.max(0,Math.min(100,Math.round(st.val/p*100)));
-  const teinte = st.val>=p ? "#8bd450" : (st.val>=p*0.7 ? "#ff8a3d" : "#ff5257");
+  /* ⚠ v1.19 — CE N'EST PAS UNE PROBABILITÉ (retour testeur, Q10 étape 2). On
+     affichait « (66 %) » : atout ÷ puissance. Le joueur lisait « 66 % de chances »
+     et perdait à chaque fois — normal, sous 70 % la défaite est CERTAINE. Le
+     combat de quête est un seuil, sans hasard : on affiche donc les seuils. */
+  const seuil=Math.ceil(p*0.7);
+  const teinte = st.val>=p ? "#8bd450" : (st.val>=seuil ? "#ff8a3d" : "#ff5257");
+  const verdict = st.val>=p ? "tu l'emportes nettement"
+                : (st.val>=seuil ? "tu l'emportes, mais tu y laisseras de la santé"
+                : `il te manque ${seuil-st.val} point${seuil-st.val>1?"s":""} : tu perdras à coup sûr`);
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">${d.nom||"Adversaire"} — puissance estimée : <b>${p}</b></p>
-    <p class="vide" style="margin:6px 0">Ton meilleur atout : <b>${noms[st.best]}</b> ${st.val}
-      <span style="color:${teinte}"> (${jauge} %)</span></p>
+    <p class="quete-indice">${d.nom||"Adversaire"} — puissance : <b>${p}</b></p>
+    <p class="vide" style="margin:6px 0">Ton meilleur atout : <b>${noms[st.best]} ${st.val}</b>
+      — <span style="color:${teinte}">${verdict}.</span></p>
+    <p class="itip-gris" style="margin:0 0 6px">Pas de hasard : il faut <b>${seuil}</b> pour l'emporter (en y laissant de la santé), <b>${p}</b> pour une victoire nette. Équipement et boissons comptent.</p>
     <div class="quete-rep"><button class="mini" id="q-cbt-btn">Engager le combat</button></div>
   </div>`;
 }
@@ -905,8 +926,8 @@ function _wireCombat(z,d){
     const cercle=_cercleCombat(st, d.cercles);   // v1.14 : départage en cas d'égalité
     if(cercle && typeof _appliquerCerclesQ==="function"){
       const gain = d.gain||2;
-      await _appliquerCerclesQ({ [cercle]: gain });
-      const ef = _cerclesTexteQ({ [cercle]: gain });
+      const payeC = await _appliquerCerclesQ({ [cercle]: gain });
+      const ef = payeC ? _cerclesTexteQ({ [cercle]: gain }) : "";
       const _libCompet = { racines:"la Force", langues:"l'Agilité", assembleurs:"l'Intelligence" };
       const par = _libCompet[cercle] || "ta meilleure compétence";
       if(ef) journal(`Emporté par ${par} : ${ef}.`,"gain","quete");
@@ -1207,7 +1228,8 @@ function _tuyGenerer(C, L, rnd){
   for(let i=0;i<C*L;i++) if(!masques[i]) masques[i]=formes[Math.floor(rnd()*formes.length)];
   // on brouille les rotations (au moins un tronçon du chemin désaligné)
   for(let i=0;i<C*L;i++){ const r=Math.floor(rnd()*4); for(let k=0;k<r;k++) masques[i]=_tuyPivot(masques[i]); }
-  if(_tuyIrrigues(masques,C,L,sr,kr).gagne){ const i=chemin[0]; masques[i]=_tuyPivot(masques[i]); }
+  // v1.19 : on tourne le premier tronçon jusqu'à ce que le circuit soit coupé (un seul quart de tour ne suffisait pas toujours).
+  for(let k=0; k<3 && _tuyIrrigues(masques,C,L,sr,kr).gagne; k++){ const i=chemin[0]; masques[i]=_tuyPivot(masques[i]); }
   return { masques, sr, kr };
 }
 function _tuyIrrigues(m, C, L, sr, kr){
@@ -1229,8 +1251,9 @@ function _tuySvg(m, irrigue){
 function _htmlTuyauterie(d){
   const C=d.colonnes||5;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Tape un tronçon pour le faire pivoter. Mène le liquide de l'entrée ▶ (à gauche) jusqu'à la machine ◀ (à droite).</p>
+    <p class="quete-indice">Tape un tronçon pour le faire pivoter. Mène le liquide de l'entrée ▶ (à gauche) jusqu'à la machine ◀ (à droite), puis <b>ouvre la vanne</b>.</p>
     <div id="q-tuy" style="display:grid;grid-template-columns:22px repeat(${C},1fr) 22px;gap:3px;max-width:420px;margin:10px auto 0;touch-action:manipulation;align-items:center"></div>
+    <div class="quete-rep" style="margin-top:10px"><button class="mini" id="q-tuy-vanne">🔧 Ouvrir la vanne</button></div>
   </div>`;
 }
 function _wireTuyauterie(z, d){
@@ -1248,10 +1271,20 @@ function _wireTuyauterie(z, d){
     }
     g.innerHTML=h; return r.gagne;
   };
+  /* ⚠ v1.19 — LA VANNE (retour testeur, Q8 étape 4). Le circuit se validait
+     TOUT SEUL dès que le liquide touchait la machine : le joueur, qui finissait
+     d'arranger ses tronçons, se voyait couper au milieu du geste. C'est lui qui
+     décide maintenant quand c'est fini. Non ratable : une vanne ouverte trop tôt
+     ne coûte rien. */
   g.addEventListener("click", e=>{
     const b=e.target.closest("[data-i]"); if(!b) return; const i=+b.dataset.i;
     t.masques[i]=_tuyPivot(t.masques[i]); sauvegarder();
-    if(dessiner()){ journal("Le liquide circule jusqu'à la machine !","gain"); reussirDefi(); }
+    dessiner();
+  });
+  const v=z.querySelector("#q-tuy-vanne");
+  if(v) v.addEventListener("click", ()=>{
+    if(_tuyIrrigues(t.masques,C,L,t.sr,t.kr).gagne){ journal("Tu ouvres la vanne : le liquide circule jusqu'à la machine !","gain"); reussirDefi(); }
+    else journal("Tu ouvres la vanne… le liquide s'arrête en route. Le circuit n'arrive pas encore à la machine ◀.","alerte");
   });
   dessiner();
 }
@@ -1270,12 +1303,33 @@ function _wireTuyauterie(z, d){
    État : a._tri = { src:{x,y}, releves:[{x,y,f}], ratees }.
    =========================================================== */
 function _triForce(p, src){ return Math.max(0, 100 - Math.round(Math.hypot(p.x-src.x, p.y-src.y)/5)); }
+/* ⚠ v1.19 — LA SOURCE NE TOMBE JAMAIS SOUS UNE IMAGE CLIQUABLE (retour testeur,
+   Q10 étape 1). En orbite, chaque image de lieu (le Gravier fait 203 px) est un
+   bouton : cliquer dessus ramène au CENTRE du lieu au lieu de déplacer au point
+   visé. Une source tirée sous l'image était donc inatteignable — il fallait
+   sortir de la zone pour pouvoir relever. On écarte ces disques (+30 u de marge). */
+function _triObstacles(carte){
+  if(carte !== "espace" || typeof ESPACE_LIEUX === "undefined") return [];
+  return ESPACE_LIEUX.filter(l => l && typeof l.x==="number" && l.t).map(l => ({ x:l.x, y:l.y, r:l.t/2 + 30 }));
+}
+function _triLibre(p, obs){ return !obs.some(o => Math.hypot(p.x-o.x, p.y-o.y) < o.r); }
+function _triTirer(c){
+  const obs = _triObstacles(c.carte);
+  for(let k=0; k<200; k++){
+    const etendue = k < 100 ? 0.6 : 0.9;          // si la zone est très encombrée, on élargit
+    const ang=Math.random()*Math.PI*2, rr=Math.sqrt(Math.random())*c.r*etendue;
+    const p={ x:Math.round(c.x+Math.cos(ang)*rr), y:Math.round(c.y+Math.sin(ang)*rr) };
+    if(_triLibre(p, obs)) return p;
+  }
+  return { x:Math.round(c.x), y:Math.round(c.y) };   // filet (ne devrait jamais servir)
+}
 function _triEtat(d){
   const a=queteActive(); if(!a) return null; const e=etapeActive(); if(!e) return null;
+  const c=_cibleResolue(e.cible); if(!c) return null;
+  // Partie en cours avec une source mal placée : on la retire tant qu'aucun relevé n'a été fait.
+  if(a._tri && a._tri.src && !(a._tri.releves||[]).length && !_triLibre(a._tri.src, _triObstacles(c.carte))) a._tri = null;
   if(!a._tri || !a._tri.src){
-    const c=_cibleResolue(e.cible); if(!c) return null;
-    const ang=Math.random()*Math.PI*2, rr=Math.sqrt(Math.random())*c.r*0.6;
-    a._tri = { src:{ x:Math.round(c.x+Math.cos(ang)*rr), y:Math.round(c.y+Math.sin(ang)*rr) }, releves:[], ratees:0 };
+    a._tri = { src:_triTirer(c), releves:[], ratees:0 };
     sauvegarder();
   }
   return a._tri;
@@ -1283,7 +1337,13 @@ function _triEtat(d){
 function _htmlTriangulation(d){
   const F=d.fouilles||3, M=d.minReleves||3;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Déplace-toi sur la carte et relève le signal en plusieurs points : plus il est fort, plus tu es près. Au moins ${M} relevés avant de fouiller. ${F} fouilles ratées — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
+    <p class="quete-indice">Cette épreuve se joue <b>en te déplaçant sur la carte</b>, sans changer d'étape :</p>
+    <ol class="quete-indice" style="margin:4px 0 6px 18px;padding:0">
+      <li>Relève le signal là où tu es.</li>
+      <li>Déplace-toi sur la carte (un autre point de la zone), puis relève encore. Recommence : au moins ${M} relevés, en ${M} endroits différents.</li>
+      <li>Plus le chiffre est fort, plus tu es près. Va là où il serait le plus fort, et fouille.</li>
+    </ol>
+    <p class="itip-gris" style="margin:0 0 6px">${F} fouilles ratées — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
     <div class="quete-rep" style="gap:8px;flex-wrap:wrap">
       <button class="mini" id="q-tri-rel">📡 Relever le signal ici</button>
       <button class="mini" id="q-tri-fou">⛏ Fouiller ici</button>
@@ -1325,13 +1385,17 @@ function _wireTriangulation(z, d){
   };
   z.querySelector("#q-tri-rel").addEventListener("click", ()=>{
     const p=_posJoueur(carte); if(!p) return;
-    if(t.releves.some(r=>Math.hypot(r.x-p.x, r.y-p.y) < 30)){ journal("Tu as déjà relevé le signal ici : déplace-toi d'abord.","alerte"); return; }
+    if(t.releves.some(r=>Math.hypot(r.x-p.x, r.y-p.y) < 30)){ journal("Tu as déjà relevé le signal ici : déplace-toi d'abord sur la carte (un autre point de la zone).","alerte"); return; }
     const f=_triForce(p, t.src); t.releves.push({ x:Math.round(p.x), y:Math.round(p.y), f }); sauvegarder();
-    journal(`Signal relevé : force ${f}.`, f>=80?"gain":"");
+    const n=t.releves.length;
+    // v1.19 : on dit quoi faire ensuite (retour testeur, Q8 étape 3).
+    journal(`Signal relevé : force ${f}.` + (n < M
+      ? ` Relevé ${n}/${M} — déplace-toi sur la carte, puis relève à nouveau.`
+      : ` Va là où il semble le plus fort, puis fouille.`), f>=80?"gain":"");
     dessiner();
   });
   z.querySelector("#q-tri-fou").addEventListener("click", ()=>{
-    if(t.releves.length < M){ journal(`Relève encore le signal (${t.releves.length}/${M}) avant de fouiller au hasard.`,"alerte"); return; }
+    if(t.releves.length < M){ journal(`Relève d'abord le signal en ${M} endroits différents (${t.releves.length}/${M}) : déplace-toi sur la carte entre deux relevés.`,"alerte"); return; }
     const p=_posJoueur(carte); if(!p) return;
     if(Math.hypot(p.x-t.src.x, p.y-t.src.y) <= PREC){ journal("Sous la croûte, ta pioche sonne sur du métal.","gain"); reussirDefi(); return; }
     t.ratees++; sauvegarder();
@@ -1441,14 +1505,29 @@ function _wireSequence(z,d){
 }
 
 /* memoire (ratable : on montre une info quelques secondes, puis une question) */
+/* ⚠ v1.19 — LE CHRONO PART QUAND LE JOUEUR LE DÉCIDE (retour testeur, Q13).
+   Il partait à l'affichage du panneau : le temps de lire le récit, l'info était
+   déjà à moitié effacée. Un bouton « Afficher » lance l'affichage ; l'heure de
+   départ est sauvée (`a._memDebut`), donc recharger la page ne redonne PAS un
+   second regard, et un redessin du panneau ne remet pas le compteur à zéro. */
+function _memReste(d){
+  const a=queteActive(); if(!a || !a._memDebut) return null;
+  return Math.max(0, (d.duree||6000) - (Date.now() - a._memDebut));
+}
 function _htmlMemoire(d){
   const a=queteActive();
+  if(!a._memVue && a._memDebut && _memReste(d) <= 0){ a._memVue=true; sauvegarder(); }
   if(!a._memVue){
+    if(!a._memDebut){
+      return `<div class="quete-etape">${_par(d.texte)}
+        <p class="quete-indice">L'information ne restera que <b>${Math.ceil((d.duree||6000)/1000)} secondes</b>, et tu ne la reverras pas. Prends le temps de lire ce qui précède, puis affiche-la quand tu es prêt.</p>
+        <div class="quete-rep"><button class="mini" id="q-mem-go">👁 Afficher</button></div></div>`;
+    }
     const info=Array.isArray(d.info)?d.info.map(x=>`<div>${x}</div>`).join(""):(d.info||"");
     return `<div class="quete-etape">${_par(d.texte)}
       <p class="quete-indice">Mémorise bien — l'info va disparaître.</p>
       <div class="q-mem-info">${info}</div>
-      <div class="quete-rep"><span class="itip-gris">Disparition dans <b id="q-mem-cpt">${Math.ceil((d.duree||6000)/1000)}</b> s</span></div></div>`;
+      <div class="quete-rep"><span class="itip-gris">Disparition dans <b id="q-mem-cpt">${Math.ceil(_memReste(d)/1000)}</b> s</span></div></div>`;
   }
   return `<div class="quete-etape">${_par(d.texte)}
     <p class="quete-indice">${d.question}</p>
@@ -1457,9 +1536,13 @@ function _htmlMemoire(d){
 function _wireMemoire(z,d){
   const a=queteActive();
   if(!a._memVue){
-    const cpt=z.querySelector("#q-mem-cpt"); let s=Math.ceil((d.duree||6000)/1000);
+    const go=z.querySelector("#q-mem-go");
+    if(go){ go.addEventListener("click", ()=>{ a._memDebut=Date.now(); sauvegarder(); majQueteHub(); }); return; }
+    const cpt=z.querySelector("#q-mem-cpt");
     if(_queteTimer) clearInterval(_queteTimer);
-    _queteTimer=setInterval(()=>{ s--; if(cpt) cpt.textContent=s; if(s<=0){ clearInterval(_queteTimer); _queteTimer=null; a._memVue=true; majQueteHub(); } },1000);
+    _queteTimer=setInterval(()=>{ const r=_memReste(d);
+      if(cpt) cpt.textContent=Math.ceil(r/1000);
+      if(r<=0){ clearInterval(_queteTimer); _queteTimer=null; a._memVue=true; sauvegarder(); majQueteHub(); } }, 250);
     return;
   }
   const b=z.querySelector("#q-mem-btn"), c=z.querySelector("#q-mem-champ");

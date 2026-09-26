@@ -272,18 +272,24 @@ async function mettreEnVente(id, prix, qte){
 }
 
 /* --- Retirer une de ses offres (rend le lot ; taxe non remboursée) --- */
-async function retirerOffre(offreId){
+/* v1.19 — `qte` facultatif : retirer une partie du lot (retour testeur, 27/09).
+   Absent = le lot entier, comme avant (RPC retirer_offre(offre, qte)). */
+async function retirerOffre(offreId, qte){
   if(refusPrison("retirer une offre")) return;
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;
-  const { data:res, error } = await sb.rpc("retirer_offre", { offre: Number(offreId) });
+  const args = { offre: Number(offreId) };
+  if(Number.isFinite(qte) && qte >= 1 && qte < o.quantite) args.qte = Math.floor(qte);
+  const { data:res, error } = await sb.rpc("retirer_offre", args);
   if(error || !res || !res.ok){
     if(res && res.err==="sac_plein") journal("Sac plein — libère de la place pour récupérer ce lot.","alerte");
+    else if(res && res.err==="qte") journal("Quantité invalide.","alerte");
     else journal("Retrait impossible.","alerte");
     renderMarche(); return;
   }
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
   journal(`Retiré du marché : ${res.quantite}× ${item(res.item).nom}`
-    + (res.partiel ? " (le reste attend : sac plein)" : "") + " — taxe non remboursée.","alerte");
+    + (res.partiel ? " (sac plein : le reste attend)" : "")
+    + (res.reste > 0 ? ` — encore ${res.reste} en vente` : "") + " — taxe non remboursée.","alerte");
   // ⚠ renderMarche() recharge les offres depuis le serveur : sans await, la
   // modale « Mes ventes » se redessinait sur le cache d'avant le retrait.
   apresAction(); await renderMarche(); ouvrirMesVentes();
@@ -327,7 +333,7 @@ function ouvrirMesVentes(){
   const m = document.querySelector("#marche-mesventes");
   const mes = _offresCache.filter(o=>o.vendeur_id===_marcheMonId).sort((a,b)=> item(a.item_id).nom.localeCompare(item(b.item_id).nom) || a.prix-b.prix);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>Mes ventes — ${FACTIONS.find(f=>f.id===faction).nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
-  html += `<p class="vide" style="margin:0 0 8px">Retirer une offre te rend l'objet. La taxe déjà payée n'est pas remboursée.</p>`;
+  html += `<p class="vide" style="margin:0 0 8px">Retirer une offre te rend l'objet — tout le lot ou la quantité choisie. La taxe déjà payée n'est pas remboursée.</p>`;
   if(!mes.length) html += `<p class="vide">Tu n'as rien en vente ici.</p>`;
   for(const o of mes){
     // v0.94 : le vendeur voit ce qui va être purgé, et peut le retirer avant.
@@ -335,11 +341,17 @@ function ouvrirMesVentes(){
     const _j = _offreJours(o);
     html += `<div class="vente-ligne" data-item="${o.item_id}"${_j!=null?` data-jours="${_j.toFixed(3)}"`:""}><span class="picker-ic">${iconeItem(o.item_id)}</span>`
       + `<span class="picker-nom"><b>${item(o.item_id).nom}</b>${mort ? ` <span class="picker-usure usure-critique">périmé</span>` : _offreBadge(o)} <span class="qte">×${o.quantite} à ${o.prix} ₡</span></span>`
+      + (o.quantite > 1
+          ? `<input type="number" class="vente-qte" min="1" max="${o.quantite}" value="${o.quantite}" data-retq="${o.id}" title="Quantité à retirer" style="max-width:58px">`
+          : ``)
       + `<button class="mini danger" data-retirer="${o.id}">Retirer</button></div>`;
   }
   html += `</div>`;
   m.innerHTML = html; m.hidden = false;
   if(typeof brancherTips==="function") brancherTips(m);
   m.querySelector("[data-fermer]").addEventListener("click",()=>{ m.hidden=true; });
-  m.querySelectorAll("[data-retirer]").forEach(b=>b.addEventListener("click",()=>retirerOffre(b.dataset.retirer)));
+  m.querySelectorAll("[data-retirer]").forEach(b=>b.addEventListener("click",()=>{
+    const q = m.querySelector(`[data-retq="${b.dataset.retirer}"]`);   // v1.19 : quantité (lots de plus d'un)
+    retirerOffre(b.dataset.retirer, q ? parseInt(q.value,10) : undefined);
+  }));
 }

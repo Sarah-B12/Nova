@@ -381,3 +381,13 @@
 .poste-perturb-titre{ font-weight:700; letter-spacing:.08em; color:#ff5257; margin-bottom:6px;
   text-shadow:0 0 8px rgba(255,82,87,.55); }
 .poste-perturb p{ margin:4px 0; font-size:13px; }
+
+/* v1.19b — MINI-JEU « ORDRE » : une entrée par ligne, sur PC comme sur téléphone
+   (retour testeur, 27/09). Sans règle, les boutons `.mini` s'alignaient côte à
+   côte sur un écran large, de tailles inégales et renvoyés à la ligne au petit
+   bonheur : on s'y repérait mal. Le téléphone avait la bonne présentation par
+   hasard (écran étroit) — on la rend explicite. */
+.q-ordre-pool, .q-ordre-rep { display:flex; flex-direction:column; gap:8px; max-width:640px; margin:10px auto 0; }
+.q-ordre-pool:empty, .q-ordre-rep:empty { display:none; }
+button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line-height:1.35; font-size:14px; padding:10px 14px; }
+.q-ordre-chip { display:block; padding:8px 12px; border:1px dashed var(--edge); border-radius:10px 4px 10px 4px; font-size:14px; line-height:1.35; }

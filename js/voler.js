@@ -3,7 +3,7 @@
    (mêmes règles que le vrai multi : il n'y aura qu'à rebrancher les vraies cibles).
      • Voler  : objets. Plus risqué, moins payant. Échec → démasqué (TON NOM).
                 Gros échec → prison. Réussite = Agilité. Prérequis : Discrétion.
-     • Hacker : crédits (≤30%). Meilleur, anonyme (« un anonyme » chez la victime).
+     • Hacker : crédits (≤20%, v1.21). Meilleur, anonyme (« un anonyme » chez la victime).
                 Réussite = MINI-JEU (Intelligence = plus de temps). Prérequis : Ordinateur de hacking
                 équipé + Intrusion. Risque de prison plus faible.
      • Coûte 15% d'énergie. Cible = un joueur AU HASARD présent dans la ville.
@@ -11,7 +11,11 @@
      • Immunité des nouveaux (<20 j) ; une victime volable 1×/jour (simulé ici).
    =========================================================== */
 const VOL_ENERGIE     = 15;
-const VOL_CAP_CREDITS = 0.30;
+/* v1.21 — 30 % → 20 % (décision de l'autrice, 27/09) : le plafond absolu de
+   500 ₡ protégeait déjà les grosses fortunes ; c'étaient les PETITES que 30 %
+   vidaient. Formule inchangée : 12 % + Intelligence/1000, donc 20 % atteints
+   dès 80 d'Intelligence. Le texte de l'encart HACKER lit cette constante. */
+const VOL_CAP_CREDITS = 0.20;
 const VOL_CAP_ABS     = 500;    // plafond absolu de crédits par hack (anti-jackpot)
 const VOL_CAP_OBJETS  = 3;
 const IMMUNITE_JOURS  = 20;
