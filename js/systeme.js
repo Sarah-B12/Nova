@@ -319,7 +319,51 @@ function majJournal(){
      dans `donnees`. Ce sont des valeurs dérivées, pas un état à garder. */
 function seuilXp(n){ return 20*n; }
 // Total cumulé nécessaire pour ATTEINDRE le niveau n : somme(20k, k=1..n-1).
-function xpCumulPour(n){ return 10*n*(n-1); }
+/* v1.33 — COURBE D'XP : la plus exigeante de l'ancienne (10·n·(n−1)) et d'une
+   cubique (n²·(n−1)/2). Les deux se croisent EXACTEMENT au niveau 20 (3 800 XP) :
+   début de partie inchangé, le haut s'étire (niv 40 : 31 200 XP au lieu de 15 600).
+   n·(n−1) est toujours pair : la cubique tombe juste, pas d'arrondi.
+   ⚠ Le serveur ne la connaît pas (niveau_monter croit le niveau annoncé) :
+     à dupliquer le jour où il vérifiera l'XP (chantier anti-triche). */
+function xpCumulPour(n){ return Math.max(10*n*(n-1), n*n*(n-1)/2); }
+
+/* v1.33 — NIVEAU REQUIS POUR UTILISER UN OBJET (fixé à la main par l'autrice).
+   Absent = sans condition. On peut tout faire d'un objet trop fort (posséder,
+   acheter, vendre, donner, ranger, trouver) SAUF l'utiliser : équiper, poser au
+   hangar, équiper comme vaisseau.
+   ⚠ Barème DUPLIQUÉ : table `niveaux_objets` (v133_niveaux.sql) — le serveur
+     ignore le bonus d'un objet trop fort (forces) et refuse de l'équiper (ranger). */
+const NIVEAUX_OBJETS = {
+  fab_pistolet_cinetique:5,
+  fab_casque_leger:7, fab_plastron_leger:7, fab_jambieres_legeres:7,
+  fab_lame_a_plasma:10, fab_ordinateur_de_hacking:10,
+  fab_pistolet_a_plasma:15,
+  fab_fusil_a_ions:20,
+  fab_drone_de_recolte:22, fab_drone_d_elevage:22, fab_drone_recuperateur:22,
+  fab_casque_lourd:25, fab_plastron_lourd:25, fab_jambieres_lourdes:25,
+  fab_lame_a_singularite:32,
+  fab_implant_de_force:33, fab_implant_d_agilite:33,
+  fab_drone_de_combat:34,
+  fab_implant_maitre:38,
+  fab_canon_a_singularite:40,
+  fab_navette_legere:5, fab_vaisseau_cargo:20, fab_vaisseau_maitre:35
+};
+function niveauRequis(id){ return NIVEAUX_OBJETS[id] || 0; }
+function niveauJoueur(){ return (typeof etat !== "undefined" && etat && etat.niveau) ? etat.niveau|0 : 1; }
+function niveauSuffisant(id){ return niveauJoueur() >= niveauRequis(id); }
+/* Refuse (avec message) si le niveau manque. Renvoie true si l'on peut utiliser. */
+function verifierNiveau(id){
+  if(niveauSuffisant(id)) return true;
+  journal(`Niveau ${niveauRequis(id)} requis (tu es niveau ${niveauJoueur()}).`, "alerte");
+  return false;
+}
+/* Mention à afficher partout où l'objet apparaît ("" si sans condition).
+   Rouge si le joueur n'a pas encore le niveau. */
+function mentionNiveauHtml(id){
+  const n = niveauRequis(id); if(!n) return "";
+  const ok = niveauSuffisant(id);
+  return `<span class="mention-niveau${ok ? "" : " manque"}">Utilisable dès le niveau ${n}</span>`;
+}
 function niveauDeXp(total){
   let n = 1;
   while(n < 999 && (total|0) >= xpCumulPour(n+1)) n++;

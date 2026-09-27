@@ -110,6 +110,7 @@ function itemsSoute(){ return Object.values(etat.soute||{}).reduce((a,b)=>a+b,0)
 /* ---------- Équiper / déséquiper ---------- */
 async function equiperVaisseau(id){
   if(!estVaisseau(id) || (etat.sac[id]||0)<=0) return;
+  if(typeof verifierNiveau==="function" && !verifierNiveau(id)) return;   // v1.33 : niveau requis
   if(!etat.permisVaisseau){ journal("Il te faut un permis de vaisseau pour piloter (quête à venir).","alerte"); return; }
   if(id===etat.vaisseau) return;
   if(etat.vaisseau){                                   // remplacer : il faut d'abord ranger l'actuel (soute vide)

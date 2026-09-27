@@ -40,6 +40,7 @@ function ouvrirMenuObjet(id){
   if(!conso && !equip && !vais && !prixMarche && !kit && brade==null) return;   // rien à faire
 
   let html = `<div class="menu-cadre"><div class="menu-tete"><span class="menu-ic">${iconeItem(id)}</span><b>${it.nom}</b> <span class="qte">×${etat.sac[id]}</span><button class="mini" data-fermer="1">✕</button></div>`;
+  if(typeof mentionNiveauHtml==="function"){ const mn=mentionNiveauHtml(id); if(mn) html += `<div class="menu-niveau">${mn}</div>`; }   // v1.33
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
   if(kit)        html += `<button class="menu-act" data-act="kit-coque">Réparer la coque (+${(typeof KIT_PV!=="undefined")?KIT_PV:40} PV)</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;

@@ -391,3 +391,10 @@
 .q-ordre-pool:empty, .q-ordre-rep:empty { display:none; }
 button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line-height:1.35; font-size:14px; padding:10px 14px; }
 .q-ordre-chip { display:block; padding:8px 12px; border:1px dashed var(--edge); border-radius:10px 4px 10px 4px; font-size:14px; line-height:1.35; }
+
+/* v1.33 — « Utilisable dès le niveau N » (systeme.js : mentionNiveauHtml).
+   Discret si le joueur a le niveau, orangé s'il lui manque. */
+.mention-niveau{ display:block; font-size:12px; color:var(--muted,#8fa3b8); margin-top:2px; }
+.mention-niveau.manque{ color:var(--orange,#ff8a3d); }
+.menu-niveau{ padding:4px 12px 6px; }
+

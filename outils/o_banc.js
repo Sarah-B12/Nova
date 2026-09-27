@@ -23,6 +23,7 @@ const DELAIS = {
   glyphes: { profil: 50, sac: 50, jauges: 50 },   // v1.28 : écriture de l'ancien (o_glyphes.js)
   ordre: { profil: 50, sac: 50, jauges: 50 },     // v1.29 : ordre avec glyphes (o_ordre.js)
   debris: { profil: 50, sac: 50, jauges: 50 },    // v1.31 : chutes de débris (o_debris.js)
+  niveaux: { profil: 50, sac: 50, jauges: 50 },   // v1.33 : niveau requis (o_niveaux.js)
 }[SCEN];
 
 const donnees = {

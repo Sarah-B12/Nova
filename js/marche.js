@@ -178,7 +178,7 @@ async function renderMarche(){
     // l'infobulle affichait la durée de vie à neuf (l'objet n'est pas au sac).
     const _j = _offreJours(o);
     html += `<div class="marche-ligne" data-item="${iid}"${_j!=null?` data-jours="${_j.toFixed(3)}"`:""}><span class="marche-ic">${iconeItem(iid)}</span>`
-      + `<span class="marche-nom">${item(iid).nom}${_offreBadge(o)}<span class="qte">${detail}</span></span>`
+      + `<span class="marche-nom">${item(iid).nom}${_offreBadge(o)}<span class="qte">${detail}</span>${(typeof mentionNiveauHtml==="function") ? mentionNiveauHtml(iid) : ""}</span>`   // v1.33 : niveau requis
       + `<span class="marche-prix ${cls}">${o.prix} ₡</span>`
       + `<button class="mini" data-acheter="${o.id}" title="Vendu par ${echapper(o.vendeurNom||"?")} — ${o.prix} ₡ l'unité${o.quantite>1?` (${o.quantite} dispo)`:""}">Acheter 1</button>${(_estArchitecte && _utileALaDefense(iid))?`<button class="mini" data-acheterfac="${o.id}" title="Payé par la caisse, va dans la réserve de faction">Pour la faction</button>`:""}</div>`;
   }

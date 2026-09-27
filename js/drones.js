@@ -19,6 +19,7 @@ function cibleTypeDrone(type){ return type==="recolte" ? "biodome" : "enclos"; }
 /* ---------- Installation / assignation ---------- */
 async function placerDrone(si, type){
   const iid = DRONE_ITEMS[type]; if((etat.sac[iid]||0)<=0) return;
+  if(typeof verifierNiveau==="function" && !verifierNiveau(iid)) return;   // v1.33 : niveau requis
   const p = etat.terrain.parcelles[structSel]; if(!p || p.type!=="hangar" || p.drones[si]) return;
   if(!await agirServeur({ retirer:{ [iid]:1 }, motif:"drone_poser" })) return;
   p.drones[si] = { type, cible:null, maj:0, pose:Date.now() };   // pose = date d'usure
@@ -54,7 +55,7 @@ function renderHangar(corps){
       const t = document.createElement("div"); t.className="drone-tete"; t.textContent = `Emplacement ${si+1} — libre`; slot.appendChild(t);
       const row = document.createElement("div"); row.className="actions"; let any=false;
       for(const type in DRONE_ITEMS){ const has = etat.sac[DRONE_ITEMS[type]]||0;
-        if(has>0){ any=true; const b=document.createElement("button"); b.className="mini"; b.textContent=`Placer ${nomDrone(type)} (×${has})`; b.addEventListener("click",()=>placerDrone(si,type)); row.appendChild(b); } }
+        if(has>0){ any=true; const b=document.createElement("button"); b.className="mini"; b.textContent=`Placer ${nomDrone(type)} (×${has})` + ((typeof niveauSuffisant==="function" && !niveauSuffisant(DRONE_ITEMS[type])) ? ` — niveau ${niveauRequis(DRONE_ITEMS[type])} requis` : "");   /* v1.33 */ b.addEventListener("click",()=>placerDrone(si,type)); row.appendChild(b); } }
       if(!any){ const n=document.createElement("p"); n.className="vide"; n.style.margin="0"; n.textContent="Fabrique un Drone de récolte ou d'élevage (Ingénieur) pour l'installer ici."; slot.appendChild(n); }
       else slot.appendChild(row);
     } else {

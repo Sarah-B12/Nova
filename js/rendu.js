@@ -121,6 +121,7 @@ function infoItemHTML(id, joursForce){
   const catLbl = { minerai:"Minerai", organique:"Matière organique", animal:"Matière animale", plante:"Plante", fabrique:"Objet fabriqué" };
   h += `<div class="itip-cat">${catLbl[it.cat] || ({graine:"Graine",bebe:"Bébé animal"}[it.type]) || (it.type==="conso" ? "Consommable" : "Objet")}</div>`;
   if(typeof effetTexte==="function"){ const e=effetTexte(id); if(e) h += `<div class="itip-effet">${e}</div>`; }
+  if(typeof mentionNiveauHtml==="function"){ const mn=mentionNiveauHtml(id); if(mn) h += `<div class="itip-ligne">${mn}</div>`; }   // v1.33
   const ec=(typeof effetConso==="function")?effetConso(id):null; if(ec){ const parts=Object.keys(ec).map(g=>`+${ec[g]} ${labelJauge(g)}`); h += `<div class="itip-effet">${parts.join(", ")} — cliquer pour utiliser</div>`; }
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]){ const p=PRIX_ITEM[id]; h += `<div class="itip-ligne">Valeur : <b>${p.min}–${p.max} ₡</b> <span class="itip-gris">(moy ${p.moy})</span></div>`; }
   if(typeof estObjetLie==="function" && estObjetLie(id)){

@@ -165,7 +165,7 @@ function listeRecettes(fo, points){
   const box = document.createElement("div"); box.className="recette-liste";
   fo.recettes.forEach(([seuil, nom, ing])=>{
     const l = document.createElement("div"); l.className = "recette-ligne" + (points>=seuil ? " ok" : "");
-    l.innerHTML = `<span class="recette-seuil">${seuil}</span><span class="recette-corps"><b class="recette-nom">${nom}</b><span class="recette-ing">${ing}</span></span>`;
+    l.innerHTML = `<span class="recette-seuil">${seuil}</span><span class="recette-corps"><b class="recette-nom">${nom}</b>${_mentionNivFab(nom)}<span class="recette-ing">${ing}</span></span>`;
     box.appendChild(l);
   });
   return box;
@@ -305,6 +305,11 @@ function normNom(s){
     .replace(/[\u2019\u2018]/g, "'")
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/\s+/g, " ").trim();
+}
+/* v1.33 — « Utilisable dès le niveau N » sous le nom d'une recette. */
+function _mentionNivFab(nom){
+  if(typeof mentionNiveauHtml !== "function") return "";
+  const mn = mentionNiveauHtml(slugFab(nom)); return mn ? ` ${mn}` : "";
 }
 function slugFab(nom){
   const base = "fab_" + normNom(nom).replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
@@ -462,7 +467,7 @@ function renderAtelier(corps){
     const l = document.createElement("div"); l.className = "recette-ligne ok";
     l.innerHTML =
       `<span class="recette-seuil">${seuil}</span>
-       <span class="recette-corps"><b class="recette-nom">${nom}</b> <small class="recette-gain">+${ptsFab(nom)} pt${ptsFab(nom)>1?"s":""}</small><span class="recette-ing">${ingHtml}</span>
+       <span class="recette-corps"><b class="recette-nom">${nom}</b>${_mentionNivFab(nom)} <small class="recette-gain">+${ptsFab(nom)} pt${ptsFab(nom)>1?"s":""}</small><span class="recette-ing">${ingHtml}</span>
        ${inconnu ? '<span class="recette-note">intermédiaire d\'un autre métier requis</span>' : (epuise ? '<span class="recette-note">recette épuisée (+0 pt)</span>' : "")}</span>`;
     const b = document.createElement("button"); b.className = "mini"; b.textContent = "Fabriquer";
     b.disabled = manque;

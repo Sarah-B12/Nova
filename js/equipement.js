@@ -165,6 +165,7 @@ function equipDouble(){ return _equipEffets().reduce((s,e)=>s+(e.double||0),0); 
 /* ---------- Équiper / déséquiper ---------- */
 async function equiper(id, slot){
   const cat = slotEquip(id); if(!cat) return;
+  if(typeof verifierNiveau==="function" && !verifierNiveau(id)) return;   // v1.33 : niveau requis
   // Armes à une main : sans emplacement précisé, on cherche une main LIBRE.
   // (Auparavant on visait toujours "arme", donc la seconde lame remplaçait la première.)
   if(!slot && cat === "arme" && !estDeuxMains(id)){
