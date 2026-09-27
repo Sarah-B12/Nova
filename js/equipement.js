@@ -312,7 +312,7 @@ function ouvrirPicker(slot){
     html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span><span class="picker-usure${_classeUsure(slot)}">⏳ ${texteUsureEquipe(slot)||"usure inconnue"}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
   }
   if(dispo.length){
-    for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;
+    for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b>${(typeof mentionNiveauHtml==="function") ? mentionNiveauHtml(it.id) : ""} <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;
   } else if(!equipe){
     html += `<p class="vide" style="margin:6px 0 0">Aucun objet pour cet emplacement dans ton sac. Fabriques-en à l'atelier.</p>`;
   } else {

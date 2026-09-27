@@ -258,10 +258,10 @@
   }
   #item-tip[hidden] { display:none; }
   #item-tip .itip-nom { font-weight:700; color:var(--orange-hi); font-size:13px; margin-bottom:1px; }
-  #item-tip .itip-cat { color:var(--sourdine); font-size:10px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
-  #item-tip .itip-effet { color:#8fd0a0; margin-bottom:4px; }
-  #item-tip .itip-ligne { margin-top:2px; }
-  #item-tip .itip-gris { color:var(--sourdine); }
+  #item-tip .itip-cat, .menu-infos .itip-cat { color:var(--sourdine); font-size:10px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  #item-tip .itip-effet, .menu-infos .itip-effet { color:#8fd0a0; margin-bottom:4px; }
+  #item-tip .itip-ligne, .menu-infos .itip-ligne { margin-top:2px; }
+  #item-tip .itip-gris, .menu-infos .itip-gris { color:var(--sourdine); }
 
   /* --- Marché --- */
   .marche-tete { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px; }
@@ -397,4 +397,6 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 .mention-niveau{ display:block; font-size:12px; color:var(--muted,#8fa3b8); margin-top:2px; }
 .mention-niveau.manque{ color:var(--orange,#ff8a3d); }
 .menu-niveau{ padding:4px 12px 6px; }
-
+/* v1.33 — fiche objet au doigt : le contenu de l'infobulle, sans son cadre. */
+.menu-infos{ padding:6px 12px 8px; border-bottom:1px solid var(--line,#243a52); margin-bottom:6px; font-size:14px; }
+.menu-infos .itip-nom{ display:none; }   /* le nom est déjà dans l'en-tête de la fiche */

@@ -153,11 +153,36 @@ function montrerItemTip(el, id, joursForce){ const html=infoItemHTML(id, joursFo
   let x=r.left+r.width/2-tw/2, y=r.top-th-8; if(y<8) y=r.bottom+8;
   t.style.left=Math.max(8, Math.min(x, innerWidth-tw-8))+"px"; t.style.top=y+"px"; }
 function cacherItemTip(){ if(_itip) _itip.hidden=true; }
+/* v1.33 — Au DOIGT (appareil sans survol) : appui long ≈ ½ s = l'infobulle ;
+   le toucher suivant, n'importe où, la ferme. Le « clic » qui suit l'appui long
+   est avalé (sinon la fiche s'ouvrirait par-dessus). À la souris : RIEN ne change. */
+const TIP_APPUI_MS = 450;
+function _estTactile(){ return !!(window.matchMedia && matchMedia("(hover: none)").matches); }
+let _tipAppuiFin = 0;   // horodatage du dernier appui long (pour avaler le clic)
+document.addEventListener("touchstart", e => {
+  if(_itip && !_itip.hidden && !(e.target.closest && e.target.closest("[data-item]"))) cacherItemTip();
+}, { passive:true, capture:true });
+document.addEventListener("click", e => {
+  if(Date.now() - _tipAppuiFin < 700){ e.stopPropagation(); e.preventDefault(); }
+}, true);
 function brancherTips(root){ if(!root || typeof montrerItemTip!=="function") return; root.querySelectorAll("[data-item]").forEach(el=>{
     // v0.94 : `data-jours` (marché) prime sur les lots du joueur.
     const jf = (el.dataset.jours!=null && el.dataset.jours!=="") ? parseFloat(el.dataset.jours) : null;
-    el.addEventListener("mouseenter",()=>montrerItemTip(el, el.dataset.item, (jf!=null && isFinite(jf)) ? jf : undefined));
+    const jours = () => (jf!=null && isFinite(jf)) ? jf : undefined;
+    el.addEventListener("mouseenter",()=>{ if(!_estTactile()) montrerItemTip(el, el.dataset.item, jours()); });
     el.addEventListener("mouseleave", cacherItemTip);
+    if(el._tipTactile) return; el._tipTactile = true;
+    let minuteur = null;
+    const annuler = () => { if(minuteur){ clearTimeout(minuteur); minuteur = null; } };
+    el.addEventListener("touchstart", () => {
+      if(!_estTactile()) return;
+      cacherItemTip(); annuler();
+      minuteur = setTimeout(() => { minuteur = null; _tipAppuiFin = Date.now(); montrerItemTip(el, el.dataset.item, jours()); }, TIP_APPUI_MS);
+    }, { passive:true });
+    el.addEventListener("touchmove", annuler, { passive:true });
+    el.addEventListener("touchend", annuler, { passive:true });
+    el.addEventListener("touchcancel", annuler, { passive:true });
+    el.addEventListener("contextmenu", e => { if(_estTactile()) e.preventDefault(); });   // pas de menu « copier l'image »
   }); }
 
 function majSac(){
