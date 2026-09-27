@@ -1,6 +1,8 @@
-// Banc d'essai (facultatif) : cd outils && npm i jsdom@24 acorn acorn-walk && node banc.js .. lent|rapide|unitaire|mvt
+// Banc d'essai (facultatif) : cd outils && npm i jsdom@24 acorn acorn-walk && node o_banc.js .. lent|rapide|unitaire|mvt
 // Banc d'essai : charge index.html dans jsdom avec un faux Supabase.
-// Usage : node banc.js <racine> <scenario>
+// Usage : node o_banc.js <racine> <scenario>
+// v1.30b — tous les fichiers d'outils commencent par « o_ » ; un scénario
+// <nom> est le fichier o_<nom>.js (le banc le trouve tout seul).
 const fs = require("fs"), path = require("path");
 const { JSDOM, ResourceLoader, VirtualConsole } = require("jsdom");
 const RAC = process.argv[2], SCEN = process.argv[3] || "lent";
@@ -10,16 +12,17 @@ const DELAIS = {
   rapide: { profil: 50,   sac: 100, jauges: 100 },
   mvt: { profil: 50, sac: 50, jauges: 50 },
   unitaire: { profil: 50, sac: 50, jauges: 50 },
-  sync: { profil: 50, sac: 50, jauges: 50 },   // v1.17 : bugs de synchro (sync.js)
-  retours: { profil: 50, sac: 50, jauges: 50 }, // v1.19 : retours testeurs (retours.js)
-  sondes: { profil: 50, sac: 50, jauges: 50 },  // v1.20 : gain des sondes (sondes.js)
-  volrisque: { profil: 50, sac: 50, jauges: 50 }, // v1.22 : extrait le barème de vol (volrisque.js)
-  vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (vol.js)
-  plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (plaintes.js)
-  traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (traque.js)
-  aptitudes: { profil: 50, sac: 50, jauges: 50 }, // v1.25 : arbre remanié (aptitudes.js)
-  glyphes: { profil: 50, sac: 50, jauges: 50 },   // v1.28 : écriture de l'ancien (glyphes.js)
-  ordre: { profil: 50, sac: 50, jauges: 50 },     // v1.29 : ordre avec glyphes (ordre.js)
+  sync: { profil: 50, sac: 50, jauges: 50 },   // v1.17 : bugs de synchro (o_sync.js)
+  retours: { profil: 50, sac: 50, jauges: 50 }, // v1.19 : retours testeurs (o_retours.js)
+  sondes: { profil: 50, sac: 50, jauges: 50 },  // v1.20 : gain des sondes (o_sondes.js)
+  volrisque: { profil: 50, sac: 50, jauges: 50 }, // v1.22 : extrait le barème de vol (o_volrisque.js)
+  vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
+  plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)
+  traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (o_traque.js)
+  aptitudes: { profil: 50, sac: 50, jauges: 50 }, // v1.25 : arbre remanié (o_aptitudes.js)
+  glyphes: { profil: 50, sac: 50, jauges: 50 },   // v1.28 : écriture de l'ancien (o_glyphes.js)
+  ordre: { profil: 50, sac: 50, jauges: 50 },     // v1.29 : ordre avec glyphes (o_ordre.js)
+  debris: { profil: 50, sac: 50, jauges: 50 },    // v1.31 : chutes de débris (o_debris.js)
 }[SCEN];
 
 const donnees = {
@@ -108,7 +111,7 @@ const dom = new JSDOM(html, {
 });
 setTimeout(() => {
   const w = dom.window;
-  if(SCEN === "unitaire" || SCEN === "mvt" || SCEN === "sync" || SCEN === "retours" || SCEN === "sondes" || SCEN === "volrisque" || SCEN === "vol" || SCEN === "plaintes" || SCEN === "traque" || SCEN === "aptitudes" || SCEN === "glyphes" || SCEN === "ordre"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
+  if(fs.existsSync(__dirname + "/o_" + SCEN + ".js")){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/o_" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
   const e = w.eval("etat");
   const res = {
     scenario: SCEN,

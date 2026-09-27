@@ -1,4 +1,4 @@
-// v1.19 — retours testeurs du 27/09 (node banc.js .. retours)
+// v1.19 — retours testeurs du 27/09 (node o_banc.js .. retours)
 (async function(){
   const r = {};
   const dort = ms => new Promise(x => setTimeout(x, ms));

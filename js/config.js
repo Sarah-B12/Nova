@@ -66,5 +66,7 @@ function rendreLibelles(t){
     .replace(/\{obj:([a-z0-9_]+)\}/g, (m, id) => {
       const o = (typeof OBJECTIFS !== "undefined") ? OBJECTIFS.find(x => x.id === id) : null;
       return o ? o.nom : (id.charAt(0).toUpperCase() + id.slice(1));
-    });
+    })
+    /* v1.31 — {carte:id} (chutes de débris) : silene, braise, suaire. */
+    .replace(/\{carte:([a-z0-9_]+)\}/g, (m, id) => (typeof debrisNomCarte === "function") ? debrisNomCarte(id) : (id.charAt(0).toUpperCase() + id.slice(1)));
 }

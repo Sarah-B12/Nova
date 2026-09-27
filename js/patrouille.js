@@ -64,7 +64,8 @@ document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) charger
 function chancePatrouille(){
   const base = (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX;
   const m = (typeof boissonMod==="function") ? boissonMod("patrouille", 1) : 1;   // v0.79 : Poussière de route / Le coup du départ
-  return Math.max(0, Math.min(0.6, base * m * _facteurPatrouille));
+  const deb = (typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci()) ? DEBRIS_PATR_FREQ : 1;   // v1.31 : carte des débris ×1,5
+  return Math.max(0, Math.min(0.6, base * m * _facteurPatrouille * deb));
 }
 // L'Ordinateur de hacking doit être ÉQUIPÉ (en main) pour pouvoir hacker.
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }

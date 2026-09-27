@@ -1,4 +1,4 @@
-// v1.25 — arbre remanié : migration, salves, effets (node banc.js .. aptitudes)
+// v1.25 — arbre remanié : migration, salves, effets (node o_banc.js .. aptitudes)
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const journ = []; const jOrig = journal; journal = (t) => { journ.push(t); };

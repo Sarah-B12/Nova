@@ -393,6 +393,8 @@ async function _tqTraquer(cible, nom){
   if(r && r.ok && r.reussi){
     if(typeof r.solde==="number" && typeof appliquerSoldeServeur==="function") appliquerSoldeServeur(r.solde);
     journal(`Capture ! ${r.nom||nom} part pour ${r.heures} h derrière les barreaux (prison : ${typeof _factionNom==="function" ? _factionNom(r.prison_faction) : (r.prison_faction||"")}). Prime${r.plaintes>1?"s":""} encaissée${r.plaintes>1?"s":""} : +${r.prime} ₡.`,"gain","traque");
+    if(r.rep > 0){ if(typeof r.reputation==="number") etat.reputation = r.reputation;   // v1.30
+      journal(`+${r.rep} réputation de faction : ta faction recherchait ce voleur.`,"gain","traque"); }
   } else if(r && r.ok){
     journal(`${nom} t'a filé entre les doigts (${Math.round((r.chance||0)*100)} % de chances). Nouvelle traque possible dans 24 h, avec une nouvelle trace.`,"alerte","traque");
   } else {

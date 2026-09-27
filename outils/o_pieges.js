@@ -1,5 +1,5 @@
 // Balayage AST des familles de pièges (a) duplication, (b) reconstruction champ par champ, (c) état contextuel.
-// Usage : cd outils && npm i acorn acorn-walk && node pieges.js .. [section...]
+// Usage : cd outils && npm i acorn acorn-walk && node o_pieges.js .. [section...]
 const fs = require("fs"), path = require("path");
 const acorn = require("acorn"), walk = require("acorn-walk");
 const RAC = process.argv[2];

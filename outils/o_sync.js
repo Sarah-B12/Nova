@@ -1,4 +1,4 @@
-// v1.17 — bugs de synchronisation (node banc.js .. sync)
+// v1.17 — bugs de synchronisation (node o_banc.js .. sync)
 (async function(){
   const r = {};
   const dort = ms => new Promise(x => setTimeout(x, ms));

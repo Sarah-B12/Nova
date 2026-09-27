@@ -1,4 +1,4 @@
-// v1.22 — vrai vol : deux appels serveur, rien n'est tiré ici (node banc.js .. vol)
+// v1.22 — vrai vol : deux appels serveur, rien n'est tiré ici (node o_banc.js .. vol)
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const appels = []; let rep = {};

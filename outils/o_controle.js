@@ -3,7 +3,7 @@
    NOVA EPIC — CONTRÔLE AVANT DÉPLOIEMENT                (v0.95)
 
    À lancer à la racine du projet (là où se trouve index.html) :
-       node outils/controle.js
+       node outils/o_controle.js
 
    Aucune dépendance, aucun réseau. Il ne modifie rien, il regarde.
 

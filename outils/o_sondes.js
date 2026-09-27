@@ -1,4 +1,4 @@
-// v1.20 — sondes : énergie débitée avant, gain décidé par le serveur (node banc.js .. sondes)
+// v1.20 — sondes : énergie débitée avant, gain décidé par le serveur (node o_banc.js .. sondes)
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const appels = []; let rep = {};

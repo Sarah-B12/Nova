@@ -3,7 +3,7 @@
    - Durée de vie des objets (en jours, plafond 30). Les denrées (plantes,
      nourriture, bio) périssent vite ; minerais et métal/tech tiennent ~30 j.
      Le plafond de 30 j garantit que le marché entre joueurs tourne (rien d'éternel).
-   - (v1.22 : la vulnérabilité au vol est passée au serveur — table `vol_risque`, source dans outils/volrisque.js.)
+   - (v1.22 : la vulnérabilité au vol est passée au serveur — table `vol_risque`, source dans outils/o_volrisque.js.)
    Les objets du SAC périssent ; le coffre de la maison ne périt pas (à décider).
    =========================================================== */
 const USURE_MAX = 30;   // jours
@@ -51,8 +51,8 @@ function joursRestants(id, lieu){
 /* v1.22 — Le barème de vol (VOL_CAT, risqueVol, _facteurValeurVol,
    _lotVolable) a quitté ce fichier : le SERVEUR tire le butin (vol_conclure,
    table `vol_risque`). La source du barème vit désormais dans
-   outils/volrisque.js, qui régénère les lignes de `vol_risque`
-   (node outils/banc.js . volrisque) — BACKEND_PLAN §6 et §38. */
+   outils/o_volrisque.js, qui régénère les lignes de `vol_risque`
+   (node outils/o_banc.js . volrisque) — BACKEND_PLAN §6 et §38. */
 /* Reporte une date d'acquisition en gardant la plus ANCIENNE (empêche de « rafraîchir » un objet en le déplaçant). */
 function reporterDate(map, id, ts){ if(ts==null) return; map[id] = (map[id]!=null) ? Math.min(map[id], ts) : ts; }
 /* v1.00 — « a péri » pour une plante déjà coupée, dans un sac : un testeur l'a

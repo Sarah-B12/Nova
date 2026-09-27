@@ -175,6 +175,11 @@ async function voyagerBraise(x, y){
   journal(`Déplacement — ${cfg.nom} (${Math.round(c.d)} u). −${c.coutE} % énergie, −${c.coutO} O₂.${l?` Tu es à ${l.nom}.`:""}`,"","voyage");
   if(typeof queteArrivee==="function") queteArrivee();
   apresBraise();
+  /* v1.31 — au sol, AUCUNE patrouille d'ordinaire. Pendant une chute de débris,
+     la carte tirée en a (plus fréquentes, plus fortes : patrouille.js/actions.js).
+     La Braise et Le Suaire restent sans patrouille le reste du temps. */
+  if(typeof debrisApresDeplacement==="function") debrisApresDeplacement();
+  if(typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci() && typeof tenterPatrouille==="function") tenterPatrouille();
 }
 
 /* ---------- Affichage ---------- */
@@ -227,6 +232,7 @@ function majCarteBraise(){
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }
   if(bd){ bd.disabled = !abord; const cs = (typeof coutSaut==="function") ? coutSaut() : null;
     bd.textContent = cs ? `Décoller — ${cs.litres} L, ${cs.energie} % énergie` : "Décoller"; }
+  if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
 }
 function ouvrirCarteBraise(){
   if(!enSurfaceIci()){ journal("Tu n'es sur aucune planète.","alerte"); return; }

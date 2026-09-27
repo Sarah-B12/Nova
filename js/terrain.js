@@ -133,7 +133,7 @@ function normCases(c){ const a=Array(N_CASES).fill(null); if(Array.isArray(c)) f
    par étapes). Les branches ne servent plus qu'à normaliser.
    ⚠ Une nouvelle structure doit AUSSI avoir son image (IMG) et ses matières de
    réparation (REPARATION, integrite.js) — ET sa ligne dans le `case` de
-   reparer_structure côté serveur. `outils/controle.js` vérifie les deux
+   reparer_structure côté serveur. `outils/o_controle.js` vérifie les deux
    premières ; la troisième ne peut pas l'être d'ici. */
 function typeParcelleConnu(type){ return type === "maison" || Object.prototype.hasOwnProperty.call(STRUCTURES, type); }
 function normaliserParcelles(t){

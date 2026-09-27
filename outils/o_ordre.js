@@ -1,4 +1,4 @@
-// v1.29 — mini-jeu « ordre » avec glyphes (Q14E2) (node banc.js .. ordre)
+// v1.29 — mini-jeu « ordre » avec glyphes (Q14E2) (node o_banc.js .. ordre)
 (function(){
   const r = {};
   let ok = null; const rOk = reussirDefi, rKo = echouerDefi;

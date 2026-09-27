@@ -1,4 +1,4 @@
-// v1.24 — la chasse : Wanted, mini-jeu, outils de carte, Traquer (node banc.js .. traque)
+// v1.24 — la chasse : Wanted, mini-jeu, outils de carte, Traquer (node o_banc.js .. traque)
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const appels = []; let rep = {};
@@ -63,9 +63,9 @@
   etat.pos = { x:700, y:800 }; _tqTick();
   const bt = bar.querySelector('[data-tq="traquer"]');
   r.traquerVisible = { visible: !bt.hidden, texte: bt.textContent };
-  rep.traquer = () => ({ ok:true, reussi:true, chance:0.6, prime:1900, plaintes:3, heures:72, prison_faction:"toundra", nom:"Kaël", solde:4000, energie:50 });
+  rep.traquer = () => ({ ok:true, reussi:true, chance:0.6, prime:1900, plaintes:3, heures:72, prison_faction:"toundra", nom:"Kaël", solde:4000, energie:50, rep:2, reputation:42 });
   bt.click(); await dort(40);
-  r.capture = { args: (appels.find(a=>a.n==="traquer")||{}).a, msg: journ.slice(-1)[0] };
+  r.capture = { args: (appels.find(a=>a.n==="traquer")||{}).a, msgs: journ.slice(-2), reputation: etat.reputation };
   rep.traquer = () => ({ ok:false, err:"froide" });
   bt.disabled = false; bt.click(); await dort(40);
   r.froide = journ.slice(-1)[0];

@@ -43,7 +43,9 @@ async function resoudreCombat(opts){
   opts = opts || {};
   const F = forceEffective();
   // Dureté de la patrouille ; les aptitudes de combat (Instinct de combat, Combustion) l'abaissent.
-  const cf = Math.max(0, alea(6,26) - aptCombatFcReduc());
+  // v1.31 : sur la carte des débris, dureté +20 (26-46) et 15 XP (debris.js).
+  const _deb = (typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci());
+  const cf = Math.max(0, alea(6,26) + (_deb ? DEBRIS_PATR_DURETE : 0) - aptCombatFcReduc());
   /* ⚠ ÉQUILIBRAGE v0.53. Avant : 0,01 + 0,0047×(F−cf), plancher 1 %.
      Un nouveau joueur (Force 10) contre une patrouille moyenne (cf 16) avait
      1 % de victoire — pas « difficile », nul — et perdait 53 santé, donc
@@ -54,7 +56,7 @@ async function resoudreCombat(opts){
   let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + bonusApt));
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
-    const xp = (typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10;
+    const xp = _deb ? DEBRIS_PATR_XP : ((typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10);
     const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(xp);
     const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : [];   // v1.11 : liste d'objets
     const btn = (typeof _butinTexte==="function") ? _butinTexte(drop) : "";

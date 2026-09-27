@@ -404,6 +404,7 @@ function majCarte(){
   if(surAnneauProtocole()){ const ri=document.querySelector("#region-info"); if(ri){ const hb=document.createElement("button"); hb.className="mini"; hb.textContent="Hacker le Protocole"; hb.style.marginLeft="8px"; hb.addEventListener("click",()=>{ if(typeof hackerProtocoleDepuisCarte==="function") hackerProtocoleDepuisCarte(); }); ri.appendChild(hb); } }
   if(typeof majMarqueursQuete==="function") majMarqueursQuete();
   const cl=document.querySelector("#carte-lieu"); if(cl) cl.innerHTML = t;
+  if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
   majHub();
 }
 async function voyager(x, y){
@@ -467,6 +468,7 @@ async function voyager(x, y){
           + (surAnneauProtocole()?" Tu es sur l'anneau du Protocole.":""), "", "voyage");
   apresAction();
   if(typeof queteArrivee==="function") queteArrivee();
+  if(typeof debrisApresDeplacement==="function") debrisApresDeplacement();   // v1.31 : visière (chaud/froid)
   if(dOpen>0 && typeof tenterPatrouille==="function"){ if(posEnvoyee) await posEnvoyee; tenterPatrouille(); }
 }
 

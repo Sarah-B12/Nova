@@ -1,4 +1,4 @@
-// v1.28 — écriture de l'ancien : rendu SVG dans le mini-jeu glyphes (node banc.js .. glyphes)
+// v1.28 — écriture de l'ancien : rendu SVG dans le mini-jeu glyphes (node o_banc.js .. glyphes)
 (function(){
   const r = {};
   const h = _htmlGlyphes({ texte:["t"], paires:[

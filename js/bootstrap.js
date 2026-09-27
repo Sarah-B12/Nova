@@ -174,6 +174,7 @@ async function syncApresConnexion(){
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
+  if(typeof debrisCharger==="function") t.push(debrisCharger());   // v1.31 : chute de débris en cours
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause

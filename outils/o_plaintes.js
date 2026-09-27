@@ -1,4 +1,4 @@
-// v1.23 — plaintes et primes : affichage et appels (node banc.js .. plaintes)
+// v1.23 — plaintes et primes : affichage et appels (node o_banc.js .. plaintes)
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const appels = []; let rep = {};

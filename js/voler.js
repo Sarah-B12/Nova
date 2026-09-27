@@ -115,7 +115,7 @@ function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.p
 function _coutVol(){ return (typeof aptEnergieAction==="function") ? aptEnergieAction(VOL_ENERGIE) : VOL_ENERGIE; }
 function _nomsButin(b){ return Object.keys(b||{}).map(id=>`${b[id]}× ${item(id)?item(id).nom:id}`).join(", "); }
 /* `appel` = () => sb.rpc("…") : les noms de RPC restent écrits en toutes
-   lettres, pour que outils/controle.js les croise avec pg_proc. */
+   lettres, pour que outils/o_controle.js les croise avec pg_proc. */
 async function _volRpc(appel, repere){
   try{
     let { data, error } = await appel();

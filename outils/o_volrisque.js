@@ -1,6 +1,6 @@
 // v1.22 — SOURCE du barème de vol. Régénère les lignes de la table serveur
 // `vol_risque` (v122_vol_reel.sql, BACKEND_PLAN §38) :
-//   node outils/banc.js . volrisque
+//   node outils/o_banc.js . volrisque
 // Sortie : [item_id, risque, lot_max] pour chaque objet connu, vaisseaux et
 // navettes exclus (ils ne se volent pas). ⚠ Changer un chiffre ici, c'est
 // changer la table : recoller le bloc `insert into public.vol_risque`.
