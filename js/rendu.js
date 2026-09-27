@@ -157,7 +157,15 @@ function cacherItemTip(){ if(_itip) _itip.hidden=true; }
    le toucher suivant, n'importe où, la ferme. Le « clic » qui suit l'appui long
    est avalé (sinon la fiche s'ouvrirait par-dessus). À la souris : RIEN ne change. */
 const TIP_APPUI_MS = 450;
-function _estTactile(){ return !!(window.matchMedia && matchMedia("(hover: none)").matches); }
+/* ⚠ v1.33c — Certains téléphones Android se déclarent « avec survol » : le
+   toucher y émule un survol (mouseenter) ET fait l'action — l'infobulle et la
+   mise en vente se marchaient dessus. On se fie donc AUSSI au dernier pointeur
+   réellement utilisé (pointerdown : « touch », « mouse », « pen »). */
+let _pointeurGlobal = "mouse";
+document.addEventListener("pointerdown", e => { _pointeurGlobal = e.pointerType || "mouse"; }, { capture:true, passive:true });
+function _estTactile(){
+  return _pointeurGlobal === "touch" || !!(window.matchMedia && matchMedia("(hover: none)").matches);
+}
 let _tipAppuiFin = 0;   // horodatage du dernier appui long (pour avaler le clic)
 document.addEventListener("touchstart", e => {
   if(_itip && !_itip.hidden && !(e.target.closest && e.target.closest("[data-item]"))) cacherItemTip();
@@ -175,7 +183,6 @@ function brancherTips(root){ if(!root || typeof montrerItemTip!=="function") ret
     let minuteur = null;
     const annuler = () => { if(minuteur){ clearTimeout(minuteur); minuteur = null; } };
     el.addEventListener("touchstart", () => {
-      if(!_estTactile()) return;
       cacherItemTip(); annuler();
       minuteur = setTimeout(() => { minuteur = null; _tipAppuiFin = Date.now(); montrerItemTip(el, el.dataset.item, jours()); }, TIP_APPUI_MS);
     }, { passive:true });

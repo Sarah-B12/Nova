@@ -65,7 +65,14 @@ function construireCarte(){
     if(!_dansLaCarte(p)) return;
     if(_dernierPointeur !== "touch"){ voyager(p.x, p.y); return; }
     const c = _aimante(p);                       // tolérance autour des lieux
-    if(_visee && dist(c.x, c.y, _visee.x, _visee.y) < _toleranceTap()){ _partirVisee(); return; }
+    /* ⚠ v1.33c — Le second toucher ne part que s'il suit VITE le premier
+       (double toucher). Avant, tout toucher à moins de 44 px de la visée
+       partait vers elle — 44 px ≈ 290 u sur téléphone : impossible de corriger
+       sa visée de quelques dizaines d'unités, un testeur a tourné des heures
+       autour de la bouture de Q15 (cible de 80 u). Un toucher plus lent
+       DÉPLACE la visée ; le bouton « Partir » reste là. */
+    if(_visee && (Date.now() - _viseeLe) < VISEE_DOUBLE_MS
+       && dist(c.x, c.y, _visee.x, _visee.y) < _toleranceTap()){ _partirVisee(); return; }
     _poserVisee(c.x, c.y);
   });
 
@@ -233,6 +240,8 @@ function _dansLaCarte(p){ return p && p.x >= 0 && p.y >= 0 && p.x <= MONDE.w && 
      ~330 unités sur un téléphone et ~110 sur un grand écran. */
 const VISEE_TOLERANCE = 40;          // aimantation vers les cités (unités du monde)
 const VISEE_TAP_PX    = 44;          // marge du second tap (pixels d'écran)
+const VISEE_DOUBLE_MS = 700;         // v1.33c : délai max d'un double toucher (au-delà, la visée se déplace)
+let _viseeLe = 0;                    // v1.33c : quand la visée a été posée
 function _uniteParPixel(){
   const svg = document.querySelector("#carte"); if(!svg) return 7.5;
   const r = svg.getBoundingClientRect();
@@ -264,7 +273,7 @@ function _dessinerVisee(){
     <line x1="${_visee.x}" y1="${_visee.y-38}" x2="${_visee.x}" y2="${_visee.y+38}" stroke="#ff9a44" stroke-width="3"/>`;
 }
 function _poserVisee(x, y){
-  _visee = { x, y };
+  _visee = { x, y }; _viseeLe = Date.now();
   _dessinerVisee();
   _apercuCout(x, y);
   let b = document.querySelector("#carte-partir");
