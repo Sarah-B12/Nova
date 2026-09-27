@@ -13,6 +13,13 @@ const DELAIS = {
   sync: { profil: 50, sac: 50, jauges: 50 },   // v1.17 : bugs de synchro (sync.js)
   retours: { profil: 50, sac: 50, jauges: 50 }, // v1.19 : retours testeurs (retours.js)
   sondes: { profil: 50, sac: 50, jauges: 50 },  // v1.20 : gain des sondes (sondes.js)
+  volrisque: { profil: 50, sac: 50, jauges: 50 }, // v1.22 : extrait le barème de vol (volrisque.js)
+  vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (vol.js)
+  plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (plaintes.js)
+  traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (traque.js)
+  aptitudes: { profil: 50, sac: 50, jauges: 50 }, // v1.25 : arbre remanié (aptitudes.js)
+  glyphes: { profil: 50, sac: 50, jauges: 50 },   // v1.28 : écriture de l'ancien (glyphes.js)
+  ordre: { profil: 50, sac: 50, jauges: 50 },     // v1.29 : ordre avec glyphes (ordre.js)
 }[SCEN];
 
 const donnees = {
@@ -101,7 +108,7 @@ const dom = new JSDOM(html, {
 });
 setTimeout(() => {
   const w = dom.window;
-  if(SCEN === "unitaire" || SCEN === "mvt" || SCEN === "sync" || SCEN === "retours" || SCEN === "sondes"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
+  if(SCEN === "unitaire" || SCEN === "mvt" || SCEN === "sync" || SCEN === "retours" || SCEN === "sondes" || SCEN === "volrisque" || SCEN === "vol" || SCEN === "plaintes" || SCEN === "traque" || SCEN === "aptitudes" || SCEN === "glyphes" || SCEN === "ordre"){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
   const e = w.eval("etat");
   const res = {
     scenario: SCEN,

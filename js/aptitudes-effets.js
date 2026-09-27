@@ -8,7 +8,7 @@
    Recyclage, Surrégime, Verger, Cultures vivaces, et les 4 nœuds Artisan.
    Effets dormants (non branchés) : zones chaudes/froides (Ignis, Toundra ; −15 % énergie/O₂ prévu, cohérence Endurance),
    PvP (Intrusion), marché des joueurs (Marchand), équipement (Cœur de forge),
-   Protocole (Fléau du Protocole).
+   (v1.25 : Fléau du Protocole supprimé, remplacé par Traque — effet serveur.)
    =========================================================== */
 
 function _apt(id){ return typeof aptPris === "function" && aptPris(id); }
@@ -31,10 +31,14 @@ function aptZoneThermique(){
    (neutre) tant qu'aucune boisson n'est active. */
 function _boi(cle){ return (typeof boissonMod==="function") ? boissonMod(cle, 1) : 1; }
 function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique() * _boi("energie_cout"))); }                                  // Endurance −15 %
-function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om2") ? 0.9 : 1))); }        // Endurance + Repérage
-function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8; if(_apt("no4")) m *= 0.8;
-  if(_apt("om2")) m *= 0.9; if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");
-  return Math.max(1, Math.round(cout * m)); }   // Pas léger · Voyageur · Repérage · Endurance · zones (multiplicatif)
+function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }        // Endurance (v1.25 : Repérage n'agit plus ici)
+function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8;   // v1.26 : Voyageur (no4) agit sur le carburant (aptCarburant)
+  if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");
+  return Math.max(1, Math.round(cout * m)); }   // Pas léger · Endurance · zones (multiplicatif) — Repérage = O₂ seulement
+/* v1.26 — Voyageur (no4, Nomades) : −20 % de carburant pour les vols et les
+   sauts du vaisseau (décision de l'autrice : il doublait Pas léger). Le
+   carburant est une donnée client (etat.carburant). */
+function aptCarburant(litres){ return Math.max(1, Math.ceil(litres * (_apt("no4") ? 0.8 : 1))); }
 /* O₂ d'un déplacement à découvert : Repérage (om2) −10 %, zones thermiques −15 %. */
 function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique() * _boi("o2_cout"))); }
 function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)
@@ -53,7 +57,7 @@ function regenPassif(){
   // sont une donnée client) mais on le fait APPLIQUER par agir(), sinon il serait
   // écrasé au premier appel serveur — le piège des crédits, puis de l'énergie.
   let go2 = 0, gs = 0, gm = 0;
-  if(_apt("cu3")) go2 = Math.max(0, Math.min(100, etat.jauges.o2 + h*2) - etat.jauges.o2);   // Photosynthèse +2 O₂/h
+  if(_apt("cu3")) go2 = Math.max(0, Math.min(100, etat.jauges.o2 + h*5) - etat.jauges.o2);   // Photosynthèse +5 O₂/h (v1.25)
   if(_apt("cu4")){                                                               // Organisme : +1 santé/moral/h, plafond 60
     gs = Math.max(0, Math.min(60, etat.jauges.sante + h) - etat.jauges.sante);
     gm = Math.max(0, Math.min(60, etat.jauges.moral + h) - etat.jauges.moral);
@@ -68,16 +72,25 @@ function regenPassif(){
 
 /* ---------- Crédits ---------- */
 function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * _boi("credits")); }                                        // Négociant +15 %
-function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * (_apt("om2") ? 1.25 : 1)); }        // + Repérage +25 %
-function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25; if(_apt("ig4")) m *= 1.10;
-  if(_apt("tr4")) m *= 1.25;                                                        // Fléau du Protocole (les patrouilles SONT le Protocole)
+function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1)); }        // v1.25 : Repérage ne s'applique plus à l'exploration
+function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25;   // v1.26 : Cœur de forge (ig4) → Force, plus butin
   if(_apt("om2")) m *= 1.25;                                                        // Repérage
   if(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) m *= 1.25;  // Fournaise
   m *= _boi("butin");
   return Math.round(g * m); }
-function aptCombatBonusProtocole(){ return _apt("tr4") ? 0.10 : 0; }               // Fléau : +10 points de victoire en patrouille
+function aptCombatBonusProtocole(){ return 0; }   // v1.25 : Fléau du Protocole (tr4) supprimé — gardée à 0 pour actions.js
 
 /* ---------- Combat ---------- */
+/* v1.26 — Cœur de forge (ig4) : +5 Force tant qu'une ARME est équipée
+   (l'Ordinateur de hacking n'en est pas une). Même règle côté serveur dans
+   force_combat_serveur (expéditions, défense). */
+const APT_FORGE_FORCE = 5;
+function aptForceForge(){
+  if(!_apt("ig4") || !etat.equipement) return 0;
+  const hack = (typeof ITEM_HACK!=="undefined") ? ITEM_HACK : "fab_ordinateur_de_hacking";
+  const arme = [etat.equipement.arme, etat.equipement.arme2].some(id => id && id !== hack);
+  return arme ? APT_FORGE_FORCE : 0;
+}
 /* ⚠ v0.71 — « Instinct de combat » (tr1) et « Combustion » (ig3) ne retiraient
    que 2 à la dureté de la patrouille. Or la chance de victoire vaut
    0,22 + 0,0042×(Force − dureté) : 2 points de dureté ne valent que

@@ -52,7 +52,8 @@ function coutSaut(){
   if(!v) return null;
   /* v0.91 — la majoration d'avarie s'applique aussi au saut : sinon on
      décollerait indéfiniment avec une coque en ruine sans rien sentir. */
-  return { litres: Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1)),
+  const l = Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1));
+  return { litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
            energie: SAUT_ENERGIE + (v.energie||0) * 2,
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
@@ -215,8 +216,8 @@ function coutVol(dest, depuis){
   if(d < 6) return null;
   return { d,
     energie: Math.max(1, Math.round(d / PAS_ESPACE_E)),
-    litres:  Math.ceil(Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1)
-                       * ((typeof malusCarburant==="function") ? malusCarburant() : 1)) };
+    litres:  (typeof aptCarburant==="function" ? aptCarburant : (x=>x))(Math.ceil(Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1)
+                       * ((typeof malusCarburant==="function") ? malusCarburant() : 1))) };   // v1.26 : Voyageur −20 %
 }
 /* Ce que coûterait le retour à la base DEPUIS un point donné. */
 function _coutRetourBase(depuis){

@@ -243,6 +243,8 @@ async function sondeBrouiller(){
    📌 À revoir avec l'arène : compétences et aptitudes seront rééquilibrées
    d'un bloc à ce moment-là, ces seuils avec. */
 const TIR_SALVES  = 5;   // tirs disponibles, quelle que soit la grille
+/* v1.25 — Instinct de combat (tr1) : +1 salve (décision de l'autrice). */
+function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0); }
 function _tirTaille(){
   const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
   if(i >= 55) return 5;
@@ -289,13 +291,13 @@ function lancerTirSonde(onWin, onLose){
   _tirWin=onWin; _tirLose=onLose;
   _tirN = _tirTaille();
   _tirCoeur = { x:Math.floor(Math.random()*_tirN), y:Math.floor(Math.random()*_tirN) };
-  _tirRestant = TIR_SALVES; _tirVus = {};
+  _tirRestant = _tirSalves(); _tirVus = {};
   const m=_tirModal();
   m.innerHTML = `<div class="sd-cadre">
     <div class="sd-tete"><b>🎯 Tir de sondage</b></div>
     <p class="sd-sous">La coque de la sonde tient dans une grille de ${_tirN} × ${_tirN}.
       Son <b>cœur</b> est dans une case, et une seule.<br><br>
-      Tu as <b>${TIR_SALVES} salves</b>. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
+      Tu as <b>${_tirSalves()} salves</b>. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
       qui te séparent du cœur, en comptant tout droit puis de côté.<br>
       <b>1</b> = juste à côté. Recoupe deux échos et tu le tiens.<br><br>
       <span class="itip-gris">Aucun réflexe : prends ton temps, la sonde ne bouge pas.

@@ -11,7 +11,35 @@ function aptEtat(){
   if(!etat.aptitudes || typeof etat.aptitudes !== "object") etat.aptitudes = { pa:0, pris:[] };
   if(typeof etat.aptitudes.pa !== "number") etat.aptitudes.pa = 0;
   if(!Array.isArray(etat.aptitudes.pris)) etat.aptitudes.pris = [];
+  _aptMigrer(etat.aptitudes);
   return etat.aptitudes;
+}
+/* v1.25 — MIGRATION UNIQUE de l'arbre remanié (inversions Survie, Combativité,
+   Rouage ; Fléau du Protocole supprimé). Les choix sont enregistrés par
+   IDENTIFIANT et la chaîne est stricte : après une inversion, un joueur peut
+   tenir un nœud sans celui qui le précède désormais. Règle : tr4 disparaît
+   (2 PA rendus) ; dans chaque chaîne, tout nœud pris APRÈS un trou est rendu
+   (au coût de sa nouvelle position). Marqueur `v` dans l'objet aptitudes
+   lui-même : une sauvegarde plus ancienne rechargée repasse ici. */
+const APT_VERSION = 125;
+function _aptMigrer(e){
+  if((e.v|0) >= APT_VERSION || typeof APT_TRONC==="undefined") return;
+  let rendu = 0;
+  if(e.pris.includes("tr4")){ e.pris = e.pris.filter(x=>x!=="tr4"); rendu += 2; }
+  for(const c of aptToutesChaines()){
+    let trou = false;
+    c.noeuds.forEach((n, i)=>{
+      const a = e.pris.includes(n.id);
+      if(trou && a){ e.pris = e.pris.filter(x=>x!==n.id); rendu += aptCout(i); }
+      else if(!a) trou = true;
+    });
+  }
+  e.v = APT_VERSION;
+  if(rendu > 0){
+    e.pa += rendu;
+    setTimeout(()=>{ if(typeof journal==="function") journal(`L'arbre d'Aptitudes a été remanié : ${rendu} point${rendu>1?"s":""} d'Aptitude t'${rendu>1?"ont":"a"} été rendu${rendu>1?"s":""}, à replacer.`,"gain");
+                     if(typeof sauvegarder==="function") sauvegarder(); }, 0);
+  }
 }
 function aptPris(id){ return aptEtat().pris.includes(id); }
 
@@ -69,6 +97,21 @@ function respecApt(){
 }
 // Appelée à la fin d'une quête (à venir) — et par le bouton debug.
 function gagnerPA(n=1){ aptEtat().pa += n; sauvegarder(); majAptitudes(); }
+/* v1.26 — DONS DE PA (console dev → admin_donner_pa). Le serveur ne peut pas
+   écrire dans donnees : il dépose le don dans `dons_pa`, le client le retire
+   (consommer_dons_pa, qui l'efface) et l'ajoute lui-même. Relevé au
+   démarrage puis toutes les 2 minutes. */
+async function aptConsommerDons(){
+  if(typeof sb==="undefined" || !sb) return;
+  try{
+    const { data, error } = await sb.rpc("consommer_dons_pa");
+    if(error || !(data > 0)) return;
+    aptEtat().pa += data;
+    journal(`Tu reçois ${data} point${data>1?"s":""} d'Aptitude.`, "gain");
+    sauvegarder(); if(typeof majAptitudes==="function") majAptitudes();
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "aptitudes.js#dons"); }
+}
+if(typeof window!=="undefined"){ setTimeout(aptConsommerDons, 15000); setInterval(aptConsommerDons, 120000); }
 /* Remboursement de la seule branche de FACTION — le tronc n'est jamais touché.
    ⚠ v0.92 — CÂBLÉE (parametres.js, changement de faction). Elle était écrite
    depuis des mois et appelée nulle part : les aptitudes d'une faction quittée

@@ -1,14 +1,14 @@
 /* ===========================================================
-   VOLER / HACKER — PvP. Cibles SIMULÉES en attendant le backend
-   (mêmes règles que le vrai multi : il n'y aura qu'à rebrancher les vraies cibles).
-     • Voler  : objets. Plus risqué, moins payant. Échec → démasqué (TON NOM).
-                Gros échec → prison. Réussite = Agilité. Prérequis : Discrétion.
-     • Hacker : crédits (≤20%, v1.21). Meilleur, anonyme (« un anonyme » chez la victime).
+   VOLER / HACKER — PvP. v1.22 : VRAIS joueurs, tout tiré par le serveur
+   (vol_preparer / vol_conclure — voir plus bas et BACKEND_PLAN §38).
+     • Voler  : objets. Plus risqué, moins payant. Réussite signée 70 % ;
+                échec → démasqué (TON NOM), prison 45 %. Agilité. Prérequis : Discrétion.
+     • Hacker : crédits (≤20%, v1.21). Anonyme 70 % (« un anonyme » chez la victime).
                 Réussite = MINI-JEU (Intelligence = plus de temps). Prérequis : Ordinateur de hacking
                 équipé + Intrusion. Risque de prison plus faible.
      • Coûte 15% d'énergie. Cible = un joueur AU HASARD présent dans la ville.
      • Intouchables : équipement porté (armes/armures) + vaisseau équipé.
-     • Immunité des nouveaux (<20 j) ; une victime volable 1×/jour (simulé ici).
+     • Immunité des nouveaux (<20 j) ; une victime volable 1×/jour (jour de jeu).
    =========================================================== */
 const VOL_ENERGIE     = 15;
 /* v1.21 — 30 % → 20 % (décision de l'autrice, 27/09) : le plafond absolu de
@@ -33,36 +33,15 @@ function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITE
    La règle est maintenant : on vole les gens qui sont LÀ — dans la même cité
    sur Silène, dans le même secteur ailleurs. C'est le serveur qui compte les
    présents (`presents_ici`), avec la même règle exactement.
-   ⚠ Le BUTIN reste simulé (`genererCible`) : cette ouverture ne fabrique pas
-     le vrai PvP, elle place seulement le rideau au bon endroit. */
+   ⚠ v1.22 : le serveur applique la même règle pour DÉSIGNER la victime
+     (`vol_preparer`) ; le butin n'est plus simulé. */
 function _enVille(){
   if(typeof enEcart==="function" && enEcart()) return true;          // Perchoir & secteurs
   return (typeof enZoneFaction==="function") && enZoneFaction();
 }
 function _lieuVolNom(){
   if(typeof enEcart==="function" && enEcart()) return "ici";
-  return "cette ville";
-}
-/* Prison du lieu : sa cité sur Silène, le Perchoir à Triptolème.
-   ⚠ `perchoir` n'est PAS une faction. Aucun gouvernement n'y siège, donc
-     `gracier` (qui exige un Régent de la faction) n'y trouvera jamais
-     personne : on s'en évade ou on attend. C'est la règle voulue. */
-function _factionPrisonIci(){
-  if(typeof enEcart==="function" && enEcart()) return "perchoir";
-  return (typeof villeActuelle==="function" ? villeActuelle() : null) || etat.faction;
-}
-/* Y a-t-il quelqu'un à voler ? ⚠ Contrôlé AVANT toute dépense : personne =
-   pas de mini-jeu, pas d'énergie perdue. */
-async function _ilYADuMonde(){
-  if(typeof sb==="undefined" || !sb) return true;   // hors ligne : on ne bloque pas
-  try{
-    const { data, error } = await sb.rpc("presents_ici");
-    if(error){ console.warn("[vol] presents_ici :", error.message); return true; }
-    if(!data || !data.ok) return true;
-    if((data.n|0) > 0) return true;
-    journal(`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,"alerte","vol");
-    return false;
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"voler.js#presents"); return true; }
+  return "dans cette ville";
 }
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
 /* ⚠⚠ v0.94 — LA PRISON NE TENAIT QUE LA MOITIÉ DU JEU.
@@ -99,54 +78,108 @@ function _rpcFireAndForget(nom, args, repere){
     .then(r=>{ if(r && r.error) console.warn(`[${repere}] ${nom} :`, r.error.message); })
     .catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, repere); });
 }
-/* v1.11 — RISQUE DE PRISON APRÈS UN ÉCHEC, les deux au même endroit.
-   Avant : vol 45 %, hack 20 %. Le hack cumulait pourtant TOUS les avantages —
-   meilleur butin (jusqu'à 500 ₡ contre 3 objets), anonymat, et moitié moins de
-   prison. Ses prérequis (Ordinateur équipé + Intrusion) ne justifiaient pas un
-   tel écart. Le hack passe à 35 % : il garde 10 points d'avance, ce que paient
-   l'équipement et l'aptitude, mais l'anonymat n'est plus offert par-dessus.
-   ⚠ Ces deux nombres sont affichés au joueur dans les encarts VOLER / HACKER :
-   les changer ici, c'est changer les textes. */
+/* v1.11 — RISQUE DE PRISON APRÈS UN ÉCHEC. Hack 35 % (10 points d'avance sur
+   le vol, payés par l'équipement et l'aptitude).
+   ⚠ v1.22 — CES CHIFFRES SONT TIRÉS PAR LE SERVEUR (`vol_echec`,
+   v122_vol_reel.sql) : ici, ils ne servent plus qu'aux TEXTES des encarts.
+   Les changer = changer les deux (BACKEND_PLAN §6). */
 const RISQUE_PRISON_VOL  = 0.45;
 const RISQUE_PRISON_HACK = 0.35;
-/* v1.11 — L'anonymat du hack n'est plus garanti : 70 % du temps seulement.
-   ⚠ HONNÊTETÉ SUR CE QUE ÇA FAIT AUJOURD'HUI : les cibles sont des PNJ
-   fabriqués par genererCible() — noms tirés d'une liste, sac et solde au
-   hasard. « Démasqué » et « anonyme » sont donc de la NARRATION : aucun joueur
-   ne reçoit rien, personne ne peut se venger. Le seul coût réel d'un échec
-   reste la prison et l'énergie. Ce tirage prendra tout son sens quand on volera
-   de vrais joueurs (chantier « défense contre le vol et le hacking ») : c'est
-   là qu'il faudra brancher la signature sur une vraie conséquence. */
+/* v1.22 — SIGNATURE (décision de l'autrice, 27/09, cadrage de la traque) :
+   vol RÉUSSI signé 70 % (avant : jamais), hack anonyme 70 % (inchangé).
+   Vol raté : toujours repéré. Seul un vol ou un hack RÉUSSI ET SIGNÉ ouvrira
+   droit à la plainte. Tirés par le serveur (`vol_conclure`, `vol_echec`) :
+   ces constantes ne servent qu'aux textes. */
+const CHANCE_SIGNATURE_VOL = 0.70;
 const CHANCE_ANONYMAT_HACK = 0.70;
+/* Sert encore à l'espionnage (espionnage.js). Le vol, lui, n'emprisonne plus
+   depuis le client : c'est le serveur qui le fait, dans la même transaction. */
 function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; _rpcFireAndForget("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)},"voler.js#emprisonner"); if(typeof sauvegarder==="function") sauvegarder(); }
-function _emprisonner(){ emprisonnerJoueur(_factionPrisonIci(), _vjm()); }
-function _melange(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-/* ---------- Cible simulée ---------- */
-function genererCible(){
-  const noms=["Kael","Vira","Toz","Nyx","Brann","Sela","Orin","Dax","Lume","Ferro","Yara","Milo","Rhona","Sett","Ilma","Garo"];
-  const nom=noms[Math.floor(Math.random()*noms.length)]+"-"+(10+Math.floor(Math.random()*89));
-  const pool=(typeof PRIX_ITEM!=="undefined")?Object.keys(PRIX_ITEM).filter(id=>!/vaisseau|navette/.test(id)):[];
-  const sac={}; const nItems=2+Math.floor(Math.random()*5);
-  for(let i=0;i<nItems && pool.length;i++){ const id=pool[Math.floor(Math.random()*pool.length)]; sac[id]=(sac[id]||0)+1+Math.floor(Math.random()*3); }
-  return { nom, ageJ:Math.floor(Math.random()*130), credits:250+Math.floor(Math.random()*4500), sac, dejaVole:Math.random()<0.15 };
+/* ===========================================================
+   v1.22 — LE VRAI VOL ENTRE JOUEURS (brique 0 de la traque)
+   Avant : genererCible() fabriquait un PNJ (nom tiré d'une liste, sac et
+   solde au hasard) ; butin, signature et prison se tiraient ICI.
+   Maintenant tout se décide au serveur, en deux appels :
+     1. vol_preparer(mode, coût) : refus AVANT dépense (personne, protégés,
+        prérequis, énergie), puis débit et tirage d'une VRAIE victime parmi
+        les présents (même règle que presents_ici). Renvoie { id, cible }.
+     2. vol_conclure(id, réussi, score) après le mini-jeu : butin tiré dans
+        le sac réel de la victime (barème `vol_risque`, copie de risqueVol),
+        crédits prélevés sur son solde, signature, prison ; la victime est
+        prévenue par `evenements`.
+   ⚠ Le mini-jeu reste joué ici : le serveur ne peut pas prouver la victoire
+     (même limite que tenter_evasion). Il borne le reste : 4 s mini, 10 min
+     maxi, une tentative laissée en plan compte comme un échec.
+   =========================================================== */
+function _coutVol(){ return (typeof aptEnergieAction==="function") ? aptEnergieAction(VOL_ENERGIE) : VOL_ENERGIE; }
+function _nomsButin(b){ return Object.keys(b||{}).map(id=>`${b[id]}× ${item(id)?item(id).nom:id}`).join(", "); }
+/* `appel` = () => sb.rpc("…") : les noms de RPC restent écrits en toutes
+   lettres, pour que outils/controle.js les croise avec pg_proc. */
+async function _volRpc(appel, repere){
+  try{
+    let { data, error } = await appel();
+    if(!error && data && data.err==="non_connecte" && typeof reprendreSession==="function" && await reprendreSession())
+      ({ data, error } = await appel());
+    if(error){ console.warn("[vol] "+repere+" :", error.message); return null; }
+    return data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#"+repere); return null; }
 }
-function _cibleProtegee(c){
-  if(c.ageJ < IMMUNITE_JOURS){ journal(`${c.nom} est un nouveau venu (protégé < ${IMMUNITE_JOURS} j). Tu renonces.`,"alerte","vol"); return true; }
-  if(c.dejaVole){ journal(`${c.nom} a déjà été délesté aujourd'hui — sur ses gardes. Tu renonces.`,"alerte","vol"); return true; }
-  return false;
+function _volAppliquer(d){
+  if(!d) return;
+  if(typeof d.energie==="number"){ etat.energie=d.energie; etat.energieMaj=Date.now(); }
+  if(d.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(d.etat);
+  if(typeof d.solde==="number" && typeof appliquerSoldeServeur==="function") appliquerSoldeServeur(d.solde);
+  if(d.prison && d.jusqua){ etat.prisonJusqua=new Date(d.jusqua).getTime(); etat.prisonFaction=d.prison_faction||null; }
 }
-function _piocherObjets(sac, cap, agi){
-  const ids=Object.keys(sac).filter(id=>(sac[id]||0)>0); _melange(ids); const butin=[];
-  for(const id of ids){ if(butin.length>=cap) break;
-    const rv=(typeof risqueVol==="function")?risqueVol(id):0.4;
-    if(Math.random() < Math.min(0.9, rv*(1+agi/300))){
-      const n = (typeof _lotVolable==="function") ? _lotVolable(id, sac[id])
-                                                  : Math.min(sac[id], 1+Math.floor(Math.random()*2));
-      butin.push([id, n]);
-    }
+const _VOL_REFUS = {
+  personne:  ()=>`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,
+  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j) ou déjà délestés aujourd'hui. Rien n'a été dépensé.`,
+  lieu:      ()=>"Va dans une ville, ou au Perchoir, pour cibler quelqu'un.",
+  aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
+  ordinateur:()=>"Équipe un Ordinateur de hacking pour hacker.",
+  energie:   ()=>"Pas assez d'énergie.",
+  mort:      ()=>"Tu es mort : impossible d'agir.",
+  prison:    ()=>"Tu es en prison."
+};
+async function _volPreparer(mode){
+  const d = await _volRpc(()=>sb.rpc("vol_preparer", { p_mode:mode, p_cout:_coutVol() }), "preparer");
+  if(!d){ journal("Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol"); return null; }
+  if(!d.ok){
+    if(d.err==="prison" && d.abandon){
+      journal("Ta tentative précédente, laissée en plan, a mal tourné : on t'a repéré et jeté en prison.","alerte","vol");
+      if(typeof syncPrison==="function") await syncPrison();
+    } else journal((_VOL_REFUS[d.err]||(()=>`Action refusée par le serveur (${d.err||"réponse vide"}).`))(),"alerte","vol");
+    if(typeof afficher==="function") afficher(); majVoler(); return null;
   }
-  return butin;
+  _volAppliquer(d);
+  if(typeof sauverSurServeur==="function"){ try{ sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"voler.js#sauver"); } }
+  return d;
+}
+async function _volConclure(mode, prep, reussi){
+  const score = mode==="vol" ? agiliteEffective() : intelligenceEffective();
+  const d = await _volRpc(()=>sb.rpc("vol_conclure", { p_id:prep.id, p_reussi:!!reussi, p_score:Math.round(score) }), "conclure");
+  const nom = (d && d.cible) || prep.cible || "ta cible";
+  if(!d || !d.ok){ journal("Le serveur n'a pas enregistré l'issue — elle comptera comme un échec.","alerte","vol"); apresAction(); majVoler(); return; }
+  _volAppliquer(d);
+  if(d.reussi){
+    if(d.vide){
+      if(mode==="vol") journal(d.sac_plein ? `Tu tiens de quoi faire les poches de ${nom}, mais ton sac est plein : tu repars les mains vides.`
+                                           : `Tu fouilles ${nom} mais repars les mains vides.`,"alerte","vol");
+      else journal(`Hack réussi, mais le compte de ${nom} est vide.`,"alerte","vol");
+    } else if(mode==="vol"){
+      journal(`Vol réussi sur ${nom} : ${_nomsButin(d.butin)}.`+(d.sac_plein?" (sac plein : tu as dû en laisser)":"")+" "
+        + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui."), "gain","vol");
+    } else {
+      journal(`Hack réussi : +${d.gain} ₡ siphonnés à ${nom}. `
+        + (d.signe ? "Ta signature est passée : son journal porte TON NOM." : "Son journal ne verra qu'« un anonyme »."), "gain","vol");
+    }
+  } else {
+    if(mode==="vol") journal(`Échec ! ${nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte","vol");
+    else journal(`Hack échoué sur ${nom}. `+(d.signe ? "Ta signature est passée : il sait QUI a essayé." : "Son journal : « un anonyme a tenté de me pirater »."),"alerte","vol");
+    if(d.prison) journal(mode==="vol" ? "Pris la main dans le sac : direction la prison." : "Ta trace a été remontée : prison.","alerte","vol");
+  }
+  apresAction(); majVoler();
 }
 
 /* ---------- Actions ---------- */
@@ -154,48 +187,16 @@ async function tenterVoler(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
   if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
   if(!aDiscretion()){ journal("Il te faut l'aptitude Discrétion pour voler.","alerte"); return; }
-  if(!await _ilYADuMonde()) return;
-  const c=genererCible(); if(_cibleProtegee(c)) return;
-  if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
-  lancerMiniVol(
-    async ()=>{ const butin=_piocherObjets(c.sac, VOL_CAP_OBJETS, agiliteEffective());
-      if(!butin.length) journal(`Tu fouilles ${c.nom} mais repars les mains vides.`,"alerte","vol");
-      else {
-        const gains={}; for(const [id,n] of butin){ gains[id]=(gains[id]||0)+n; }
-        const r = await agirServeur({ ajouter:gains, motif:"vol" });
-        const pris = r ? (r.ajoutes||{}) : {};
-        const liste = Object.keys(pris).map(id=>`${pris[id]}× ${item(id)?item(id).nom:id}`).join(", ");
-        if(liste) journal(`Vol réussi sur ${c.nom} : ${liste}.`+(r&&r.sac_plein?" (sac plein)":""),"gain","vol");
-        else journal(`Vol réussi sur ${c.nom}, mais ton sac est plein.`,"alerte","vol");
-      }
-      apresAction(); majVoler(); },
-    ()=>{ journal(`Échec ! ${c.nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte","vol");
-      if(Math.random()<RISQUE_PRISON_VOL){ _emprisonner(); journal("Pris la main dans le sac : direction la prison.","alerte","vol"); }
-      apresAction(); majVoler(); }
-  );
+  const prep = await _volPreparer("vol"); if(!prep) return;
+  lancerMiniVol(()=>_volConclure("vol", prep, true), ()=>_volConclure("vol", prep, false));
 }
 async function tenterHacker(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
   if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
   if(!_ordiEquipe()){ journal("Équipe un Ordinateur de hacking pour hacker.","alerte"); return; }
   if(!aIntrusion()){ journal("Il te faut l'aptitude Intrusion pour hacker.","alerte"); return; }
-  if(!await _ilYADuMonde()) return;
-  const c=genererCible(); if(_cibleProtegee(c)) return;
-  if(!await agirServeur({ cout:VOL_ENERGIE, motif:"vol" })) return;
-  lancerMiniHack(
-    ()=>{ const pct=Math.min(VOL_CAP_CREDITS, 0.12 + intelligenceEffective()/1000); const gain=Math.min(VOL_CAP_ABS, Math.floor(c.credits*pct));
-      etat.credits+=gain;
-      const anon = Math.random() < CHANCE_ANONYMAT_HACK;
-      journal(`Hack réussi : +${gain} ₡ siphonnés à ${c.nom}. `
-        + (anon ? "(Son journal ne verra qu'« un anonyme ».)"
-                : "⚠ Ta signature est passée : son journal porte TON NOM."), "gain", "vol");
-      apresAction(); majVoler(); },
-    ()=>{ const anon = Math.random() < CHANCE_ANONYMAT_HACK;
-      journal(`Hack échoué sur ${c.nom}. `
-        + (anon ? "(Son journal : « un anonyme a tenté de me pirater ».)"
-                : "⚠ Ta signature est passée : il sait QUI a essayé."), "alerte", "vol");
-      if(Math.random()<RISQUE_PRISON_HACK){ _emprisonner(); journal("Ta trace a été remontée : prison.","alerte","vol"); } apresAction(); majVoler(); }
-  );
+  const prep = await _volPreparer("hack"); if(!prep) return;
+  lancerMiniHack(()=>_volConclure("hack", prep, true), ()=>_volConclure("hack", prep, false));
 }
 
 /* ---------- Mini-jeux de hack (1 au hasard) ---------- */
@@ -534,11 +535,11 @@ function majVoler(){
   }
   const dV=aDiscretion(), dH=_ordiEquipe()&&aIntrusion(), e=Math.floor(etat.energie);
   z.innerHTML=`
-    <p class="vide">Cible un <b>joueur au hasard</b> présent ${(typeof enEcart==="function"&&enEcart())?"au Perchoir":"dans cette ville"}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
+    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> présent ${(typeof enEcart==="function"&&enEcart())?"au Perchoir":"dans cette ville"}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
-        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets. Échec → <b>démasqué (ton nom)</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
+        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans son sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
@@ -610,9 +611,23 @@ async function syncPrison(){
    Perchoir à Triptolème ; un prisonnier voit la sienne. Hors d'une cité : rien.
    Seule exception : le RÉGENT garde la vue de SA prison depuis n'importe où,
    puisqu'il peut gracier à distance (règle inchangée). */
-let _prisonRegentVue = false;   // v1.02 : le Régent, hors de chez lui, a demandé à voir SA prison
+/* v1.23 — Deux sous-onglets : la prison du lieu (ci-dessous, inchangée) et
+   les Plaintes et Wanted (traque.js). */
+let _prisonOnglet = "prison";
 async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
+  if(typeof _tqStyle==="function") _tqStyle();
+  const onglets=[["prison","Prison"],["plaintes","Plaintes"],["wanted","Wanted"]];
+  el.innerHTML=`<div class="tq-menu">${onglets.map(([k,t])=>`<button class="tq-lien${_prisonOnglet===k?" actif":""}" data-ponglet="${k}">${t}</button>`).join("")}</div><div id="prison-corps"></div>`;
+  el.querySelectorAll("[data-ponglet]").forEach(b=>b.addEventListener("click",()=>{ _prisonOnglet=b.dataset.ponglet; majPrison(el); }));
+  const corps=el.querySelector("#prison-corps");
+  if(_prisonOnglet==="plaintes" && typeof majPlaintes==="function") return majPlaintes(corps);
+  if(_prisonOnglet==="wanted" && typeof majWanted==="function") return majWanted(corps);
+  return _rendrePrisonCellules(corps);
+}
+let _prisonRegentVue = false;   // v1.02 : le Régent, hors de chez lui, a demandé à voir SA prison
+async function _rendrePrisonCellules(el){
+  if(!el) return;
   _hackStyle();
   el.innerHTML=`<h3 style="margin:2px 0">Prison</h3><p class="vide">Chargement…</p>`;
   const roles=(typeof _chargerMesRolesGouv==="function")?await _chargerMesRolesGouv():[];
@@ -651,12 +666,12 @@ async function majPrison(el){
   }
   if(enPrison()) html+=`<div style="margin-top:10px"><button class="mini" id="prison-evasion">Tenter une évasion (−10% énergie)</button> <span class="itip-gris">Chance selon Agilité + Intelligence. Échec → tu restes.</span></div>`;
   el.innerHTML=html;
-  const pr=el.querySelector("#prison-regent"); if(pr) pr.addEventListener("click",()=>{ _prisonRegentVue=!_prisonRegentVue; majPrison(el); });
+  const pr=el.querySelector("#prison-regent"); if(pr) pr.addEventListener("click",()=>{ _prisonRegentVue=!_prisonRegentVue; _rendrePrisonCellules(el); });
   const pe=el.querySelector("#prison-evasion"); if(pe) pe.addEventListener("click", tenterEvasion);
   el.querySelectorAll("[data-gracier]").forEach(b=>b.addEventListener("click", async()=>{
     const { data:res, error } = await sb.rpc("gracier",{ p_profil:b.dataset.gracier });
     if(error || !res || !res.ok){ journal("Grâce impossible.","alerte"); return; }
-    journal("Prisonnier gracié.","gain"); majPrison(el);
+    journal("Prisonnier gracié.","gain"); _rendrePrisonCellules(el);
   }));
   el.querySelectorAll(".prison-nom").forEach(b=>b.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(b.dataset.nom); }));
 }

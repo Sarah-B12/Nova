@@ -1021,7 +1021,7 @@ function _htmlGlyphes(d){
   const opts = `<option value="">— ?</option>` + mots.map(m=>`<option value="${m}">${m}</option>`).join("");
   const cartes = paires.map((p,i)=>`<div class="q-gly-carte">
       ${p.pictimg?`<img class="q-gly-pic" src="${p.pictimg}" alt="" onerror="this.remove()">`:`<span class="q-gly-pic">${p.picto||"❔"}</span>`}
-      <span class="q-gly-sym">${p.glyimg?`<img src="${p.glyimg}" alt="">`:(p.glyphe||"?")}</span>
+      <span class="q-gly-sym">${(p.sons && typeof glyphesMot==="function") ? glyphesMot(p.sons) : (p.glyimg?`<img src="${p.glyimg}" alt="">`:(p.glyphe||"?"))}</span>
       <select class="q-gly-sel" data-i="${i}">${opts}</select>
     </div>`).join("");
   return `<div class="quete-etape">${_par(d.texte)}${d.consigne?`<p class="quete-indice">${d.consigne}</p>`:""}
@@ -1043,7 +1043,10 @@ function _wireGlyphes(z,d){
 function _htmlOrdre(d){
   const els=d.elements||[]; const idx=els.map((_,i)=>i);
   for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
-  const pool=idx.map(i=>`<button class="q-ordre-el mini" data-i="${i}">${els[i]}</button>`).join("");
+  /* v1.29 — un élément peut être { sons:[…], texte } : les sons s'affichent en
+     glyphes de l'ancien (glyphes.js) devant le texte. Sinon : une chaîne. */
+  const _el = e => (e && typeof e==="object") ? `${(e.sons && typeof glyphesMot==="function") ? glyphesMot(e.sons)+" " : ""}${e.texte||""}` : e;
+  const pool=idx.map(i=>`<button class="q-ordre-el mini" data-i="${i}">${_el(els[i])}</button>`).join("");
   return `<div class="quete-etape">${_par(d.texte)}${d.consigne?`<p class="quete-indice">${d.consigne}</p>`:""}
     <div class="q-ordre-pool">${pool}</div><div class="q-ordre-rep"></div>
     <div class="quete-rep"><button class="mini" id="q-ordre-valider" disabled>Valider</button><button class="mini" id="q-ordre-reset">Recommencer</button></div></div>`;
@@ -1053,7 +1056,7 @@ function _wireOrdre(z,d){
   const rep=z.querySelector(".q-ordre-rep"), val=z.querySelector("#q-ordre-valider");
   z.querySelectorAll(".q-ordre-el").forEach(b=>b.addEventListener("click",()=>{ if(b.disabled) return;
     picks.push(parseInt(b.dataset.i,10)); b.disabled=true;
-    const chip=document.createElement("span"); chip.className="q-ordre-chip"; chip.textContent=picks.length+". "+b.textContent; rep.appendChild(chip);
+    const chip=document.createElement("span"); chip.className="q-ordre-chip"; chip.innerHTML=picks.length+". "+b.innerHTML; rep.appendChild(chip);   // v1.29 : garde les glyphes (contenu = données du jeu, pas du joueur)
     if(picks.length===n) val.disabled=false; }));
   z.querySelector("#q-ordre-reset").addEventListener("click",()=>{ picks=[]; rep.innerHTML=""; val.disabled=true; z.querySelectorAll(".q-ordre-el").forEach(b=>b.disabled=false); });
   val.addEventListener("click",()=>{ if(picks.every((v,i)=>v===i)){ journal("Séquence correcte !","gain"); reussirDefi(); } else echouerDefi(`Mauvaise séquence — le nœud se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); });

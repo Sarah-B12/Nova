@@ -739,7 +739,7 @@ async function _rendreBureauRegent(el, fac){
   let msgs=[]; try{ await sb.rpc("regent_purge"); const { data } = await sb.from("regent_messages").select("*").order("cree_le",{ascending:false}).limit(50); msgs=data||[]; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#15"); }
   const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">🔒 Privé — régence de ${f.nom}</option>`).join("");
   const facNom=id=>((typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id)||{}).nom||id;
-  let h=`<h3>Bureau du Régent</h3>`;
+  let h=`<h3>Bureau du Régent</h3><div id="reg-plaintes"></div>`;   // v1.23 : plaintes (traque.js)
   h+=`<h4 class="gsec">Annonce officielle (vue par tes membres)</h4>`;
   h+=`<div class="mur-outils" id="reg-ann-outils"></div><textarea id="reg-annonce" class="gouv-textarea" rows="3" placeholder="Message à ta faction…">${((_regForm.annonce!=null?_regForm.annonce:(annonce||""))).replace(/</g,"&lt;")}</textarea><div><button class="mini" id="reg-ann-pub">Publier l'annonce</button></div>`;
   h+=`<h4 class="gsec" style="margin-top:16px">Messagerie entre Régents</h4>`;
@@ -758,6 +758,7 @@ async function _rendreBureauRegent(el, fac){
     return `<div class="poste-ligne${envoye?" reg-envoye":""}"><span class="poste-txt"><b>${qui}</b> ${etiq} <span class="itip-gris">· ${(typeof _dateHeure==="function")?_dateHeure(m.cree_le):""}${envoye?" · envoyé par ta régence":""}</span><br>${corps}</span></div>`;
   }).join("");
   el.innerHTML=h;
+  if(typeof rendrePlaintesRegent==="function") rendrePlaintesRegent(el.querySelector("#reg-plaintes"));   // v1.23, sans await
   if(typeof _remplirBarreMur==="function"){ _remplirBarreMur("#reg-ann-outils"); if(typeof _brancherOutilsMur==="function") _brancherOutilsMur("#reg-annonce","#reg-ann-outils"); }
   _brouillon(el, "#reg-annonce", "annonce", _regForm, "input");
   _brouillon(el, "#reg-dest", "dest", _regForm, "change");

@@ -45,7 +45,7 @@ function penaliteMoral(){ return (etat.jauges && etat.jauges.moral <= 0) ? 0.30 
    Plancher à 1 : une mauvaise pioche ne doit jamais tomber à zéro, ce qui
    bloquerait les mini-jeux et les combats. */
 function _bo(cle, defaut){ return (typeof boissonMod==="function") ? boissonMod(cle, defaut) : (defaut!=null?defaut:0); }
-function forceEffective(){ return Math.max(1, Math.round((etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0) + _bo("force",0)) * penaliteMoral())); }
+function forceEffective(){ return Math.max(1, Math.round((etat.competences.force + (typeof equipForce==="function" ? equipForce() : 0) + (typeof aptForceForge==="function" ? aptForceForge() : 0) + _bo("force",0)) * penaliteMoral())); }   // v1.26 : + Cœur de forge
 function agiliteEffective(){ return Math.max(1, Math.round((etat.competences.agilite + (typeof equipAgi==="function" ? equipAgi() : 0) + _bo("agilite",0)) * penaliteMoral())); }
 function intelligenceEffective(){ return Math.max(1, Math.round((etat.competences.intelligence + (typeof equipInt==="function" ? equipInt() : 0) + _bo("intelligence",0)) * penaliteMoral())); }
 // Coût O₂ : l'Agilité réduit jusqu'à −50 % à 200 ; Poumons d'acier −1 ; l'équipement lourd rajoute du coût.

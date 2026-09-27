@@ -3,7 +3,7 @@
    - Durée de vie des objets (en jours, plafond 30). Les denrées (plantes,
      nourriture, bio) périssent vite ; minerais et métal/tech tiennent ~30 j.
      Le plafond de 30 j garantit que le marché entre joueurs tourne (rien d'éternel).
-   - Vulnérabilité au vol par objet (les vaisseaux sont quasi involables).
+   - (v1.22 : la vulnérabilité au vol est passée au serveur — table `vol_risque`, source dans outils/volrisque.js.)
    Les objets du SAC périssent ; le coffre de la maison ne périt pas (à décider).
    =========================================================== */
 const USURE_MAX = 30;   // jours
@@ -48,37 +48,11 @@ function joursRestants(id, lieu){
   return null;
 }
 
-/* --- Vulnérabilité au vol : probabilité de base qu'un objet soit dérobé (0 = jamais). --- */
-const VOL_CAT = { plante:0.5, organique:0.5, minerai:0.4, animal:0.4, conso:0.45, fabrique:0.3 };
-function risqueVol(id){
-  const it=item(id); if(!it) return 0.35;
-  const n=(it.nom||"").toLowerCase();
-  if(/vaisseau|cargo|navette/.test(n)) return 0.02;                                                  // vaisseaux : quasi involables
-  if(n.includes("implant")) return 0.05;                                                             // dans le corps
-  if(/casque|plastron|jambi|couteau|pistolet|lame|fusil|canon|drone|tourelle/.test(n)) return 0.15;  // équipement/pièces portées
-  return (VOL_CAT[it.cat] ?? VOL_CAT[it.type] ?? 0.35) * _facteurValeurVol(id);                       // matières/consommables du sac
-}
-
-/* Un objet cher est mieux gardé, mieux planqué, plus lourd à sortir d'une poche.
-   Sans ce facteur, une pièce à 600 ₡ se volait aussi facilement qu'un caillou :
-   la catégorie seule ne distinguait pas un Composant avancé d'un objet à 40 ₡.
-   Courbe en racine carrée autour d'un prix de référence, bornée pour qu'aucun
-   objet ne devienne ni impossible ni gratuit. */
-const VOL_PRIX_REF = 60;      // prix « ordinaire » : facteur 1
-function _facteurValeurVol(id){
-  const p = (typeof PRIX_ITEM !== "undefined") ? PRIX_ITEM[id] : null;
-  const prix = p ? (p.moy || p.min || 0) : 0;
-  if(!prix) return 1;
-  return Math.max(0.25, Math.min(1.5, Math.sqrt(VOL_PRIX_REF / prix)));
-}
-/* Combien d'unités partent d'un coup : au-delà d'un certain prix, une seule. */
-function _lotVolable(id, dispo){
-  const p = (typeof PRIX_ITEM !== "undefined") ? PRIX_ITEM[id] : null;
-  const prix = p ? (p.moy || p.min || 0) : 0;
-  const max = prix >= 200 ? 1 : (prix >= 80 ? 2 : 3);
-  return Math.min(dispo, 1 + Math.floor(Math.random() * max));
-}
-
+/* v1.22 — Le barème de vol (VOL_CAT, risqueVol, _facteurValeurVol,
+   _lotVolable) a quitté ce fichier : le SERVEUR tire le butin (vol_conclure,
+   table `vol_risque`). La source du barème vit désormais dans
+   outils/volrisque.js, qui régénère les lignes de `vol_risque`
+   (node outils/banc.js . volrisque) — BACKEND_PLAN §6 et §38. */
 /* Reporte une date d'acquisition en gardant la plus ANCIENNE (empêche de « rafraîchir » un objet en le déplaçant). */
 function reporterDate(map, id, ts){ if(ts==null) return; map[id] = (map[id]!=null) ? Math.min(map[id], ts) : ts; }
 /* v1.00 — « a péri » pour une plante déjà coupée, dans un sac : un testeur l'a

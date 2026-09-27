@@ -352,6 +352,10 @@ function majDev(){
           <button class="mini danger" data-app="fermer">Refermer</button></div>
         <p class="dev-note" id="dev-app-etat">—</p>
         <p class="dev-note"><b>Ouvrir (gratuit)</b> : le serveur croit à un premier choix — aucun coût, et <b>le genre redevient modifiable</b>. <b>Ouvrir (payant)</b> : le verrou est écoulé mais le régime normal s'applique — genre figé, 5 000 ₡. <b>Refermer</b> : reverrouillé 180 jours. Tracé dans le journal admin.</p></div>`;
+      h += `<div class="dev-bloc"><h4>Donner des points d'Aptitude</h4>
+        <div class="dev-champ"><input id="dev-pa-pseudo" placeholder="Pseudo"><input id="dev-pa-n" type="number" min="1" max="30" value="1" style="width:5em">
+          <button class="mini" id="dev-pa-btn">Donner</button></div>
+        <p class="dev-note">1 à 30 PA. Le joueur les reçoit à sa prochaine relève (au plus 2 min s'il est en ligne, sinon à sa connexion), avec un message dans son journal. Journalisé.</p></div>`;   // v1.26
       h += `<div class="dev-bloc"><h4>Staff actuel</h4><div id="dev-staff"><p class="dev-note">Chargement…</p></div></div>`;
       h += `<div class="dev-bloc"><h4>Expédition (test)</h4><p class="dev-note">Avance l'échéance de l'expédition de ta faction à <b>maintenant</b>. Le cron la résoudra à la minute suivante, exactement comme en vrai.</p><div class="dev-champ"><button class="mini" id="dev-exp-avancer">Avancer l'échéance à maintenant</button></div></div>`;
       // (Le journal admin a son propre onglet — l'onglet Gouvernement était trop long.)
@@ -386,9 +390,21 @@ function majDev(){
     const _appLire = g.querySelector("#dev-app-lire"); if(_appLire) _appLire.addEventListener("click", ()=>_appAppel("lire"));
     g.querySelectorAll("[data-app]").forEach(b=>b.addEventListener("click", ()=>_appAppel(b.dataset.app)));
     g.querySelector("#dev-nom-btn").addEventListener("click", devNommer);
+    const _paB = g.querySelector("#dev-pa-btn"); if(_paB) _paB.addEventListener("click", devDonnerPA);   // v1.26
     const ab=g.querySelector("#dev-adm-btn"); if(ab) ab.addEventListener("click", devDefinirRole);
     if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
   }
+}
+async function devDonnerPA(){
+  const pseudo = (document.querySelector("#dev-pa-pseudo").value||"").trim();
+  const n = Math.round(Number(document.querySelector("#dev-pa-n").value));
+  if(!pseudo){ alert("Indique un pseudo."); return; }
+  if(!(n >= 1 && n <= 30)){ alert("De 1 à 30 PA."); return; }
+  const id = (typeof _idDe==="function") ? await _idDe(pseudo) : null; if(!id){ alert("Pseudo introuvable."); return; }
+  const { data:res, error } = await sb.rpc("admin_donner_pa", { p_profil:id, p_n:n });
+  if(error || !res || !res.ok){ alert("Échec : "+((res&&res.err)||(error&&error.message)||"?")); return; }
+  journal(`[DEV] ${n} PA donné${n>1?"s":""} à ${res.nom}.`,"alerte");
+  if(id === (typeof _monId!=="undefined" ? _monId : null)) aptConsommerDons();
 }
 async function devNommer(){
   const fac=document.querySelector("#dev-nom-fac").value, role=document.querySelector("#dev-nom-role").value;

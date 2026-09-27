@@ -19,8 +19,12 @@ const APT_RESPEC   = 50000;    // coût d'une réattribution complète, en créd
 const APT_TRONC = [
   { id:"survie", nom:"Survie", noeuds:[
     { id:"sv1", nom:"Poumons d'acier", effet:"Coût O₂ des actions −1 (cumulable avec Agilité)." },
-    { id:"sv2", nom:"Récupération",    effet:"Régénération d'énergie +2 %/h." },
+    /* v1.25 — Métabolisme et Récupération INVERSÉS (décision de l'autrice).
+       Les identifiants suivent leur effet : sv3 reste Métabolisme, sv2
+       Récupération. La migration (aptitudes.js, _aptMigrer) rend les PA
+       d'une chaîne cassée par l'inversion. */
     { id:"sv3", nom:"Métabolisme",     effet:"Pertes de santé/moral en cas d'échec −25 %." },
+    { id:"sv2", nom:"Récupération",    effet:"Régénération d'énergie +2 %/h (base 10 %/h ; au total 13,5 %/h au plus, avec Organisme et les racines de ta cité)." },
     { id:"sv4", nom:"Endurance",       effet:"Coût en énergie de toutes tes actions −15 %." }
   ]},
   { id:"prospecteur", nom:"Prospection", noeuds:[
@@ -36,10 +40,13 @@ const APT_TRONC = [
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
   ]},
   { id:"traqueur", nom:"Combativité", noeuds:[
-    { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles." },
+    /* v1.25 — Cuirasse et Instinct INVERSÉS ; Fléau du Protocole (tr4)
+       SUPPRIMÉ, remplacé par Traque (identifiant `traque`, lu par le serveur :
+       a_aptitude_traque). Les PA de tr4 sont rendus par la migration. */
     { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
+    { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles ; +1 salve contre les sondes (6 au lieu de 5)." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
-    { id:"tr4", nom:"Fléau du Protocole", effet:"Contre le Protocole : +10 % de victoire et +25 % de butin en patrouille ; force ×1,25 en expédition contre lui.", deblocage:true }
+    { id:"traque", nom:"Traque",          effet:"Chasseur de primes : pister et traquer les têtes mises à prix (Prison → Wanted).", deblocage:true }
   ]},
   /* ⚠ v0.94b — RENOMMÉE « Furtivité ». « Ombre » est aussi le nom du rôle
      d'espion au gouvernement (GOUV_ROLES) : deux choses sans rapport portaient
@@ -49,9 +56,9 @@ const APT_TRONC = [
        les aptitudes déjà prises par tout le monde. Seul le libellé change. */
   { id:"ombre", nom:"Furtivité", noeuds:[
     { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
-    { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'énergie et d'O₂ ; butin de patrouille +25 %." },
+    { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'O₂ ; butin de patrouille +25 %." },
     { id:"om3", nom:"Pas léger",  effet:"Coût énergie de déplacement −20 %." },
-    { id:"om4", nom:"Intrusion",  effet:"Améliore le piratage des patrouilles du Protocole ; ouvrira la posture vol/hack sur les joueurs (PvP à venir).", deblocage:true }
+    { id:"om4", nom:"Intrusion",  effet:"Ouvre le piratage des joueurs (onglet Voler/Hacker) ; +25 points pour pirater une patrouille ou brouiller une sonde.", deblocage:true }
   ]}
 ];
 
@@ -61,13 +68,13 @@ const APT_FACTIONS = {
     { id:"ig1", nom:"Sang de magma", effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone chaude (autour de la Forge)." },
     { id:"ig2", nom:"Fournaise",     effet:"En zone chaude : minage +25 % et butin de patrouille +25 %." },
     { id:"ig3", nom:"Combustion",    effet:"+6 points de chance de victoire contre les patrouilles.", deblocage:true },
-    { id:"ig4", nom:"Cœur de forge", effet:"Toute arme équipée gagne un bonus permanent ; +10 % butin de combat en attendant.", deblocage:true }
+    { id:"ig4", nom:"Cœur de forge", effet:"+5 de Force tant qu'une arme est équipée (patrouilles, expéditions, défense).", deblocage:true }
   ]},
   cultivateurs: { nom:"Le Rhizome — Symbiose & Bio", noeuds:[
     { id:"cu1", nom:"Autarcie",      effet:"Consommables et plantes soignent +30 %." },
     { id:"cu2", nom:"Verger",        effet:"Bio-dôme : récolte 5-9 → 7-11." },
-    { id:"cu3", nom:"Photosynthèse", effet:"Régénère +2 O₂ par heure (la flore recycle l'air)." },
-    { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60).", deblocage:true }
+    { id:"cu3", nom:"Photosynthèse", effet:"Régénère +5 O₂ par heure (la flore recycle l'air)." },
+    { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60 ; énergie : 13,5 %/h au plus en tout).", deblocage:true }
   ]},
   toundra: { nom:"La Toundra — Givre & Endurance", noeuds:[
     { id:"to1", nom:"Isolation",       effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone froide ; +chance de Givrite au minage." },
@@ -77,15 +84,16 @@ const APT_FACTIONS = {
   ]},
   rouage: { nom:"Le Rouage — Machines & Récup", noeuds:[
     { id:"ro1", nom:"Réparateur", effet:"Mines +30 % de réserve." },
-    { id:"ro2", nom:"Chantier",   effet:"Bâtir une structure −25 % crédits." },
+    /* v1.25 — Recyclage et Chantier INVERSÉS (décision de l'autrice). */
     { id:"ro3", nom:"Recyclage",  effet:"Démolir rembourse 50 % des crédits/matériaux.", deblocage:true },
+    { id:"ro2", nom:"Chantier",   effet:"Construire une structure coûte 25 % de crédits en moins ; les attaques du Protocole abîment tes structures 25 % moins." },
     { id:"ro4", nom:"Surrégime",  effet:"Toutes tes structures produisent +50 % (mines, bio-dôme, enclos)." }
   ]},
   nomades: { nom:"Les Nomades — Route & Négoce", noeuds:[
     { id:"no1", nom:"Boutique mobile",effet:"Achat à la boutique depuis n'importe où (+10 % de surcoût).", deblocage:true },
     { id:"no2", nom:"Marchand",       effet:"Taxe de mise en vente au marché réduite de moitié : 5 % au lieu de 10 % (4 % avec le Fragment du négoce)." },
     { id:"no3", nom:"Négociant",      effet:"+15 % de crédits sur les butins, les récompenses de quête et la brade." },
-    { id:"no4", nom:"Voyageur",       effet:"Coût énergie de déplacement −20 %." }
+    { id:"no4", nom:"Voyageur",       effet:"Vaisseau : −20 % de carburant pour les vols et les sauts." }
   ]}
 };
 
