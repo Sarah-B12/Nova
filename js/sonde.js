@@ -34,6 +34,8 @@ const SONDE_PV_DEFAITE= [25, 40];// dégâts quand on l'attaque et qu'on perd
    ou perdu. Barème dupliqué ici pour l'affichage seulement : il fait foi côté
    serveur (BACKEND_PLAN §36). */
 const SONDE_ENERGIE   = 5;       // % d'énergie pour ouvrir le feu
+/* v1.33h — coût réel, Endurance comprise : affichage ET débit. */
+function coutSonde(){ return (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(SONDE_ENERGIE); }
 
 /* ⚠ Butin en CRÉDITS uniquement, jamais d'objet — et surtout pas de Cristal de
    Nyx : Le Gravier doit rester la seule source fiable du secteur, sinon son
@@ -78,9 +80,9 @@ function ouvrirSonde(){
     <p class="patr-desc">Un appareil sans cockpit s'aligne sur toi et se met à ta vitesse. Il n'émet rien qui ressemble à un appel.
       Une lumière balaie ta coque, s'arrête, recommence.</p>
     <div class="patr-choix">
-      <button class="patr-opt" data-s="attaquer" ${(etat.energie||0) < SONDE_ENERGIE ? "disabled" : ""}><b>Ouvrir le feu</b><span class="patr-sous">${(etat.energie||0) < SONDE_ENERGIE
-        ? `Pas assez d'énergie (${SONDE_ENERGIE} % requis)`
-        : `La seule option qui rapporte — surtout la première du jour · ${SONDE_ENERGIE} % d'énergie · perdre abîme la coque`}</span></button>
+      <button class="patr-opt" data-s="attaquer" ${(etat.energie||0) < coutSonde() ? "disabled" : ""}><b>Ouvrir le feu</b><span class="patr-sous">${(etat.energie||0) < coutSonde()
+        ? `Pas assez d'énergie (${coutSonde()} % requis)`
+        : `La seule option qui rapporte — surtout la première du jour · ${coutSonde()} % d'énergie · perdre abîme la coque`}</span></button>
       <button class="patr-opt" data-s="scanner"><b>Se laisser scanner</b><span class="patr-sous">Elle prélèvera un objet au hasard, dans ta soute ou dans ton sac</span></button>
       <button class="patr-opt" data-s="deriver"><b>Couper les moteurs et dériver</b><span class="patr-sous">Intelligence · échec = elle tire la première</span></button>
       <button class="patr-opt" data-s="brouiller" ${aHack?"":"disabled"}><b>Brouiller son scanner</b><span class="patr-sous">${aHack?"Ordinateur de hacking équipé · aucun dégât si réussi":"Équipe un Ordinateur de hacking"}</span></button>
@@ -116,7 +118,7 @@ async function sondeCombat(){
   /* v1.20 — l'énergie est débitée AVANT le duel, gagné ou perdu. Si le serveur
      refuse (plus assez d'énergie), agirServeur() l'a déjà dit : on rouvre la
      rencontre pour que le joueur choisisse une autre issue. */
-  const r = await agirServeur({ cout:SONDE_ENERGIE, motif:"sonde" });
+  const r = await agirServeur({ cout:coutSonde(), motif:"sonde" });
   if(!r){ ouvrirSonde(); return; }
   lancerTirSonde(_sondeGagne, _sondePerdu);
 }

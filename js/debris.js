@@ -159,7 +159,8 @@ function _debrisPanneauHtml(){
   const i = Math.max(0, Math.min(5, _debris.palier|0));
   const sens = _debris.tendance === "chaud" ? " · ↑ plus chaud" : _debris.tendance === "froid" ? " · ↓ plus froid" : _debris.tendance === "egal" ? " · = pareil" : "";
   const btn = _debris.surPoint ? `<button class="mini debris-fouiller">Fouiller — ${DEBRIS_COUT} % énergie</button>` : "";
-  return tete + `<div class="debris-thermo"><i style="width:${Math.round((i+1)/6*100)}%"></i></div>
+  const w = (typeof jaugeChaleur === "function") ? jaugeChaleur(i, _debris.surPoint) : Math.round((i+1)/6*85);   // v1.33d : pleine seulement sur le point
+  return tete + `<div class="debris-thermo"><i style="width:${w}%"></i></div>
     <div class="debris-ligne"><span>Signature thermique : <b>${_debrisMot(i)}</b>${sens}</span>${btn}</div>`;
 }
 function majDebris(){

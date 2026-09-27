@@ -31,6 +31,11 @@ function aptZoneThermique(){
    (neutre) tant qu'aucune boisson n'est active. */
 function _boi(cle){ return (typeof boissonMod==="function") ? boissonMod(cle, 1) : 1; }
 function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique() * _boi("energie_cout"))); }                                  // Endurance −15 %
+/* v1.33g — Endurance SEULE (−15 %). Pour les coûts calculés hors des trois
+   fonctions ci-dessus : saut en atmosphère (descente/décollage La Braise, Le
+   Suaire, Silène ⇄ Triptolème) et vol dans l'Écart (orbite.js). Retour testeur :
+   Endurance ne marchait pas en entrant en atmosphère. */
+function aptEndurance(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }
 function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }        // Endurance (v1.25 : Repérage n'agit plus ici)
 function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8;   // v1.26 : Voyageur (no4) agit sur le carburant (aptCarburant)
   if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");

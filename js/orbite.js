@@ -54,7 +54,7 @@ function coutSaut(){
      décollerait indéfiniment avec une coque en ruine sans rien sentir. */
   const l = Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1));
   return { litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
-           energie: SAUT_ENERGIE + (v.energie||0) * 2,
+           energie: (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(SAUT_ENERGIE + (v.energie||0) * 2),   // v1.33g : Endurance −15 %
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
 
@@ -215,7 +215,7 @@ function coutVol(dest, depuis){
   const d = _distEsp(depuis || posEspace(), dest);
   if(d < 6) return null;
   return { d,
-    energie: Math.max(1, Math.round(d / PAS_ESPACE_E)),
+    energie: (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(Math.max(1, Math.round(d / PAS_ESPACE_E))),   // v1.33g : Endurance −15 %
     litres:  (typeof aptCarburant==="function" ? aptCarburant : (x=>x))(Math.ceil(Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1)
                        * ((typeof malusCarburant==="function") ? malusCarburant() : 1))) };   // v1.26 : Voyageur −20 %
 }
@@ -374,6 +374,8 @@ async function volVersPoint(pt){
 const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu
 const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal
 const GRAVIER_ENERGIE  = 4;      // par tentative (le minage au sol coûte 8)
+/* v1.33h — coût réel, Endurance comprise : affichage ET débit (garage.js, ici). */
+function coutGravier(){ return (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(GRAVIER_ENERGIE); }
 const GRAVIER_PV       = [1, 3]; // dégâts de coque par tentative
 
 function _gravierJour(){ return (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString(); }
@@ -392,7 +394,7 @@ async function minerGravier(){
 
   const touche = Math.random() < GRAVIER_CHANCE;
   const gains  = touche ? { cristal:1 } : {};
-  const r = await agirServeur({ cout:GRAVIER_ENERGIE, ajouter:gains, motif:"gravier" });
+  const r = await agirServeur({ cout:coutGravier(), ajouter:gains, motif:"gravier" });
   if(!r) return;
 
   const g = (etat.gravier && etat.gravier.jour === _gravierJour()) ? etat.gravier : { jour:_gravierJour(), essais:0 };

@@ -385,6 +385,16 @@ function _chasseSignal(){
 }
 /* Panneau de route (hors cible) : la bouture qui bat + une jauge à 6 paliers
    (jamais la distance exacte : ce serait une triangulation). */
+/* v1.33d — Remplissage de la jauge chaud/froid (bouture de Q15 ET débris).
+   ⚠ La jauge n'est PLEINE que SUR le point. Avant, « brûlant » (< 150 u)
+   remplissait 100 % alors qu'on n'y est qu'à 80 u : le joueur se croyait
+   arrivé et cherchait à l'aveugle (retour testeur, Q15). Brûlant = 85 %. */
+const JAUGE_CHALEUR_MAX = 85;   // % au dernier palier, tant qu'on n'est pas sur le point
+function jaugeChaleur(palier, surPoint){
+  if(surPoint) return 100;
+  const n = CHASSE_PALIERS.length, i = Math.max(0, Math.min(n-1, palier|0));
+  return Math.round((i+1) / n * JAUGE_CHALEUR_MAX);
+}
 function _chasseRouteHtml(){
   const a=queteActive(); const c=a && a._chasse; const d = c ? c.d : _chasseDist();
   if(d==null) return `<p class="vide">Ici, la bouture ne te dit rien. Retourne sur Silène.</p>`;
@@ -393,7 +403,7 @@ function _chasseRouteHtml(){
   const sens = !c||!c.sens ? "" : c.sens==="chaud" ? " · ↑ plus chaud" : c.sens==="froid" ? " · ↓ plus froid" : " · = pareil";
   const img = (typeof imgBouture==="function") ? imgBouture() : "";
   return `<div class="quete-chasse"><span class="q-bouture-bat" style="animation-duration:${periode}s"><img src="${img}" alt="" onerror="this.remove()"></span>
-    <div style="flex:1"><div class="q-thermo"><i style="width:${Math.round((i+1)/n*100)}%"></i></div>
+    <div style="flex:1"><div class="q-thermo"><i style="width:${jaugeChaleur(i, false)}%"></i></div>
     <p style="margin:6px 0 0"><b>${CHASSE_PALIERS[i][1]}</b>${sens}</p></div></div>`;
 }
 function _htmlChasse(d){
@@ -676,7 +686,7 @@ async function _payerCoutQ(cout){ if(!cout) return true;
   const objets = {}; let energie = 0; const jauges = {};
   for(const k in cout){ const q=cout[k];
     if(k==="credits") continue;                        // débités APRÈS le serveur, plus bas
-    else if(k==="energie") energie += q;                 // débitée par le serveur
+    else if(k==="energie") energie += (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(q);   // débitée par le serveur — v1.33h : Endurance
     else if(k==="sante") jauges.sante = (jauges.sante||0) - q;      // appliquée par le serveur
     else objets[k] = (objets[k]||0) + q;                 // objets : retirés côté serveur
   }
@@ -689,7 +699,7 @@ async function _payerCoutQ(cout){ if(!cout) return true;
 function _coutTexteQ(cout){ if(!cout) return ""; const p=[];
   for(const k in cout){ const q=cout[k];
     if(k==="credits") p.push(`${q} ₡`);
-    else if(k==="energie") p.push(`${q}% énergie`);
+    else if(k==="energie") p.push(`${(typeof aptEndurance==="function" ? aptEndurance : (x=>x))(q)}% énergie`);   // v1.33h : Endurance
     else if(k==="sante") p.push(`${q} santé`);
     else p.push(`${q}× ${(typeof item==="function"&&item(k))?item(k).nom:k}`);
   } return p.join(", ");

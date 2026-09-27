@@ -175,8 +175,7 @@ function _tqStyle2(){
     .tq-sans{ display:flex; height:100%; align-items:center; justify-content:center; color:var(--sourdine); font-size:1.6em; }
     .tq-total{ font-size:1.25em; color:var(--orange-hi,#ffb060); font-weight:bold; }
     .tq-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
-    .tq-outils{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center; margin:8px 0 0; font-size:.92em; }
-    .tq-outils input{ width:5.5em; min-height:40px; padding:4px 6px; background:rgba(0,0,0,.25); color:inherit; border:1px solid var(--line); border-radius:6px; font:inherit; }
+    /* v1.33e : le style de .tq-outils vit dans carte.css (un seul endroit). */
     .tq-coord{ font-family:ui-monospace,Consolas,monospace; color:var(--sourdine); }
     .tq-traquer{ border-color:var(--orange,#ff8a3d) !important; color:var(--orange-hi,#ffb060) !important; }
     #tq-modale{ position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; padding:10px; }
@@ -368,8 +367,13 @@ function _tqTick(){
     const mod = document.querySelector(c.modale);
     const ouverte = !!(mod && mod.classList.contains("ouverte"));
     if(!ouverte){ _tqOuvertAvant[c.modale] = false; continue; }
+    /* v1.33f — La barre n'existe que pour qui a l'aptitude Traque (choix de
+       l'autrice) : sans elle, aucune coordonnée, aucun « Se rendre à ». */
+    const aTraque = (typeof aptPris === "function") && aptPris("traque");
+    if(!aTraque){ const b0 = mod.querySelector(".tq-outils"); if(b0) b0.hidden = true; continue; }
     if(!_tqOuvertAvant[c.modale]){ _tqOuvertAvant[c.modale] = true; _tqRafraichir(false); }   // pistes à jour à chaque ouverture (≤ 1 appel / 30 s)
     const bar = _tqBrancher(c); if(!bar) continue;
+    bar.hidden = false;
     const sect = etat.secteur || "silene";
     const p = c.secteurs.includes(sect) ? c.ici() : null;
     const z = bar.querySelector('[data-tq="ici"]');

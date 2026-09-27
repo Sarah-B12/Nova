@@ -102,7 +102,7 @@ function majGisement(){
   h += `<div class="garage-etat">
       <div><span>Tentatives</span><b>${reste}/${GRAVIER_ESSAIS} aujourd'hui</b></div>
       <div><span>Coque</span><b style="color:${vaisseauCloue()?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV</b></div>
-      <div><span>Chaque tentative</span><b>−${GRAVIER_ENERGIE} % d'énergie · 1 à 3 PV</b></div>
+      <div><span>Chaque tentative</span><b>−${coutGravier()} % d'énergie · 1 à 3 PV</b></div>
     </div>`;
 
   if(reste <= 0){
@@ -110,7 +110,7 @@ function majGisement(){
   } else if(vaisseauCloue()){
     h += `<p class="vide" style="margin-top:12px" >Coque hors service : impossible de manœuvrer dans les cailloux.</p>`;
   } else {
-    const ko = (etat.energie|0) < GRAVIER_ENERGIE || placesLibres() <= 0;
+    const ko = (etat.energie|0) < coutGravier() || placesLibres() <= 0;
     h += `<div class="actions" style="margin-top:12px"><button class="mini" id="gis-miner" ${ko?"disabled":""}>Fouiller les cailloux</button>
       ${placesLibres()<=0?`<span class="itip-gris" style="margin-left:8px">Sac plein.</span>`:""}</div>`;
   }

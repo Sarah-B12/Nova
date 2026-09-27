@@ -113,3 +113,30 @@
      jamais. On le rend défilable latéralement plutôt que coupé. */
   .dist-grille { display:block; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 }
+
+/* v1.33e — Outil de la traque sous chaque carte (traque.js : .tq-outils).
+   Il n'avait AUCUN style : cases du navigateur, énormes, collées à la carte. */
+.tq-outils{
+  flex:0 0 auto; display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px;
+  margin:10px 0 0; padding:7px 12px;
+  border:1px solid var(--line); border-radius:10px;
+  background:rgba(19,39,61,.55);
+  font-size:13px; color:var(--sourdine);
+}
+.tq-outils b{ color:var(--texte); font-weight:600; }
+.tq-outils > span{ display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.tq-outils input[type=number]{
+  flex:0 0 auto; width:5.2em; height:30px; box-sizing:border-box; margin:0;
+  padding:3px 8px; font:inherit; font-size:13px; color:var(--texte);
+  background:rgba(7,19,32,.7); border:1px solid var(--line); border-radius:8px 3px 8px 3px;
+  -moz-appearance:textfield; appearance:textfield;
+}
+.tq-outils input[type=number]::-webkit-outer-spin-button,
+.tq-outils input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.tq-outils input[type=number]:focus{ outline:none; border-color:var(--orange); }
+.tq-outils .mini{ min-height:30px; }
+.tq-outils[hidden]{ display:none; }   /* v1.33f : sans l'aptitude Traque (display:flex écraserait [hidden]) */
+/* v1.33f — Le lieu dans l'en-tête de la carte tient sur UNE ligne : un texte
+   long (Anneau du Protocole) passait sur 2 à 3 lignes et la carte rapetissait.
+   Le texte complet reste au survol (title) et dans le bandeau du hub. */
+.titre-carte{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

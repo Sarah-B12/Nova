@@ -412,7 +412,15 @@ function majCarte(){
   document.querySelector("#region-info").innerHTML = t + ` <span style="color:var(--sourdine)">· pos. ${Math.round(etat.pos.x)}, ${Math.round(etat.pos.y)}</span>`;
   if(surAnneauProtocole()){ const ri=document.querySelector("#region-info"); if(ri){ const hb=document.createElement("button"); hb.className="mini"; hb.textContent="Hacker le Protocole"; hb.style.marginLeft="8px"; hb.addEventListener("click",()=>{ if(typeof hackerProtocoleDepuisCarte==="function") hackerProtocoleDepuisCarte(); }); ri.appendChild(hb); } }
   if(typeof majMarqueursQuete==="function") majMarqueursQuete();
-  const cl=document.querySelector("#carte-lieu"); if(cl) cl.innerHTML = t;
+  /* v1.33f — En-tête de la carte : version COURTE (une ligne). Le texte
+     complet reste dans le bandeau du hub (#region-info) et au survol. */
+  const cl=document.querySelector("#carte-lieu");
+  if(cl){
+    cl.innerHTML = (typeof surAnneauProtocole==="function" && !villeActuelle() && surAnneauProtocole())
+      ? `<b style="color:#b9a0f0">Anneau du Protocole</b> <span style="color:var(--sourdine)">— zone interdite</span>`
+      : t;
+    const tmp=document.createElement("div"); tmp.innerHTML=t; cl.title = tmp.textContent.trim();
+  }
   if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
   majHub();
 }
