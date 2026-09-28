@@ -65,14 +65,16 @@ function construireCarte(){
     if(!_dansLaCarte(p)) return;
     if(_dernierPointeur !== "touch"){ voyager(p.x, p.y); return; }
     const c = _aimante(p);                       // tolérance autour des lieux
-    /* ⚠ v1.33c — Le second toucher ne part que s'il suit VITE le premier
-       (double toucher). Avant, tout toucher à moins de 44 px de la visée
-       partait vers elle — 44 px ≈ 290 u sur téléphone : impossible de corriger
-       sa visée de quelques dizaines d'unités, un testeur a tourné des heures
-       autour de la bouture de Q15 (cible de 80 u). Un toucher plus lent
-       DÉPLACE la visée ; le bouton « Partir » reste là. */
-    if(_visee && (Date.now() - _viseeLe) < VISEE_DOUBLE_MS
-       && dist(c.x, c.y, _visee.x, _visee.y) < _toleranceTap()){ _partirVisee(); return; }
+    /* ⚠ v1.34d — Second toucher PRÈS de la visée (≤ 44 px d'écran) : on part,
+       à tout moment, mais vers l'endroit EXACT de ce second toucher.
+       Historique : avant v1.33c on partait vers l'ANCIENNE visée (44 px ≈ 290 u
+       au téléphone : impossible de corriger de quelques dizaines d'unités — un
+       testeur a tourné des heures autour de la bouture de Q15). La v1.33c
+       exigeait un double toucher en < 700 ms : toucher le cercle orange plus
+       tard ne faisait rien (retour testeur). Désormais : toucher le cercle =
+       partir ; toucher juste à côté = partir juste là (précision gardée) ;
+       toucher loin = déplacer la visée. Le bouton « Partir » reste là. */
+    if(_visee && dist(c.x, c.y, _visee.x, _visee.y) < _toleranceTap()){ _effacerVisee(); voyager(c.x, c.y); return; }
     _poserVisee(c.x, c.y);
   });
 
@@ -240,8 +242,6 @@ function _dansLaCarte(p){ return p && p.x >= 0 && p.y >= 0 && p.x <= MONDE.w && 
      ~330 unités sur un téléphone et ~110 sur un grand écran. */
 const VISEE_TOLERANCE = 40;          // aimantation vers les cités (unités du monde)
 const VISEE_TAP_PX    = 44;          // marge du second tap (pixels d'écran)
-const VISEE_DOUBLE_MS = 700;         // v1.33c : délai max d'un double toucher (au-delà, la visée se déplace)
-let _viseeLe = 0;                    // v1.33c : quand la visée a été posée
 function _uniteParPixel(){
   const svg = document.querySelector("#carte"); if(!svg) return 7.5;
   const r = svg.getBoundingClientRect();
@@ -273,7 +273,7 @@ function _dessinerVisee(){
     <line x1="${_visee.x}" y1="${_visee.y-38}" x2="${_visee.x}" y2="${_visee.y+38}" stroke="#ff9a44" stroke-width="3"/>`;
 }
 function _poserVisee(x, y){
-  _visee = { x, y }; _viseeLe = Date.now();
+  _visee = { x, y };
   _dessinerVisee();
   _apercuCout(x, y);
   let b = document.querySelector("#carte-partir");
@@ -494,3 +494,56 @@ async function voyager(x, y){
    sinon un second tap, plus tard, partirait vers un point oublié. */
 function ouvrirCarte(){ _effacerVisee(); document.querySelector("#modale-carte").classList.add("ouverte"); majCarte(); }
 function fermerCarte(){ _effacerVisee(); document.querySelector("#modale-carte").classList.remove("ouverte"); }
+
+/* ===========================================================
+   v1.34e — VISÉE AU DOIGT pour les autres cartes (La Braise, Le Suaire,
+   Triptolème), même règle que Silène (v1.34d) : 1er toucher = cercle + coût +
+   bouton « Partir » ; second toucher à ≤ 44 px du cercle = partir vers
+   l'endroit EXACT touché ; plus loin = le cercle se déplace. À la souris :
+   un clic = un trajet (inchangé). Avant, au doigt, un toucher partait
+   AUSSITÔT, sans voir le coût (au sol, l'O₂ compte double).
+   o = { cout(x,y) → texte du bouton ou null, partir(x,y) }.
+   Les cartes se redessinent en entier (innerHTML) : appeler .redessiner()
+   à la fin de leur mise à jour.
+   =========================================================== */
+function viseeTactile(svg, o){
+  let pointeur = "mouse", v = null, barre = null;
+  svg.addEventListener("pointerdown", e => { pointeur = e.pointerType || "mouse"; });
+  const upp = () => {   // unités de la carte par pixel d'écran
+    const r = svg.getBoundingClientRect(), vb = svg.viewBox && svg.viewBox.baseVal;
+    if(!r.width || !r.height || !vb || !vb.width) return 7.5;
+    const e = Math.min(r.width / vb.width, r.height / vb.height); return e > 0 ? 1 / e : 7.5;
+  };
+  const NS = "http://www.w3.org/2000/svg";
+  const dessiner = () => {
+    let g = svg.querySelector(":scope > g.visee-tactile");
+    if(!v){ if(g) g.remove(); return; }
+    if(!g){ g = document.createElementNS(NS, "g"); g.setAttribute("class", "visee-tactile"); svg.appendChild(g); }
+    const r = 14 * upp(), w = Math.max(1, 2 * upp());
+    g.innerHTML = `<circle cx="${v.x}" cy="${v.y}" r="${r}" fill="rgba(255,138,61,.18)" stroke="#ff8a3d" stroke-width="${w}"/>`
+      + `<circle cx="${v.x}" cy="${v.y}" r="${w*1.2}" fill="#ff8a3d"/>`;
+  };
+  const effacer = () => { v = null; dessiner(); if(barre) barre.hidden = true; };
+  const partir = () => { if(!v) return; const p = v; effacer(); o.partir(p.x, p.y); };
+  const poser = (x, y) => {
+    v = { x, y }; dessiner();
+    if(!barre){
+      barre = document.createElement("div"); barre.className = "visee-barre";
+      barre.innerHTML = `<button class="mini" type="button"></button>`;
+      barre.querySelector("button").addEventListener("click", partir);
+      (svg.parentElement || svg).insertAdjacentElement("afterend", barre);
+    }
+    const t = o.cout(x, y);
+    barre.querySelector("button").textContent = t ? `Partir (${t})` : "Partir";
+    barre.hidden = false;
+  };
+  return {
+    clic(x, y){
+      if(pointeur !== "touch"){ effacer(); o.partir(x, y); return; }
+      if(v && Math.hypot(x - v.x, y - v.y) < 44 * upp()){ effacer(); o.partir(x, y); return; }
+      poser(x, y);
+    },
+    effacer, redessiner: dessiner
+  };
+}
+

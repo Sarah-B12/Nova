@@ -126,6 +126,7 @@ async function rangerServeur(id, n, vers, depuis){
       if(err === "coffre_plein")   journal("Rangement plein — agrandis ton logement.","alerte");
       else if(err === "soute_plein") journal("Soute pleine.","alerte");
       else if(err === "niveau")      journal(`Niveau ${data.requis} requis (tu es niveau ${data.niveau}).`,"alerte");   // v1.33 : refus serveur
+      else if(err === "coffre_loin") journal("Ton coffre est chez toi, sur Silène : impossible d'y accéder d'ici.","alerte");   // v1.34b
       else if(err === "sac_plein")   journal("Sac plein.","alerte");
       else if(err === "manque"){
         /* v1.17 — l'écran était en retard sur le serveur : on relit tout de

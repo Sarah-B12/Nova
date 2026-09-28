@@ -11,6 +11,116 @@
    =========================================================== */
 let _devMonte = false;
 
+/* ===========================================================
+   v1.34 — RANGEMENT DE LA CONSOLE (décidé avec l'autrice le 28/09).
+   Onglets rangés par « sur qui ça agit », sections à titres bien visibles.
+   Les blocs sont TOUJOURS construits par majDev() (mêmes id, mêmes
+   branchements) dans une zone cachée (.dev-stage) ; _devRanger() les déplace
+   ici. Un nœud déplacé garde ses écouteurs : aucune action n'a changé.
+   `sel` : élément à déplacer · `bloc` : prendre son .dev-bloc parent ·
+   `up` : prendre ce parent · `titre:false` : retirer le petit titre du bloc
+   (la section en a déjà un) · `bouton` : bouton isolé, rangé en ligne.
+   =========================================================== */
+const DEV_ONGLETS = [
+  { id:"joueurs", nom:"Joueurs", sections:[
+    { id:"chercher", titre:"🔎 Rechercher un joueur", items:[
+      { sel:"#dev-recherche > p.dev-note" }, { sel:"#dev-q", up:".dev-champ" }, { sel:"#dev-res" } ] },
+    { id:"pa", titre:"✨ Donner des points d'Aptitude", items:[ { sel:"#dev-pa-btn", bloc:true, titre:false } ] },
+    { id:"apparence", titre:"🎭 Apparence — verrou", items:[ { sel:"#dev-app-lire", bloc:true, titre:false } ] } ] },
+  { id:"perso", nom:"Mon perso", devSeul:true, sections:[
+    { id:"etat", titre:"❤️ État", note:"Tests sur <b>ce personnage</b> seulement.", items:[
+      { sel:"#dev-energie", bouton:true }, { sel:"#dev-pause", bouton:true }, { sel:"#dev-prison", bouton:true },
+      { sel:"#dev-recaler-comp", bouton:true }, { sel:"#dev-journal-vider", bouton:true } ] },
+    { id:"tranq", titre:"🌙 Mode tranquillité", items:[ { sel:"#dev-tranq", bloc:true, titre:false } ] },
+    { id:"acces", titre:"🔑 Accès", items:[
+      { sel:"#dev-permis", bouton:true }, { sel:"#dev-espace1", bouton:true }, { sel:"#dev-facbloc", bouton:true } ] },
+    { id:"vaisseau", titre:"🚀 Vaisseau", items:[
+      { sel:"#dev-coque", bouton:true }, { sel:"#dev-coque-ok", bouton:true }, { sel:"#dev-sonde", bouton:true } ] },
+    { id:"terrain", titre:"🏗️ Terrain", items:[ { sel:"#dev-abimer", bouton:true }, { sel:"#dev-integrite-reset", bouton:true } ] },
+    { id:"patrouilles", titre:"🛡️ Patrouilles", items:[ { sel:"#dev-protocole", bouton:true } ] },
+    { id:"outils", titre:"🛠️ Outils", note:"Édition du fichier de la carte spatiale — pas un test de jeu.", items:[ { sel:"#dev-placement", bouton:true } ] } ] },
+  { id:"evts", nom:"Événements", devSeul:true, sections:[
+    { id:"calendrier", titre:"📅 À venir", items:[] },
+    { id:"debris", titre:"☄️ Chute de débris (test)", items:[ { sel:"#dev-debris-lancer", bloc:true, titre:false } ] },
+    { id:"expe", titre:"⚔️ Expédition (test)", items:[ { sel:"#dev-exp-avancer", bloc:true, titre:false } ] },
+    { id:"proto", titre:"🤖 Protocole (debug)", items:[ { sel:"#dev-proto", bloc:true, titre:false } ] },
+    { id:"tous", titre:"⚠️ Touche TOUS les joueurs", danger:true, note:"Ces boutons agissent sur <b>tous les profils</b>, pas seulement sur toi.", items:[
+      { sel:"#dev-declin", bouton:true }, { sel:"#dev-quotidien", bouton:true } ] } ] },
+  { id:"gouv", nom:"Gouvernement", sections:[
+    { id:"roles", titre:"👑 Nommer / démettre un rôle", items:[ { sel:"#dev-nom-btn", bloc:true, titre:false } ] },
+    { id:"election", titre:"🗳️ Phase d'élection (test)", items:[ { sel:"#dev-reset-elec", bloc:true, titre:false } ] },
+    { id:"cand", titre:"📜 Candidatures — élection en cours", items:[ { sel:"#dev-cand-go", bloc:true, titre:false } ] } ] },
+  { id:"staff", nom:"Staff", devSeul:true, sections:[
+    { id:"staff", titre:"👥 Staff actuel", items:[ { sel:"#dev-staff", bloc:true, titre:false } ] },
+    { id:"admin", titre:"🔐 Définir un admin", items:[ { sel:"#dev-adm-btn", bloc:true, titre:false } ] } ] },
+  { id:"journal", nom:"Journal", devSeul:true, sections:[
+    { id:"journal", titre:"🧾 Journal admin", items:[ { sel:"#dev-log", bloc:true } ] } ] }
+];
+function _devMontrerOnglet(id){
+  const m = document.querySelector("#dev-modale"); if(!m) return;
+  m.querySelectorAll(".dev-onglet").forEach(x=>x.classList.toggle("actif", x.dataset.dev===id));
+  DEV_ONGLETS.forEach(o=>{ const el=m.querySelector("#dev-t-"+o.id); if(el) el.hidden = (o.id!==id); });
+  if(id === "evts") _devChargerCalendrier();
+}
+function _devRanger(){
+  const m = document.querySelector("#dev-modale"), stage = m && m.querySelector(".dev-stage"); if(!stage) return;
+  for(const o of DEV_ONGLETS) for(const sec of o.sections){
+    const S = m.querySelector(`#dev-t-${o.id} [data-sec="${sec.id}"]`); if(!S) continue;
+    const corps = S.querySelector(".dev-sec-corps");
+    for(const it of sec.items){
+      const n = stage.querySelector(it.sel); if(!n) continue;   // pas reconstruit : l'ancien reste en place
+      const el = it.bloc ? n.closest(".dev-bloc") : (it.up ? n.closest(it.up) : n); if(!el) continue;
+      const cle = sec.id + "|" + it.sel;
+      const ancien = [...corps.querySelectorAll("[data-rang]")].find(x => x.dataset.rang === cle); if(ancien) ancien.remove();
+      el.dataset.rang = cle;
+      if(it.titre === false){ const h = el.querySelector(":scope > h4"); if(h && !h.querySelector("*")) h.remove(); }
+      if(it.bouton){
+        let ligne = corps.querySelector(":scope > .dev-actions"); if(!ligne){ ligne = document.createElement("div"); ligne.className = "dev-actions"; corps.appendChild(ligne); }
+        ligne.appendChild(el);
+      } else corps.appendChild(el);
+    }
+    if(sec.id === "calendrier" && !corps.querySelector("#dev-cal")){
+      corps.innerHTML = `<div class="dev-champ"><button class="mini" id="dev-cal-go">Rafraîchir</button></div><div id="dev-cal"><p class="dev-note">Chargement…</p></div>`;
+      corps.querySelector("#dev-cal-go").addEventListener("click", _devChargerCalendrier);
+    }
+    S.hidden = !corps.querySelector("*");   // section vide (ex. admin sans droits dev) : masquée
+  }
+}
+/* v1.34 — Calendrier des événements à venir (admin_calendrier, v134). Les
+   élections suivent une règle fixe (1-2 dépôt, 3-4 vote, 5+ résultat) : calculées ici. */
+async function _devChargerCalendrier(){
+  const z = document.querySelector("#dev-cal"); if(!z) return;
+  let d = null;
+  try{ const r = await sb.rpc("admin_calendrier"); d = r.data; if(r.error) throw r.error; }
+  catch(e){ z.innerHTML = `<p class="dev-note">Calendrier indisponible (v134_calendrier.sql installé ?).</p>`; if(typeof _catchLog==="function") _catchLog(e,"dev-console.js#calendrier"); return; }
+  if(!d || !d.ok){ z.innerHTML = `<p class="dev-note">Refusé : réservé au dev.</p>`; return; }
+  const J = s => new Date(String(s).length <= 10 ? s + "T12:00:00" : s);
+  const fj = s => J(s).toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"short" });
+  const fh = s => J(s).toLocaleString("fr-FR", { weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+  const nomCarte = c => (typeof debrisNomCarte==="function") ? debrisNomCarte(c) : c;
+  const L = [];   // { t: date de tri, quand, quoi, detail }
+  for(const e of d.debris) L.push({ t:J(e.debut), quand:`${fj(e.debut)} → ${fj(e.fin)}`, quoi:"☄️ Chute de débris", detail:`${nomCarte(e.carte)}${e.test?" · <i>test dev</i>":""}${e.annonce?"":" · pas encore annoncée"}` });
+  for(const p of d.poste) L.push({ t:J(p.debut), quand:`${fh(p.debut)} → ${fh(p.fin)}`, quoi:"📮 Poste perturbée", detail:"retard 48 h, taxe ×3" });
+  for(const a of d.protocole) L.push({ t:J(a.date), quand:fh(a.date), quoi:"🤖 Attaque du Protocole", detail:`${echapper(String(a.cible||"?"))} · puissance ${a.puissance}` });
+  for(const x of d.expeditions) L.push({ t:J(x.date), quand:fh(x.date), quoi:"⚔️ Expédition", detail:`${echapper(String(x.faction||"?"))} → ${echapper(String(x.cible||"?"))} (${echapper(String(x.objectif||"?"))})` });
+  // Élections : prochain cycle
+  const auj = J(d.jour), jm = auj.getDate();
+  const debMois = (dt, n) => new Date(dt.getFullYear(), dt.getMonth() + n, 1, 12);
+  const cyc = jm <= 4 ? debMois(auj, 0) : debMois(auj, 1);
+  const iso = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+  const plus = (dt, k) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + k, 12);
+  L.push({ t:cyc, quand:`${fj(iso(cyc))} → ${fj(iso(plus(cyc,1)))}`, quoi:"🗳️ Élection : dépôt", detail:"candidatures" });
+  L.push({ t:plus(cyc,2), quand:`${fj(iso(plus(cyc,2)))} → ${fj(iso(plus(cyc,3)))}`, quoi:"🗳️ Élection : vote", detail:"puis résultat le 5" });
+  // Tirages du mois prochain (débris, poste) : pas encore connus
+  const moisPro = debMois(auj, 1);
+  const pasEncore = [];
+  if(!d.debris.some(e => !e.test)) pasEncore.push("la chute de débris");
+  if(!d.poste.length) pasEncore.push("la perturbation de la Poste");
+  L.sort((a,b) => a.t - b.t);
+  z.innerHTML = `<table class="dev-cal"><tbody>${L.map(l=>`<tr><td class="q">${l.quand}</td><td><b>${l.quoi}</b><br><span class="dev-dim">${l.detail}</span></td></tr>`).join("")}</tbody></table>`
+    + (pasEncore.length ? `<p class="dev-note" style="margin-top:8px">Pas encore tiré${pasEncore.length>1?"s":""} : ${pasEncore.join(" et ")} — tirage le ${fj(iso(moisPro))} (ou déjà passé ce mois-ci).</p>` : "");
+}
+
 /* ---------- Accès ---------- */
 window.addEventListener("keydown", e => {
   if(e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d")){ e.preventDefault(); ouvrirDev(); }
@@ -20,17 +130,12 @@ function ouvrirDev(){
   monterDev();
   const m = document.querySelector("#dev-modale");
   const dev = (typeof estDev==="function" && estDev());
-  // L'onglet Recherche (fiche joueur) sert AUSSI aux admin : c'est leur outil
-  // principal de modération. Seuls Activations, Journal et Cadeaux restent dev.
-  m.querySelector('[data-dev="recherche"]').style.display = "";
-  m.querySelector('[data-dev="activ"]').style.display = dev ? "" : "none";
-  m.querySelector('[data-dev="journal"]').style.display = dev ? "" : "none";
+  // v1.34 : les admin (modérateurs) ne voient que Joueurs et Gouvernement.
+  DEV_ONGLETS.forEach(o=>{ const b=m.querySelector(`[data-dev="${o.id}"]`); if(b) b.style.display = (dev || !o.devSeul) ? "" : "none"; });
   m.querySelector(".dev-tete b").textContent = dev ? "CONSOLE DEV" : "CONSOLE ADMIN";
-  const premier = "recherche";   // la fiche joueur pour tout le staff
-  m.querySelectorAll(".dev-onglet").forEach(x=>x.classList.toggle("actif", x.dataset.dev===premier));
-  ["recherche","activ","journal","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(v!==premier); });
   m.hidden = false;
   majDev();
+  _devMontrerOnglet("joueurs");   // la fiche joueur pour tout le staff
 }
 function fermerDev(){ const m=document.querySelector("#dev-modale"); if(m) m.hidden = true; }
 
@@ -400,6 +505,7 @@ function majDev(){
     const ab=g.querySelector("#dev-adm-btn"); if(ab) ab.addEventListener("click", devDefinirRole);
     if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
   }
+  _devRanger();   // v1.34 : range chaque bloc dans son onglet
 }
 async function devDonnerPA(){
   const pseudo = (document.querySelector("#dev-pa-pseudo").value||"").trim();
@@ -559,24 +665,38 @@ function monterDev(){
     #dev-modale .mini{ background:#16233c; border:1px solid #2a3550; color:#dfe7f5; border-radius:8px; padding:7px 12px; font-family:inherit; font-size:12px; cursor:pointer; }
     #dev-modale .mini:disabled{ opacity:.4; cursor:not-allowed; }
     #dev-modale .mini:hover:not(:disabled){ border-color:#ff8a3d; }
+    /* v1.34 — sections à titres bien visibles */
+    .dev-onglets{ flex-wrap:wrap; }
+    .dev-sec{ margin:0 0 18px; padding:2px 0 2px 12px; border-left:3px solid #ff8a3d; }
+    .dev-sec[hidden]{ display:none; }
+    .dev-sec > h3{ margin:0 0 8px; font-size:15px; font-weight:700; color:#ffb060; letter-spacing:.02em; }
+    .dev-sec.danger{ border-left-color:#ff5d5d; background:rgba(255,93,93,.06); border-radius:0 8px 8px 0; padding:8px 10px 6px 12px; }
+    .dev-sec.danger > h3{ color:#ff7b7b; }
+    .dev-sec .dev-bloc{ margin:0 0 6px; }
+    .dev-sec .dev-actions{ margin-top:4px; }
+    .dev-stage{ display:none !important; }
+    table.dev-cal{ width:100%; border-collapse:collapse; font-size:12.5px; }
+    table.dev-cal td{ padding:6px 6px; border-bottom:1px solid #1d2a44; vertical-align:top; }
+    table.dev-cal td.q{ white-space:nowrap; color:#9fb0c4; font-family:"Space Mono",monospace; font-size:11px; }
   `;
   document.head.appendChild(st);
   const m = document.createElement("div"); m.id="dev-modale"; m.hidden=true;
   m.innerHTML = `<div class="dev-cadre">
     <div class="dev-tete"><b>CONSOLE DEV</b><span class="dev-warn">accès restreint · non sécurisé côté client</span><button class="mini" id="dev-fermer">Fermer</button></div>
-    <div class="dev-onglets"><button class="dev-onglet actif" data-dev="recherche">Recherche</button><button class="dev-onglet" data-dev="activ">Activations</button><button class="dev-onglet" data-dev="journal">Journal</button><button class="dev-onglet" data-dev="gouv">Gouvernement</button></div>
-    <div class="dev-vue" id="dev-recherche"></div>
-    <div class="dev-vue" id="dev-activ" hidden></div>
-    <div class="dev-vue" id="dev-journal" hidden></div>
-    <div class="dev-vue" id="dev-gouv" hidden></div>
+    <!-- v1.34 : ZONE DE CONSTRUCTION, jamais affichée. majDev() y construit les
+         blocs (mêmes id, mêmes branchements qu'avant) ; _devRanger() les range
+         ensuite dans les onglets ci-dessous. ⚠ Elle est placée AVANT les onglets :
+         pendant une reconstruction, un id existe deux fois (bloc neuf ici, ancien
+         dans son onglet) ; document.querySelector trouve ainsi le NEUF — c'est
+         lui que les chargeurs (Protocole, staff, journal) doivent remplir. -->
+    <div class="dev-stage" hidden><div id="dev-recherche"></div><div id="dev-activ"></div><div id="dev-gouv"></div><div id="dev-journal"></div></div>
+    <div class="dev-onglets">${DEV_ONGLETS.map((o,i)=>`<button class="dev-onglet${i?"":" actif"}" data-dev="${o.id}">${o.nom}</button>`).join("")}</div>
+    ${DEV_ONGLETS.map((o,i)=>`<div class="dev-vue" id="dev-t-${o.id}"${i?" hidden":""}>${o.sections.map(s=>`<section class="dev-sec${s.danger?" danger":""}" data-sec="${s.id}"><h3>${s.titre}</h3>${s.note?`<p class="dev-note">${s.note}</p>`:""}<div class="dev-sec-corps"></div></section>`).join("")}</div>`).join("")}
   </div>`;
   document.body.appendChild(m);
   m.querySelector("#dev-fermer").addEventListener("click", fermerDev);
   m.addEventListener("click", e=>{ if(e.target.id==="dev-modale") fermerDev(); });
-  m.querySelectorAll(".dev-onglet").forEach(b=>b.addEventListener("click",()=>{
-    m.querySelectorAll(".dev-onglet").forEach(x=>x.classList.toggle("actif",x===b));
-    ["recherche","activ","journal","gouv"].forEach(v=>{ const el=m.querySelector("#dev-"+v); if(el) el.hidden=(b.dataset.dev!==v); });
-  }));
+  m.querySelectorAll(".dev-onglet").forEach(b=>b.addEventListener("click",()=>_devMontrerOnglet(b.dataset.dev)));
   _devMonte = true;
 }
 

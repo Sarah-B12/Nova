@@ -188,6 +188,7 @@ function apresBraise(){
   if(typeof majHub==="function") majHub();
   if(typeof afficher==="function") afficher();
 }
+let _viseeSol = null;   // v1.34e : visée au doigt (carte.js, viseeTactile)
 function construireCarteBraise(){
   const svg = document.querySelector("#carte-braise"); if(!svg || svg.dataset.branche) return;
   svg.dataset.branche = "1";
@@ -198,7 +199,12 @@ function construireCarteBraise(){
     const p = pt.matrixTransform(m.inverse());
     const c = surfaceCfg() || BRAISE;
     if(p.x < 0 || p.y < 0 || p.x > c.w || p.y > c.h) return;   // hors de l'image (bandes vides)
-    voyagerBraise(p.x, p.y);
+    _viseeSol.clic(p.x, p.y);   // v1.34e : au doigt, visée d'abord
+  });
+  _viseeSol = viseeTactile(svg, {
+    cout: (x, y) => { const k = (typeof coutBraise === "function") ? coutBraise(x, y) : null;
+                      return k ? `−${k.coutE} % én. · −${k.coutO} O₂` : null; },
+    partir: (x, y) => voyagerBraise(x, y)
   });
 }
 function majCarteBraise(){
@@ -217,6 +223,7 @@ function majCarteBraise(){
   const p = posSurface(), col = (FACTIONS.find(f=>f.id===etat.faction)||{}).couleur || "#ff9a44";
   h += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${p.x}" cy="${p.y}" r="6" fill="${col}"/>`;
   svg.innerHTML = h;
+  if(_viseeSol) _viseeSol.redessiner();   // v1.34e : la visée survit au redessin
 
   const e = document.querySelector("#braise-energie"); if(e) e.textContent = Math.floor(etat.energie||0);
   const o = document.querySelector("#braise-o2");      if(o) o.textContent = Math.floor((etat.jauges&&etat.jauges.o2)||0);

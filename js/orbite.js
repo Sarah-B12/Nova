@@ -54,7 +54,7 @@ function coutSaut(){
      décollerait indéfiniment avec une coque en ruine sans rien sentir. */
   const l = Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1));
   return { litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
-           energie: (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(SAUT_ENERGIE + (v.energie||0) * 2),   // v1.33g : Endurance −15 %
+           energie: (typeof aptSaut==="function" ? aptSaut : (x=>x))(SAUT_ENERGIE + (v.energie||0) * 2),   // v1.34b : Endurance −15 % et Pas léger −20 %
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
 
@@ -215,7 +215,7 @@ function coutVol(dest, depuis){
   const d = _distEsp(depuis || posEspace(), dest);
   if(d < 6) return null;
   return { d,
-    energie: (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(Math.max(1, Math.round(d / PAS_ESPACE_E))),   // v1.33g : Endurance −15 %
+    energie: (typeof aptSaut==="function" ? aptSaut : (x=>x))(Math.max(1, Math.round(d / PAS_ESPACE_E))),   // v1.34c : Endurance −15 % et Pas léger −20 %
     litres:  (typeof aptCarburant==="function" ? aptCarburant : (x=>x))(Math.ceil(Math.max(1, Math.round(d / PAS_ESPACE_C)) * (v.conso || 1)
                        * ((typeof malusCarburant==="function") ? malusCarburant() : 1))) };   // v1.26 : Voyageur −20 %
 }
@@ -350,6 +350,7 @@ function _coordEspace(svg, e){
   const p = pt.matrixTransform(m.inverse());
   return { x:Math.round(p.x), y:Math.round(p.y) };
 }
+let _viseeEsp = null;   // v1.34e : visée au doigt (carte.js, viseeTactile)
 async function volVersPoint(pt){
   if(!pt) return;
   pt.x = Math.max(0, Math.min(ESPACE_MONDE.w, pt.x));
@@ -647,6 +648,7 @@ function majOrbite(){
           + `<circle cx="${px}" cy="${py}" r="7" fill="${col}"/>`;
   }
   svg.innerHTML = html;
+  if(_viseeEsp) _viseeEsp.redessiner();   // v1.34e : la visée survit au redessin
 
   /* ⚠ v0.91 — DÉLÉGATION, ET SURTOUT PAS D'ÉCOUTEUR SUR LES BOUTONS.
      L'aperçu au survol remplace le contenu du bandeau et le RESTAURE via
@@ -660,7 +662,13 @@ function majOrbite(){
     svg.addEventListener("click", e=>{
       if(_placementActif || !enEcart()) return;
       if(e.target.closest("[data-lieu]")) return;      // un objet : sa fiche s'ouvre
-      volVersPoint(_coordEspace(svg, e));
+      const p = _coordEspace(svg, e); if(!p) return;
+      _viseeEsp.clic(p.x, p.y);   // v1.34e : au doigt, visée d'abord
+    });
+    _viseeEsp = viseeTactile(svg, {
+      cout: (x, y) => { const k = (typeof coutVol === "function") ? coutVol({ x, y }) : null;
+                        return k ? `−${k.energie} % én. · ${k.litres} L` : null; },
+      partir: (x, y) => volVersPoint({ x, y })
     });
   }
 

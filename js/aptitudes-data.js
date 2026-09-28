@@ -57,7 +57,7 @@ const APT_TRONC = [
   { id:"ombre", nom:"Furtivité", noeuds:[
     { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
     { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'O₂ ; butin de patrouille +25 %." },
-    { id:"om3", nom:"Pas léger",  effet:"Coût énergie de déplacement −20 %." },
+    { id:"om3", nom:"Pas léger",  effet:"Énergie −20 % pour te déplacer : à pied (Silène, La Braise, Le Suaire), en vaisseau dans Triptolème et lors des sauts en atmosphère." },
     { id:"om4", nom:"Intrusion",  effet:"Ouvre le piratage des joueurs (onglet Voler/Hacker) ; +25 points pour pirater une patrouille ou brouiller une sonde.", deblocage:true }
   ]}
 ];

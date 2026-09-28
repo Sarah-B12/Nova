@@ -140,3 +140,7 @@
    long (Anneau du Protocole) passait sur 2 à 3 lignes et la carte rapetissait.
    Le texte complet reste au survol (title) et dans le bandeau du hub. */
 .titre-carte{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* v1.34e — bouton « Partir » de la visée au doigt (La Braise, Le Suaire, Triptolème) */
+.visee-barre{ display:flex; justify-content:center; margin:8px 0 0; }
+.visee-barre[hidden]{ display:none; }
+
