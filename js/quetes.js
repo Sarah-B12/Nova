@@ -55,7 +55,9 @@ function _par(txt){ if(!txt) return ""; const arr=Array.isArray(txt)?txt:[txt]; 
    Drapeau absent ou inconnu → la valeur `defaut`. Q15 étape 1 (LORE : la souche). */
 function _varie(v){
   if(!v || typeof v!=="object" || Array.isArray(v) || !v.selon || !v.valeurs) return v;
-  const k = (typeof etat!=="undefined" && etat) ? etat[v.selon] : undefined;
+  /* v1.34g : `selon` accepte un chemin pointé (« bete.espece » : Q15 étape 7). */
+  let k = (typeof etat!=="undefined" && etat) ? etat : undefined;
+  for(const part of String(v.selon).split(".")){ k = (k!=null && typeof k==="object") ? k[part] : undefined; }
   return (k!=null && Object.prototype.hasOwnProperty.call(v.valeurs, k)) ? v.valeurs[k] : v.valeurs[v.defaut];
 }
 /* ===========================================================

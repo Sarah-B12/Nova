@@ -145,13 +145,15 @@ function aptBoutiqueSurcout(prix){ return Math.round(prix * 1.1); }             
    =========================================================== */
 
 /* ---------- Structures (terrain) ---------- */
-function aptMineReserve(base){ let m = 1; if(_apt("pr1")) m *= 1.5; if(_apt("ro1")) m *= 1.3; return Math.round(base * m); } // Filon profond +50 % · Réparateur +30 %
+/* ⚠ v1.35 — trois effets n'existent plus QUE côté serveur (BACKEND_PLAN §51-52),
+   car c'est lui qui les applique : réserve de mine (pr1 ×1,5, ro1 ×1,3,
+   terrain_batir), recyclage (ro3 50 %, terrain_demolir), croissance (pr2
+   ×1,25, terrain_arroser et terrain_drones). Les tirages ci-dessous restent
+   ici et sont BORNÉS par le serveur avec les mêmes formules. */
 function aptCoutStructure(prix){ return Math.round(prix * (_apt("ro2") ? 0.75 : 1)); }                             // Chantier −25 %
-function aptRecyclageTaux(){ return _apt("ro3") ? 0.5 : 0; }                                                       // Recyclage : 50 % remboursé
 function aptStructureLot(n){ return Math.round(n * (_apt("ro4") ? 1.5 : 1)); }                                     // Surrégime +50 % (mine, bio-dôme, enclos)
 function aptBiodomeRecolte(){ const b=_apt("cu2") ? { min:7, max:11 } : { min:5, max:9 }; const m=_boi("recolte");
   return { min:Math.max(1,Math.round(b.min*m)), max:Math.max(1,Math.round(b.max*m)) }; }                            // Verger · boisson
-function aptCroissance(base){ return Math.round(base * (_apt("pr2") ? 1.25 : 1)); }                                 // Cultures vivaces : +25 % croissance
 function aptTonteBonus(){ const m=_boi("recolte"); return (_apt("pr2") ? 1 : 0) + (m>1 ? Math.round((m-1)*4) : (m<1 ? -1 : 0)); }                                                            // Cultures vivaces : +1 produit à la tonte
 
 /* ---------- Atelier (fabrication) ---------- */

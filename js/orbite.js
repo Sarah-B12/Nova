@@ -783,4 +783,4 @@ function ouvrirOrbite(p_forcer){
   document.querySelector("#modale-orbite").classList.add("ouverte");
   majOrbite();
 }
-function fermerOrbite(){ document.querySelector("#modale-orbite").classList.remove("ouverte"); }
+function fermerOrbite(){ document.querySelector("#modale-orbite").classList.remove("ouverte"); if(_viseeEsp) _viseeEsp.effacer(); }   // v1.34f

@@ -100,6 +100,8 @@ async function _syncPause(){
         if(etat.equipementDate) for(const k in etat.equipementDate){
           if(etat.equipementDate[k]) etat.equipementDate[k] += d;
         }
+        /* v1.34h — la pause gèle aussi l'abandon des plantes et des animaux.
+           ⚠ v1.35 : fait par le SERVEUR (pause_degeler décale terrain_cases.soin). */
         etat._pauseCumulApplique = cumul;
         if(typeof sauvegarder==="function") sauvegarder();
       }

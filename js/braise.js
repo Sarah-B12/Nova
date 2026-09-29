@@ -130,6 +130,7 @@ async function monterABord(){
   if(!enSurfaceIci()) return;
   if(!auVaisseauBraise()){ journal("Ton vaisseau est à l'aire d'atterrissage. Rejoins-le d'abord.","alerte"); return; }
   etat.surface = { ...posSurface(), abord:true };
+  if(_viseeSol) _viseeSol.effacer();   // v1.34f : plus de cercle orange oublié
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   // L'O₂ est une jauge serveur : un appel sans coût la fait remonter (air_respirable = à bord).
   await agirServeur({ motif:"bord_braise" });
@@ -138,7 +139,14 @@ async function monterABord(){
 }
 async function decollerBraise(){
   const c = surfaceCfg(); if(!c) return;
-  if(!(posSurface().abord)){ journal("Monte d'abord à bord de ton vaisseau.","alerte"); return; }
+  /* v1.34f — On décolle DIRECTEMENT depuis l'aire d'atterrissage : on monte à
+     bord au passage. Avant, « Décoller » restait grisé tant qu'on n'avait pas
+     appuyé sur « Monter à bord » : les testeurs se croyaient bloqués. */
+  if(!(posSurface().abord)){
+    if(!auVaisseauBraise()){ journal("Ton vaisseau est à l'aire d'atterrissage. Rejoins-le d'abord.","alerte"); return; }
+    etat.surface = { ...posSurface(), abord:true };
+  }
+  if(_viseeSol) _viseeSol.effacer();
   if(!await _payerSaut(`Décollage — ${c.nom}`)) return;
   etat.secteur = "ecart";
   etat.surface = null;
@@ -237,7 +245,7 @@ function majCarteBraise(){
   }
   const bb = document.querySelector("#braise-bord"), bd = document.querySelector("#braise-decoller");
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }
-  if(bd){ bd.disabled = !abord; const cs = (typeof coutSaut==="function") ? coutSaut() : null;
+  if(bd){ bd.disabled = !(abord || auVaisseauBraise());   /* v1.34f : depuis l'aire aussi */ const cs = (typeof coutSaut==="function") ? coutSaut() : null;
     bd.textContent = cs ? `Décoller — ${cs.litres} L, ${cs.energie} % énergie` : "Décoller"; }
   if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
 }
@@ -245,7 +253,7 @@ function ouvrirCarteBraise(){
   if(!enSurfaceIci()){ journal("Tu n'es sur aucune planète.","alerte"); return; }
   document.querySelector("#modale-braise").classList.add("ouverte"); majCarteBraise();
 }
-function fermerCarteBraise(){ const m=document.querySelector("#modale-braise"); if(m) m.classList.remove("ouverte"); }
+function fermerCarteBraise(){ const m=document.querySelector("#modale-braise"); if(m) m.classList.remove("ouverte"); if(_viseeSol) _viseeSol.effacer(); }
 
 /* ---------- Onglet « La Braise », en orbite au-dessus de la planète ---------- */
 function majDescente(){

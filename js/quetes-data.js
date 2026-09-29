@@ -452,12 +452,15 @@ const QUETES = [
           texte:["Six panneaux de service, six glyphes du Protocole. Rends à chacun son sens."],
           consigne:"Associe chaque pictogramme à sa signification.",
           paires:[
-            { picto:"▣", glyphe:"ΛΞ", sens:"Périmètre" },
-            { picto:"⌁", glyphe:"ΘΘ", sens:"Alimentation" },
-            { picto:"⚑", glyphe:"ΨΔ", sens:"Point de rassemblement" },
-            { picto:"◷", glyphe:"ΞΞ", sens:"Départ programmé" },
-            { picto:"✚", glyphe:"ΦΛ", sens:"Poste médical" },
-            { picto:"⊘", glyphe:"ΔΔ", sens:"Accès restreint" }
+            /* v1.28 — ÉCRITURE PHONÉTIQUE (glyphes.js) : `sons` = les morceaux
+               de son, dessinés en SVG. Q4 est la PIERRE DE ROSETTE : ne pas
+               changer ces sons sans changer Q9 étape 4 et le LORE. */
+            { picto:"▣", glyphe:"ΛΞ", sons:["PERI","METRE"],               sens:"Périmètre" },
+            { picto:"⌁", glyphe:"ΘΠΩ", sons:["ALI","MENT","ATION"],        sens:"Alimentation" },
+            { picto:"⚑", glyphe:"ΨΨΠ", sons:["POINT","RASSEMBLE","MENT"],  sens:"Point de rassemblement" },
+            { picto:"◷", glyphe:"ΔΣΦΦ", sons:["DE","PART","PRO","GRAMME"], sens:"Départ programmé" },
+            { picto:"✚", glyphe:"ΠΛΧ", sons:["POSTE","MEDI","CAL"],        sens:"Poste médical" },
+            { picto:"⊘", glyphe:"ΔΣΧ", sons:["AC","CES","RESTREINT"],      sens:"Accès restreint" }
           ],
           distracteurs:["Zone de forage","Réfectoire","Quarantaine"],
           reussite:[
@@ -1141,17 +1144,22 @@ const QUETES = [
           texte:["Six pictogrammes, six mots de l'ancien. Rends à chacun son sens pour lire la procédure."],
           consigne:"Associe chaque pictogramme à sa signification.",
           paires:[
-            { picto:"▲", glyphe:"ΣΛ", sens:"Évacuation" },
-            { picto:"▦", glyphe:"ΠΔ", sens:"Personnel embarqué" },
-            { picto:"◎", glyphe:"ΩΘ", sens:"Confirmation" },
-            { picto:"◑", glyphe:"ΞΘ", sens:"Délai" },   /* ⚠ pas ◷ : en Q4, ◷ = « Départ programmé » */
-            { picto:"⌁", glyphe:"ΘΘ", sens:"Alimentation" },
-            { picto:"✕", glyphe:"ΧΧ", sens:"Fermeture" }
+            /* v1.28 — chaque étape contient au moins un son appris en Q4 :
+               ATION (×3 avec le leurre « Irrigation »), POINT et MENT, DÉ,
+               Alimentation entier, PÉRI·MÈTRE. Évacuation / Confirmation ne se
+               distinguent que par leur picto (▲ alerte, ✓ coche — la coche
+               FINE : ✔ s'affiche en emoji couleur sur mobile). */
+            { picto:"▲", glyphe:"ΨΠΩ", sons:["EVA","CU","ATION"],                       sens:"Évacuation" },
+            { picto:"▦", glyphe:"ΨΞΘΠ", sons:["POINT","EM","BARQUE","MENT"],            sens:"Point d'embarquement" },
+            { picto:"✓", glyphe:"ΩΦΩ", sons:["CON","FIRM","ATION"],                     sens:"Confirmation" },
+            { picto:"◑", glyphe:"ΔΔ", sons:["DE","LAI"],                                sens:"Délai" },   /* ⚠ pas ◷ : en Q4, ◷ = « Départ programmé » */
+            { picto:"⌁", glyphe:"ΘΠΩ", sons:["ALI","MENT","ATION"],                     sens:"Alimentation" },
+            { picto:"✕", glyphe:"ΞΣΘΛΞ", sons:["FER","ME","TURE","PERI","METRE"],        sens:"Fermeture du périmètre" }
           ],
           distracteurs:["Irrigation","Récolte","Quarantaine"],
           reussite:[
-            "La procédure se lit d'un trait, maintenant : ÉVACUATION → PERSONNEL EMBARQUÉ → CONFIRMATION → DÉLAI → ALIMENTATION → FERMETURE.",
-            "« Pas de fermeture sans confirmation », dit Sorn, lentement, comme on lit une règle au tableau. « Et pas de confirmation sans le personnel embarqué. » Il répète la dernière flèche pour lui-même. « Fermeture. »",
+            "La procédure se lit d'un trait, maintenant : ÉVACUATION → POINT D'EMBARQUEMENT → CONFIRMATION → DÉLAI → ALIMENTATION → FERMETURE DU PÉRIMÈTRE.",
+            "« Pas de fermeture sans confirmation », dit Sorn, lentement, comme on lit une règle au tableau. « Et pas de confirmation sans l'embarquement. » Il répète la dernière flèche pour lui-même. « Fermeture. »",
             "Sous le schéma, une dernière ligne, en plus petit, qui ne s'est pas effacée : le texte exact de l'ordre final, celui que la station a reçu avant de s'armer. Il y manque un mot, rongé par une goutte de soudure. Mais toi, ce texte, tu l'as déjà lu. Au Muet."
           ] } },
 
@@ -1893,15 +1901,21 @@ const QUETES = [
           "« Doucement », dit Sorn. « Je veux lire chaque mot. »"
         ],
         defi:{ type:"ordre",
-          texte:["Six fragments de la réponse d'AREPO au quai de MAAR-3. Remets-les dans l'ordre de la procédure que tu as lue à La Braise."],
-          consigne:"De l'objet de la réponse jusqu'à la dernière étape de la procédure.",
+          /* ⚠ v1.29 — L'ORDRE SE LIT EN ANCIEN. Avant, la consigne renvoyait à
+             la procédure de La Braise alors que les fragments ne la suivaient
+             pas (le délai en tête, « radier » et « partir » absents) : le
+             joueur qui obéissait échouait. Chaque fragment porte désormais, en
+             glyphes, le nom de SON étape à La Braise (Q9E4) — sans l'Alimentation,
+             que la réponse ne mentionne pas. L'en-tête reste sans glyphe. */
+          texte:["Six fragments de la réponse d'AREPO au quai de MAAR-3. Chacun porte, en ancien, le nom de l'étape de la procédure de La Braise à laquelle il répond. Remets-les dans l'ordre de cette procédure."],
+          consigne:"D'abord l'en-tête de la réponse, puis les étapes, dans l'ordre du schéma de La Braise. Lis les glyphes.",
           elements:[
             "DIRECTION → QUAI MAAR-3. OBJET : PERSONNEL RÉFRACTAIRE (80). DEMANDE DE DÉLAI : REJETÉE.",
-            "PERSONNEL RÉFRACTAIRE : RADIER. IL NE COMPTE PLUS AU MANIFESTE.",
-            "EMBARQUER LE RESTE DU PERSONNEL.",
-            "CONFIRMER : PERSONNEL EMBARQUÉ.",
-            "PARTIR À L'ARRIVÉE DU VAISSEAU.",
-            "FERMER LE SECTEUR."
+            { sons:["EVA","CU","ATION"],               texte:"PERSONNEL RÉFRACTAIRE : RADIER. IL NE COMPTE PLUS AU MANIFESTE." },
+            { sons:["POINT","EM","BARQUE","MENT"],     texte:"EMBARQUER LE RESTE DU PERSONNEL." },
+            { sons:["CON","FIRM","ATION"],             texte:"CONFIRMER : PERSONNEL EMBARQUÉ." },
+            { sons:["DE","LAI"],                       texte:"PARTIR À L'ARRIVÉE DU VAISSEAU." },
+            { sons:["FER","ME","TURE","PERI","METRE"], texte:"FERMER LE SECTEUR." }
           ],
           reussite:[
             "La réponse se recolle sous tes yeux, entière pour la première fois en trois siècles : DEMANDE DE DÉLAI REJETÉE. PERSONNEL RÉFRACTAIRE : RADIER. EMBARQUER LE RESTE. CONFIRMER. PARTIR. FERMER LE SECTEUR.",
@@ -2181,7 +2195,12 @@ const QUETES = [
       /* ---- 7. La serre d'Adaya — SCÈNE ---- */
       { indice:"Rentre à la serre d'Adaya, au Rhizome. Sorn y est. Ils t'attendent tous les deux.",
         cible:{ x:1250, y:770, r:90 },
-        image:"images/quetes/q15/7.png",
+        /* v1.34g — une bannière par bête choisie à l'étape 6 (etat.bete.espece).
+           Sans bête connue (profil ancien, lecture en échec) : l'image commune. */
+        image:{ selon:"bete.espece", defaut:"aucune", valeurs:{
+          chaume:"images/quetes/q15/7_chaume.png", braisillon:"images/quetes/q15/7_braisillon.png",
+          sentinelle:"images/quetes/q15/7_sentinelle.png", goupille:"images/quetes/q15/7_goupille.png",
+          iris:"images/quetes/q15/7_iris.png", aucune:"images/quetes/q15/7.png" } },
         arrivee:[
           "La serre est ouverte. Adaya est à sa paillasse, Sorn assis sur un seau retourné entre deux rangs, le casque de vol sur les genoux. Ils se disputaient à voix basse. Ils s'arrêtent net en te voyant.",
           "En voyant ce qui te suit.",

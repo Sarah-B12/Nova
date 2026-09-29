@@ -48,7 +48,12 @@ function _appliquerEtatStocks(e, opt){
 }
 
 // Action atomique. Renvoie la réponse du serveur, ou null si refusée.
-const MOTIFS_ACTION = new Set(["mine","batir","planter","arroser","recolte","elever","nourrir","tonte","chantier"]);  // v1.22 : "vol" retiré — le vol passe par vol_preparer, qui reçoit le coût déjà réduit (_coutVol)
+/* v1.35 — les actions de terrain (mine, batir, planter, arroser, recolte,
+   elever, nourrir, tonte, chantier) ne passent plus par agir() depuis le
+   client : leur coût est calculé AU SERVEUR (_terrain_cout, même formule que
+   aptEnergieAction). La liste est vide ; elle reste pour toute action future
+   qui aurait droit à la remise d'Endurance / de zone. */
+const MOTIFS_ACTION = new Set([]);  // v1.22 : "vol" retiré — le vol passe par vol_preparer, qui reçoit le coût déjà réduit (_coutVol)
 async function agirServeur(o){
   o = o || {};
   if(typeof sb === "undefined"){ journal("Serveur indisponible.","alerte"); return null; }

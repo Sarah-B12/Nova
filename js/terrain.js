@@ -151,41 +151,31 @@ function normaliserParcelles(t){
   }
   return arr;
 }
+/* v1.35 — terrain côté serveur : chaque action appelle SA RPC, qui débite,
+   vérifie et renvoie le terrain à jour (terrain-serveur.js). Les contrôles
+   ci-dessous ne servent qu'à répondre vite ; le serveur fait foi. */
 async function batirParcelle(type){
   if(_refusTerrain()) return;
   if(plotSel==null || etat.terrain.parcelles[plotSel]) return;
-  const s=STRUCTURES[type];
+  const s=STRUCTURES[type]; if(!s) return;
   const prix=aptCoutStructure(s.prix);
   if(etat.credits<prix){ journal(`Il faut ${prix} ₡.`,"alerte"); return; }
-  if(!await agirServeur({ cout:COUT_TERRAIN.batir, motif:"batir" })) return;
-  etat.credits-=prix;
-  let p;
-  if(type==="mine"){ const rmax=aptMineReserve(MINE_MAX); p={ type:"mine", stock:rmax, max:rmax }; }
-  else if(type==="biodome") p={ type:"biodome", cases:Array(N_CASES).fill(null) };
-  else if(type==="enclos")  p={ type:"enclos",  cases:Array(N_CASES).fill(null) };
-  else if(type==="atelier") p={ type:"atelier" };
-  else if(type==="hangar")  p={ type:"hangar", drones:[null,null] };
-  else return;
-  etat.terrain.parcelles[plotSel]=p;
-  journal(`${s.nom} bâti (−${prix} ₡).`,"gain"); apresAction();
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();   // v0.65 : 200 ₡ ne doivent pas tenir à 2,5 s de minuterie
+  const r=await terrainRpc("terrain_batir", { p_plot:plotSel, p_type:type }, { solde:true });
+  if(!r) return;
+  journal(`${s.nom} bâti (−${r.prix} ₡).`,"gain"); apresAction();
 }
 async function demolir(i){
   if(refusPrison("démolir")) return;
   if(_refusTerrain()) return;
+  const p=etat.terrain.parcelles[i]; if(!p) return;
+  if(p.type==="hangar" && Array.isArray(p.drones) && p.drones.some(d=>d)){ journal(TERRAIN_REFUS.drones,"alerte"); return; }
   if(!confirm("Démolir cette structure ? La parcelle sera libérée.")) return;
-  const p=etat.terrain.parcelles[i]; const taux=aptRecyclageTaux();
-  const remb=(p && STRUCTURES[p.type] && taux>0) ? Math.round(STRUCTURES[p.type].prix*taux) : 0;
-  etat.terrain.parcelles[i]=null; plotSel=null; fermerStruct();
-  if(remb>0){ etat.credits+=remb; journal(`Structure démolie. Recyclage : +${remb} ₡.`,"gain"); }
+  const r=await terrainRpc("terrain_demolir", { p_plot:i }, { solde:true });
+  if(!r) return;
+  plotSel=null; fermerStruct();
+  if(r.rembourse>0) journal(`Structure démolie. Recyclage : +${r.rembourse} ₡.`,"gain");
   else journal("Structure démolie.","alerte");
   apresAction();
-  /* v0.91 — la parcelle est libérée : le serveur doit OUBLIER ses dégâts,
-     sinon la prochaine structure bâtie ici naîtrait déjà abîmée.
-     ⚠ Dans cet ordre : la RPC vérifie que la parcelle est vide dans la
-     sauvegarde. L'appeler avant sauverMaintenant() la ferait refuser. */
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(typeof integriteOublier==="function") await integriteOublier(i);
 }
 
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
@@ -198,14 +188,13 @@ async function recolterMine(i){
   const gains={}; for(let k=0;k<n;k++){ const m=aptGivriteForcee() ? "givrite" : tirerMatiere(aptBonusRare(0)); gains[m]=(gains[m]||0)+1; }
   const cristal = aptVeineCristal();                    // Veine de cristal (to4) : hors réserve de la mine
   if(cristal) gains.cristal = (gains.cristal||0) + 1;
-  const r=await agirServeur({ cout:COUT_TERRAIN.miner, ajouter:gains, motif:"mine" });
+  const r=await terrainRpc("terrain_miner", { p_plot:i, p_gains:gains });   // tirage borné par le serveur
   if(!r) return;
   const pr=Object.entries(r.ajoutes||{}).filter(([k])=>k!=="cristal").reduce((a,[,b])=>a+b,0);
   if(cristal && (r.ajoutes||{}).cristal) journal("Veine de cristal : +1 Cristal de Nyx !","gain");
-  p.stock=Math.max(0,stock-pr);
   gagnerXp(3);
-  journal(`Mine : +${pr} minerai(s). Réserve : ${p.stock}/${rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
-  apresAction(); _sauveTerrain(); majStruct();
+  journal(`Mine : +${pr} minerai(s). Réserve : ${r.stock}/${r.max||rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
+  apresAction(); majStruct();
 }
 
 // --- BIO-DÔME : 4 cases · planter → arroser 1×/jour → récolter (5-9) ---
@@ -215,57 +204,54 @@ function possedeStock(id){ return nbStock(id) > 0; }
 async function poserPlante(ci, plId){ if(_refusTerrain()||_refusHS(structSel)) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const gr=graineDe(plId);
   if(!await assurerDansSac(gr,1)){ journal(`Il te faut une Graine de ${plante(plId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
-  const res=await agirServeur({ cout:COUT_TERRAIN.planter, retirer:{ [gr]:1 }, motif:"planter" });
-  if(!res) return;
-  p.cases[ci]={ plante:plId, croissance:0, arrose:0 }; journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
+  if(!await terrainRpc("terrain_planter", { p_plot:structSel, p_idx:ci, p_plante:plId })) return;
+  journal(`${plante(plId).nom} planté.`,"gain"); apresAction(); majStruct(); }
 async function arroserCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance>=PLANT_MAX){ journal("Déjà mûr — récolte-le.","alerte"); return; }
   if(memeJour(c.arrose)){ journal("Déjà arrosé aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
-  if(!await agirServeur({ cout:COUT_TERRAIN.arroser, motif:"arroser" })) return;
-  c.croissance=Math.min(PLANT_MAX, c.croissance + aptCroissance(plante(c.plante).croissance)); c.arrose=Date.now();
-  journal(`Arrosé — croissance ${c.croissance}%.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
+  const r=await terrainRpc("terrain_arroser", { p_plot:structSel, p_idx:ci },
+    { refus:{ deja:"Déjà arrosé aujourd'hui — la remise à zéro est à minuit." } });
+  if(!r) return;
+  journal(`Arrosé — croissance ${r.croissance}%.`,"gain"); apresAction(); majStruct();
 }
 async function recolterCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   if(c.croissance<PLANT_MAX){ journal("Pas encore mûr.","alerte"); return; }
   const rr=aptBiodomeRecolte(); const nb=aptStructureLot(alea(rr.min,rr.max));
-  /* ⚠ v0.59 — sac plein : la récolte partait quand même, la case était vidée et
-     ce qui ne tenait pas était PERDU. On refuse avant, et « tout ou rien »
-     côté serveur (rien n'est débité si ça ne tient pas). */
+  /* ⚠ v0.59 — sac plein : on refuse avant ; « tout ou rien » côté serveur. */
   if(placesLibres() < nb){ journal(`Sac trop plein pour récolter : il faut ${nb} places (tu en as ${Math.max(0,placesLibres())}).`,"alerte"); return; }
-  const res=await agirServeur({ cout:COUT_TERRAIN.recolter, ajouter:{ [c.plante]:nb }, motif:"recolte", toutOuRien:true });
+  const nom=plante(c.plante).nom;
+  const res=await terrainRpc("terrain_recolter", { p_plot:structSel, p_idx:ci, p_nb:nb });
   if(!res) return;
   const pr=(res.ajoutes||{})[c.plante]||0;
-  const nom=plante(c.plante).nom; p.cases[ci]=null;
   gagnerXp(2);
-  journal(`Récolte : +${pr} ${nom}.`+(pr<nb?" (sac plein)":""),"gain"); apresAction(); _sauveTerrain(); majStruct();
+  journal(`Récolte : +${pr} ${nom}.`,"gain"); apresAction(); majStruct();
 }
 
+/* v1.34h — ABANDON (plante 2 jours, animal 3 jours sans soin ; rien pendant
+   la pause ; structure hors service ou servie par un drone en marche : son
+   horloge est repoussée). ⚠ v1.35 : appliqué par le SERVEUR (`_terrain_abandon`,
+   à chaque lecture et avant chaque action) ; les messages arrivent par les
+   événements. Le client ne compte plus rien. */
+
 // --- ENCLOS : 4 cases · élever → nourrir (plante du sac) → tondre 1×/jour ×7 → retraite ---
-/* v0.65 — les actes de terrain qui engagent des ressources partent tout de
-   suite : sur mobile, la minuterie de 2,5 s ne survit pas à un changement
-   d'application. On ne fait PAS ça pour les actions purement cosmétiques ni
-   pour les rendus, afin de ne pas multiplier les écritures. */
-function _sauveTerrain(){ if(typeof sauverMaintenant==="function") sauverMaintenant(); }
 async function poserAnimal(ci, anId){ if(_refusTerrain()||_refusHS(structSel)) return; const p=etat.terrain.parcelles[structSel]; if(!p||p.cases[ci]) return;
   const bb=bebeDe(anId);
   if(!await assurerDansSac(bb,1)){ journal(`Il te faut un Petit ${animal(anId).nom} (Boutique) dans ton sac, ta maison ou ta soute.`,"alerte"); return; }
-  const res=await agirServeur({ cout:COUT_TERRAIN.elever, retirer:{ [bb]:1 }, motif:"elever" });
-  if(!res) return;
-  p.cases[ci]={ animal:anId, repas:0, tontes:0, tonte:0 }; journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); _sauveTerrain(); majStruct(); }
+  if(!await terrainRpc("terrain_elever", { p_plot:structSel, p_idx:ci, p_animal:anId })) return;
+  journal(`Jeune ${animal(anId).nom} placé.`,"gain"); apresAction(); majStruct(); }
 async function nourrirCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
   const p=etat.terrain.parcelles[structSel]; const c=p&&p.cases[ci]; if(!c) return;
   const a=animal(c.animal);
   if(c.repas>=a.repasAdulte){ journal("Déjà adulte.","alerte"); return; }
   if(!await assurerDansSac("ferragave",1)){ journal("Il faut de la Ferragave (cultivée au bio-dôme) pour nourrir.","alerte"); return; }
-  const res=await agirServeur({ cout:COUT_TERRAIN.nourrir, retirer:{ ferragave:1 }, motif:"nourrir" });
-  if(!res) return;
-  c.repas++;
-  journal(`Nourri (1 Ferragave) — ${c.repas}/${a.repasAdulte}.`,"gain"); apresAction(); _sauveTerrain(); majStruct();
+  const r=await terrainRpc("terrain_nourrir", { p_plot:structSel, p_idx:ci });
+  if(!r) return;
+  journal(`Nourri (1 Ferragave) — ${r.repas}/${r.adulte||a.repasAdulte}.`,"gain"); apresAction(); majStruct();
 }
 async function tondreCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
@@ -274,17 +260,16 @@ async function tondreCase(ci){
   if(c.repas<a.repasAdulte){ journal("Trop jeune — nourris-le encore.","alerte"); return; }
   if(memeJour(c.tonte)){ journal("Déjà tondu aujourd'hui — la remise à zéro est à minuit.","alerte"); return; }
   const nb=aptStructureLot(alea(2,3)+aptTonteBonus());
-  /* ⚠ v0.59 — sac plein : la tonte comptait pour la journée, l'énergie partait,
-     et rien n'arrivait dans le sac. On refuse avant, sans rien débiter. */
+  /* ⚠ v0.59 — sac plein : on refuse avant, sans rien débiter. */
   if(placesLibres() < nb){ journal(`Sac trop plein pour tondre : il faut ${nb} places (tu en as ${Math.max(0,placesLibres())}).`,"alerte"); return; }
-  const res=await agirServeur({ cout:COUT_TERRAIN.tondre, ajouter:{ [a.produit]:nb }, motif:"tonte", toutOuRien:true });
+  const res=await terrainRpc("terrain_tondre", { p_plot:structSel, p_idx:ci, p_nb:nb },
+    { refus:{ deja:"Déjà tondu aujourd'hui — la remise à zéro est à minuit." } });
   if(!res) return;
   const pr=(res.ajoutes||{})[a.produit]||0;
-  c.tontes++; c.tonte=Date.now();
-  let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${c.tontes}/${TONTES_MAX}.`;
-  if(c.tontes>=TONTES_MAX){ p.cases[ci]=null; msg+=` Le ${a.nom} a pris sa retraite.`; }
+  let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${res.tontes}/${TONTES_MAX}.`;
+  if(res.retraite) msg+=` Le ${a.nom} a pris sa retraite.`;
   gagnerXp(2);
-  journal(msg,"gain"); apresAction(); _sauveTerrain(); majStruct();
+  journal(msg,"gain"); apresAction(); majStruct();
 }
 
 // --- Modale d'une structure (mine / bio-dôme / enclos) ---

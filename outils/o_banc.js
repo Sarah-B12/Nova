@@ -24,6 +24,7 @@ const DELAIS = {
   ordre: { profil: 50, sac: 50, jauges: 50 },     // v1.29 : ordre avec glyphes (o_ordre.js)
   debris: { profil: 50, sac: 50, jauges: 50 },    // v1.31 : chutes de débris (o_debris.js)
   niveaux: { profil: 50, sac: 50, jauges: 50 },   // v1.33 : niveau requis (o_niveaux.js)
+  terrain: { profil: 50, sac: 50, jauges: 50 },   // v1.35 : terrain côté serveur (o_terrain.js)
 }[SCEN];
 
 const donnees = {
@@ -54,6 +55,10 @@ const STUB = `
     mort_etat:     () => retard(30, { data: { ok: true, mort: false }, error: null }),
     sauver_profil: () => retard(30, { data: { ok: true, rev: 8, maj: 2 }, error: null }),
     crediter:      () => retard(30, { data: 4321, error: null }),
+    // v1.35 : le terrain vient du serveur (même contenu que la fixture donnees)
+    terrain_lire:  () => retard(40, { data: { ok: true, proprio: "u1", abandons: 0,
+      parcelles: Array.from({ length: 24 }, (_, i) => PROFIL.donnees.terrain.parcelles[i] || null),
+      maison: PROFIL.donnees.maison, integrite: {} }, error: null }),
   };
   function lazy(fn){ let p = null; return { then(a, b){ p = p || fn(); return p.then(a, b); } }; }  // thenable PARESSEUX, comme supabase-js
   function builder(table){

@@ -22,7 +22,8 @@
   etat.prisonJusqua = 5; etat._jourReelMs = 1; etat._sacEchec = false;
   const c = _etatSansStocks();
   r.sansStocks = ["sac","jauges","xp","prisonJusqua","prisonFaction","_jourReelMs","_sacEchec","_pauseResteMin","_aRoleGouv"].filter(k => k in c);
-  r.garde = ["_pauseCumulApplique","terrain","quetes","niveauCredite"].filter(k => k in c);
+  r.garde = ["_pauseCumulApplique","quetes","niveauCredite"].filter(k => k in c);
+  r.exclusV135 = ["terrain","maison"].filter(k => !(k in c));   // v1.35 : terrain et maison vivent au serveur
   // 5. _pjm : jour réel (valeur annoncée par le serveur)
   etat._jourReelMs = 86400000; r.pjm = _pjm();
   return r;

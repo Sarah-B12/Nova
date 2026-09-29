@@ -543,7 +543,11 @@ function viseeTactile(svg, o){
       if(v && Math.hypot(x - v.x, y - v.y) < 44 * upp()){ effacer(); o.partir(x, y); return; }
       poser(x, y);
     },
-    effacer, redessiner: dessiner
+    effacer, redessiner: dessiner,
+    /* v1.34i — pour la barre de traque (traque.js) : poser la visée sur des
+       coordonnées tapées, lire où elle est, partir vers un point exact. */
+    poser, vise: () => v ? { x:v.x, y:v.y } : null,
+    allerA: (x, y) => { effacer(); o.partir(x, y); }
   };
 }
 

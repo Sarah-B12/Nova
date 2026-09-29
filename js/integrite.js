@@ -34,26 +34,14 @@ function _appliquerIntegrite(m){
   INTEGRITE = (m && typeof m === "object" && !Array.isArray(m)) ? m : {};
 }
 
+/* v1.35 — l'intégrité arrive AVEC le terrain (terrain_lire renvoie parcelles,
+   maison et intégrité en un appel) : `chargerIntegrite` garde son nom, ses
+   appelants (démarrage, retour sur l'onglet) n'ont pas bougé.
+   `integriteOublier` a disparu : le serveur efface les dégâts d'une parcelle
+   quand il la libère ou la rebâtit (terrain_demolir, terrain_batir,
+   maison_placer, maison_demolir). */
 async function chargerIntegrite(){
-  if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
-  try{
-    const { data, error } = await sb.rpc("integrite_lire");
-    if(error){ console.warn("[integrite] lecture :", error.message); return; }
-    _appliquerIntegrite(data);
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "integrite.js#charger"); }
-}
-
-/* Parcelle libérée (démolition) : le serveur oublie ses dégâts, sinon la
-   structure reconstruite à cet endroit hériterait de l'intégrité de l'ancienne.
-   ⚠ À appeler APRÈS la sauvegarde : la RPC vérifie dans `donnees` que la
-   parcelle est bien vide, sinon ce serait une réparation gratuite. */
-async function integriteOublier(plot){
-  if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
-  try{
-    const { data, error } = await sb.rpc("integrite_reset", { p_plot: plot });
-    if(error){ console.warn("[integrite] reset :", error.message); return; }
-    if(data && data.ok) delete INTEGRITE[String(plot)];
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "integrite.js#oublier"); }
+  if(typeof chargerTerrain === "function") return chargerTerrain();
 }
 
 /* ===========================================================

@@ -267,7 +267,12 @@ const CLES_SERVEUR = [
      rechargement la cellule de la veille — ou la liberté d'hier — le temps que
      syncPrison() réponde. Réécrites par syncPrison(), appelée dans
      syncApresConnexion() sur les deux chemins d'entrée, puis toutes les 60 s. */
-  "prisonJusqua", "prisonFaction"
+  "prisonJusqua", "prisonFaction",
+  /* ⚠ v1.35 — LE TERRAIN ET LA MAISON. Tables `terrains`, `terrain_parcelles`,
+     `terrain_cases` (BACKEND_PLAN §50-55) : chaque action passe par sa RPC,
+     qui renvoie l'état. Relus par chargerTerrain() (terrain-serveur.js),
+     appelée par chargerIntegrite() dans syncApresConnexion(). */
+  "terrain", "maison"
 ];
 /* ⚠ v0.95 — VALEURS DE TRAVAIL, jamais persistées. Ce ne sont pas des données
    serveur au sens de CLES_SERVEUR (certaines sont de simples drapeaux), mais

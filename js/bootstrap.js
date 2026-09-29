@@ -169,11 +169,12 @@ async function syncApresConnexion(){
      ne voyait jamais ce qui s'était passé. On les relève à la connexion. */
   if(typeof syncEffetsCombat==="function") t.push(syncEffetsCombat());
   if(typeof boissonCharger==="function")  t.push(boissonCharger());        // v0.77 : effet de boisson en cours
-  if(typeof chargerIntegrite==="function") t.push(chargerIntegrite());     // v0.91 : dégâts subis pendant l'absence
+  if(typeof chargerIntegrite==="function") t.push(chargerIntegrite());     // v0.91 : dégâts subis pendant l'absence — v1.35 : + terrain et maison (terrain_lire)
   if(typeof chargerBete==="function")      t.push(chargerBete());          // v1.00 : la bête (Q15)
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
+  // v1.35 : l'abandon du terrain est appliqué par le serveur (terrain_lire, via chargerIntegrite).
   if(typeof debrisCharger==="function") t.push(debrisCharger());   // v1.31 : chute de débris en cours
   await Promise.all(t);
   if(typeof afficher==="function") afficher();

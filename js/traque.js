@@ -314,13 +314,28 @@ function lancerMiniTraque(nom, win, lose){
 }
 
 /* ---------- Sur les cartes : coordonnées, « Se rendre à… », Traquer ---------- */
+/* v1.34i — « Aller » en deux temps, sur les trois cartes : 1er clic = la
+   visée orange se pose sur les coordonnées tapées (on voit le coût), le
+   bouton devient « Y aller » ; 2e clic, x et y inchangés et la visée
+   toujours au même endroit = on part vers ce point EXACT. Changer x ou y (ou
+   voir la visée effacée / déplacée) le remet à « Aller ».
+   viser(x,y) pose la visée · vise() la lit · partir(x,y) efface et part. */
 const _TQ_CARTES = [
   { secteurs:["silene"], modale:"#modale-carte", svg:"#carte",
-    ici:()=>etat.pos, aller:(x,y)=>{ if(typeof _poserVisee==="function") _poserVisee(x,y); } },
+    ici:()=>etat.pos,
+    viser:(x,y)=>{ if(typeof _poserVisee==="function") _poserVisee(x,y); },
+    vise:()=>(typeof _visee!=="undefined" ? _visee : null),
+    partir:(x,y)=>{ if(typeof _effacerVisee==="function") _effacerVisee(); if(typeof voyager==="function") voyager(x,y); } },
   { secteurs:["ecart"], modale:"#modale-orbite", svg:"#carte-orbite",
-    ici:()=>(typeof posEspace==="function" ? posEspace() : null), aller:(x,y)=>{ if(typeof volVersPoint==="function") volVersPoint({x,y}); } },
+    ici:()=>(typeof posEspace==="function" ? posEspace() : null),
+    viser:(x,y)=>{ if(typeof _viseeEsp!=="undefined" && _viseeEsp) _viseeEsp.poser(x,y); },
+    vise:()=>(typeof _viseeEsp!=="undefined" && _viseeEsp ? _viseeEsp.vise() : null),
+    partir:(x,y)=>{ if(typeof _viseeEsp!=="undefined" && _viseeEsp) _viseeEsp.allerA(x,y); else if(typeof volVersPoint==="function") volVersPoint({x,y}); } },
   { secteurs:["braise","suaire"], modale:"#modale-braise", svg:"#carte-braise",
-    ici:()=>(typeof posSurface==="function" ? posSurface() : null), aller:(x,y)=>{ if(typeof voyagerBraise==="function") voyagerBraise(x,y); } }
+    ici:()=>(typeof posSurface==="function" ? posSurface() : null),
+    viser:(x,y)=>{ if(typeof _viseeSol!=="undefined" && _viseeSol) _viseeSol.poser(x,y); },
+    vise:()=>(typeof _viseeSol!=="undefined" && _viseeSol ? _viseeSol.vise() : null),
+    partir:(x,y)=>{ if(typeof _viseeSol!=="undefined" && _viseeSol) _viseeSol.allerA(x,y); else if(typeof voyagerBraise==="function") voyagerBraise(x,y); } }
 ];
 function _tqCoordSvg(svg, e){
   if(!svg.createSVGPoint || !svg.getScreenCTM) return null;
@@ -351,12 +366,28 @@ function _tqBrancher(c){
     svg.addEventListener("mousemove", montrer);
     svg.addEventListener("pointerdown", montrer);
   }
-  bar.querySelector('[data-tq="aller"]').addEventListener("click", ()=>{
-    const x = Math.round(Number(bar.querySelector('[data-tq="x"]').value)), y = Math.round(Number(bar.querySelector('[data-tq="y"]').value));
+  /* v1.34i — « Aller » puis « Y aller » (voir _TQ_CARTES). `arme` = le point
+     visé par CE bouton ; il tombe dès que x/y changent ou que la visée n'est
+     plus là (clic ailleurs sur la carte, « Partir », carte refermée). */
+  const btA = bar.querySelector('[data-tq="aller"]'), inX = bar.querySelector('[data-tq="x"]'), inY = bar.querySelector('[data-tq="y"]');
+  let arme = null;
+  const majAller = ()=>{
+    if(arme){ const v = c.vise(); if(!v || Math.round(v.x)!==arme.x || Math.round(v.y)!==arme.y) arme = null; }
+    const t = arme ? "Y aller" : "Aller";
+    if(btA.textContent !== t) btA.textContent = t;
+    btA.title = arme ? `Partir vers ${arme.x} · ${arme.y}` : "Placer la visée sur ces coordonnées";
+  };
+  bar._tqMajAller = majAller;
+  const desarmer = ()=>{ arme = null; majAller(); };
+  inX.addEventListener("input", desarmer); inY.addEventListener("input", desarmer);
+  btA.addEventListener("click", ()=>{
+    const x = Math.round(Number(inX.value)), y = Math.round(Number(inY.value));
     const b = svg ? _tqBornes(svg) : null;
-    if(!Number.isFinite(x) || !Number.isFinite(y) || bar.querySelector('[data-tq="x"]').value==="" || bar.querySelector('[data-tq="y"]').value===""){ journal("Tape deux coordonnées.","alerte"); return; }
-    if(b && (x < 0 || y < 0 || x > b.w || y > b.h)){ journal(`Hors de la carte : x de 0 à ${b.w}, y de 0 à ${b.h}.`,"alerte"); return; }
-    c.aller(x, y);
+    if(!Number.isFinite(x) || !Number.isFinite(y) || inX.value==="" || inY.value===""){ journal("Tape deux coordonnées.","alerte"); desarmer(); return; }
+    if(b && (x < 0 || y < 0 || x > b.w || y > b.h)){ journal(`Hors de la carte : x de 0 à ${b.w}, y de 0 à ${b.h}.`,"alerte"); desarmer(); return; }
+    majAller();
+    if(arme && arme.x===x && arme.y===y){ arme = null; majAller(); c.partir(x, y); return; }
+    c.viser(x, y); arme = { x, y }; majAller();
   });
   bar.querySelector('[data-tq="traquer"]').addEventListener("click", (e)=>_tqTraquer(e.currentTarget.dataset.cible, e.currentTarget.dataset.nom));
   return bar;
@@ -374,6 +405,7 @@ function _tqTick(){
     if(!_tqOuvertAvant[c.modale]){ _tqOuvertAvant[c.modale] = true; _tqRafraichir(false); }   // pistes à jour à chaque ouverture (≤ 1 appel / 30 s)
     const bar = _tqBrancher(c); if(!bar) continue;
     bar.hidden = false;
+    if(bar._tqMajAller) bar._tqMajAller();   // v1.34i : « Y aller » retombe si la visée a bougé
     const sect = etat.secteur || "silene";
     const p = c.secteurs.includes(sect) ? c.ici() : null;
     const z = bar.querySelector('[data-tq="ici"]');

@@ -74,35 +74,42 @@ function travailOuvert(c){
    étant un reliquat de l'ancien bug « 9/8 » d'avant le plafond v0.91.
    ⚠ `>=` et non `==` : les états hérités dépassent le total.
    Appelée après CHAQUE dépôt et à l'entrée du travail. */
-function finirChantierSiPret(){
+/* v1.35 — le serveur conclut (_chantier_finir) ; ici on ne fait que VÉRIFIER
+   (bouton « Travailler » d'un chantier complet) et annoncer. */
+function finirChantierSiPret(verifSeule){
   const c = etat.maison.chantier; if(!c) return false;
   const r = recetteMaison(c.cible) || {};
   const toutDepose = Object.keys(r).every(k => (c.depose[k]||0) >= r[k]);
-  if(!toutDepose || c.travail < travailTotal(c.cible)) return false;
-  etat.maison.palier = c.cible; etat.maison.chantier = null;
+  return toutDepose && c.travail >= travailTotal(c.cible);
+}
+let _finirEnCours = false;
+function _annonceMaisonFinie(){
   journal(`${nomPalier(etat.maison.palier)} construite ! Rangement : ${capaciteMaison()} places.`,"gain");
-  return true;
 }
 
 /* ---------- Placement & construction ---------- */
-function placerMaison(i){
+/* v1.35 — terrain côté serveur : placer, agrandir, déposer, travailler et
+   démolir passent par leurs RPC (maison_*), qui renvoient le terrain à jour.
+   Les règles (travail ouvert en proportion, fin du chantier vérifiée après
+   chaque dépôt et à l'entrée du travail) sont DUPLIQUÉES côté serveur
+   (_chantier_finir, maison_travailler) : les deux se modifient ensemble. */
+async function placerMaison(i){
   if(refusPrison("bâtir un logement")) return;
   if(etat.maison.plot!=null){ journal("Tu as déjà un logement (un seul autorisé).","alerte"); return; }
   if(etat.terrain.parcelles[i]) return;
-  etat.maison.plot = i;
-  etat.maison.chantier = { cible:1, depose:{}, travail:0 };
-  etat.terrain.parcelles[i] = { type:"maison" };
+  if(!await terrainRpc("maison_placer", { p_plot:i }, { refus:{ deja:"Tu as déjà un logement (un seul autorisé)." } })) return;
   journal(`Emplacement du logement posé. Construis ta ${nomPalier(1)} dans le sous-onglet Maison.`,"gain");
-  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  apresAction();
 }
-function agrandirMaison(){
+async function agrandirMaison(){
   if(refusPrison("agrandir ton logement")) return;
   const m=etat.maison;
   if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   if(m.chantier){ journal("Un chantier est déjà en cours.","alerte"); return; }
   if(m.palier>=5){ journal("Palier maximum atteint.","alerte"); return; }
-  m.chantier = { cible:m.palier+1, depose:{}, travail:0 };
-  journal(`Chantier lancé : ${nomPalier(m.chantier.cible)}.`,"gain"); apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  const r=await terrainRpc("maison_agrandir", {});
+  if(!r) return;
+  journal(`Chantier lancé : ${nomPalier(r.cible)}.`,"gain"); apresAction();
 }
 /* v0.72 — on dépose TOUT ce qu'on peut d'un coup (les paliers demandent
    jusqu'à 8 unités : un clic par unité était intenable), et le coffre compte
@@ -122,11 +129,11 @@ async function deposerMat(matId, tout){
   if(manque>0 && !await rangerServeur(matId, manque, "sac", "coffre")){
     journal(`Impossible de sortir ${manque}× ${item(matId).nom} du coffre.`,"alerte"); return;
   }
-  if(!await agirServeur({ retirer:{ [matId]:n }, motif:"chantier", toutOuRien:true })) return;
-  c.depose[matId]=dej+n;
-  journal(`Chantier : ${n}× ${item(matId).nom} déposé${n>1?"s":""} (${c.depose[matId]}/${besoin}).`);
-  finirChantierSiPret();   // v0.92 : la dernière matière peut suffire à conclure
-  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  const res=await terrainRpc("maison_deposer", { p_item:matId, p_qte:n });
+  if(!res) return;
+  journal(`Chantier : ${res.depose}× ${item(matId).nom} déposé${res.depose>1?"s":""} (${res.total}/${res.besoin}).`);
+  if(res.fini) _annonceMaisonFinie();   // v0.92 : la dernière matière peut suffire à conclure
+  apresAction();
 }
 /* v1.05 — TRAVAIL EN SÉRIE (retour testeur : « 110 actions pour un Palace »).
    Le coût ne bouge pas — 110 actions restent 110 actions et 330 % d'énergie —
@@ -137,49 +144,26 @@ async function travaillerMaison(n=1){
   const c=etat.maison.chantier; if(!c) return;
   if(typeof refusMaisonHS==="function" && refusMaisonHS()) return;
   const total=travailTotal(c.cible);
-  /* ⚠ v0.91 — « Travaux : 9/8 ». Le travail disponible se comptait sur le
-     TOTAL DÉPOSÉ, qui dépasse le nombre d'actions requises dès qu'une recette
-     demande plus de 8 unités. On pouvait donc travailler au-delà du compte,
-     en payant l'énergie pour rien. Le travail est maintenant plafonné.
-
-     ⚠⚠ v0.92 — ET CE PLAFOND BLOQUAIT LES TROIS DERNIERS PALIERS. Il s'écrivait
-     `Math.min(total, deposeTotal(c)) - c.travail`, donc le travail disponible
-     était borné par le NOMBRE D'UNITÉS déposées. Or à partir du palier 3, une
-     recette contient MOINS d'unités qu'il n'y a d'actions à faire :
-         Maison  40 actions / 28 unités · Villa 70 / 25 · Palace 110 / 28
-     Tout déposer ne débloquait que 28 actions sur 40 : le chantier restait
-     ouvert à jamais, matières livrées et aucun moyen d'avancer. Les deux
-     premiers paliers (8/14 et 20/23) masquaient le défaut.
-
-     LA BONNE MESURE EST UNE PROPORTION, pas un compte d'unités : le travail
-     ouvert suit la PART de la recette déjà livrée. Tout déposé = tout le
-     travail, quel que soit le rapport entre unités et actions. Les deux
-     intentions tiennent ensemble — on ne travaille pas plus que ce qu'on a
-     livré, et on peut toujours finir. */
-  // v0.92 : un chantier déjà complet se conclut ici, sans exiger un clic de plus.
-  if(finirChantierSiPret()){ apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant(); return; }
-  if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
-  const dispo = travailOuvert(c) - c.travail;
-  if(dispo<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
+  /* v0.91 / v0.92 : le travail ouvert suit la PART de la recette livrée
+     (travailOuvert) ; un chantier complet se conclut à l'entrée. Règles
+     dupliquées dans maison_travailler (serveur), qui fait foi. */
+  if(!finirChantierSiPret(true)){
+    if(c.travail>=total){ journal("Les travaux sont faits — il ne manque plus que des matières.","alerte"); return; }
+    if(travailOuvert(c) - c.travail<=0){ journal("Dépose d'abord des matières à travailler.","alerte"); return; }
+  }
   if(typeof regenEnergie==="function") regenEnergie();
-  const parEnergie = Math.floor((etat.energie||0) / TRAVAIL_ENERGIE);
-  const k = Math.max(1, Math.min(Math.max(1, n|0), dispo, total - c.travail, Math.max(1, parEnergie)));
-  if(!await agirServeur({ cout:TRAVAIL_ENERGIE*k, motif:"chantier" })) return;
-  c.travail += k;
-  if(!finirChantierSiPret()) journal(`Travaux : ${Math.min(c.travail,total)}/${total}${k>1?` (+${k})`:""}.`);
-  apresAction(); if(typeof sauverMaintenant==="function") sauverMaintenant();
+  const r=await terrainRpc("maison_travailler", { p_n: Math.max(1, n|0) });
+  if(!r) return;
+  if(r.fini) _annonceMaisonFinie();
+  else journal(`Travaux : ${r.travail}/${r.total}${r.fait>1?` (+${r.fait})`:""}.`);
+  apresAction();
 }
 async function demolirMaison(){
   if(refusPrison("démolir ton logement")) return;
   if(itemsCoffre()>0){ journal("Vide d'abord ton rangement avant de démolir.","alerte"); return; }
   if(!confirm("Démolir ton logement ? La parcelle sera libérée.")) return;
-  const libere = etat.maison.plot;
-  if(libere!=null) etat.terrain.parcelles[libere]=null;
-  etat.maison={ palier:0, plot:null, chantier:null };
+  if(!await terrainRpc("maison_demolir", {})) return;
   journal("Logement démoli.","alerte"); apresAction();
-  // v0.91 : même règle que demolir() — sauver, PUIS faire oublier les dégâts.
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  if(libere!=null && typeof integriteOublier==="function") await integriteOublier(libere);
 }
 async function deposerObjet(id){
   if(!etat.sac[id]) return;
@@ -209,9 +193,16 @@ function majMaison(){
      Le cas frappait aussi tous ceux arrivés à ce stade AVANT le correctif.
      L'affichage est le seul point de passage garanti : on y vérifie, et le
      chantier s'achève tout seul à la première ouverture de l'écran.
-     ⚠ Pas de récursion possible : `finirChantierSiPret()` met `chantier` à
-     `null`, l'appel suivant sort immédiatement. */
-  if(finirChantierSiPret() && typeof sauverMaintenant==="function") sauverMaintenant();
+     ⚠ v1.35 : c'est le serveur qui conclut. Un chantier complet (état hérité)
+     est confié à maison_travailler, qui le conclut SANS dépense ; un seul
+     appel à la fois (`_finirEnCours`), le rendu suivant voit le palier. */
+  if(finirChantierSiPret() && !_finirEnCours && typeof terrainRpc==="function"){
+    _finirEnCours = true;
+    terrainRpc("maison_travailler", { p_n:1 }).then(r => {
+      _finirEnCours = false;
+      if(r && r.fini){ _annonceMaisonFinie(); afficher(); }
+    });
+  }
   const _RB = `<div class="actions" style="margin-bottom:12px"><button class="action" onclick="reposer()"><span>Se reposer (chez toi)</span><span class="cout">+25 santé/moral (≤80) · 1×/jour</span></button></div>`;
   const m=etat.maison;
   if(m.plot==null){

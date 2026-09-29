@@ -158,24 +158,9 @@ async function majUsure(){
     }catch(e){ console.error("[perimer] exception :", e); }
   }
 
-  // Drones installés dans un hangar : ils ont quitté le sac, donc rien ne les
-  // usait. Ils vieillissent depuis leur date de pose, comme l'équipement porté.
-  if(etat.terrain && Array.isArray(etat.terrain.parcelles)){
-    for(const p of etat.terrain.parcelles){
-      if(!p || p.type!=="hangar" || !Array.isArray(p.drones)) continue;
-      p.drones.forEach((dr, si)=>{
-        if(!dr) return;
-        if(dr.pose == null){ dr.pose = now; return; }          // ancien drone : on le date maintenant
-        const did = (typeof DRONE_ITEMS!=="undefined") ? DRONE_ITEMS[dr.type] : null;
-        if(!did) return;
-        if(now - dr.pose > dureeVie(did)*JOUR_MS){
-          const it = item(did);
-          p.drones[si] = null;
-          journal(`Usure : ${it?it.nom:"un drone"} a cessé de fonctionner.`,"alerte"); perte = true;
-        }
-      });
-    }
-  }
+  // Drones installés dans un hangar : ils vieillissent depuis leur pose (30 j).
+  // ⚠ v1.35 : l'usure des drones est appliquée par le SERVEUR (_terrain_abandon,
+  // v141) ; le message arrive par les événements. Plus rien à faire ici.
 
   // Équipement porté (s'use au temps aussi)
   if(etat.equipement) for(const slot of Object.keys(etat.equipement)){
