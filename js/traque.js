@@ -170,6 +170,8 @@ function _tqStyle2(){
   const s = document.createElement("style"); s.id = "tq-style2";
   s.textContent = `
     .tq-wanted{ display:flex; gap:12px; align-items:flex-start; }
+    .tq-lien-profil{ cursor:pointer; }
+    .tq-lien-profil:hover b, b.tq-lien-profil:hover{ text-decoration:underline; }
     .tq-portrait{ position:relative; flex:0 0 auto; width:64px; height:86px; border-radius:8px; overflow:hidden; background:rgba(0,0,0,.35); border:1px solid var(--orange,#ff8a3d); }
     .tq-couche{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .tq-sans{ display:flex; height:100%; align-items:center; justify-content:center; color:var(--sourdine); font-size:1.6em; }
@@ -215,13 +217,20 @@ async function majWanted(el){
           <span class="itip-gris">Rends-toi exactement à ce point (« Se rendre à… » sur la carte), puis <b>Traquer</b> depuis la carte.</span></p>`;
       if(x.retraque) act += `<p class="itip-gris">Nouvelle traque possible dans ${_tqReste(x.retraque)}.</p>`;
     }
-    h += `<div class="tq-carte tq-wanted">${_tqPortrait(x.avatar)}<div style="flex:1; min-width:0">
-        <p><b>${echapper(x.nom||"?")}</b> ${etatBadge}<br><span class="itip-gris">${fac?fac.nom:""}</span></p>
+    /* v1.36b — retour testeur : portrait et nom mènent à la page perso. */
+    const lien = x.nom ? ` data-tq-profil="${echapper(x.nom)}" role="button" tabindex="0" title="Voir la page de ${echapper(x.nom)}"` : "";
+    h += `<div class="tq-carte tq-wanted"><span class="tq-lien-profil"${lien}>${_tqPortrait(x.avatar)}</span><div style="flex:1; min-width:0">
+        <p><b class="tq-lien-profil"${lien}>${echapper(x.nom||"?")}</b> ${etatBadge}<br><span class="itip-gris">${fac?fac.nom:""}</span></p>
         <p><span class="tq-total">${x.total} ₡</span> <span class="itip-gris">· ${x.plaintes} plainte${x.plaintes>1?"s":""}</span></p>
         ${act}</div></div>`;
   }
   el.innerHTML = h;
   el.querySelectorAll("[data-pister]").forEach(b=>b.addEventListener("click", ()=>_tqPister(b.dataset.pister, b.dataset.nom, ()=>majWanted(el))));
+  el.querySelectorAll("[data-tq-profil]").forEach(b=>{
+    const ouvrir = ()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(b.dataset.tqProfil); };
+    b.addEventListener("click", ouvrir);
+    b.addEventListener("keydown", e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); ouvrir(); } });
+  });
 }
 
 /* ---------- Pister : essai serveur → mini-jeu → piste ---------- */
