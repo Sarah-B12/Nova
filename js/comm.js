@@ -408,7 +408,10 @@ async function envoyerMessage(){
     _msgForm={ dest, obj, txt };            // on rend son texte au joueur
     majComm(); return;
   }
-  journal(`Message envoyé à ${dest}.${(r.restant<=5)?` Il ne reste que ${r.restant} place${r.restant>1?"s":""} dans sa boîte.`:""}`,"gain");
+  /* v1.36e — retour de l'autrice : « Message envoyé à X » n'a rien à faire au
+     journal (on bascule déjà sur « Envoyés »). On ne garde que l'avertissement
+     utile : sa boîte est presque pleine. */
+  if(r.restant<=5) journal(`La boîte de ${dest} est presque pleine : il ne reste que ${r.restant} place${r.restant>1?"s":""}.`,"alerte","poste");
   msgVue="envoyes"; majComm();
 }
 function _msgModal(){ let m=document.querySelector("#comm-msg"); if(!m){ m=document.createElement("div"); m.id="comm-msg"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m){ m.hidden=true; majComm(); } }); } return m; }
@@ -447,7 +450,7 @@ async function supprimerMessage(type, m, modal){
          §4terdecies, « l'opération qui ne trouve rien »). On lit donc ce qui a été
          effacé, et on se replie sur le retrait de sa seule boîte. */
       const { data:sup } = await sb.from("messages").delete().eq("id",m.id).select("id");
-      if(sup && sup.length) journal("Message rappelé — retiré aussi chez le destinataire (non lu).","alerte");
+      if(sup && sup.length){ /* v1.36e : plus de ligne au journal (la liste se met à jour) */ }
       else { await sb.from("messages").update({efface_de:true}).eq("id",m.id); journal("Trop tard pour le rappeler : il vient d'être lu. Retiré de tes envoyés.","alerte"); }
     }
     else { await sb.from("messages").update({efface_de:true}).eq("id",m.id); journal("Message retiré de tes envoyés.","alerte"); }

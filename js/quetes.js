@@ -1509,11 +1509,16 @@ function _wireSequence(z,d){
      démonstration, et une touche rallumée pendant qu'elle brille repart de
      zéro (son extinction précédente est annulée). */
   const PAUSE_VAGUE = 1300, _off = new Map();
-  function flash(i){ const p=pads[i]; if(!p) return; clearTimeout(_off.get(i)); p.classList.add("actif");
-    const t=setTimeout(()=>p.classList.remove("actif"),380); _off.set(i,t); _queteTO.push(t); }
+  /* v1.36e — tempo réglable par étape : d.allume (durée d'allumage, 380 ms) et
+     d.pas (intervalle entre deux touches de la démonstration, 620 ms). Q7 :
+     même motif qu'en Q3/Q5, joué plus vite. Le retour du clic du joueur garde
+     la durée normale. */
+  const ALLUME = d.allume || 380, PAS = d.pas || 620;
+  function flash(i, duree){ const p=pads[i]; if(!p) return; clearTimeout(_off.get(i)); p.classList.add("actif");
+    const t=setTimeout(()=>p.classList.remove("actif"),duree||380); _off.set(i,t); _queteTO.push(t); }
   function eteindre(){ pads.forEach((p,i)=>{ clearTimeout(_off.get(i)); p.classList.remove("actif"); }); }
   function jouerSeq(){ jouable=false; eteindre(); etat.textContent="Regarde…"; let k=0;
-    (function next(){ if(k>=seq.length){ jouable=true; etat.textContent="À toi !"; return; } flash(seq[k]); k++; const t=setTimeout(next,620); _queteTO.push(t); })(); }
+    (function next(){ if(k>=seq.length){ jouable=true; etat.textContent="À toi !"; return; } flash(seq[k], ALLUME); k++; const t=setTimeout(next,PAS); _queteTO.push(t); })(); }
   function tour(pause){ _seqAnim = Date.now();   // v0.92 : la partie est en cours, le panneau ne doit plus se redessiner
     seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,pause||500); _queteTO.push(t); }
   pads.forEach((p,i)=>p.addEventListener("click",()=>{

@@ -57,6 +57,7 @@ const JOURNAL_CATS = [
   {id:"tout",nom:"Tout"}, {id:"systeme",nom:"Système"}, {id:"quete",nom:"Quêtes"},
   {id:"minage",nom:"Minage"}, {id:"agri",nom:"Agri./élevage"}, {id:"combat",nom:"Combats"},
   {id:"vol",nom:"Vols/hacks"}, {id:"eco",nom:"Économie"}, {id:"social",nom:"Social"},
+  {id:"couple",nom:"Couple"},          // v1.36e : mariage, actions, réserve, divorce (couple.js + événements serveur)
   // v1.11 : deux onglets de plus — l'atelier et la faction encombraient « Système ».
   {id:"formation",nom:"Formation"}, {id:"faction",nom:"Faction"},
   {id:"poste",nom:"La Poste"},         // v0.69 : séparé du social — colis, envois, retours, refus
@@ -79,6 +80,14 @@ let _journalStyleMonte = false;
 function _categoriser(t){
   const s=(t||"").toLowerCase();
   if(/quête|quete|vieux sorn|glyphe|relais|étape|défi/.test(s)) return "quete";
+  /* v1.36e — le couple, AVANT la faction (« rester dans ta faction » après un
+     divorce) et le social. Les lignes écrites par couple.js portent déjà la
+     catégorie ; cette règle range celles qui viennent du serveur. */
+  if(/mariage|mari[ée]s?\b|divorc|complicit|r[ée]serve commune|conjoint|veuf|veuve|ton foyer|b[ée]b[ée]|dit oui/.test(s)) return "couple";
+  /* v1.36f — la traque et ses suites vont dans « Vols/hacks », AVANT la
+     faction (« −5 réputation de faction ») : plaintes, primes, chasseurs,
+     captures, séjours en prison qui en découlent. */
+  if(/chasseur de primes|t'a retrouv|te retrouver|sur ta t[êe]te|plainte|mis[e]? [àa] prix|tu es en prison|\bprime|fait les poches|pirat[ée] ton compte/.test(s)) return "vol";
   // v1.11 — l'atelier : « Fabriqué : … », « +1 pt de formation », les paliers.
   if(/fabriqu|formation|atelier|pt de formation|point de formation|palier|apprenti|recette apprise/.test(s)) return "formation";
   // v1.11 — la faction : expéditions, gouvernement, Cercles, caisse, élections.
@@ -259,6 +268,7 @@ function _journalStyle(){
     .j-poste{ background:#7a4a2f; color:#ffd9bd; }
     .j-formation{ background:#4a5f2f; color:#e6ffc9; }
     .j-faction{ background:#6a4a8a; color:#ecd9ff; }
+    .j-couple{ background:#8a3a5e; color:#ffd6e8; }   /* v1.36e */
     .msg.poste{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
   `;
   document.head.appendChild(st);

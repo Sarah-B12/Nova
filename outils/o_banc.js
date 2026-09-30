@@ -27,7 +27,9 @@ const DELAIS = {
   terrain: { profil: 50, sac: 50, jauges: 50 },   // v1.35 : terrain côté serveur (o_terrain.js)
   couple: { profil: 50, sac: 50, jauges: 50 },    // v1.36 : mariage (o_couple.js)
   seq: { profil: 50, sac: 50, jauges: 50 },
-  banq: { profil: 50, sac: 50, jauges: 50 },      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
+  banq: { profil: 50, sac: 50, jauges: 50 },
+  q7: { profil: 50, sac: 50, jauges: 50 },
+  prison: { profil: 50, sac: 50, jauges: 50 },    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
 }[SCEN];
 
 const donnees = {

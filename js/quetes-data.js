@@ -828,10 +828,10 @@ const QUETES = [
         arrivee:[
           "Le Muet est une tour d'antennes plantée sur rien, hérissée de paraboles tournées vers le vide. Il émet : tu le sens dans les dents, une vibration sourde qui fait trembler l'habitacle.",
           "Et dans ton sac, quelque chose s'allume. La bouture d'Adaya. La tige pâle, éteinte depuis que tu as quitté Silène, luit à travers le verre, d'une lueur laiteuse qui monte et retombe. Comme en bas.",
-          "« Elle s'allume ? » La voix de Sorn a un raté. « Là-haut ? Adaya a dit qu'elle réagissait au signal. Alors y a du signal, ici. Le même qu'en bas. » Un silence. « Bon. Le sas. Il a un cadenas à glyphes, forcément. Même petit jeu que le poste : trois glyphes, pas plus. »"
+          "« Elle s'allume ? » La voix de Sorn a un raté. « Là-haut ? Adaya a dit qu'elle réagissait au signal. Alors y a du signal, ici. Le même qu'en bas. » Un silence. « Bon. Le sas. Il a un cadenas à glyphes, forcément. Même petit jeu que le poste, mais en plus retors : quatre glyphes, cette fois. »"
         ],
-        defi:{ type:"cadenas", longueur:3, symboles:["▣","⌁","⚑","⊘"], essais:8,
-          texte:["Trois logements, les quatre glyphes que tu connais maintenant. Le sas te dira, à chaque tentative, combien sont bien placés."],
+        defi:{ type:"cadenas", longueur:4, symboles:["▣","⌁","⚑","⊘"], essais:7,   /* v1.36e : plus dur que Q2 (était 3 logements, 8 essais) */
+          texte:["Quatre logements, les quatre glyphes que tu connais maintenant — et un même glyphe peut revenir. Le sas te dira, à chaque tentative, combien sont bien placés."],
           reussite:[
             "Le sas s'ouvre sur une coursive circulaire qui entoure le mât central. Des baies de câbles, des voyants qui clignotent depuis trois siècles pour personne. Et au bout, fixé au mât par des colliers de cuivre torsadés — trois tours, le plat, trois tours à l'envers — un boîtier gris, pas plus gros qu'une caisse à outils.",
             "Une plaque, en ancien. Sorn la déchiffre d'une traite, cette fois : « ENREGISTREUR DE TRAFIC. POSE : SORN, E. » Sa voix se serre. « Il l'a branché lui-même. »"
@@ -848,6 +848,7 @@ const QUETES = [
           "« Le filtre », dit Sorn. « Y a un filtre de phase sur le côté. Si tu lui donnes le motif du parasite, il le retranche. Tu le connais, ce motif ? » Un temps. « Évidemment que tu le connais. »"
         ],
         defi:{ type:"sequence", longueur:5, cadence:CADENCE_PERIMETRE,
+          allume:220, pas:360,   /* v1.36e : même motif qu'avant (normal), mais le parasite bat plus vite (défaut 380 / 620 ms) */
           texte:["LE FILTRE DE PHASE ATTEND LE MOTIF DU PARASITE. REPRODUISEZ-LE."],
           reussite:[
             "Le battement recule, se tasse, disparaît sous le seuil. Et derrière, comme quand on essuie une vitre, apparaît ce qu'il couvrait : des voix, des tonalités de service, des blocs de données. Trois siècles de trafic.",

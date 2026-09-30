@@ -21,6 +21,10 @@ let _coupleOnglet = "actions";     // sous-onglet de Couple
 let _unionsTextes = null;          // derniers textes (bas des Unions), chargés à l'ouverture
 let _editionSignal = 0;            // dernier « j'écris » envoyé (ms)
 
+/* v1.36e — toutes les lignes de journal de ce fichier vont dans l'onglet
+   « Couple » du journal. */
+function _jc(t, type){ journal(t, type || "", "couple"); }
+
 /* Les 20 actions (décisions 16, 17, 32) + « Essayer d'avoir un bébé » (21). */
 const ACTIONS_COUPLE = {
   1:  { nom:"Offrir un petit cadeau",                  phrase:"Un {cadeau}. Parfaitement inutile. Parfaitement précieux." },
@@ -82,21 +86,21 @@ function _uNom(id){ const it = (typeof item==="function") ? item(id) : null; ret
 function _uDate(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR", { day:"numeric", month:"long" }); }catch(e){ return ""; } }
 function _uRefus(d){
   const e = d && d.err;
-  if(e === "delai" && d.jusqua) journal(`Il faut attendre le ${_uDate(d.jusqua)} pour se remarier.`, "alerte");
-  else if(e === "attente" && d.forcable_le) journal(`Le divorce pourra être prononcé le ${_uDate(d.forcable_le)}.`, "alerte");
-  else if(e === "hote_sans_maison" && d.qui === "cible") journal("L'autre doit d'abord poser l'emplacement de son logement.", "alerte");
-  else if((e === "regent" || e === "candidat") && d.qui === "cible") journal("L'autre est Régent ou candidat : il doit d'abord transmettre ou se retirer.", "alerte");
-  else journal(UNION_REFUS[e] || `Refusé par le serveur (${e || "réponse vide"}).`, "alerte");
+  if(e === "delai" && d.jusqua) _jc(`Il faut attendre le ${_uDate(d.jusqua)} pour se remarier.`, "alerte");
+  else if(e === "attente" && d.forcable_le) _jc(`Le divorce pourra être prononcé le ${_uDate(d.forcable_le)}.`, "alerte");
+  else if(e === "hote_sans_maison" && d.qui === "cible") _jc("L'autre doit d'abord poser l'emplacement de son logement.", "alerte");
+  else if((e === "regent" || e === "candidat") && d.qui === "cible") _jc("L'autre est Régent ou candidat : il doit d'abord transmettre ou se retirer.", "alerte");
+  else _jc(UNION_REFUS[e] || `Refusé par le serveur (${e || "réponse vide"}).`, "alerte");
 }
 async function _uRpc(nom, args){
-  if(typeof sb === "undefined"){ journal("Serveur indisponible.","alerte"); return null; }
+  if(typeof sb === "undefined"){ _jc("Serveur indisponible.","alerte"); return null; }
   try{
     const { data, error } = await sb.rpc(nom, args || {});
-    if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); console.warn("[couple]", nom, error.message); return null; }
+    if(error){ _jc("Le serveur n'a pas répondu — réessaie.","alerte"); console.warn("[couple]", nom, error.message); return null; }
     if(!data || !data.ok){ _uRefus(data); return null; }
     if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
     return data;
-  }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); return null; }
+  }catch(e){ _jc("Connexion au serveur perdue — réessaie.","alerte"); return null; }
 }
 
 /* ---------- Lecture ---------- */
@@ -116,7 +120,7 @@ function _appliquerMoiUnion(m){
   if(!m || !m.faction || m.faction === etat.faction) return;
   etat.faction = m.faction;
   if(m.x != null && m.y != null && (m.secteur || "silene") === "silene") etat.pos = { x:m.x, y:m.y };
-  journal("Ton foyer a déménagé : tu vis désormais dans la cité de ta nouvelle faction.", "alerte");
+  _jc("Ton foyer a déménagé : tu vis désormais dans la cité de ta nouvelle faction.", "alerte");
   if(typeof chargerTerrain === "function") chargerTerrain();
   if(typeof afficher === "function") afficher();
 }
@@ -166,7 +170,7 @@ function _uBlocMarie(u){
   const avert = u.je_suis_hote ? "" :
     `<p class="itip-gris">⚠ Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant, tel que tu l'as laissé. Retire d'abord tes drones.</p>`;
   const d = u.divorce;
-  if(!d) return h + avert + `<div class="actions"><button class="mini danger" data-u="divorcer">Demander le divorce</button></div>`;
+  if(!d) return h + avert + `<p class="itip-gris">Demander le divorce coûte 50 points de Complicité.</p><div class="actions"><button class="mini danger" data-u="divorcer">Demander le divorce</button></div>`;
   if(d.par_moi){
     const pret = Date.now() >= new Date(d.forcable_le).getTime();
     return h + `<p>Tu as demandé le divorce le ${_uDate(d.depuis)}. ${pret ? "Tu peux maintenant le prononcer." : `Sans réponse, tu pourras le prononcer le ${_uDate(d.forcable_le)}.`}</p>` + avert +
@@ -225,28 +229,31 @@ function _uBrancher(el){
       const cible = el.querySelector("#u-cible"); const ou = el.querySelector('input[name="u-ou"]:checked');
       if(!cible || !cible.value) return;
       r = await _uRpc("union_demander", { p_cible:cible.value, p_je_viens:(ou && ou.value === "je") });
-      if(r) journal("Demande envoyée.", "gain");
-    } else if(a === "annuler"){ r = await _uRpc("union_annuler"); if(r) journal("Demande annulée.", "alerte"); }
-    else if(a === "refuser"){ r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:false }); if(r) journal("Demande déclinée.", "alerte"); }
+      if(r) _jc("Demande envoyée.", "gain");
+    } else if(a === "annuler"){ r = await _uRpc("union_annuler"); if(r) _jc("Demande annulée.", "alerte"); }
+    else if(a === "refuser"){ r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:false }); if(r) _jc("Demande déclinée.", "alerte"); }
     else if(a === "accepter"){
       if(!confirm("Dire oui ? Celui qui s'installe chez l'autre rejoint sa faction et reçoit un terrain neuf ; son terrain actuel est mis en veille.")) return;
       r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:true });
-      if(r){ journal("Vous êtes mariés !", "gain"); await _uApresDemenagement(r); }
+      if(r){ _jc("Vous êtes mariés !", "gain"); await _uApresDemenagement(r); }
     }
     else if(a === "divorcer"){
       const u = _union && _union.union;
-      const msg = (u && !u.je_suis_hote)
-        ? "Divorcer ? Tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant."
-        : "Confirmer ?";
+      /* v1.36g : DEMANDER coûte 50 points de Complicité (v150), et sous 20 % la
+         réserve commune se ferme. On le dit avant. */
+      const demande = !!(u && !u.divorce);
+      const msg = (demande ? "Demander le divorce ? La Complicité perdra 50 points (sous 20 %, la réserve commune se ferme)."
+                           : "Confirmer le divorce ?")
+        + ((u && !u.je_suis_hote) ? " Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant." : "");
       if(!confirm(msg)) return;
       r = await _uRpc("union_divorcer");
-      if(r && r.divorce){ journal("Le divorce est prononcé.", "alerte"); await _uApresDemenagement(r); }
-      else if(r && r.demande) journal("Demande de divorce envoyée.", "alerte");
+      if(r && r.divorce){ _jc("Le divorce est prononcé.", "alerte"); await _uApresDemenagement(r); }
+      else if(r && r.demande) _jc(`Demande de divorce envoyée. Complicité : ${r.complicite} %.`, "alerte");
     }
-    else if(a === "divorce-annuler"){ r = await _uRpc("union_divorce_annuler"); if(r) journal("Demande de divorce retirée.", "gain"); }
+    else if(a === "divorce-annuler"){ r = await _uRpc("union_divorce_annuler"); if(r) _jc("Demande de divorce retirée.", "gain"); }
     else if(a === "rester" || a === "rentrer"){
       r = await _uRpc("union_choisir_faction", { p_rentrer:a === "rentrer" });
-      if(r){ journal(a === "rentrer" ? "Tu rentres dans ta faction d'origine." : "Tu restes dans ta faction actuelle.", "gain"); await _uApresDemenagement(r); }
+      if(r){ _jc(a === "rentrer" ? "Tu rentres dans ta faction d'origine." : "Tu restes dans ta faction actuelle.", "gain"); await _uApresDemenagement(r); }
     }
     if(r){ await chargerUnion(); majUnions(el); }
   }));
@@ -299,7 +306,7 @@ function _coupleActions(c, u){
     const r = await _uRpc("union_agir", { p_action:Number(b.dataset.act) });
     if(!r) return;
     if(typeof r.moral === "number"){ etat.jauges = etat.jauges || {}; etat.jauges.moral = r.moral; }
-    journal(_phraseAction(r.action, Object.assign({}, r.detail, { tentative:r.tentative }), etat.nom), r.gain > 0 ? "gain" : "alerte");
+    _jc(_phraseAction(r.action, Object.assign({}, r.detail, { tentative:r.tentative }), etat.nom), r.gain > 0 ? "gain" : "alerte");
     await chargerUnion(); majCouple(); if(typeof afficher === "function") afficher();
   }));
 }
@@ -325,11 +332,11 @@ function _coupleReserve(c, u){
   c.innerHTML = h;
   c.querySelectorAll("[data-dep]").forEach(b => b.addEventListener("click", async () => {
     const r = await _uRpc("reserve_deposer", { p_item:b.dataset.dep, p_qte:Number(b.dataset.n) });
-    if(r){ journal(`Réserve : ${r.depose}× ${_uNom(b.dataset.dep)} déposé${r.depose > 1 ? "s" : ""}.`, "gain"); await chargerUnion(); majCouple(); }
+    if(r){ _jc(`Réserve : ${r.depose}× ${_uNom(b.dataset.dep)} déposé${r.depose > 1 ? "s" : ""}.`, "gain"); await chargerUnion(); majCouple(); }
   }));
   c.querySelectorAll("[data-ret]").forEach(b => b.addEventListener("click", async () => {
     const r = await _uRpc("reserve_retirer", { p_item:b.dataset.ret, p_qte:Number(b.dataset.n) });
-    if(r){ journal(`Réserve : ${r.retire}× ${_uNom(b.dataset.ret)} pris.`, "gain"); await chargerUnion(); majCouple(); }
+    if(r){ _jc(`Réserve : ${r.retire}× ${_uNom(b.dataset.ret)} pris.`, "gain"); await chargerUnion(); majCouple(); }
   }));
 }
 
@@ -354,7 +361,7 @@ function _coupleCeremonie(c, u){
   c.querySelector("#u-sauver").addEventListener("click", async () => {
     try{
       const { data, error } = await sb.rpc("union_texte_sauver", { p_texte:ta.value, p_version:version });
-      if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
+      if(error){ _jc("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
       if(data && data.err === "conflit"){
         // Rien n'est écrasé : on montre la version de l'autre, puis on peut enregistrer.
         version = data.maj_le;
@@ -364,9 +371,9 @@ function _coupleCeremonie(c, u){
       }
       if(!data || !data.ok){ _uRefus(data); return; }
       version = data.maj_le; _editionSignal = 0;
-      journal("Texte de mariage enregistré.", "gain");
+      _jc("Texte de mariage enregistré.", "gain");
       await chargerUnion();
-    }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); }
+    }catch(e){ _jc("Connexion au serveur perdue — réessaie.","alerte"); }
   });
 }
 /* « J'écris » : au plus une fois toutes les 30 s ; « j'ai fini » à la sortie. */

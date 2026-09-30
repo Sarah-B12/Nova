@@ -708,7 +708,18 @@ async function syncEffetsCombat(){
         const cat = ev.cat || "combat";
         const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
         // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.
-        const onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
+        let onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
+        /* v1.36f — le serveur ne connaît que quelques catégories (combat,
+           alerte, gain, economie, poste…) : un message `alerte` finissait
+           TOUJOURS dans « Combats » (retour de l'autrice : la capture d'un
+           voleur par un chasseur de primes). Le tri automatique du journal
+           reprend la main pour les vols/traques et le couple, et pour toute
+           catégorie que le journal ne connaît pas (ex. `gain`). */
+        if(typeof _categoriser==="function"){
+          const auto = _categoriser(ev.texte);
+          const connu = (typeof JOURNAL_CATS!=="undefined") && JOURNAL_CATS.some(c=>c.id===onglet);
+          if(auto==="vol" || auto==="couple" || !connu) onglet = auto;
+        }
         // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
         // v0.94b : `quand` = l'heure réelle du fait (`evenements.cree_le`),
         // et non celle de cette lecture. Repli sur maintenant si le serveur

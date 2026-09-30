@@ -601,6 +601,26 @@ async function syncPrison(){
     if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
     else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
+  _conduireEnPrison();
+}
+/* v1.36f — retour de l'autrice : un voleur capturé par un chasseur de primes
+   restait là où on l'avait trouvé (en pleine nature, voire dans l'espace) ;
+   hors d'une cité, pas de Centre, donc pas d'évasion possible. Un prisonnier
+   est désormais CONDUIT dans la cité de la faction qui l'enferme (le serveur
+   le fait aussi dans `traquer`, v149). Le Perchoir n'est pas une cité : rien. */
+function _conduireEnPrison(){
+  const f = etat.prisonFaction;
+  if(!enPrison() || !f || typeof VILLES==="undefined" || !VILLES[f]) return;
+  const surSilene = (etat.secteur||"silene")==="silene";
+  if(surSilene && typeof villeActuelle==="function" && villeActuelle()===f) return;
+  etat.secteur = "silene";
+  etat.pos = { x:VILLES[f].x, y:VILLES[f].y };
+  if(typeof fermerOrbite==="function" && document.querySelector("#modale-orbite")) fermerOrbite();
+  if(typeof fermerCarteBraise==="function") fermerCarteBraise();
+  journal(`Tu as été conduit à la prison de ${_factionNom(f)}.`, "alerte", "vol");
+  if(typeof sauverMaintenant==="function") sauverMaintenant();
+  if(typeof majApresDeplacement==="function") majApresDeplacement();
+  else if(typeof afficher==="function") afficher();
 }
 /* ⚠ v0.76 — ON NE VOYAIT AUCUN PRISONNIER. La vue lisait villeActuelle() : hors
    d'une ville, fid valait null et la liste était vide. La lecture passe par la
