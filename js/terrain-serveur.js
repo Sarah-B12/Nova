@@ -63,7 +63,9 @@ const TERRAIN_REFUS = {
   travaux_faits:"Les travaux sont faits — il ne manque plus que des matières.",
   deposer:      "Dépose d'abord des matières à travailler.",
   coffre:       "Vide d'abord ton rangement avant de démolir.",
-  deja:         "Déjà fait aujourd'hui — la remise à zéro est à minuit."
+  deja:         "Déjà fait aujourd'hui — la remise à zéro est à minuit.",
+  marie:        "La maison commune ne se démolit pas pendant le mariage.",          // v1.36
+  maison:       "Le logement se démolit depuis le sous-onglet Maison."
 };
 
 function _terrainRefus(data, propres){

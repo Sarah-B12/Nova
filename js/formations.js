@@ -148,6 +148,7 @@ function majCentre(){
   if(centreVue==="formations"){ el.appendChild(vueFormations()); return; }
   if(centreVue==="bar"){ if(typeof majBar==="function") majBar(el); return; }
   if(centreVue==="prison"){ if(typeof majPrison==="function") majPrison(el); return; }
+  if(centreVue==="unions"){ if(typeof majUnions==="function") majUnions(el); return; }   // v1.36 : mariage
   if(centreVue==="gouvernement"){ if(typeof majGouvernement==="function") majGouvernement(el); return; }
   if(centreVue==="annonce"){ if(typeof majAnnonceFaction==="function") majAnnonceFaction(el); return; }
   if(centreVue==="votes"){ if(typeof majElections==="function") majElections(el); return; }

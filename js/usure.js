@@ -128,7 +128,8 @@ async function majUsure(){
     }
     if(now - ref > dv * JOUR_MS){
       const it = (typeof item==="function") ? item(l.item) : null;
-      const ou = l.lieu==="coffre" ? "du rangement de la maison" : (l.lieu==="soute" ? "de la soute du vaisseau" : "de ton sac");
+      const ou = l.lieu==="coffre" ? "du rangement de la maison" : (l.lieu==="soute" ? "de la soute du vaisseau"
+               : (l.lieu==="reserve" ? "de la réserve commune" : "de ton sac"));   // v1.36 : réserve du couple
       // ⚠ Le message n'est PAS écrit ici : on l'écrira seulement si le serveur
       // confirme la suppression. Sinon le joueur lisait un deuil qui n'avait
       // pas eu lieu — et le relisait à CHAQUE connexion, en doublons.

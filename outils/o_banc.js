@@ -25,6 +25,7 @@ const DELAIS = {
   debris: { profil: 50, sac: 50, jauges: 50 },    // v1.31 : chutes de débris (o_debris.js)
   niveaux: { profil: 50, sac: 50, jauges: 50 },   // v1.33 : niveau requis (o_niveaux.js)
   terrain: { profil: 50, sac: 50, jauges: 50 },   // v1.35 : terrain côté serveur (o_terrain.js)
+  couple: { profil: 50, sac: 50, jauges: 50 },    // v1.36 : mariage (o_couple.js)
 }[SCEN];
 
 const donnees = {

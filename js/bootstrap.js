@@ -22,6 +22,7 @@ document.querySelectorAll(".onglet").forEach(o => o.addEventListener("click", ()
   document.querySelectorAll(".panneau").forEach(p=>p.classList.toggle("actif", p.dataset.panneau===o.dataset.onglet));
   if(o.dataset.onglet==="parametres" && typeof majParametres==="function") majParametres();
   if(o.dataset.onglet==="comm" && typeof changerComm==="function") changerComm(typeof commVue!=="undefined"?commVue:"amis");
+  if(o.dataset.onglet==="couple" && typeof majCouple==="function") majCouple();   // v1.36
 }));
 
 /* ---------- Câblage ---------- */
@@ -171,6 +172,7 @@ async function syncApresConnexion(){
   if(typeof boissonCharger==="function")  t.push(boissonCharger());        // v0.77 : effet de boisson en cours
   if(typeof chargerIntegrite==="function") t.push(chargerIntegrite());     // v0.91 : dégâts subis pendant l'absence — v1.35 : + terrain et maison (terrain_lire)
   if(typeof chargerBete==="function")      t.push(chargerBete());          // v1.00 : la bête (Q15)
+  if(typeof chargerUnion==="function")     t.push(chargerUnion());         // v1.36 : mariage (onglet Couple, déménagement décidé par le conjoint)
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense

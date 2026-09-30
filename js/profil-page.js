@@ -522,7 +522,9 @@ async function _ppTerrain(profilId){
       cases.push(`<div class="ppt-case plein" title="${nom}">${dedans}</div>`);
     }
     const batis = parc.filter(x=>x && x.type).length;
-    z.innerHTML = `<h3>Terrain de ${echapper(data.nom)} <span class="itip-gris">(${batis}/24 parcelles bâties)</span></h3>
+    // v1.36 — le couple : « Vit avec », jamais « chez » (décision 31).
+    const couple = (data.couple && data.couple.nom) ? `<p class="itip-gris" style="margin:0 0 6px">Vit avec <b>${echapper(data.couple.nom)}</b></p>` : "";
+    z.innerHTML = `<h3>Terrain de ${echapper(data.nom)} <span class="itip-gris">(${batis}/24 parcelles bâties)</span></h3>${couple}
       <div class="ppt-grille" data-faction="${data.faction||""}">${cases.join("")}</div>`;
     // Le fond de faction est géré par terrain.css, via l'attribut data-faction.
     const g = z.querySelector(".ppt-grille");

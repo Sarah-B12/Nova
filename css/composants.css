@@ -400,3 +400,13 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 /* v1.33 — fiche objet au doigt : le contenu de l'infobulle, sans son cadre. */
 .menu-infos{ padding:6px 12px 8px; border-bottom:1px solid var(--line,#243a52); margin-bottom:6px; font-size:14px; }
 .menu-infos .itip-nom{ display:none; }   /* le nom est déjà dans l'en-tête de la fiche */
+
+/* v1.36 — Unions et Couple (couple.js) */
+.u-form{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
+.u-form select{ min-width:10em; }
+.u-demande, .u-choix{ border-left:3px solid var(--accent, #7ab); padding:4px 10px; margin:8px 0; }
+.u-texte{ border-left:2px solid rgba(127,127,127,.35); padding:2px 10px; margin:8px 0; }
+.u-texte summary{ cursor:pointer; }
+.u-alerte{ color:#c98a2e; font-weight:600; }
+.u-liste{ display:flex; flex-direction:column; gap:4px; }
+.u-ligne{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
