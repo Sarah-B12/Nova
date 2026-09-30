@@ -1500,11 +1500,22 @@ function _wireSequence(z,d){
   const n=(d.symboles||["◤","◥","◣","◢"]).length, L=d.longueur||5;
   const pads=[...z.querySelectorAll(".q-seq-pad")], etat=z.querySelector("#q-seq-etat");
   let seq=[], pos=0, jouable=false;
-  function flash(i){ const p=pads[i]; if(!p) return; p.classList.add("actif"); const t=setTimeout(()=>p.classList.remove("actif"),380); _queteTO.push(t); }
-  function jouerSeq(){ jouable=false; etat.textContent="Regarde…"; let k=0;
+  /* v1.36c — retour testeur (Q5 étape 3) : « à la 2e vague, la première
+     clignote deux fois ». Le dernier clic du joueur allume sa touche 380 ms ;
+     la démonstration suivante repartait 500 ms plus tard, et la cadence
+     commence par la même touche (0, 2, 1, 3, 2) : 120 ms d'extinction
+     seulement, on voyait un double clignotement. Désormais : une vraie pause
+     entre deux vagues (PAUSE_VAGUE), toutes les touches éteintes avant la
+     démonstration, et une touche rallumée pendant qu'elle brille repart de
+     zéro (son extinction précédente est annulée). */
+  const PAUSE_VAGUE = 1300, _off = new Map();
+  function flash(i){ const p=pads[i]; if(!p) return; clearTimeout(_off.get(i)); p.classList.add("actif");
+    const t=setTimeout(()=>p.classList.remove("actif"),380); _off.set(i,t); _queteTO.push(t); }
+  function eteindre(){ pads.forEach((p,i)=>{ clearTimeout(_off.get(i)); p.classList.remove("actif"); }); }
+  function jouerSeq(){ jouable=false; eteindre(); etat.textContent="Regarde…"; let k=0;
     (function next(){ if(k>=seq.length){ jouable=true; etat.textContent="À toi !"; return; } flash(seq[k]); k++; const t=setTimeout(next,620); _queteTO.push(t); })(); }
-  function tour(){ _seqAnim = Date.now();   // v0.92 : la partie est en cours, le panneau ne doit plus se redessiner
-    seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,500); _queteTO.push(t); }
+  function tour(pause){ _seqAnim = Date.now();   // v0.92 : la partie est en cours, le panneau ne doit plus se redessiner
+    seq.push(Array.isArray(d.cadence) ? d.cadence[seq.length % d.cadence.length] : Math.floor(Math.random()*n)); /* cadence fixe si fournie (Q3/Q5) */ pos=0; const t=setTimeout(jouerSeq,pause||500); _queteTO.push(t); }
   pads.forEach((p,i)=>p.addEventListener("click",()=>{
     if(!jouable) return; flash(i);
     _seqAnim = Date.now();   // chaque clic repousse la soupape des 60 s
@@ -1514,7 +1525,7 @@ function _wireSequence(z,d){
        devant l'écran du défi qu'il vient de terminer. */
     if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi(`Séquence ratée — la console se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
     pos++;
-    if(pos>=seq.length){ if(seq.length>=L){ jouable=false; _seqFin(); journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien !"; tour(); } }
+    if(pos>=seq.length){ if(seq.length>=L){ jouable=false; _seqFin(); journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien ! Regarde la suite…"; tour(PAUSE_VAGUE); } }
   }));
   z.querySelector("#q-seq-go").addEventListener("click",function(){ this.disabled=true; seq=[]; tour(); });
 }
@@ -1712,7 +1723,14 @@ function majQueteHub(){
      bannière ne doit pas annoncer un lieu où le joueur n'est pas. */
   const _dLieu=(_qd0&&_qd0.donneurLieu)||"Comptoir";
   const _ici = _priseIci(_qd0);   // v0.97
-  const banniere = _ici ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
+  /* v1.36d — retour de l'autrice (Q6) : une quête prise à LA CARCASSE s'y joue
+     aussi ; une fois acceptée, la bannière du donneur s'effaçait sous l'image
+     de l'étape (deux bannières l'une sous l'autre). On la masque donc pendant
+     une quête `lieuPrise:"carcasse"`, et elle revient quand la quête est
+     finie. Les quêtes prises en ville (Sorn) gardent leur bannière : on doit
+     se déplacer pour les étapes, il n'y a jamais les deux à la fois. */
+  const _masquee = !!(_qa0 && _qd0 && _qd0.lieuPrise === "carcasse");
+  const banniere = (_ici && !_masquee) ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
   const a=queteActive();
 
   if(!a){
