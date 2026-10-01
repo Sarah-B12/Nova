@@ -23,7 +23,7 @@ const APT_TRONC = [
        Les identifiants suivent leur effet : sv3 reste Métabolisme, sv2
        Récupération. La migration (aptitudes.js, _aptMigrer) rend les PA
        d'une chaîne cassée par l'inversion. */
-    { id:"sv3", nom:"Métabolisme",     effet:"Pertes de santé/moral en cas d'échec −25 %." },
+    { id:"sv3", nom:"Métabolisme",     effet:"Quand une patrouille a le dessus sur toi, tu perds 25 % de santé et de moral en moins." },
     { id:"sv2", nom:"Récupération",    effet:"Régénération d'énergie +2 %/h (base 10 %/h ; au total 13,5 %/h au plus, avec Organisme et les racines de ta cité)." },
     { id:"sv4", nom:"Endurance",       effet:"Énergie −15 % : terrain, mine, chantiers, déplacements (à pied, en vol, en atmosphère), gravier, sondes et choix de quête." }
   ]},

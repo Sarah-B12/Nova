@@ -162,7 +162,7 @@ async function changerFaction(fid){
   const p=peutChangerFaction(); if(!p.ok){ journal(p.raison,"alerte"); return; }
   const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null;
   if(!f || f.id===etat.faction) return;
-  if(!confirm(`Rejoindre ${f.nom} ? Tu déménages dans sa ville. Prochain changement possible seulement dans ${_facJours()} jours.`)) return;
+  if(!await confirmerJoli("Changer de faction", `Rejoindre ${f.nom} ? Tu déménages dans sa ville. Prochain changement possible seulement dans ${_facJours()} jours.`, "Rejoindre")) return;
 
   const { data, error } = await sb.rpc("changer_faction", { p_faction: f.id });
   if(error){ journal("Échec : "+error.message,"alerte"); return; }

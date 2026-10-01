@@ -79,7 +79,8 @@ function alerteSessionPerdue(){
   if(_sessionAlertee || _deconnexionVolontaire) return; _sessionAlertee = true;
   const msg = "Ta session a expiré : recharge la page pour te reconnecter. Rien n'a été débité.";
   if(typeof journal==="function") journal(msg,"alerte");
-  try{ alert(msg); }catch(e){}
+  // v1.36l : boîte maison (un seul bouton) plutôt que l'alert() du navigateur.
+  try{ if(typeof alerterJoli==="function") alerterJoli("Session expirée", msg, "Recharger").then(()=>location.reload()); else alert(msg); }catch(e){}
 }
 if(SERVEUR_DISPO){
   sb.auth.onAuthStateChange((ev)=>{

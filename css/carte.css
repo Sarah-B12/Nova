@@ -144,3 +144,34 @@
 .visee-barre{ display:flex; justify-content:center; margin:8px 0 0; }
 .visee-barre[hidden]{ display:none; }
 
+
+/* ===========================================================
+   v1.36m — TABLETTE (retour testeuse, iPad en portrait ≈ 820 px).
+   La correction v0.92 / v1.11 ne jouait que SOUS 640 px. Sur une tablette, la
+   barre de la carte (titre + jauges + aperçu du coût + bouton « Partir » +
+   Distances + Fermer) restait sur UNE ligne sans retour possible : elle
+   devenait plus large que l'écran, poussait le cadre, et tout ce qui dépassait
+   à droite était coupé (Partir tronqué, Distances et Fermer invisibles, carte
+   rognée).
+   Correction PAR LE CONTENU, plus par la largeur : la barre a toujours le
+   droit de passer à la ligne, et le groupe des jauges aussi. Sur un grand
+   écran où tout tient, rien ne bouge ; dès que ça ne tient plus (tablette,
+   fenêtre étroite, aperçu + Partir affichés), les éléments descendent à la
+   ligne au lieu de déborder. Les trois modales (Silène, La Braise/Le Suaire,
+   Triptolème) partagent ces classes.
+   Au doigt (pointeur grossier), le bouton « Partir » prend sa propre ligne,
+   comme sur téléphone.
+   =========================================================== */
+.barre-carte { flex-wrap:wrap; row-gap:6px; }
+.carte-jauges { flex-wrap:wrap; row-gap:6px; min-width:0; max-width:100%; }
+.cj-apercu { flex-wrap:wrap; }
+/* La grille de la modale avait une colonne « auto » : elle s'élargissait jusqu'à
+   la largeur minimale du contenu (barre sur une ligne) et poussait le cadre
+   hors de l'écran. Une colonne bornée à la largeur disponible l'en empêche. */
+.modale-carte.ouverte { grid-template-columns:minmax(0, 1fr); }
+.modale-carte .cadre-carte { min-width:0; box-sizing:border-box; justify-self:center; }
+@media (pointer:coarse){
+  #carte-partir { flex:1 1 100%; }
+  .modale-carte { overflow-y:auto; }
+  .modale-carte.ouverte { place-items:start center; }
+}

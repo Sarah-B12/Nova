@@ -184,10 +184,10 @@ function accepterQuete(id){
      minuterie de 2,5 s, un changement d'appli dans l'intervalle pouvait la perdre. */
   sauvegarder(); if(typeof sauverMaintenant==="function") sauverMaintenant(); rafraichirQuetes();
 }
-function abandonnerQuete(){
+async function abandonnerQuete(){
   if(!queteActive()) return;
   // v0.91 : le message ne promet plus une remise à zéro complète — les verrous restent.
-  if(!confirm("Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué jusqu'à minuit.")) return;
+  if(!await confirmerJoli("Abandonner la quête", "Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué jusqu'à minuit.", "Abandonner", true)) return;
   // v1.17 : trace, pour distinguer dans `diag_sync` un abandon voulu d'une quête perdue.
   if(typeof _diagSync==="function") _diagSync("quete_abandonnee", { id:queteActive().id, etape:queteActive().etape }, true);
   queteEtat().active=null; journal("Quête abandonnée.","alerte");
@@ -526,13 +526,32 @@ function _htmlCalques(d){
       ${quoi==="C"?`<button class="mini" data-qc-inv>⇄</button>`:""}<button class="mini" data-qc="${quoi}" data-d="-1">◀</button><button class="mini" data-qc="${quoi}" data-d="1">▶</button></span>`:""}</div>
     <div class="qc-ligne qc-${quoi}" data-qc-ligne="${quoi}">${_calqLigneHtml(c,quoi)}</div></div>`;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Fais glisser les deux bandes du bas (au doigt, ou ◀ ▶ case par case) jusqu'à ce que les trois signaux se superposent exactement. ${CALQ_ESSAIS} vérifications au plus — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
-    <div class="qc-zone">${ligne("A","Appel du quai",false)}${ligne("B","Lueur de la silène",true)}${ligne("C","Marques des bêtes",true)}</div>
+    <p class="quete-indice">Fais glisser les deux bandes du bas (au doigt, ou ◀ ▶ case par case) jusqu'à ce que les trois signaux se superposent exactement. <b>Touche la bande du haut pour poser un repère vertical</b> (encore une fois pour l'enlever) ; à la souris, une colonne suit aussi le pointeur. ${CALQ_ESSAIS} vérifications au plus — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
+    <div class="qc-zone"><div class="qc-regle">${Array.from({length:CALQ_N},(_,i)=>`<span>${(i+1)%5===0?i+1:""}</span>`).join("")}</div>${ligne("A","Appel du quai",false)}${ligne("B","Lueur de la silène",true)}${ligne("C","Marques des bêtes",true)}</div>
     <div class="quete-rep" style="margin-top:10px"><button class="mini" id="q-calq-ok">Superposer (${reste} restante${reste>1?"s":""})</button></div></div>`;
 }
 function _wireCalques(z, d){
   const c=_calqEtat(); if(!c) return;
-  const redessiner=(quoi)=>{ const el=z.querySelector(`[data-qc-ligne="${quoi}"]`); if(el) el.innerHTML=_calqLigneHtml(c,quoi); };
+  /* v1.36n — retour testeur (Q15 ét. 4) : sans repère vertical, on se décalait
+     d'une case sur la bande du bas (il a collé une règle sur l'écran). Une
+     graduation tous les 5 au-dessus des bandes, des séparations plus marquées
+     tous les 5, une colonne qui suit la souris, et un REPÈRE posé en touchant
+     la bande du haut (au doigt comme à la souris) — sur les trois bandes. */
+  let guide=null, repere=null;
+  const marquer=()=>{
+    z.querySelectorAll(".qc-ligne, .qc-regle").forEach(l=>[...l.children].forEach((cell,i)=>{
+      cell.classList.toggle("qc-guide", i===guide); cell.classList.toggle("qc-repere", i===repere); }));
+  };
+  const colonne=(ev)=>{ const a=z.querySelector('[data-qc-ligne="A"]'); if(!a) return null; const r=a.getBoundingClientRect();
+    if(!r.width) return null; const i=Math.floor((ev.clientX-r.left)/(r.width/CALQ_N)); return (i>=0 && i<CALQ_N) ? i : null; };
+  const zone=z.querySelector(".qc-zone");
+  if(zone){
+    zone.addEventListener("pointermove", ev=>{ if(ev.pointerType!=="mouse") return; const i=colonne(ev); if(i!==guide){ guide=i; marquer(); } });
+    zone.addEventListener("pointerleave", ()=>{ if(guide!==null){ guide=null; marquer(); } });
+  }
+  const bandeA=z.querySelector('[data-qc-ligne="A"]');
+  if(bandeA) bandeA.addEventListener("click", ev=>{ const i=colonne(ev); if(i===null) return; repere=(repere===i)?null:i; marquer(); });
+  const redessiner=(quoi)=>{ const el=z.querySelector(`[data-qc-ligne="${quoi}"]`); if(el) el.innerHTML=_calqLigneHtml(c,quoi); marquer(); };
   const borne=o=>Math.max(-CALQ_N+5, Math.min(CALQ_N-5, o));
   const decaler=(quoi, delta)=>{ if(quoi==="B") c.oB=borne(c.oB+delta); else c.oC=borne(c.oC+delta); redessiner(quoi); };
   z.querySelectorAll("[data-qc]").forEach(b=>b.addEventListener("click", ()=>{ decaler(b.dataset.qc, parseInt(b.dataset.d,10)); sauvegarder(); }));
@@ -586,22 +605,27 @@ function _htmlLoup(d){
     const k=x+","+y, bete=nv.betes.find(b=>b.x===x && b.y===y);
     const moi=(L.x===x && L.y===y), cib=(nv.cib.x===x && nv.cib.y===y);
     const voisin=(Math.abs(L.x-x)+Math.abs(L.y-y)===1) && !_loupBloque(nv,x,y);
-    const cls=["ql-c", nv.obs.includes(k)?"ql-obs":"", bete?"ql-bete":"", prochain.has(k)?"ql-vu":"", cib?"ql-cib":"", moi?"ql-moi":"", voisin?"ql-pas":""].join(" ");
+    /* v1.36o — décision de l'autrice (choix B) : on ne montre PLUS les cases
+       vues (orangées) ; seules les flèches disent où chaque bête regardera à la
+       prochaine vague. Au joueur de suivre le regard jusqu'au premier massif.
+       `prochain` reste calculé (échec à l'arrivée), il n'est plus affiché. */
+    const cls=["ql-c", nv.obs.includes(k)?"ql-obs":"", bete?"ql-bete":"", cib?"ql-cib":"", moi?"ql-moi":"", voisin?"ql-pas":""].join(" ");
     const txt = bete ? `✦<small>${fleche[bete.cyc[(L.t+1)%bete.cyc.length]]}</small>` : moi ? "●" : cib ? "◎" : "";
     g+=`<button class="${cls}" data-ql="${x},${y}" ${voisin?"":"tabindex=-1"}>${txt}</button>`;
   }
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Touche une case voisine pour avancer, ou attends. Après chaque coup, la vague passe et les regards tournent. <b>Les cases orangées sont celles que les bêtes verront à la prochaine vague</b> (✦ : une bête, la flèche : où elle regardera). Atteins le ◎ sans être vu. Vague n° ${L.t+1}.</p>
+    <p class="quete-indice">Touche une case voisine pour avancer, ou attends. Après chaque coup, la vague passe et les regards tournent. ✦ : une bête. <b>Sa flèche montre où elle regardera à la prochaine vague, celle qui suit ton coup</b> : son regard file en ligne droite jusqu'au premier massif de silène (ou jusqu'à une autre bête). Atteins le ◎ sans être vu. Vague n° ${L.t+1}.</p>
     <div class="ql-grille" style="grid-template-columns:repeat(${nv.w},1fr)">${g}</div>
     <div class="quete-rep" style="margin-top:10px"><button class="mini" id="q-loup-att">Attendre une vague</button></div></div>`;
 }
 function _wireLoup(z, d){
   const nv=d.niveau, L=_loupEtat(nv); if(!nv || !L) return;
   let occupe=false;
-  const jouer=(nx, ny)=>{
+  const jouer=async (nx, ny)=>{
     if(occupe) return; occupe=true;
     const vus=_loupVus(nv, L.t+1);
-    if(vus.has(nx+","+ny) && !confirm("Elles te verront, à cette vague. Y aller quand même ?")){ occupe=false; return; }
+    /* v1.36o — plus d'avertissement « tu seras vu » : il révélait les cases
+       vues que l'on ne montre plus (choix B). */
     L.x=nx; L.y=ny; L.t++; L.coups++; sauvegarder();
     if(vus.has(nx+","+ny)){ echouerDefi(`La vague retombe, et cinq regards se posent sur toi. Un froissement, et il n'y a plus rien. Elles reviendront — toi aussi, dans ${VERROU_DEFI_H} h.`); return; }
     if(nx===nv.cib.x && ny===nv.cib.y){ journal("Tu es au milieu d'elles. Aucune ne bouge.","gain"); reussirDefi(); return; }
@@ -833,7 +857,7 @@ function _wireNommer(z, d, o){
   if(ret) ret.addEventListener("click", ()=>{ const a=queteActive(); if(!a || a._beteCercle) return; a._bete=null; sauvegarder(); rafraichirQuetes(); });
   ok.addEventListener("click", async ()=>{
     if(ok.disabled) return; const nom=beteNomNormal(c.value); if(!beteNomValide(nom)) return;
-    if(!confirm(`« ${nom} ». C'est pour la vie : tu ne pourras jamais le changer. Sûr ?`)) return;
+    if(!await confirmerJoli("Le nom est définitif", `« ${nom} ». C'est pour la vie : tu ne pourras jamais le changer. Sûr ?`, "Confirmer")) return;
     ok.disabled=true; c.disabled=true; if(ret) ret.disabled=true;
     const a=queteActive(); if(!a) return;
     const reprendre=(t)=>{ msg.textContent=t; ok.disabled=false; c.disabled=false; if(ret) ret.disabled=false; };
@@ -1382,7 +1406,7 @@ function _wireTriangulation(z, d){
           + `<button class="mini q-tri-eff" data-tri-eff="${i}" title="Effacer ce relevé">✕ Effacer</button></div>`).join("")
         + `<div style="margin-top:4px">Fouilles ratées : ${t.ratees}/${F}</div>`
       : "Aucun relevé pour l'instant.";
-    liste.querySelectorAll("[data-tri-eff]").forEach(b=>b.addEventListener("click", (ev)=>{
+    liste.querySelectorAll("[data-tri-eff]").forEach(b=>b.addEventListener("click", async (ev)=>{
       const i = Number(b.dataset.triEff);
       const r = t.releves[i]; if(!r) return;
       /* ⚠ Au doigt, on confirme : le bouton est à 40 px d'une ligne de texte, et
@@ -1390,7 +1414,7 @@ function _wireTriangulation(z, d){
          refaire. À la souris, pas de fenêtre — le geste est précis. */
       const auDoigt = (ev && ev.pointerType === "touch")
         || (!ev.pointerType && window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
-      if(auDoigt && !confirm(`Effacer le relevé ${i+1} (force ${r.f}) ?`)) return;
+      if(auDoigt && !await confirmerJoli("Effacer le relevé", `Effacer le relevé ${i+1} (force ${r.f}) ?`, "Effacer", true)) return;
       t.releves.splice(i, 1); sauvegarder();
       journal(`Relevé effacé (force ${r.f}). Tu peux relever à nouveau ici.`, "", "quete");
       dessiner();
@@ -1822,7 +1846,16 @@ function _queteStyle(){
     .qc-tete{ display:flex; justify-content:space-between; align-items:center; font-size:12px; opacity:.85; margin-bottom:3px; }
     .qc-cmd button{ min-width:40px; min-height:40px; margin-left:4px; }
     .qc-ligne{ display:grid; grid-template-columns:repeat(${CALQ_N},1fr); height:46px; border:1px solid var(--line); border-radius:4px; background:rgba(0,0,0,.25); touch-action:none; cursor:grab; user-select:none; }
-    .qc-c{ position:relative; border-right:1px solid rgba(255,255,255,.04); }
+    .qc-c{ position:relative; border-right:1px solid rgba(255,255,255,.06); }
+    /* v1.36n — repères verticaux (graduation, colonne suivie, repère posé) */
+    .qc-c:nth-child(5n){ border-right-color:rgba(255,255,255,.18); }
+    .qc-regle{ display:grid; grid-template-columns:repeat(${CALQ_N},1fr); height:14px; margin:0 1px 2px; font:10px/14px "Space Mono",monospace; color:var(--sourdine,#8b95a8); }
+    .qc-regle span{ text-align:right; padding-right:1px; border-right:1px solid transparent; }
+    .qc-regle span:nth-child(5n){ border-right-color:rgba(255,255,255,.25); }
+    .qc-ligne[data-qc-ligne="A"]{ cursor:crosshair; }
+    .qc-c.qc-guide, .qc-regle span.qc-guide{ background:rgba(255,176,96,.10); }
+    .qc-c.qc-repere, .qc-regle span.qc-repere{ background:rgba(255,176,96,.16); box-shadow:inset 2px 0 #ffb060, inset -2px 0 #ffb060; }
+    .qc-regle span.qc-repere{ color:#ffb060; }
     .qc-c i{ position:absolute; left:15%; right:15%; bottom:0; border-radius:2px 2px 0 0; }
     .qc-hors{ background:rgba(0,0,0,.35); }
     .qc-A .qc-c i{ background:#b9a0f0; }

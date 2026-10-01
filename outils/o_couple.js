@@ -8,7 +8,7 @@
   sb.rpc = (nom, args) => { appels.push({ nom, args: JSON.parse(JSON.stringify(args || {})) });
     if(rep[nom]) return Promise.resolve(rep[nom](args)); return rpcOrig(nom, args); };
   const journ = []; const jOrig = journal; journal = (t) => { journ.push(t); };
-  window.confirm = () => true;
+  window.confirm = () => true; confirmerJoli = async () => true;   // v1.36l : boîte maison
   _chargerRelations = async () => ({ amis:[{ id:"ami-1", nom:"Élane" }], envoyees:[], recues:[] });
   const libre = { ok:true, union:null, envoyee:null, recues:[], delai:null, choix_faction:null,
                   moi:{ faction:etat.faction, x:etat.pos.x, y:etat.pos.y, secteur:"silene" } };
@@ -22,6 +22,11 @@
   changerCentre("unions"); await dort(100);
   const el = document.querySelector("#centre-corps");
   r.unions = { form: !!el.querySelector("#u-cible"), textes: el.querySelector("#unions-textes").textContent.trim().slice(0, 20) };
+  // v1.36j : les amis déjà mariés ne sont pas proposés.
+  _chargerRelations = async () => ({ amis:[{ id:"ami-1", nom:"Élane" }, { id:"ami-2", nom:"Déjà-Pris" }], envoyees:[], recues:[] });
+  rep.unions_maries = () => ({ data:["ami-2"], error:null });
+  await majUnions(el);
+  r.filtre = [...el.querySelectorAll("#u-cible option")].map(o => o.textContent);
   el.querySelector('input[name="u-ou"][value="je"]').checked = true;
   rep.union_demander = () => ({ data:{ ok:true, id:9 }, error:null });
   el.querySelector('[data-u="demander"]').click(); await dort(80);

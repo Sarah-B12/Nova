@@ -5,7 +5,7 @@
   const orig = sb.rpc.bind(sb);
   sb.rpc = (n, a) => { appels.push({ n, a }); return rep[n] ? Promise.resolve({ data: rep[n](a), error: null }) : orig(n, a); };
   const journ = []; const jOrig = journal; journal = (t) => { journ.push(t); };
-  window.confirm = () => true;
+  window.confirm = () => true; confirmerJoli = async () => true;   // v1.36l : boîte maison
   const h48 = new Date(Date.now()+30*3600e3).toISOString(), h24 = new Date(Date.now()+5*3600e3).toISOString(), avant = new Date(Date.now()-3600e3).toISOString();
   rep.plaintes_mes_vols = () => ({ ok:true, regent:true, liste:[
     { vol:7, voleur:"Kaël<b>", mode:"vol", butin:{ cendrite:3 }, credits:0, valeur:15, vol_le:avant, limite:h48 },

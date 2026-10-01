@@ -169,7 +169,7 @@ async function demolir(i){
   if(_refusTerrain()) return;
   const p=etat.terrain.parcelles[i]; if(!p) return;
   if(p.type==="hangar" && Array.isArray(p.drones) && p.drones.some(d=>d)){ journal(TERRAIN_REFUS.drones,"alerte"); return; }
-  if(!confirm("Démolir cette structure ? La parcelle sera libérée.")) return;
+  if(!await confirmerJoli("Démolir la structure", "Démolir cette structure ? La parcelle sera libérée.", "Démolir", true)) return;
   const r=await terrainRpc("terrain_demolir", { p_plot:i }, { solde:true });
   if(!r) return;
   plotSel=null; fermerStruct();
@@ -252,6 +252,18 @@ async function nourrirCase(ci){
   const r=await terrainRpc("terrain_nourrir", { p_plot:structSel, p_idx:ci });
   if(!r) return;
   journal(`Nourri (1 Ferragave) — ${r.repas}/${r.adulte||a.repasAdulte}.`,"gain"); apresAction(); majStruct();
+}
+/* v1.36l — « Retirer » ne vidait la case QUE côté client (oubli de la bascule
+   v1.35 : elle revenait au rechargement). Désormais : terrain_retirer (v155).
+   Rien n'est rendu, comme avant. */
+async function retirerCase(ci, quoi){
+  if(_refusTerrain()) return;
+  const ok = await confirmerJoli(quoi==="animal" ? "Retirer l'animal" : "Retirer la plante",
+    quoi==="animal" ? "Retirer cet animal de l'enclos ? Il ne te sera pas rendu." : "Arracher cette plante ? Elle ne te sera pas rendue.",
+    "Retirer", true);
+  if(!ok) return;
+  if(!await terrainRpc("terrain_retirer", { p_plot:structSel, p_idx:ci })) return;
+  structCaseSel=null; journal(quoi==="animal" ? "Animal retiré de l'enclos." : "Plante arrachée.", "alerte"); apresAction(); majStruct();
 }
 async function tondreCase(ci){
   if(_refusTerrain()||_refusHS(structSel)) return;
@@ -372,7 +384,7 @@ function renderStructActions(p, el){
     el.innerHTML=`<p style="margin:0 0 8px"><b>${plante(c.plante).nom}</b> — croissance ${c.croissance}%</p>`;
     if(c.croissance>=PLANT_MAX) btn("Récolter (5-9)",()=>recolterCase(ci),false,"recolter");
     else btn(memeJour(c.arrose)?"Arrosé aujourd'hui":"Arroser (+"+plante(c.plante).croissance+"%)",()=>arroserCase(ci), memeJour(c.arrose), "arroser");
-    btn("Retirer",()=>{ if(confirm("Retirer cette plante ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
+    btn("Retirer",()=>retirerCase(ci, "plante"));
   } else {
     if(!c){
       const dispoA = ANIMAUX.filter(a => possedeStock(bebeDe(a.id)));
@@ -386,7 +398,7 @@ function renderStructActions(p, el){
     el.innerHTML=`<p style="margin:0 0 8px"><b>${a.nom}</b> — ${adulte?`adulte · ${c.tontes}/${TONTES_MAX} tontes`:`jeune ${c.repas}/${a.repasAdulte} repas`}</p>`;
     if(!adulte) btn("Nourrir (1 Ferragave)",()=>nourrirCase(ci), (etat.sac["ferragave"]||0)<=0, "nourrir");
     else btn(memeJour(c.tonte)?"Tondu aujourd'hui":"Tondre",()=>tondreCase(ci), memeJour(c.tonte), "tondre");
-    btn("Retirer",()=>{ if(confirm("Retirer cet animal ?")){ p.cases[ci]=null; structCaseSel=null; majStruct(); } });
+    btn("Retirer",()=>retirerCase(ci, "animal"));
   }
   el.appendChild(row);
 }

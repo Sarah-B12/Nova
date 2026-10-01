@@ -92,7 +92,7 @@ async function _validerAvatar(){
   const e = _avEtatServeur || {};
   if(!e.gratuit){
     if((e.credits|0) < (e.cout|0)){ journal(`Il te faut ${e.cout} ₡ pour changer d'apparence (tu en as ${e.credits}).`,"alerte"); return; }
-    if(!confirm(`Changer d'apparence coûte ${e.cout} ₡.\n\nTon genre reste figé, et tu ne pourras pas y retoucher avant 6 mois. Confirmer ?`)) return;
+    if(!await confirmerJoli("Changer d'apparence", `Changer d'apparence coûte ${e.cout} ₡.\n\nTon genre reste figé, et tu ne pourras pas y retoucher avant 6 mois. Confirmer ?`, "Confirmer")) return;
   }
 
   const btn = document.querySelector("#av-valider");

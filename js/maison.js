@@ -161,7 +161,7 @@ async function travaillerMaison(n=1){
 async function demolirMaison(){
   if(refusPrison("démolir ton logement")) return;
   if(itemsCoffre()>0){ journal("Vide d'abord ton rangement avant de démolir.","alerte"); return; }
-  if(!confirm("Démolir ton logement ? La parcelle sera libérée.")) return;
+  if(!await confirmerJoli("Démolir le logement", "Démolir ton logement ? La parcelle sera libérée.", "Démolir", true)) return;
   if(!await terrainRpc("maison_demolir", {})) return;
   journal("Logement démoli.","alerte"); apresAction();
 }

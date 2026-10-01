@@ -129,7 +129,7 @@ async function rendrePlaintesRegent(el){
     const inp = el.querySelector(`[data-montant="${b.dataset.prime}"]`);
     const m = Math.round(Number(inp && inp.value));
     if(!(m >= PRIME_MIN && m <= PRIME_MAX)){ journal(`La prime va de ${PRIME_MIN} à ${PRIME_MAX} ₡.`,"alerte"); return; }
-    if(!confirm(`Mettre ${m} ₡ de la caisse sur cette tête ? C'est définitif.`)) return;
+    if(!await confirmerJoli("Mettre à prix", `Mettre ${m} ₡ de la caisse sur cette tête ? C'est définitif.`, "Mettre à prix", true)) return;
     b.disabled = true;
     const r = await _tqRpc(()=>sb.rpc("regent_prime", { p_plainte: Number(b.dataset.prime), p_montant: m }), "prime");
     const err = r && r.err;

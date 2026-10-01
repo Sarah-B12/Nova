@@ -228,9 +228,9 @@ function commencerFormation(cle){
   journal(`Formation commencée : ${fo.nom}.`,"gain");
   apresAction(); majCentre();
 }
-function abandonnerFormation(){
+async function abandonnerFormation(){
   if(!etat.formation) return;
-  if(!confirm("Abandonner ta formation ? Tu oublieras TOUT ce que tu as fait depuis son début (points remis à zéro). Tu pourras ensuite en choisir une autre depuis le début.")) return;
+  if(!await confirmerJoli("Abandonner la formation", "Abandonner ta formation ? Tu oublieras TOUT ce que tu as fait depuis son début (points remis à zéro). Tu pourras ensuite en choisir une autre depuis le début.", "Abandonner", true)) return;
   etat.formation = null; formationApercu = null;
   journal("Formation abandonnée — progression oubliée.","alerte");
   apresAction(); majCentre();

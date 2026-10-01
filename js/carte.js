@@ -207,7 +207,7 @@ async function secoursSol(){
      close. Une dette supposerait un mécanisme entier — la retenir sur quoi, et
      jusqu'à quand — pour un joueur qui est, par définition, déjà à sec. */
   const frais = Math.min(SECOURS_SOL, Math.max(0, etat.credits||0));
-  if(!confirm(`Appel de détresse : une escorte vient te chercher et te ramène chez toi.\n\nCoût : ${frais} ₡${frais<SECOURS_SOL?" — tout ce qu'il te reste":` (tarif : ${SECOURS_SOL} ₡)`}.\n\nContinuer ?`)) return;
+  if(!await confirmerJoli("Appel de détresse", `Appel de détresse : une escorte vient te chercher et te ramène chez toi.\n\nCoût : ${frais} ₡${frais<SECOURS_SOL?" — tout ce qu'il te reste":` (tarif : ${SECOURS_SOL} ₡)`}.\n\nContinuer ?`, "Appeler")) return;
   const v = villeRetour(); if(!v) return;
   /* ⚠ Les crédits se débitent en mémoire puis se poussent : c'est la file
      `pousserCredits()` qui les porte au serveur (voir `_creditsEnAttente`).
@@ -461,7 +461,7 @@ async function voyager(x, y){
   const _retour = coutRetourO2({ x, y });
   if(_retour != null && _retour > 0 && _retour >= _reste){
     const pv = citeLaPlusProche({ x, y });
-    if(!confirm(`Après ce trajet il te restera ${Math.max(0,_reste)} d'O₂, et il en faut ${_retour} pour rejoindre ${pv?nomCite(pv.f):"une cité"}, la plus proche de là-bas.\n\nTu ne pourras plus respirer sans recharge. Continuer ?`)) return;
+    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,_reste)} d'O₂, et il en faut ${_retour} pour rejoindre ${pv?nomCite(pv.f):"une cité"}, la plus proche de là-bas.\n\nTu ne pourras plus respirer sans recharge. Continuer ?`, "Continuer", true)) return;
   }
   if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
   // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.

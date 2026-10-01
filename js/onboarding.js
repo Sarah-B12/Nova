@@ -60,6 +60,6 @@ function majPas(){
   }
   z.innerHTML=h;
   const bp=z.querySelector("#pas-plier"); if(bp) bp.addEventListener("click",()=>{ etat.pasPlie=!etat.pasPlie; if(typeof sauvegarder==="function") sauvegarder(); majPas(); });
-  const bm=z.querySelector("#pas-masquer"); if(bm) bm.addEventListener("click",()=>{ if(confirm("Masquer les Premiers pas ? (ils disparaissent de toute façon une fois terminés)")){ etat.pasFini=true; if(typeof sauvegarder==="function") sauvegarder(); majPas(); } });
+  const bm=z.querySelector("#pas-masquer"); if(bm) bm.addEventListener("click",async ()=>{ if(await confirmerJoli("Premiers pas", "Masquer les Premiers pas ? (ils disparaissent de toute façon une fois terminés)", "Masquer")){ etat.pasFini=true; if(typeof sauvegarder==="function") sauvegarder(); majPas(); } });
   z.querySelectorAll("[data-hub]").forEach(b=>b.addEventListener("click",()=>{ if(typeof changerHub==="function") changerHub(b.dataset.hub); }));
 }

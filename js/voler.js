@@ -8,7 +8,8 @@
                 équipé + Intrusion. Risque de prison plus faible.
      • Coûte 15% d'énergie. Cible = un joueur AU HASARD présent dans la ville.
      • Intouchables : équipement porté (armes/armures) + vaisseau équipé.
-     • Immunité des nouveaux (<20 j) ; une victime volable 1×/jour (jour de jeu).
+     • Immunité des nouveaux (<20 j) ; une victime volée est protégée le jour
+       du vol et le lendemain (v1.36j, v153 : remise à minuit, heure de Paris).
    =========================================================== */
 const VOL_ENERGIE     = 15;
 /* v1.21 — 30 % → 20 % (décision de l'autrice, 27/09) : le plafond absolu de
@@ -18,6 +19,10 @@ const VOL_ENERGIE     = 15;
 const VOL_CAP_CREDITS = 0.20;
 const VOL_CAP_ABS     = 500;    // plafond absolu de crédits par hack (anti-jackpot)
 const VOL_CAP_OBJETS  = 3;
+/* v1.36k — XP du vol et du hack (proposition, à valider par l'autrice) :
+   réussi avec butin, réussi mais vide, raté. Crédité comme partout
+   (gagnerXp → xp_gagner). */
+const XP_VOL_REUSSI = 8, XP_VOL_VIDE = 3, XP_VOL_RATE = 2;
 const IMMUNITE_JOURS  = 20;
 const ITEM_HACK_VOL   = "fab_ordinateur_de_hacking";
 let _volTimer = null, _hackTimer = null, _hackWin = null, _hackLose = null, _hackCleanup = null;
@@ -134,7 +139,7 @@ function _volAppliquer(d){
 }
 const _VOL_REFUS = {
   personne:  ()=>`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,
-  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j) ou déjà délestés aujourd'hui. Rien n'a été dépensé.`,
+  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j) ou délestés hier ou aujourd'hui. Rien n'a été dépensé.`,
   lieu:      ()=>"Va dans une ville, ou au Perchoir, pour cibler quelqu'un.",
   aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
   ordinateur:()=>"Équipe un Ordinateur de hacking pour hacker.",
@@ -162,21 +167,25 @@ async function _volConclure(mode, prep, reussi){
   const nom = (d && d.cible) || prep.cible || "ta cible";
   if(!d || !d.ok){ journal("Le serveur n'a pas enregistré l'issue — elle comptera comme un échec.","alerte","vol"); apresAction(); majVoler(); return; }
   _volAppliquer(d);
+  // v1.36k : le vol et le hack rapportent de l'XP (voir XP_VOL_*).
+  const xp = d.reussi ? (d.vide ? XP_VOL_VIDE : XP_VOL_REUSSI) : XP_VOL_RATE;
+  if(typeof gagnerXp==="function") gagnerXp(xp);
+  const xpTxt = ` (+${xp} XP)`;
   if(d.reussi){
     if(d.vide){
-      if(mode==="vol") journal(d.sac_plein ? `Tu tiens de quoi faire les poches de ${nom}, mais ton sac est plein : tu repars les mains vides.`
-                                           : `Tu fouilles ${nom} mais repars les mains vides.`,"alerte","vol");
-      else journal(`Hack réussi, mais le compte de ${nom} est vide.`,"alerte","vol");
+      if(mode==="vol") journal((d.sac_plein ? `Tu tiens de quoi faire les poches de ${nom}, mais ton sac est plein : tu repars les mains vides.`
+                                           : `Tu fouilles ${nom} mais repars les mains vides.`)+xpTxt,"alerte","vol");
+      else journal(`Hack réussi, mais le compte de ${nom} est vide.`+xpTxt,"alerte","vol");
     } else if(mode==="vol"){
       journal(`Vol réussi sur ${nom} : ${_nomsButin(d.butin)}.`+(d.sac_plein?" (sac plein : tu as dû en laisser)":"")+" "
-        + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui."), "gain","vol");
+        + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui.") + xpTxt, "gain","vol");
     } else {
       journal(`Hack réussi : +${d.gain} ₡ siphonnés à ${nom}. `
-        + (d.signe ? "Ta signature est passée : son journal porte TON NOM." : "Son journal ne verra qu'« un anonyme »."), "gain","vol");
+        + (d.signe ? "Ta signature est passée : son journal porte TON NOM." : "Son journal ne verra qu'« un anonyme ».") + xpTxt, "gain","vol");
     }
   } else {
-    if(mode==="vol") journal(`Échec ! ${nom} t'a repéré — ton nom apparaît dans son journal.`,"alerte","vol");
-    else journal(`Hack échoué sur ${nom}. `+(d.signe ? "Ta signature est passée : il sait QUI a essayé." : "Son journal : « un anonyme a tenté de me pirater »."),"alerte","vol");
+    if(mode==="vol") journal(`Échec ! ${nom} t'a repéré — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");
+    else journal(`Hack échoué sur ${nom}. `+(d.signe ? "Ta signature est passée : il sait QUI a essayé." : "Son journal : « un anonyme a tenté de me pirater ».")+xpTxt,"alerte","vol");
     if(d.prison) journal(mode==="vol" ? "Pris la main dans le sac : direction la prison." : "Ta trace a été remontée : prison.","alerte","vol");
   }
   apresAction(); majVoler();
@@ -539,7 +548,7 @@ function majVoler(){
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
-        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans son sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
+        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans son sac, en ${3 + Math.floor(((typeof agiliteEffective==="function")?agiliteEffective():0)/25)} tentatives (3 + Agilité ÷ 25) — les objets rares et fabriqués se laissent moins prendre. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>

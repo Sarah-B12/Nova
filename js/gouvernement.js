@@ -574,7 +574,7 @@ async function _mercEngager(cercle){
   journal(`Mercenaires engagés (−${res.prix} ₡ de la caisse).`,"gain"); if(typeof majCentre==="function") majCentre();
 }
 async function _mercRompre(cercle){
-  if(!confirm("Rompre le contrat avec ces mercenaires (sans remboursement) ?")) return;
+  if(!await confirmerJoli("Rompre le contrat", "Rompre le contrat avec ces mercenaires (sans remboursement) ?", "Rompre", true)) return;
   const { data:res, error } = await sb.rpc("mercenaires_rompre",{ p_cercle:cercle });
   if(error || !res || !res.ok){ journal("Impossible.","alerte"); return; }
   journal("Contrat rompu.","alerte"); if(typeof majCentre==="function") majCentre();
@@ -738,7 +738,7 @@ async function syncEffetsCombat(){
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }
 async function _expSupprimer(){
-  if(!confirm("Annuler l'expédition en cours ?")) return;
+  if(!await confirmerJoli("Annuler l'expédition", "Annuler l'expédition en cours ?", "Annuler l'expédition", true)) return;
   const { data:res, error } = await sb.rpc("supprimer_expedition");
   if(error||!res||!res.ok){ journal("Impossible.","alerte"); return; }
   journal("Expédition annulée.","alerte"); if(typeof majCentre==="function") majCentre();
@@ -953,7 +953,7 @@ function _actionDefense(o,d,enDefense){
   m.querySelector("[data-fermer]").addEventListener("click",()=>{ m.hidden=true; });
   m.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",async()=>{
     const act=b.dataset.act;
-    if(act==="detruire" && !confirm("Détruire définitivement cet objet ?")) return;
+    if(act==="detruire" && !await confirmerJoli("Détruire l'objet", "Détruire définitivement cet objet ?", "Détruire", true)) return;
     const rpc = act==="retirer"?"retirer_defense":act==="placer"?"placer_defense":"detruire_reserve";
     const { data:res, error } = await sb.rpc(rpc,{ p_id:o.id });
     if(error || !res || !res.ok){ const e=res&&res.err;
@@ -1083,13 +1083,13 @@ function _regentNommer(role){
   if(inp) inp.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
 }
 async function _regentDemettre(role){
-  if(!confirm("Démettre ce rôle ?")) return;
+  if(!await confirmerJoli("Démettre", "Démettre ce rôle ?", "Démettre", true)) return;
   const { data:res, error } = await sb.rpc("regent_nommer",{ p_role:role, p_profil:null });
   if(error || !res || !res.ok){ journal("Impossible.","alerte"); return; }
   journal("Rôle démis.","alerte"); if(typeof majCentre==="function") majCentre();
 }
 async function _demissionner(role){
-  if(!confirm("Démissionner de ce rôle ?")) return;
+  if(!await confirmerJoli("Démissionner", "Démissionner de ce rôle ?", "Démissionner", true)) return;
   const { data:res, error } = await sb.rpc("demissionner",{ p_role:role });
   if(error || !res || !res.ok){ journal("Impossible.","alerte"); return; }
   journal("Tu as démissionné de ton rôle.","alerte"); if(typeof majCentre==="function") majCentre();
@@ -1183,7 +1183,7 @@ async function majElections(el){
   el.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   el.querySelectorAll("[data-prog]").forEach(x=>x.addEventListener("click",()=>{ const c=cands.find(k=>k.profil_id===x.dataset.prog); if(c) _voirProgramme(c.nom, c.programme); }));
   el.querySelectorAll("[data-voter]").forEach(x=>x.addEventListener("click",()=>_voter(x.dataset.voter, x.dataset.nom)));
-  el.querySelectorAll("[data-admcand]").forEach(x=>x.addEventListener("click",async()=>{ if(!confirm("Supprimer cette candidature ?"))return; try{ await sb.rpc("admin_suppr_candidature",{p_profil:x.dataset.admcand,p_faction:fac,p_cycle:_cycleActuel()}); journal("Candidature supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#22"); } if(typeof majCentre==="function") majCentre(); }));
+  el.querySelectorAll("[data-admcand]").forEach(x=>x.addEventListener("click",async()=>{ if(!await confirmerJoli("Supprimer la candidature", "Supprimer cette candidature ?", "Supprimer", true))return; try{ await sb.rpc("admin_suppr_candidature",{p_profil:x.dataset.admcand,p_faction:fac,p_cycle:_cycleActuel()}); journal("Candidature supprimée (modération).","alerte"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#22"); } if(typeof majCentre==="function") majCentre(); }));
   const bp=el.querySelector("#cand-presenter"); if(bp) bp.addEventListener("click",()=>_ouvrirCandidature(""));
   const bm=el.querySelector("#cand-modif"); if(bm) bm.addEventListener("click",()=>_ouvrirCandidature(moiCand?moiCand.programme:""));
   const br=el.querySelector("#cand-retirer"); if(br) br.addEventListener("click", _retirerCandidature);
@@ -1213,7 +1213,7 @@ async function _soumettreCandidature(){
   if(typeof majCentre==="function") majCentre();
 }
 async function _retirerCandidature(){
-  if(!confirm("Retirer ta candidature ?")) return;
+  if(!await confirmerJoli("Retirer ta candidature", "Retirer ta candidature ?", "Retirer", true)) return;
   const { data:res, error } = await sb.rpc("retirer_candidature");
   if(error || !res || !res.ok){ journal("Retrait impossible.","alerte"); return; }
   journal("Candidature retirée.","alerte");
@@ -1224,7 +1224,13 @@ async function _retirerCandidature(){
    sur mobile elle affiche le nom de domaine — pour un geste aussi engageant
    qu'un vote définitif, ça détonne. Renvoie une promesse booléenne, donc
    réutilisable ailleurs (candidature, démission…). */
-function confirmerJoli(titre, texte, libelleOk, danger){
+/* v1.36l — toutes les confirmations du jeu passent par ici (retour de
+   l'autrice : les fenêtres du navigateur « ne sont pas jolies »). Les \n du
+   texte deviennent des retours à la ligne. `seul` = un seul bouton (message
+   d'information, cf. alerterJoli). La console de développement garde les
+   fenêtres natives. */
+function alerterJoli(titre, texte, libelleOk){ return confirmerJoli(titre, texte, libelleOk || "OK", false, true); }
+function confirmerJoli(titre, texte, libelleOk, danger, seul){
   return new Promise(resolve => {
     if(!document.querySelector("#cj-style")){
       const st=document.createElement("style"); st.id="cj-style";
@@ -1237,7 +1243,7 @@ function confirmerJoli(titre, texte, libelleOk, danger){
           max-width:400px; width:100%; padding:18px 20px 16px; animation:cj-b .18s ease-out; }
         .cj-boite h4{ margin:0 0 8px; font-size:14px; letter-spacing:.05em; text-transform:uppercase;
           color:var(--orange-hi,#ffb060); }
-        .cj-boite p{ margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--texte,#dfe8f2); }
+        .cj-boite p{ margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--texte,#dfe8f2); white-space:pre-line; }
         .cj-actions{ display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap; }
         .cj-actions button{ padding:8px 15px; border-radius:9px 3px 9px 3px; cursor:pointer;
           font-family:inherit; font-size:13px; background:transparent;
@@ -1256,7 +1262,7 @@ function confirmerJoli(titre, texte, libelleOk, danger){
         <h4>${echapper(titre)}</h4>
         <p>${echapper(texte)}</p>
         <div class="cj-actions">
-          <button class="cj-non">Annuler</button>
+          ${seul ? "" : `<button class="cj-non">Annuler</button>`}
           <button class="cj-ok${danger?" danger":""}">${echapper(libelleOk||"Confirmer")}</button>
         </div></div>`;
     document.body.appendChild(fond);
@@ -1265,7 +1271,7 @@ function confirmerJoli(titre, texte, libelleOk, danger){
     const clavier = e => { if(e.key==="Escape") fin(false); if(e.key==="Enter") fin(true); };
     document.addEventListener("keydown", clavier);
     fond.querySelector(".cj-ok").addEventListener("click", ()=>fin(true));
-    fond.querySelector(".cj-non").addEventListener("click", ()=>fin(false));
+    const non = fond.querySelector(".cj-non"); if(non) non.addEventListener("click", ()=>fin(false));
     fond.addEventListener("click", e=>{ if(e.target===fond) fin(false); });   // clic hors cadre = annuler
     fond.querySelector(".cj-ok").focus();
   });

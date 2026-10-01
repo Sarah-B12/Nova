@@ -8,7 +8,7 @@
   sb.rpc = (nom, args) => { appels.push({ nom, args: JSON.parse(JSON.stringify(args || {})) });
     if(rep[nom]) return Promise.resolve(rep[nom](args)); return rpcOrig(nom, args); };
   const journ = []; const jOrig = journal; journal = (t, c) => { journ.push(t); };
-  window.confirm = () => true;
+  window.confirm = () => true; confirmerJoli = async () => true;   // v1.36l : boîte maison
   const T = (parc, maison) => ({ parcelles: Array.from({ length: 24 }, (_, i) => parc[i] || null),
                                  maison: maison || { palier: 1, plot: 0, chantier: null }, integrite: {} });
   const base = () => JSON.parse(JSON.stringify(etat.terrain.parcelles));

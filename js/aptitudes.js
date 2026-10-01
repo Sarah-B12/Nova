@@ -76,7 +76,7 @@ function acheterApt(chaine, idx){
    jour où les crédits d'aptitude passeront au serveur. */
 function respecGratuit(){ return !etat.respecOffert; }
 function respecCout(){ return respecGratuit() ? 0 : APT_RESPEC; }
-function respecApt(){
+async function respecApt(){
   const e = aptEtat();
   if(e.pris.length === 0){ journal("Aucune aptitude à réattribuer.","alerte"); return; }
   const cout = respecCout();
@@ -84,7 +84,7 @@ function respecApt(){
   const question = (cout === 0)
     ? `Réattribuer toutes tes aptitudes ? C'est OFFERT — une seule fois. Les suivantes coûteront ${APT_RESPEC.toLocaleString("fr-FR")} ₡.`
     : `Réattribuer toutes tes aptitudes pour ${cout} ₡ ? Tes points seront rendus, à replacer.`;
-  if(!confirm(question)) return;
+  if(!await confirmerJoli("Réattribuer les aptitudes", question, "Réattribuer")) return;
   const rendu = e.pris.reduce((a,id)=>a+aptCoutParId(id), 0);
   etat.credits -= cout; e.pa += rendu; e.pris = [];
   // ⚠ Le drapeau se pose APRÈS le confirm : une annulation ne doit pas

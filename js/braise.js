@@ -173,7 +173,7 @@ async function voyagerBraise(x, y){
   // Point de non-retour : on AVERTIT (comme sur Silène), on n'interdit pas.
   const reste = o2 - c.coutO, retour = coutRetourVaisseau({ x, y });
   if(retour > 0 && retour >= reste){
-    if(!confirm(`Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir au vaisseau.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`)) return;
+    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir au vaisseau.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
   }
   if(!await agirServeur({ cout:c.coutE, jauges:{ o2:-c.coutO }, motif:"deplacement" })) return;
   // On quitte le bord APRÈS l'appel : le premier pas se fait avec un plein d'air.

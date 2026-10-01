@@ -199,6 +199,13 @@ async function _uBlocDemander(){
   let amis = [];
   try{ if(typeof _chargerRelations === "function") amis = (await _chargerRelations()).amis || []; }catch(e){}
   if(!amis.length) return `<p class="vide">On demande en mariage parmi ses <b>amis</b> (Le Réseau). Tu n'en as pas encore.</p>`;
+  /* v1.36j — retour de l'autrice : on ne propose pas les amis déjà mariés
+     (unions_maries, v153 ; le serveur refuserait de toute façon). */
+  try{
+    const { data } = await sb.rpc("unions_maries", { p_ids: amis.map(a => a.id) });
+    if(Array.isArray(data) && data.length){ const pris = new Set(data); amis = amis.filter(a => !pris.has(a.id)); }
+  }catch(e){}
+  if(!amis.length) return `<p class="vide">Tous tes amis sont déjà mariés.</p>`;
   return `<h4 style="margin:12px 0 6px">Demander en mariage</h4>
     <div class="u-form">
       <select id="u-cible">${amis.map(a => `<option value="${a.id}">${echapper(a.nom)}</option>`).join("")}</select>
@@ -233,7 +240,7 @@ function _uBrancher(el){
     } else if(a === "annuler"){ r = await _uRpc("union_annuler"); if(r) _jc("Demande annulée.", "alerte"); }
     else if(a === "refuser"){ r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:false }); if(r) _jc("Demande déclinée.", "alerte"); }
     else if(a === "accepter"){
-      if(!confirm("Dire oui ? Celui qui s'installe chez l'autre rejoint sa faction et reçoit un terrain neuf ; son terrain actuel est mis en veille.")) return;
+      if(!await confirmerJoli("Dire oui", "Dire oui ? Celui qui s'installe chez l'autre rejoint sa faction et reçoit un terrain neuf ; son terrain actuel est mis en veille.", "Oui")) return;
       r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:true });
       if(r){ _jc("Vous êtes mariés !", "gain"); await _uApresDemenagement(r); }
     }
@@ -245,7 +252,7 @@ function _uBrancher(el){
       const msg = (demande ? "Demander le divorce ? La Complicité perdra 50 points (sous 20 %, la réserve commune se ferme)."
                            : "Confirmer le divorce ?")
         + ((u && !u.je_suis_hote) ? " Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant." : "");
-      if(!confirm(msg)) return;
+      if(!await confirmerJoli("Divorce", msg, "Confirmer", true)) return;
       r = await _uRpc("union_divorcer");
       if(r && r.divorce){ _jc("Le divorce est prononcé.", "alerte"); await _uApresDemenagement(r); }
       else if(r && r.demande) _jc(`Demande de divorce envoyée. Complicité : ${r.complicite} %.`, "alerte");

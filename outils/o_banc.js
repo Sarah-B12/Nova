@@ -29,7 +29,10 @@ const DELAIS = {
   seq: { profil: 50, sac: 50, jauges: 50 },
   banq: { profil: 50, sac: 50, jauges: 50 },
   q7: { profil: 50, sac: 50, jauges: 50 },
-  prison: { profil: 50, sac: 50, jauges: 50 },    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
+  prison: { profil: 50, sac: 50, jauges: 50 },
+  dialogues: { profil: 50, sac: 50, jauges: 50 },
+  calques: { profil: 50, sac: 50, jauges: 50 },
+  loup: { profil: 50, sac: 50, jauges: 50 },      // v1.36o : pas de loup, flèches seules (o_loup.js)   // v1.36n : repères des calques (o_calques.js) // v1.36l : boîtes maison (o_dialogues.js)    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
 }[SCEN];
 
 const donnees = {

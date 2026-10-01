@@ -49,7 +49,12 @@ function _ppStyle(){
     .pp-haut .pp-portrait{ width:200px; aspect-ratio:3/4; flex:0 0 auto; }
     .pp-portraits{ display:flex; gap:10px; align-items:flex-end; flex:0 1 auto; max-width:100%; }
     .pp-portraits .pp-portrait{ flex:0 1 200px; min-width:0; }
-    .pp-bete{ flex:0 1 140px; min-width:90px; text-align:center; }
+    /* v1.36p — la bête passe À DROITE des informations (retour de l'autrice :
+       elle décalait le texte). Sur écran étroit, elle descend sous les infos,
+       centrée, au lieu de disparaître. */
+    .pp-bete{ flex:0 0 160px; min-width:110px; text-align:center; align-self:center; }
+    @media(max-width:760px){ .pp-bete{ flex:1 1 100%; max-width:200px; margin:0 auto; } }
+    .pp-conjoint a{ color:var(--orange-hi,#ffb060); cursor:pointer; text-decoration:underline; }
     .pp-bete img{ width:100%; aspect-ratio:1; object-fit:contain; display:block; filter:drop-shadow(0 0 10px rgba(232,240,200,.25)); }
     .pp-bete-nom{ font-weight:700; margin-top:4px; }
     .pp-info{ flex:1; min-width:220px; }
@@ -168,14 +173,20 @@ async function ouvrirPageProfil(nom){
 
   const s = (typeof sessionActuelle==="function") ? await sessionActuelle() : null;
   if(s) _monId=s.user.id;
+  if(moi && !p.id && _monId) p.id=_monId;   // v1.36p : à la 1re ouverture, l'id n'était pas encore connu (bête et conjoint absents)
 
   let credits = moi ? etat.credits : null;
   if(!moi && p.id){ try{ const {data}=await sb.rpc("credits_ami",{cible:p.id}); credits=data; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#1"); } }
   const estAmi = !moi && credits!=null;
   const estBloque = etat.bloques.includes(nom);
   const enLigne = (typeof _presenceEnLigne==="function") ? _presenceEnLigne(p.derniere_activite) : false;
-  // v1.00 — la bête (Q15), à côté de l'avatar. Pour soi : le reflet chargé à la connexion.
-  const bete = moi ? (etat.bete || null) : ((typeof beteDe==="function") ? await beteDe(p.id) : null);
+  // v1.00 — la bête (Q15). Pour soi : le reflet chargé à la connexion…
+  // v1.36p : …et, s'il manque (chargement pas encore fait, téléphone), la table.
+  let bete = moi ? (etat.bete || null) : ((typeof beteDe==="function") ? await beteDe(p.id) : null);
+  if(!bete && moi && p.id && typeof beteDe==="function") bete = await beteDe(p.id);
+  // v1.36p — le conjoint, avec un lien vers sa page (v156, profil_conjoint).
+  let conjoint = null;
+  if(p.id){ try{ const { data } = await sb.rpc("profil_conjoint", { p_profil:p.id }); conjoint = data || null; }catch(e){} }
   if(_ppNom!==nom) return;
   const L = (typeof _avCouches==="function") ? _avCouches(p.avatar) : [];
   const portrait = L.length ? L.map(c=>_avImg(c,"av-couche")).join("") : `<div class="av-x-grand">?</div>`;
@@ -187,17 +198,19 @@ async function ouvrirPageProfil(nom){
   m.innerHTML = `<div class="pp-wrap">
     <div class="pp-tete"><button class="mini" id="pp-retour">← Retour</button><h2>Profil</h2></div>
     <div class="pp-haut">
-      <div class="pp-portraits"><div class="pp-portrait av-portrait">${portrait}</div>${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div>
+      <div class="pp-portraits"><div class="pp-portrait av-portrait">${portrait}</div></div>
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
         <p>Faction : <b>${_facNomComm(p.faction)}</b></p>
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>
+        ${(conjoint && conjoint.nom) ? `<p class="pp-conjoint">Marié·e à <a data-pp-conjoint="${echapper(conjoint.nom)}">${echapper(conjoint.nom)}</a></p>` : ""}
         ${credLigne}
         <div id="pp-jauges"></div>
         <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button><button class="mini" data-mvtstaff="${p.id}">Mouvements</button>` : ""}</div>
       </div>
+      ${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}
     </div>
     <div class="rep-badges grand" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
     <div id="pp-terrain" hidden></div>
@@ -218,6 +231,7 @@ async function ouvrirPageProfil(nom){
   </div>`;
 
   m.querySelector("#pp-retour").addEventListener("click", fermerPageProfil);
+  m.querySelectorAll("[data-pp-conjoint]").forEach(a=>a.addEventListener("click", ()=>ouvrirPageProfil(a.dataset.ppConjoint)));   // v1.36p
   const act=(sel,fn)=>{ const b=m.querySelector(sel); if(b) b.addEventListener("click",()=>fn(b.dataset.demande||b.dataset.bloq||b.dataset.debloq||b.dataset.retire)); };
   act("[data-demande]", async v=>{ await envoyerDemande(v); ouvrirPageProfil(nom); });
   act("[data-retire]",  async v=>{ await retirerAmi(v); ouvrirPageProfil(nom); });
