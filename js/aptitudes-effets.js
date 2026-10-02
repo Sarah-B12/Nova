@@ -112,7 +112,10 @@ function aptCombatBonusVictoire(){
   return (_apt("tr1") ? 0.08 : 0)      // Instinct de combat : +8 points
        + (_apt("ig3") ? 0.06 : 0);     // Combustion        : +6 points
 }
-function aptCombatDegats(d){ let m = 1; if(_apt("tr2")) m *= 0.7; if(_apt("to2")) m *= 0.9; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Cuirasse + Trempe + Métabolisme
+/* v1.36r — Cuirasse (tr2) a quitté les patrouilles (décision de l'autrice,
+   01/10) : elle réduit désormais les pertes des expéditions et des attaques du
+   Protocole, AU SERVEUR (_cuirasse, v158). Restent ici Trempe et Métabolisme. */
+function aptCombatDegats(d){ let m = 1; if(_apt("to2")) m *= 0.9; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Trempe + Métabolisme
 // (Discrétion agit désormais sur le taux de patrouille dans patrouille.js — voir chancePatrouille().)
 
 /* ---------- Minerai / rareté ---------- */

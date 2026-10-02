@@ -410,3 +410,26 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 .u-alerte{ color:#c98a2e; font-weight:600; }
 .u-liste{ display:flex; flex-direction:column; gap:4px; }
 .u-ligne{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* v1.36s — onglet Couple > Actions : cartes du jour et liste illustrée */
+.co-jour{ display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px; margin:10px 0 4px; }
+.co-carte{ display:flex; gap:12px; align-items:center; padding:10px 12px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.02); }
+.co-carte.co-attente{ opacity:.75; }
+.co-carte.co-neg, .co-choix.co-neg{ border-color:rgba(255,82,87,.35); }
+.co-img{ width:56px; height:56px; flex:0 0 56px; object-fit:contain; }
+.co-vide{ border:1px dashed rgba(255,255,255,.15); border-radius:10px; }
+.co-qui{ font-weight:700; }
+.co-fait{ color:#8fd18f; font-weight:600; font-size:.85em; margin-left:4px; }
+.co-nom{ display:block; font-weight:600; }
+.co-phrase{ display:block; color:var(--sourdine,#a9b3c4); font-size:.92em; margin-top:2px; }
+.co-titre{ margin:16px 0 6px; }
+.co-liste{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:8px; }
+.co-choix{ display:flex; gap:10px; align-items:center; text-align:left; padding:8px 10px; border:1px solid rgba(255,255,255,.10); border-radius:12px; background:rgba(255,255,255,.03); color:inherit; font:inherit; cursor:pointer; }
+.co-choix:hover:not(:disabled){ border-color:var(--orange,#ff8a3d); background:rgba(255,138,61,.06); }
+.co-choix:disabled{ opacity:.45; cursor:default; }
+
+/* v1.36t — réserve en tuiles (badge du propriétaire) et lien vers sa moitié */
+.co-proprio{ position:absolute; left:3px; top:2px; font:9px/1 "Space Mono",monospace; padding:1px 3px; border-radius:4px; background:rgba(138,58,94,.85); color:#ffd6e8; }
+.co-proprio.moi{ background:rgba(60,110,70,.85); color:#d8ffd8; }
+.tuile.co-hors{ opacity:.35; border-style:dashed; }
+.lien-couple{ color:var(--orange-hi,#ffb060); text-decoration:underline; cursor:pointer; font-weight:700; }

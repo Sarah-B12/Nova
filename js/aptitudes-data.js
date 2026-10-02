@@ -43,7 +43,7 @@ const APT_TRONC = [
     /* v1.25 — Cuirasse et Instinct INVERSÉS ; Fléau du Protocole (tr4)
        SUPPRIMÉ, remplacé par Traque (identifiant `traque`, lu par le serveur :
        a_aptitude_traque). Les PA de tr4 sont rendus par la migration. */
-    { id:"tr2", nom:"Cuirasse",           effet:"Dégâts subis en défaite −30 %." },
+    { id:"tr2", nom:"Cuirasse",           effet:"En expédition ou contre une attaque du Protocole, tu perds 30 % de santé et de moral en moins si ton camp est battu." },   // v1.36r
     { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles ; +1 salve contre les sondes (6 au lieu de 5)." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
     { id:"traque", nom:"Traque",          effet:"Chasseur de primes : pister et traquer les têtes mises à prix (Prison → Wanted).", deblocage:true }
@@ -78,7 +78,7 @@ const APT_FACTIONS = {
   ]},
   toundra: { nom:"La Toundra — Givre & Endurance", noeuds:[
     { id:"to1", nom:"Isolation",       effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone froide ; +chance de Givrite au minage." },
-    { id:"to2", nom:"Trempe",          effet:"Dégâts subis en défaite −10 %." },
+    { id:"to2", nom:"Trempe",          effet:"Quand une patrouille a le dessus sur toi, tu perds 10 % de santé et de moral en moins." },   // v1.36r : précisé
     { id:"to3", nom:"Réserves d'hiver",effet:"+2 places de coffre par palier de maison (stockage accru)." },
     { id:"to4", nom:"Veine de cristal",effet:"5 % de chance d'extraire un Cristal de Nyx à chaque minage en zone froide.", deblocage:true }
   ]},

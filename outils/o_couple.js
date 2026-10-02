@@ -49,11 +49,13 @@
   // 3. Onglet Couple : 4 actions + les toujours-disponibles ; une action.
   btC.click(); await dort(80);
   const cv = document.querySelector("#couple-vue");
-  r.actions = { boutons: [...cv.querySelectorAll("[data-act]")].map(b => Number(b.dataset.act)) };
+  r.actions = { boutons: [...cv.querySelectorAll("[data-act]")].map(b => Number(b.dataset.act)),
+                images: [...cv.querySelectorAll(".co-liste img")].map(i => i.getAttribute("src")).slice(0, 2),
+                cartes: [...cv.querySelectorAll(".co-carte .co-qui")].map(e => e.textContent.trim()) };
   rep.union_agir = () => ({ data:{ ok:true, action:5, gain:1, detail:{ ratee:true }, tentative:false, complicite:51, moral:80 }, error:null });
   appels.length = 0;
   cv.querySelector('[data-act="5"]').click(); await dort(100);
-  r.agir = { args:(appels.find(a => a.nom === "union_agir") || {}).args, phrase: journ.find(t => t.includes("brûlé")) };
+  r.agir = { args:(appels.find(a => a.nom === "union_agir") || {}).args, auJournal: journ.some(t => t.includes("brûlé")) };
 
   // 4. Réserve : prendre (objet de l'autre) et déposer depuis le sac.
   etat.pos = { x: VILLES[etat.faction].x, y: VILLES[etat.faction].y }; etat.secteur = "silene";
@@ -61,11 +63,15 @@
   etat.sac.sylve = 3;
   await majCouple();
   appels.length = 0;
-  rep.reserve_retirer = () => ({ data:{ ok:true, retire:2, du_conjoint:2 }, error:null });
-  cv.querySelector('[data-ret="cuir"][data-n="2"]').click(); await dort(80);
+  rep.reserve_retirer = () => ({ data:{ ok:true, retire:1, du_conjoint:1 }, error:null });
+  r.tuiles = { pleines: cv.querySelectorAll("#reserve-grille .tuile.utilisable").length, vides: cv.querySelectorAll("#reserve-grille .tuile.vide").length,
+               badge: (cv.querySelector("#reserve-grille .co-proprio") || {}).textContent };
+  cv.querySelector('#reserve-grille .tuile.utilisable').click(); await dort(80);
   rep.reserve_deposer = () => ({ data:{ ok:true, depose:3 }, error:null });
-  const dep = cv.querySelector('[data-dep="sylve"][data-n="3"]'); if(dep) dep.click(); await dort(80);
+  const tout = [...cv.querySelectorAll("#reserve-depot .item-ligne")].find(l => l.textContent.includes("Sylve"));
+  if(tout) tout.querySelectorAll("button")[1].click(); await dort(80);
   r.reserve = appels.filter(a => a.nom.startsWith("reserve_")).map(a => [a.nom, a.args]);
+  r.profilCouple = (document.querySelector("#stat-couple") || {}).textContent;
 
   // 5. Cérémonie : l'autre a enregistré entre-temps → conflit, rien d'écrasé ; 2e envoi avec sa version.
   _coupleOnglet = "ceremonie"; await majCouple();

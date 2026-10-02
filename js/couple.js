@@ -64,7 +64,7 @@ const UNION_REFUS = {
   demande:"Cette demande n'est plus valable.",
   aucune:"Aucune demande en cours.",
   pas_marie:"Tu n'es pas marié·e.",
-  couple_en_pause:"Le couple est en pause : ton conjoint est au Couloir.",
+  couple_en_pause:"Le couple est en pause : ta moitié est au Couloir.",
   deja:"Tu as déjà fait ton action de couple aujourd'hui.",
   action:"Cette action n'est pas disponible aujourd'hui.",
   drones:"Retire d'abord tes drones de tes hangars.",
@@ -126,6 +126,18 @@ function _appliquerMoiUnion(m){
 }
 function estMarie(){ return !!(_union && _union.union); }
 function majOngletCouple(){
+  /* v1.36t — sur son propre Profil (l'onglet du jeu) : « Marié·e à X », avec
+     un lien vers la page de sa moitié. */
+  const lc = document.querySelector("#stat-couple");
+  if(lc){
+    const u = _union && _union.union;
+    if(u && u.nom){
+      lc.innerHTML = `Marié·e à <a class="lien-couple" role="button" tabindex="0">${echapper(u.nom)}</a>`;
+      const a = lc.querySelector("a"); const ouvrir = () => { if(typeof ouvrirPageProfil === "function") ouvrirPageProfil(u.nom); };
+      a.addEventListener("click", ouvrir); a.addEventListener("keydown", e => { if(e.key === "Enter") ouvrir(); });
+      lc.hidden = false;
+    } else { lc.hidden = true; lc.innerHTML = ""; }
+  }
   const b = document.querySelector('.onglet[data-onglet="couple"]'); if(!b) return;
   b.style.display = estMarie() ? "" : "none";
   if(!estMarie() && b.classList.contains("actif")){
@@ -293,58 +305,115 @@ async function majCouple(){
   return _coupleActions(c, u);
 }
 
+/* v1.36s — l'onglet Actions, refait (demande de l'autrice) :
+   1. l'action du jour de ta moitié (image, nom, phrase — ou « pas encore ») ;
+   2. la tienne, de la même façon ;
+   3. dessous, les actions possibles aujourd'hui, chacune avec son image et sa
+      phrase (la phrase n'est plus écrite au journal).
+   Images : images/couple/<numéro>.png (masquée si absente). On ne dit jamais
+   « conjoint » (mot genré) : son prénom, ou « ta moitié ». */
+function _imgAction(n){
+  return `<img class="co-img" src="images/couple/${n}.png" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
+}
+function _phraseApercu(n){
+  const A = ACTIONS_COUPLE[n]; if(!A) return "";
+  if(n === 1) return A.phrase.replace("{cadeau}", "petit cadeau");
+  return A.phrase;
+}
+function _carteFaite(qui, n, detail, nomQui){
+  if(n == null) return `<div class="co-carte co-attente"><div class="co-img co-vide"></div>
+      <div><div class="co-qui">${qui}</div><div class="itip-gris">${qui === "Toi" ? "Tu n'as pas encore fait ton action aujourd'hui." : "N'a pas encore fait son action aujourd'hui."}</div></div></div>`;
+  const A = ACTIONS_COUPLE[n] || { nom:"?" };
+  return `<div class="co-carte${A.negative ? " co-neg" : ""}">${_imgAction(n)}
+      <div><div class="co-qui">${qui} <span class="co-fait">✓ fait</span></div><div class="co-nom">${A.nom}</div>
+      <i class="co-phrase">${echapper(_phraseAction(n, detail, nomQui))}</i></div></div>`;
+}
 function _coupleActions(c, u){
   const j = u.jour || {};
   let h = `<div class="jauge"><div class="jauge-tete"><span>Complicité</span><span class="val">${u.complicite}</span></div>
     <div class="piste"><div class="remplissage" style="width:${u.complicite}%"></div></div></div>`;
   if(u.en_pause){ c.innerHTML = h + `<p class="vide">Le couple est en pause : ${echapper(u.nom)} est au Couloir. La Complicité est figée.</p>`; return; }
-  if(j.mon_choix != null){
-    h += `<p><b>Toi</b> : ${ACTIONS_COUPLE[j.mon_choix].nom}.<br><i>${echapper(_phraseAction(j.mon_choix, j.mon_detail, etat.nom))}</i></p>`;
-  } else {
-    const liste = (a, cls) => `<button class="mini${cls||""}" data-act="${a}">${ACTIONS_COUPLE[a].nom}</button>`;
-    h += `<p>Ton action de couple aujourd'hui :</p><div class="actions">${(j.mes_actions || []).map(a => liste(a)).join("")}</div>`;
-    h += `<div class="actions" style="margin-top:6px">${liste(21)}${(j.toujours || [9,10,20]).filter(a => a !== 21).map(a => liste(a, " danger")).join("")}</div>`;
-  }
-  h += j.son_choix != null
-    ? `<p><b>${echapper(u.nom)}</b> : ${ACTIONS_COUPLE[j.son_choix].nom}.<br><i>${echapper(_phraseAction(j.son_choix, j.son_detail, u.nom))}</i></p>`
-    : `<p class="itip-gris">${echapper(u.nom)} n'a pas encore choisi son action aujourd'hui.</p>`;
+  h += `<div class="co-jour">${_carteFaite(echapper(u.nom || "?"), j.son_choix, j.son_detail, u.nom)}${_carteFaite("Toi", j.mon_choix, j.mon_detail, etat.nom)}</div>`;
+  const dispo = [ ...(j.mes_actions || []), 21, ...((j.toujours || [9,10,20]).filter(a => a !== 21)) ];
+  const fait = j.mon_choix != null;
+  h += `<h4 class="co-titre">Actions possibles aujourd'hui</h4>`
+     + (fait ? `<p class="itip-gris">Tu as déjà fait ton action de couple aujourd'hui. Reviens demain (minuit, heure de Paris).</p>` : "")
+     + `<div class="co-liste">` + dispo.map(a => {
+          const A = ACTIONS_COUPLE[a]; if(!A) return "";
+          return `<button class="co-choix${A.negative ? " co-neg" : ""}" data-act="${a}"${fait ? " disabled" : ""}>
+            ${_imgAction(a)}<span><span class="co-nom">${A.nom}</span><i class="co-phrase">${echapper(_phraseApercu(a))}</i></span></button>`;
+        }).join("") + `</div>`;
   c.innerHTML = h;
   c.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
+    if(b.disabled) return;
     const r = await _uRpc("union_agir", { p_action:Number(b.dataset.act) });
     if(!r) return;
     if(typeof r.moral === "number"){ etat.jauges = etat.jauges || {}; etat.jauges.moral = r.moral; }
-    _jc(_phraseAction(r.action, Object.assign({}, r.detail, { tentative:r.tentative }), etat.nom), r.gain > 0 ? "gain" : "alerte");
+    // v1.36s : plus de phrase au journal — elle s'affiche dans la carte « Toi ».
     await chargerUnion(); majCouple(); if(typeof afficher === "function") afficher();
   }));
 }
 
+/* v1.36t — la réserve présentée comme le Rangement de la maison (demande de
+   l'autrice) : une grille de tuiles (icône, quantité) à gauche — autant de cases
+   que de places —, la liste « À déposer (sac) » à droite. Un clic sur une tuile
+   prend 1 exemplaire ; un petit badge dit à qui est l'objet. */
 function _coupleReserve(c, u){
   const R = u.reserve || { place:0, utilise:0, objets:[] };
   const ici = (typeof coffreAccessible === "function") ? coffreAccessible() : true;
-  let h = R.place > 0
-    ? `<p>Réserve commune : <b>${R.utilise}/${R.place}</b> places (Complicité ÷ 5).${R.utilise > R.place ? " Elle déborde : on peut seulement retirer." : ""}</p>`
-    : `<p class="vide">La réserve est fermée : la Complicité est sous 20 %. Chacun a retrouvé ses objets dans son coffre.</p>`;
-  if(!ici) h += `<p class="itip-gris">La réserve est à la maison : rentre chez toi pour y déposer ou y prendre.</p>`;
-  if(R.objets.length){
-    h += `<div class="u-liste">` + R.objets.map(o => `<div class="u-ligne"><span>${o.qte}× ${echapper(_uNom(o.item))} <span class="itip-gris">(${o.a_moi ? "à toi" : "à " + echapper(u.nom)})</span></span>
-      ${ici ? `<span><button class="mini" data-ret="${o.item}" data-n="1">Prendre 1</button><button class="mini" data-ret="${o.item}" data-n="${o.qte}">Tout</button></span>` : ""}</div>`).join("") + `</div>`;
-  } else if(R.place > 0) h += `<p class="vide">La réserve est vide.</p>`;
-  if(ici && R.place > R.utilise){
-    const sac = Object.entries(etat.sac || {}).filter(([id, n]) => n > 0 && !(typeof estObjetLie === "function" && estObjetLie(id)));
-    if(sac.length){
-      h += `<h4 style="margin:12px 0 6px">Déposer depuis ton sac</h4><div class="u-liste">` + sac.map(([id, n]) => `<div class="u-ligne"><span>${n}× ${echapper(_uNom(id))}</span>
-        <span><button class="mini" data-dep="${id}" data-n="1">Déposer 1</button><button class="mini" data-dep="${id}" data-n="${n}">Tout</button></span></div>`).join("") + `</div>`;
-    }
+  if(R.place <= 0 && !R.objets.length){
+    c.innerHTML = `<p class="vide">La réserve est fermée : la Complicité est sous 20 %. Chacun a retrouvé ses objets dans son coffre.</p>`;
+    return;
   }
+  let h = "";
+  if(!ici) h += `<p class="itip-gris">La réserve est à la maison : rentre chez toi pour y déposer ou y prendre.</p>`;
+  if(R.utilise > R.place && R.place > 0) h += `<p class="itip-gris">Elle déborde : on peut seulement en retirer.</p>`;
+  h += `<div class="rangee2" style="margin-top:6px">
+      <div class="sous-carte" style="margin:0"><h3>Réserve commune <span class="qte">${R.utilise}/${R.place}</span></h3>
+        <p class="itip-gris" style="margin:0 0 8px">Place : Complicité ÷ 5. Touche un objet pour en prendre un.</p>
+        <div class="sac-grille" id="reserve-grille"></div></div>
+      <div class="sous-carte" style="margin:0"><h3>À déposer (sac)</h3><div id="reserve-depot"></div></div>
+    </div>`;
   c.innerHTML = h;
-  c.querySelectorAll("[data-dep]").forEach(b => b.addEventListener("click", async () => {
-    const r = await _uRpc("reserve_deposer", { p_item:b.dataset.dep, p_qte:Number(b.dataset.n) });
-    if(r){ _jc(`Réserve : ${r.depose}× ${_uNom(b.dataset.dep)} déposé${r.depose > 1 ? "s" : ""}.`, "gain"); await chargerUnion(); majCouple(); }
-  }));
-  c.querySelectorAll("[data-ret]").forEach(b => b.addEventListener("click", async () => {
-    const r = await _uRpc("reserve_retirer", { p_item:b.dataset.ret, p_qte:Number(b.dataset.n) });
-    if(r){ _jc(`Réserve : ${r.retire}× ${_uNom(b.dataset.ret)} pris.`, "gain"); await chargerUnion(); majCouple(); }
-  }));
+
+  const g = c.querySelector("#reserve-grille");
+  const cible = Math.max(R.place, R.objets.length, 6);
+  for(let i = 0; i < Math.ceil(cible / 6) * 6; i++){
+    const t = document.createElement("div");
+    const o = R.objets[i];
+    if(o){
+      t.className = "tuile utilisable"; t.dataset.item = o.item;
+      t.title = `${_uNom(o.item)} — ${o.a_moi ? "à toi" : "à " + (u.nom || "ta moitié")}`;
+      t.innerHTML = `<span class="icone">${(typeof iconeItem === "function") ? iconeItem(o.item) : ""}</span><span class="compte">${o.qte}</span>
+        <span class="co-proprio${o.a_moi ? " moi" : ""}">${o.a_moi ? "toi" : echapper((u.nom || "?").slice(0, 3))}</span>`;
+      if(typeof montrerItemTip === "function"){ t.addEventListener("mouseenter", () => montrerItemTip(t, o.item)); t.addEventListener("mouseleave", cacherItemTip); }
+      if(ici) t.addEventListener("click", async () => {
+        if(typeof cacherItemTip === "function") cacherItemTip();
+        const r = await _uRpc("reserve_retirer", { p_item:o.item, p_qte:1 });
+        if(r){ _jc(`Réserve : 1× ${_uNom(o.item)} pris.`, "gain"); await chargerUnion(); majCouple(); }
+      });
+    } else t.className = (i < R.place) ? "tuile vide" : "tuile vide co-hors";
+    g.appendChild(t);
+  }
+
+  const dl = c.querySelector("#reserve-depot");
+  const libre = R.place - R.utilise;
+  const sac = Object.entries(etat.sac || {}).filter(([id, n]) => n > 0 && !(typeof estObjetLie === "function" && estObjetLie(id)));
+  if(!ici || !sac.length){ dl.innerHTML = `<p class="vide">${ici ? "Rien à déposer." : "Rentre chez toi pour déposer."}</p>`; return; }
+  for(const [id, n] of sac){
+    const d = document.createElement("div"); d.className = "item-ligne";
+    d.innerHTML = `<span>${echapper(_uNom(id))} <span class="qte">×${n}</span></span>`;
+    const span = document.createElement("span");
+    for(const [txt, q] of [["Déposer", 1], ["Tout", n]]){
+      const b = document.createElement("button"); b.className = "mini"; b.textContent = txt; b.disabled = libre <= 0;
+      b.addEventListener("click", async () => {
+        const r = await _uRpc("reserve_deposer", { p_item:id, p_qte:q });
+        if(r){ _jc(`Réserve : ${r.depose}× ${_uNom(id)} déposé${r.depose > 1 ? "s" : ""}.`, "gain"); await chargerUnion(); majCouple(); }
+      });
+      span.appendChild(b);
+    }
+    d.appendChild(span); dl.appendChild(d);
+  }
 }
 
 function _coupleCeremonie(c, u){
