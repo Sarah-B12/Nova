@@ -916,6 +916,26 @@ function _combatStats(){
   const best = (f>=a && f>=i) ? "force" : (a>=i ? "agilite" : "intelligence");
   return { force:f, agilite:a, intelligence:i, best, val:Math.max(f,a,i) };
 }
+/* v1.36aa — décision de l'autrice (03/10) : sur l'écran de PROPOSITION d'une
+   quête qui comporte un combat (Q4 et Q10 aujourd'hui), un avertissement
+   si le meilleur atout du joueur ne suffit pas — même calcul et mêmes seuils
+   que l'étape de combat (_htmlCombat) : sous 70 % de la puissance, défaite
+   certaine ; entre 70 et 100 %, victoire en y laissant de la santé. Rien ne
+   bloque : « à tes risques et périls ». On retient le combat le plus dur. */
+function _avertCombatQuete(q){
+  const combats = (q && q.etapes || []).map(e => e && e.defi).filter(d => d && d.type === "combat");
+  if(!combats.length) return "";
+  const d = combats.reduce((a, b) => ((b.puissance||30) > (a.puissance||30) ? b : a));
+  const p = d.puissance || 30, seuil = Math.ceil(p * 0.7), st = _combatStats();
+  if(st.val >= p) return "";
+  const noms = { force:"Force", agilite:"Agilité", intelligence:"Intelligence" };
+  const dur = st.val < seuil;
+  return `<div class="quete-avert${dur ? " dur" : ""}">⚠ Cette quête comporte un combat (<b>puissance ${p}</b>).
+    Ton meilleur atout, <b>${noms[st.best]} ${st.val}</b>, ${dur
+      ? `ne suffit pas encore : il te faudrait au moins <b>${seuil}</b> pour l'emporter, <b>${p}</b> pour une victoire nette. À tes risques et périls.`
+      : `te fera gagner, mais tu y laisseras de la santé (<b>${p}</b> pour une victoire nette).`}
+    <span class="itip-gris">Équipement et boissons comptent.</span></div>`;
+}
 function _htmlCombat(d){
   const st=_combatStats(); const p=d.puissance||30;
   const noms={force:"Force",agilite:"Agilité",intelligence:"Intelligence"};
@@ -1776,7 +1796,7 @@ function majQueteHub(){
       return;
     }
     const q=queteProchaine(); let html=banniere;
-    if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
+    if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
     else html+=`<p class="vide">Toutes les quêtes disponibles sont accomplies. Le Vieux Sorn n'a rien de plus pour l'instant.</p>`;
     z.innerHTML=html;
     const acc=z.querySelector("#quete-accepter"); if(acc) acc.addEventListener("click",()=>{ const nx=queteProchaine(); if(nx) accepterQuete(nx.id); });
@@ -1890,6 +1910,8 @@ function _queteStyle(){
       font-family:"Segoe UI Symbol","Apple Symbols","Noto Sans Symbols 2",
                   "DejaVu Sans","Arial Unicode MS",sans-serif;
       font-variant-emoji:text; }
+    .quete-avert{ border:1px solid rgba(255,138,61,.55); background:rgba(255,138,61,.08); border-radius:10px 4px 10px 4px; padding:8px 12px; margin:8px 0 10px; line-height:1.5; }
+    .quete-avert.dur{ border-color:rgba(255,82,87,.65); background:rgba(255,82,87,.08); }
     .q-gly-pic{ font-size:26px; line-height:1; color:var(--texte); } .q-gly-pic img{ width:32px; height:32px; object-fit:contain; }
     .q-gly-sym{ font-size:30px; color:var(--bleu); line-height:1; } .q-gly-sym img{ width:36px; height:36px; object-fit:contain; }
     .q-gly-sel{ background:#0f1830; border:1px solid var(--line); border-radius:6px; color:var(--texte); padding:4px 6px; font-family:inherit; font-size:12px; max-width:110px; }

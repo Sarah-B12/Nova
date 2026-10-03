@@ -47,7 +47,14 @@ function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8;   // 
 /* v1.26 — Voyageur (no4, Nomades) : −20 % de carburant pour les vols et les
    sauts du vaisseau (décision de l'autrice : il doublait Pas léger). Le
    carburant est une donnée client (etat.carburant). */
-function aptCarburant(litres){ return Math.max(1, Math.ceil(litres * (_apt("no4") ? 0.8 : 1))); }
+/* v1.36ab — décision de l'autrice (03/10, idée d'un testeur) : l'Intelligence
+   calcule de meilleures trajectoires — −1 % de carburant par tranche de 10
+   points, 20 % au plus (atteint à 200). Se multiplie avec Voyageur (no4). */
+function intelBonusVaisseau(){
+  const i = (typeof intelligenceEffective === "function") ? intelligenceEffective() : ((etat && etat.competences && etat.competences.intelligence) || 0);
+  return Math.max(0, Math.min(0.20, i / 1000));
+}
+function aptCarburant(litres){ return Math.max(1, Math.ceil(litres * (_apt("no4") ? 0.8 : 1) * (1 - intelBonusVaisseau()))); }
 /* O₂ d'un déplacement à découvert : Repérage (om2) −10 %, zones thermiques −15 %. */
 function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique() * _boi("o2_cout"))); }
 function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)

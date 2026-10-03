@@ -447,17 +447,21 @@ function _ficheReserve(o, u, ici){
    union_chat_lire / union_chat_ecrire, v160 ; accès revérifié à chaque
    appel). Rafraîchie toutes les 15 s tant que l'onglet est ouvert.
    =========================================================== */
-let _cfRendu = 0, _cfTimer = null;
+let _cfRendu = 0, _cfTimer = null, _cfBrouillon = "";   // v1.36z : le brouillon survit à un changement d'onglet
 function _coupleConfidences(c, u){
   const jeton = ++_cfRendu;
   c.innerHTML = `<p class="itip-gris" style="margin:0 0 8px">Rien que vous deux. Les messages s'effacent au bout de <b>3 jours</b>.</p>
     <div class="cf-fil" id="cf-fil"><p class="vide">Chargement…</p></div>
+    <div class="mur-outils" id="cf-outils"></div>
     <div class="cf-saisie">
       <textarea id="cf-txt" rows="2" maxlength="200" placeholder="Un mot pour ${echapper(u.nom || "ta moitié")}…"></textarea>
       <div class="cf-cote"><span class="itip-gris" id="cf-compte">0/200</span><button class="mini" id="cf-envoi">Envoyer</button></div>
     </div>`;
   const champ = c.querySelector("#cf-txt"), compte = c.querySelector("#cf-compte");
-  champ.addEventListener("input", () => { compte.textContent = `${champ.value.length}/200`; });
+  champ.value = _cfBrouillon; compte.textContent = `${champ.value.length}/200`;
+  champ.addEventListener("input", () => { _cfBrouillon = champ.value; compte.textContent = `${champ.value.length}/200`; });
+  // v1.36y — la palette d'emojis des messages privés (profil-page.js, _paletteEmoji).
+  if(typeof _paletteEmoji === "function") _paletteEmoji("#cf-outils", "#cf-txt");
   const envoyer = async () => {
     const t = (champ.value || "").trim(); if(!t) return;
     const b = c.querySelector("#cf-envoi"); if(b) b.disabled = true;
@@ -469,7 +473,7 @@ function _coupleConfidences(c, u){
           e === "pas_marie" ? "Tu n'es plus marié·e." : "Envoi impossible.", "alerte");
       return;
     }
-    champ.value = ""; compte.textContent = "0/200";
+    champ.value = ""; _cfBrouillon = ""; compte.textContent = "0/200";
     await _cfCharger(c, true);
   };
   c.querySelector("#cf-envoi").addEventListener("click", envoyer);
@@ -546,8 +550,13 @@ setInterval(() => {
   if(document.hidden || !estMarie()) return;
   const p = document.querySelector('.panneau[data-panneau="couple"]');
   if(!p || !p.classList.contains("actif")) return;
-  const ta = document.querySelector("#u-texte");
-  if(ta && document.activeElement === ta) return;       // ne pas réécrire sous les doigts
+  /* v1.36z — retour testeur : dans Confidences, le texte en cours s'effaçait
+     (cette relecture redessinait tout l'onglet). Confidences a sa propre
+     relecture (du fil seulement) ; et on ne redessine JAMAIS pendant qu'un
+     champ de l'onglet a le focus ou contient du texte. */
+  if(_coupleOnglet === "confidences") return;
+  const champ = [...p.querySelectorAll("textarea, input[type=text]")];
+  if(champ.some(t => document.activeElement === t || (t.value || "").trim())) return;
   chargerUnion().then(() => majCouple());
 }, 45000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden && etat && etat.inscrit) chargerUnion(); });

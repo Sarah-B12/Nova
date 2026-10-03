@@ -83,9 +83,12 @@
   await majCouple(); await dort(60);
   const ong = [...cv.querySelectorAll("[data-co]")].map(b => b.textContent);
   const ta2 = cv.querySelector("#cf-txt"); ta2.value = "Je rentre bientôt";
+  cv.querySelector("#cf-outils .emo-toggle").click();
+  const coeur = cv.querySelector('#cf-outils [data-emo="❤️"]'); if(coeur) coeur.click();
+  const avecEmoji = ta2.value, compteEmo = cv.querySelector("#cf-compte").textContent;
   appels.length = 0;
   ta2.dispatchEvent(new KeyboardEvent("keydown", { key:"Enter", bubbles:true })); await dort(80);
-  r.confidences = { onglets: ong, msg: cv.querySelector(".cf-txt").innerHTML, max: ta2.getAttribute("maxlength"),
+  r.confidences = { emoji: avecEmoji, compte: compteEmo, onglets: ong, msg: cv.querySelector(".cf-txt").innerHTML, max: ta2.getAttribute("maxlength"),
                     envoi: (appels.find(a => a.nom === "union_chat_ecrire") || {}).args };
   clearInterval(_cfTimer);
   // 5. Cérémonie : l'autre a enregistré entre-temps → conflit, rien d'écrasé ; 2e envoi avec sa version.

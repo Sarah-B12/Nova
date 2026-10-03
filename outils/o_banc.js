@@ -35,7 +35,10 @@ const DELAIS = {
   loup: { profil: 50, sac: 50, jauges: 50 },
   profil: { profil: 50, sac: 50, jauges: 50 },    // v1.36p : page profil (o_profil.js)
   journalcat: { profil: 50, sac: 50, jauges: 50 },
-  fichebete: { profil: 50, sac: 50, jauges: 50 }, // v1.36v : bête sur la fiche (o_fichebete.js)// v1.36u : tri des messages serveur (o_journalcat.js)      // v1.36o : pas de loup, flèches seules (o_loup.js)   // v1.36n : repères des calques (o_calques.js) // v1.36l : boîtes maison (o_dialogues.js)    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
+  fichebete: { profil: 50, sac: 50, jauges: 50 }, // v1.36v : bête sur la fiche (o_fichebete.js)
+  cfsaisie: { profil: 50, sac: 50, jauges: 50 },  // v1.36z : saisie des Confidences (o_cfsaisie.js)
+  avertcombat: { profil: 50, sac: 50, jauges: 50 },// v1.36aa : avertissement combat (o_avertcombat.js)
+  intel: { profil: 50, sac: 50, jauges: 50 },     // v1.36ab : bonus de l'Intelligence (o_intel.js)// v1.36u : tri des messages serveur (o_journalcat.js)      // v1.36o : pas de loup, flèches seules (o_loup.js)   // v1.36n : repères des calques (o_calques.js) // v1.36l : boîtes maison (o_dialogues.js)    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
 }[SCEN];
 
 const donnees = {

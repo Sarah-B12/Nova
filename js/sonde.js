@@ -26,6 +26,17 @@
 const SONDE_TAUX      = 0.15;    // probabilité d'interception par vol dans Triptolème
 const SONDE_PV_RIPOSTE= [15, 25];// dégâts quand elle tire la première
 const SONDE_PV_DEFAITE= [25, 40];// dégâts quand on l'attaque et qu'on perd
+/* v1.36ab — décision de l'autrice (03/10, idée d'un testeur) : l'Intelligence
+   anticipe le tir de la sonde. Chance = Intelligence ÷ 10 %, 20 % au plus
+   (atteint à 200), que la coque n'encaisse que la MOITIÉ des dégâts. */
+function _degatsSonde(n){
+  const ch = (typeof intelBonusVaisseau === "function") ? intelBonusVaisseau() : 0;
+  if(ch > 0 && Math.random() < ch){
+    journal("Tu avais anticipé son tir : la coque n'encaisse que la moitié du choc.", "gain");
+    return Math.max(1, Math.ceil(n / 2));
+  }
+  return n;
+}
 /* ⚠ v1.20 — LE GAIN EST FIXÉ PAR LE SERVEUR (RPC sonde_victoire). Les sondes
    étaient trop rentables : 40–90 ₡ par duel, sans coût ni limite, et le client
    décidait seul du montant. Désormais : 1re victoire du jour de jeu 40–90 ₡,
@@ -142,7 +153,7 @@ async function _sondeGagne(){
   _sondeFin();
 }
 function _sondePerdu(){
-  abimerVaisseau(alea(SONDE_PV_DEFAITE[0], SONDE_PV_DEFAITE[1]), "tir de sonde");
+  abimerVaisseau(_degatsSonde(alea(SONDE_PV_DEFAITE[0], SONDE_PV_DEFAITE[1])), "tir de sonde");
   journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
@@ -196,7 +207,7 @@ async function sondeDeriver(){
   if(Math.random() < p){
     journal("Moteurs coupés, signature éteinte. Elle te prend pour un débris, te contourne et poursuit sa route.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
-    abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
+    abimerVaisseau(_degatsSonde(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1])), "tir de sonde");
     journal("Trop tard : elle avait déjà verrouillé. Elle tire la première, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
@@ -215,7 +226,7 @@ async function sondeBrouiller(){
   if(Math.random() < p){
     journal("Ton ordinateur noie son scanner sous de faux échos. Elle cherche, ne trouve plus rien, et s'éloigne.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
-    abimerVaisseau(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1]), "tir de sonde");
+    abimerVaisseau(_degatsSonde(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1])), "tir de sonde");
     journal("Le brouillage ne prend pas — elle isole ta signature et ouvre le feu.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
