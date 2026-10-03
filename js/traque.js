@@ -171,6 +171,11 @@ function _tqStyle2(){
   s.textContent = `
     .tq-wanted{ display:flex; gap:12px; align-items:flex-start; }
     .tq-lien-profil{ cursor:pointer; }
+    /* v1.36u — le portrait est dans un <span> lien depuis la v1.36b : sans
+       display:block, ce span restait « en ligne » et le portrait (un span de
+       64 × 86) perdait sa taille → têtes invisibles. */
+    span.tq-lien-profil{ display:block; flex:0 0 auto; }
+    .tq-portrait{ display:block; }
     .tq-lien-profil:hover b, b.tq-lien-profil:hover{ text-decoration:underline; }
     .tq-portrait{ position:relative; flex:0 0 auto; width:64px; height:86px; border-radius:8px; overflow:hidden; background:rgba(0,0,0,.35); border:1px solid var(--orange,#ff8a3d); }
     .tq-couche{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }

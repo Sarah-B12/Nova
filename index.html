@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- ⚠ v1.15 — VERSION DES FICHIERS (« ?v=174 » sur chaque js/css). Sans elle,
+<!-- ⚠ v1.15 — VERSION DES FICHIERS (« ?v=176 » sur chaque js/css). Sans elle,
      un téléphone rejoue l'ancien code après une mise en ligne : un testeur a
      signalé un bug « réparé sur PC, toujours là sur téléphone » alors que le
      correctif était en ligne — c'était son cache.
-     ⚠ À INCRÉMENTER À CHAQUE MISE EN LIGNE : rechercher-remplacer « ?v=174 ». -->
+     ⚠ À INCRÉMENTER À CHAQUE MISE EN LIGNE : rechercher-remplacer « ?v=176 ». -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -14,13 +14,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css?v=174">
-<link rel="stylesheet" href="css/fiche.css?v=174">
-<link rel="stylesheet" href="css/jauges-sac.css?v=174">
-<link rel="stylesheet" href="css/carte.css?v=174">
-<link rel="stylesheet" href="css/terrain.css?v=174">
-<link rel="stylesheet" href="css/composants.css?v=174">
-<link rel="stylesheet" href="css/aptitudes.css?v=174">
+<link rel="stylesheet" href="css/base.css?v=176">
+<link rel="stylesheet" href="css/fiche.css?v=176">
+<link rel="stylesheet" href="css/jauges-sac.css?v=176">
+<link rel="stylesheet" href="css/carte.css?v=176">
+<link rel="stylesheet" href="css/terrain.css?v=176">
+<link rel="stylesheet" href="css/composants.css?v=176">
+<link rel="stylesheet" href="css/aptitudes.css?v=176">
 </head>
 
 <body>
@@ -205,6 +205,8 @@
                      Placée juste après, elle atterrissait dans la colonne voisine
                      (.fiche-stats est en colonnes). Jamais sur le profil visité. -->
                 <div id="fiche-boisson" class="fiche-boisson" hidden></div>
+                <!-- v1.36v : la bête (Q15), sous les jauges, sans les décaler (rendu.js, majFicheBete). -->
+                <div id="fiche-bete" class="fiche-bete" hidden></div>
               </div>
               <div class="fiche-comp">
                 <div class="comp-tete">Compétences <span class="pts" id="pts-libres"></span></div>
@@ -399,60 +401,60 @@
      évite au passage la panne si le CDN tombe.
      Mise à jour : npm pack @supabase/supabase-js@2, puis copier
      package/dist/umd/supabase.js — penser à changer le nom de version ici. -->
-<script src="js/vendor/supabase-2.116.0.js?v=174"></script>
-<script src="js/serveur.js?v=174"></script>
-<script src="js/config.js?v=174"></script>
-<script src="js/data.js?v=174"></script>
-<script src="js/terrain.js?v=174"></script>
-<script src="js/integrite.js?v=174"></script>
-<script src="js/terrain-serveur.js?v=174"></script>
-<script src="js/couple.js?v=174"></script>
-<script src="js/inventaire.js?v=174"></script>
-<script src="js/etat.js?v=174"></script>
-<script src="js/systeme.js?v=174"></script>
-<script src="js/actions.js?v=174"></script>
-<script src="js/rendu.js?v=174"></script>
-<script src="js/maison.js?v=174"></script>
-<script src="js/drones.js?v=174"></script>
-<script src="js/equipement.js?v=174"></script>
-<script src="js/vaisseau.js?v=174"></script>
-<script src="js/prix.js?v=174"></script>
-<script src="js/usure.js?v=174"></script>
-<script src="js/marche.js?v=174"></script>
-<script src="js/menu-objet.js?v=174"></script>
-<script src="js/boutique.js?v=174"></script>
-<script src="js/carte.js?v=174"></script>
-<script src="js/espace-data.js?v=174"></script>
-<script src="js/placement.js?v=174"></script>
-<script src="js/orbite.js?v=174"></script>
-<script src="js/braise.js?v=174"></script>
-<script src="js/sonde.js?v=174"></script>
-<script src="js/garage.js?v=174"></script>
-<script src="js/formations.js?v=174"></script>
-<script src="js/aptitudes-data.js?v=174"></script>
-<script src="js/aptitudes.js?v=174"></script>
-<script src="js/aptitudes-effets.js?v=174"></script>
-<script src="js/patrouille.js?v=174"></script>
-<script src="js/debris.js?v=174"></script>
-<script src="js/quetes-data.js?v=174"></script>
-<script src="js/glyphes.js?v=174"></script>
-<script src="js/quetes.js?v=174"></script>
-<script src="js/voler.js?v=174"></script>
-<script src="js/traque.js?v=174"></script>
-<script src="js/parametres.js?v=174"></script>
-<script src="js/pause.js?v=174"></script>
-<script src="js/mort.js?v=174"></script>
-<script src="js/comm.js?v=174"></script>
-<script src="js/avatar.js?v=174"></script>
-<script src="js/onboarding.js?v=174"></script>
-<script src="js/profil-page.js?v=174"></script>
-<script src="js/poste.js?v=174"></script>
-<script src="js/gouvernement.js?v=174"></script>
-<script src="js/espionnage.js?v=174"></script>
-<script src="js/bar.js?v=174"></script>
-<script src="js/arene.js?v=174"></script>
-<script src="js/navigation.js?v=174"></script>
-<script src="js/bootstrap.js?v=174"></script>
-<script src="js/dev-console.js?v=174"></script>
+<script src="js/vendor/supabase-2.116.0.js?v=176"></script>
+<script src="js/serveur.js?v=176"></script>
+<script src="js/config.js?v=176"></script>
+<script src="js/data.js?v=176"></script>
+<script src="js/terrain.js?v=176"></script>
+<script src="js/integrite.js?v=176"></script>
+<script src="js/terrain-serveur.js?v=176"></script>
+<script src="js/couple.js?v=176"></script>
+<script src="js/inventaire.js?v=176"></script>
+<script src="js/etat.js?v=176"></script>
+<script src="js/systeme.js?v=176"></script>
+<script src="js/actions.js?v=176"></script>
+<script src="js/rendu.js?v=176"></script>
+<script src="js/maison.js?v=176"></script>
+<script src="js/drones.js?v=176"></script>
+<script src="js/equipement.js?v=176"></script>
+<script src="js/vaisseau.js?v=176"></script>
+<script src="js/prix.js?v=176"></script>
+<script src="js/usure.js?v=176"></script>
+<script src="js/marche.js?v=176"></script>
+<script src="js/menu-objet.js?v=176"></script>
+<script src="js/boutique.js?v=176"></script>
+<script src="js/carte.js?v=176"></script>
+<script src="js/espace-data.js?v=176"></script>
+<script src="js/placement.js?v=176"></script>
+<script src="js/orbite.js?v=176"></script>
+<script src="js/braise.js?v=176"></script>
+<script src="js/sonde.js?v=176"></script>
+<script src="js/garage.js?v=176"></script>
+<script src="js/formations.js?v=176"></script>
+<script src="js/aptitudes-data.js?v=176"></script>
+<script src="js/aptitudes.js?v=176"></script>
+<script src="js/aptitudes-effets.js?v=176"></script>
+<script src="js/patrouille.js?v=176"></script>
+<script src="js/debris.js?v=176"></script>
+<script src="js/quetes-data.js?v=176"></script>
+<script src="js/glyphes.js?v=176"></script>
+<script src="js/quetes.js?v=176"></script>
+<script src="js/voler.js?v=176"></script>
+<script src="js/traque.js?v=176"></script>
+<script src="js/parametres.js?v=176"></script>
+<script src="js/pause.js?v=176"></script>
+<script src="js/mort.js?v=176"></script>
+<script src="js/comm.js?v=176"></script>
+<script src="js/avatar.js?v=176"></script>
+<script src="js/onboarding.js?v=176"></script>
+<script src="js/profil-page.js?v=176"></script>
+<script src="js/poste.js?v=176"></script>
+<script src="js/gouvernement.js?v=176"></script>
+<script src="js/espionnage.js?v=176"></script>
+<script src="js/bar.js?v=176"></script>
+<script src="js/arene.js?v=176"></script>
+<script src="js/navigation.js?v=176"></script>
+<script src="js/bootstrap.js?v=176"></script>
+<script src="js/dev-console.js?v=176"></script>
 </body>
 </html>

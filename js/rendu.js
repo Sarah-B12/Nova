@@ -90,6 +90,7 @@ function afficher(){
   document.querySelector("#mur-visibilite").value = etat.murOuvertA;
   if(typeof majAptitudes==="function") majAptitudes();
   if(typeof majBoissonFiche==="function") majBoissonFiche();   // v0.77
+  majFicheBete();                                               // v1.36v
 }
 /* Rafraîchissement LÉGER : uniquement les jauges qui bougent avec le temps.
    afficher() reconstruit une douzaine de panneaux (sac, terrain, mur, quêtes…),
@@ -334,4 +335,19 @@ function construireCompetences(){
     z.appendChild(l);
     l.querySelector(`#plus-${c.id}`).addEventListener("click", ()=>ameliorer(c.id));
   }
+}
+
+/* v1.36v — la bête (Q15) sur la fiche du Profil (demande de l'autrice) : sous
+   Santé et Moral, dans la même colonne, pour ne décaler aucune jauge. Reflet
+   `etat.bete` (chargé à la connexion, data.js#chargerBete). */
+function majFicheBete(){
+  const z = document.querySelector("#fiche-bete"); if(!z) return;
+  const b = etat && etat.bete; const i = (b && typeof beteInfo === "function") ? beteInfo(b.espece) : null;
+  if(!i){ z.hidden = true; z.innerHTML = ""; return; }
+  const cle = b.espece + "|" + (b.nom || "");
+  if(z.dataset.cle === cle && !z.hidden) return;      // afficher() tourne souvent : on ne redessine que si ça change
+  z.dataset.cle = cle;
+  z.innerHTML = `<img src="${i.img}" alt="" onerror="this.style.visibility='hidden'">
+    <div><div class="fiche-bete-nom">${echapper(b.nom || "")}</div><div class="itip-gris">${i.nom}</div></div>`;
+  z.hidden = false;
 }

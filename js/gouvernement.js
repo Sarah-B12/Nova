@@ -718,7 +718,13 @@ async function syncEffetsCombat(){
         if(typeof _categoriser==="function"){
           const auto = _categoriser(ev.texte);
           const connu = (typeof JOURNAL_CATS!=="undefined") && JOURNAL_CATS.some(c=>c.id===onglet);
-          if(auto==="vol" || auto==="couple" || !connu) onglet = auto;
+          /* v1.36u — les catégories GÉNÉRIQUES du serveur (`alerte`, `gain`,
+             `info`) ne disent pas de quoi parle le message : le tri automatique
+             décide dès qu'il reconnaît le sujet (ex. une plante fanée → Agri.,
+             retour de l'autrice). Une catégorie précise (`combat`, `poste`…)
+             est gardée, sauf pour les vols/traques et le couple. */
+          const generique = ["alerte","gain","info"].includes(cat);
+          if(auto==="vol" || auto==="couple" || !connu || (generique && auto!=="systeme")) onglet = auto;
         }
         // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
         // v0.94b : `quand` = l'heure réelle du fait (`evenements.cree_le`),
