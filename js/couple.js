@@ -294,13 +294,14 @@ async function majCouple(){
   if(!_union) await chargerUnion();
   const u = _union && _union.union;
   if(!u){ el.innerHTML = `<h2>Couple</h2><p class="vide">Tu n'es pas marié·e. Les demandes se font aux Unions, au Centre.</p>`; return; }
-  const onglets = [["actions","Actions"],["reserve","Réserve"],["ceremonie","Cérémonie"]];
+  const onglets = [["actions","Actions"],["reserve","Réserve"],["confidences","Confidences"],["ceremonie","Cérémonie"]];
   el.innerHTML = `<h2>Couple <span class="pts">avec ${echapper(u.nom || "?")}</span></h2>
     <div class="sous-menu">${onglets.map(([k,t]) => `<button class="sous-lien${_coupleOnglet===k?" actif":""}" data-co="${k}">${t}</button>`).join("")}</div>
     <div id="couple-corps"></div>`;
   el.querySelectorAll("[data-co]").forEach(b => b.addEventListener("click", () => { _coupleOnglet = b.dataset.co; majCouple(); }));
   const c = el.querySelector("#couple-corps");
   if(_coupleOnglet === "reserve") return _coupleReserve(c, u);
+  if(_coupleOnglet === "confidences") return _coupleConfidences(c, u);
   if(_coupleOnglet === "ceremonie") return _coupleCeremonie(c, u);
   return _coupleActions(c, u);
 }
@@ -387,11 +388,12 @@ function _coupleReserve(c, u){
       t.innerHTML = `<span class="icone">${(typeof iconeItem === "function") ? iconeItem(o.item) : ""}</span><span class="compte">${o.qte}</span>
         <span class="co-proprio${o.a_moi ? " moi" : ""}">${o.a_moi ? "toi" : echapper((u.nom || "?").slice(0, 3))}</span>`;
       if(typeof montrerItemTip === "function"){ t.addEventListener("mouseenter", () => montrerItemTip(t, o.item)); t.addEventListener("mouseleave", cacherItemTip); }
-      if(ici) t.addEventListener("click", async () => {
-        if(typeof cacherItemTip === "function") cacherItemTip();
-        const r = await _uRpc("reserve_retirer", { p_item:o.item, p_qte:1 });
-        if(r){ _jc(`Réserve : 1× ${_uNom(o.item)} pris.`, "gain"); await chargerUnion(); majCouple(); }
-      });
+      /* v1.36w — retour (tablette) : un toucher prenait l'objet sans qu'on sache
+         ce que c'était, et l'appui long ouvrait le menu du navigateur
+         (« enregistrer l'image »…). Désormais un toucher (ou un clic) ouvre une
+         FICHE : nom, quantité, propriétaire, description complète au doigt,
+         puis « Prendre 1 » / « Tout prendre ». */
+      t.addEventListener("click", () => { if(typeof cacherItemTip === "function") cacherItemTip(); _ficheReserve(o, u, ici); });
     } else t.className = (i < R.place) ? "tuile vide" : "tuile vide co-hors";
     g.appendChild(t);
   }
@@ -414,6 +416,84 @@ function _coupleReserve(c, u){
     }
     d.appendChild(span); dl.appendChild(d);
   }
+}
+
+/* Fiche d'un objet de la réserve (même cadre que le menu d'objet du sac). */
+function _ficheReserve(o, u, ici){
+  if(typeof monterMenuObjet === "function") monterMenuObjet();
+  const m = document.querySelector("#menu-objet"); if(!m) return;
+  const a = o.a_moi ? "à toi" : `à ${echapper(u.nom || "ta moitié")}`;
+  let h = `<div class="menu-cadre"><div class="menu-tete"><span class="menu-ic">${(typeof iconeItem === "function") ? iconeItem(o.item) : ""}</span>
+      <b>${echapper(_uNom(o.item))}</b> <span class="qte">×${o.qte}</span><button class="mini" data-fermer="1">✕</button></div>
+      <p class="itip-gris" style="margin:4px 0 8px">Dans la réserve commune — ${a}.</p>`;
+  if(typeof infoItemHTML === "function"){ const inf = infoItemHTML(o.item); if(inf) h += `<div class="menu-infos">${inf}</div>`; }
+  if(ici){
+    h += `<button class="menu-act" data-pr="1">Prendre 1</button>`;
+    if(o.qte > 1) h += `<button class="menu-act" data-pr="${o.qte}">Tout prendre (${o.qte})</button>`;
+  } else h += `<p class="itip-gris">La réserve est à la maison : rentre chez toi pour y prendre.</p>`;
+  m.innerHTML = h + `</div>`; m.hidden = false;
+  m.querySelector("[data-fermer]").addEventListener("click", () => { m.hidden = true; });
+  m.querySelectorAll("[data-pr]").forEach(b => b.addEventListener("click", async () => {
+    m.hidden = true;
+    const r = await _uRpc("reserve_retirer", { p_item:o.item, p_qte:Number(b.dataset.pr) });
+    if(r){ _jc(`Réserve : ${r.retire}× ${_uNom(o.item)} pris.`, "gain"); await chargerUnion(); majCouple(); }
+  }));
+}
+
+/* ===========================================================
+   v1.36x — CONFIDENCES : la petite discussion du couple (demande de
+   l'autrice, sur le modèle de la Concertation du gouvernement). 200
+   caractères par message, effacés au bout de 3 jours (serveur :
+   union_chat_lire / union_chat_ecrire, v160 ; accès revérifié à chaque
+   appel). Rafraîchie toutes les 15 s tant que l'onglet est ouvert.
+   =========================================================== */
+let _cfRendu = 0, _cfTimer = null;
+function _coupleConfidences(c, u){
+  const jeton = ++_cfRendu;
+  c.innerHTML = `<p class="itip-gris" style="margin:0 0 8px">Rien que vous deux. Les messages s'effacent au bout de <b>3 jours</b>.</p>
+    <div class="cf-fil" id="cf-fil"><p class="vide">Chargement…</p></div>
+    <div class="cf-saisie">
+      <textarea id="cf-txt" rows="2" maxlength="200" placeholder="Un mot pour ${echapper(u.nom || "ta moitié")}…"></textarea>
+      <div class="cf-cote"><span class="itip-gris" id="cf-compte">0/200</span><button class="mini" id="cf-envoi">Envoyer</button></div>
+    </div>`;
+  const champ = c.querySelector("#cf-txt"), compte = c.querySelector("#cf-compte");
+  champ.addEventListener("input", () => { compte.textContent = `${champ.value.length}/200`; });
+  const envoyer = async () => {
+    const t = (champ.value || "").trim(); if(!t) return;
+    const b = c.querySelector("#cf-envoi"); if(b) b.disabled = true;
+    let d = null; try{ ({ data:d } = await sb.rpc("union_chat_ecrire", { p_texte:t })); }catch(e){}
+    if(b) b.disabled = false;
+    if(!d || !d.ok){
+      const e = d && d.err;
+      _jc(e === "trop_vite" ? "Doucement : trop de messages d'affilée." : e === "trop_long" ? "200 caractères au plus." :
+          e === "pas_marie" ? "Tu n'es plus marié·e." : "Envoi impossible.", "alerte");
+      return;
+    }
+    champ.value = ""; compte.textContent = "0/200";
+    await _cfCharger(c, true);
+  };
+  c.querySelector("#cf-envoi").addEventListener("click", envoyer);
+  champ.addEventListener("keydown", e => { if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); envoyer(); } });   // Entrée : envoyer ; Maj+Entrée : ligne
+  _cfCharger(c, true);
+  clearInterval(_cfTimer);
+  _cfTimer = setInterval(() => {
+    if(jeton !== _cfRendu || !document.querySelector("#cf-fil")){ clearInterval(_cfTimer); return; }
+    if(!document.hidden) _cfCharger(c, false);
+  }, 15000);
+}
+async function _cfCharger(c, forcerBas){
+  const fil = c.querySelector("#cf-fil"); if(!fil) return;
+  let r = null; try{ ({ data:r } = await sb.rpc("union_chat_lire", { p_limite:60 })); }catch(e){}
+  if(!r || !r.ok){ fil.innerHTML = `<p class="vide">Lecture impossible.</p>`; return; }
+  const liste = r.liste || [];
+  if(!liste.length){ fil.innerHTML = `<p class="vide">Aucun message pour l'instant.</p>`; return; }
+  const enBas = forcerBas || (fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40);
+  fil.innerHTML = liste.map(m => {
+    const q = m.cree_le ? new Date(m.cree_le).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "";
+    return `<div class="cf-msg${m.moi ? " moi" : ""}"><div class="cf-tete">${m.moi ? "Toi" : echapper(m.nom)} <span class="itip-gris">${echapper(q)}</span></div>
+      <div class="cf-txt">${echapper(m.texte)}</div></div>`;
+  }).join("");
+  if(enBas) fil.scrollTop = fil.scrollHeight;
 }
 
 function _coupleCeremonie(c, u){

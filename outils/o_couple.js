@@ -66,13 +66,28 @@
   rep.reserve_retirer = () => ({ data:{ ok:true, retire:1, du_conjoint:1 }, error:null });
   r.tuiles = { pleines: cv.querySelectorAll("#reserve-grille .tuile.utilisable").length, vides: cv.querySelectorAll("#reserve-grille .tuile.vide").length,
                badge: (cv.querySelector("#reserve-grille .co-proprio") || {}).textContent };
-  cv.querySelector('#reserve-grille .tuile.utilisable').click(); await dort(80);
+  cv.querySelector('#reserve-grille .tuile.utilisable').click(); await dort(30);
+  const fiche = document.querySelector("#menu-objet");
+  r.fiche = { ouverte: !fiche.hidden, titre: (fiche.querySelector(".menu-tete b") || {}).textContent, boutons: [...fiche.querySelectorAll("[data-pr]")].map(b => b.textContent) };
+  fiche.querySelector("[data-pr]").click(); await dort(80);
   rep.reserve_deposer = () => ({ data:{ ok:true, depose:3 }, error:null });
   const tout = [...cv.querySelectorAll("#reserve-depot .item-ligne")].find(l => l.textContent.includes("Sylve"));
   if(tout) tout.querySelectorAll("button")[1].click(); await dort(80);
   r.reserve = appels.filter(a => a.nom.startsWith("reserve_")).map(a => [a.nom, a.args]);
   r.profilCouple = (document.querySelector("#stat-couple") || {}).textContent;
 
+  // 4 bis. Confidences : fil, envoi (Entrée), 200 caractères
+  _coupleOnglet = "confidences";
+  rep.union_chat_lire = () => ({ data:{ ok:true, liste:[{ id:1, nom:"Élane", moi:false, texte:"Coucou <b>toi</b>", cree_le:"2026-10-03T08:00:00Z" }] }, error:null });
+  rep.union_chat_ecrire = () => ({ data:{ ok:true }, error:null });
+  await majCouple(); await dort(60);
+  const ong = [...cv.querySelectorAll("[data-co]")].map(b => b.textContent);
+  const ta2 = cv.querySelector("#cf-txt"); ta2.value = "Je rentre bientôt";
+  appels.length = 0;
+  ta2.dispatchEvent(new KeyboardEvent("keydown", { key:"Enter", bubbles:true })); await dort(80);
+  r.confidences = { onglets: ong, msg: cv.querySelector(".cf-txt").innerHTML, max: ta2.getAttribute("maxlength"),
+                    envoi: (appels.find(a => a.nom === "union_chat_ecrire") || {}).args };
+  clearInterval(_cfTimer);
   // 5. Cérémonie : l'autre a enregistré entre-temps → conflit, rien d'écrasé ; 2e envoi avec sa version.
   _coupleOnglet = "ceremonie"; await majCouple();
   const ta = cv.querySelector("#u-texte"); ta.value = "Nos vœux."; ta.dispatchEvent(new Event("input"));

@@ -433,3 +433,20 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 .co-proprio.moi{ background:rgba(60,110,70,.85); color:#d8ffd8; }
 .tuile.co-hors{ opacity:.35; border-style:dashed; }
 .lien-couple{ color:var(--orange-hi,#ffb060); text-decoration:underline; cursor:pointer; font-weight:700; }
+
+/* v1.36w — tuiles d'objets : pas de menu « enregistrer l'image » à l'appui
+   long sur tablette/téléphone, pas de sélection de texte. */
+.sac-grille .tuile, .sac-grille .tuile img{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+.sac-grille .tuile img{ -webkit-user-drag:none; pointer-events:none; }
+
+/* v1.36x — Couple > Confidences (sur le modèle de la Concertation) */
+.cf-fil{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:7px; padding:6px 2px; }
+.cf-msg{ background:#0f1830; border:1px solid var(--line, rgba(255,255,255,.1)); border-radius:9px 3px 9px 3px; padding:6px 10px; max-width:85%; align-self:flex-start; }
+.cf-msg.moi{ align-self:flex-end; border-color:rgba(138,58,94,.6); background:rgba(138,58,94,.12); }
+.cf-tete{ font-family:"Space Mono",monospace; font-size:11px; color:var(--orange-hi,#ffb060); margin-bottom:3px; }
+.cf-msg.moi .cf-tete{ color:#ffb3d1; }
+.cf-txt{ font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+.cf-saisie{ display:flex; gap:7px; align-items:flex-end; margin-top:9px; }
+.cf-saisie textarea{ flex:1; background:#0f1830; border:1px solid var(--line, rgba(255,255,255,.1)); border-radius:10px 4px 10px 4px; color:inherit; padding:7px 9px; font:inherit; resize:vertical; }
+.cf-saisie textarea:focus{ outline:none; border-color:var(--orange,#ff8a3d); }
+.cf-cote{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
