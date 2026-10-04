@@ -83,7 +83,7 @@ function _categoriser(t){
   /* v1.36e — le couple, AVANT la faction (« rester dans ta faction » après un
      divorce) et le social. Les lignes écrites par couple.js portent déjà la
      catégorie ; cette règle range celles qui viennent du serveur. */
-  if(/mariage|mari[ée]s?\b|divorc|complicit|r[ée]serve commune|conjoint|veuf|veuve|ton foyer|b[ée]b[ée]|dit oui/.test(s)) return "couple";
+  if(/mariage|mari[ée]s?\b|divorc|complicit|r[ée]serve commune|conjoint|veuf|veuve|ton foyer|b[ée]b[ée]|dit oui|enfant|adopt|tout-petit|adolescence|quitt[ée] la maison|la famille|couple > famille|chambre de|l'appeler|pr[ée]nom|cachette|tra[îi]ne des pieds|ration maison|pris soin de vous|installation du terrain de|sur vos vaisseaux|l'histoire d|petite histoire/.test(s)) return "couple";   // v1.37-39 : enfants
   /* v1.36f — la traque et ses suites vont dans « Vols/hacks », AVANT la
      faction (« −5 réputation de faction ») : plaintes, primes, chasseurs,
      captures, séjours en prison qui en découlent. */

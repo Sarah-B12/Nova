@@ -79,8 +79,34 @@ const UNION_REFUS = {
   quantite:"Quantité invalide.",
   loin:"La réserve est à la maison : rentre chez toi.",
   fige:"Le texte est figé : les deux semaines sont passées.",
-  trop_long:"2 000 caractères au plus."
+  trop_long:"2 000 caractères au plus.",
+  // v1.37 — enfants (v161)
+  enfant:"Un enfant est déjà là (ou attendu) : un seul à la fois.",
+  aucun_enfant:"Il n'y a pas d'enfant à nommer.",
+  pas_encore:"Le bébé n'est pas encore arrivé.",
+  scelle:"Le prénom est scellé : le stade « petit » est passé.",
+  prenom:"Prénom invalide : 2 à 20 lettres (espaces, traits d'union et apostrophes permis).",
+  // v1.38 — gestes (v162)
+  gele:"Tout est figé : l'un de vous est en pause ou au Couloir.",
+  deja_geste:"Tu as déjà fait ton geste aujourd'hui.",
+  geste:"Ce geste n'est pas possible à cet âge.",
+  objet:"Il faut une ration chaude ou une plante comestible.",
+  domaine:"Domaine inconnu.",
+  // v1.39 — cachette de l'Éclaireur (v163)
+  aucune:"Il n'y a pas de cachette à fouiller en ce moment.",
+  deja_fouillee:"La cachette a déjà été fouillée.",
+  ailleurs:"La cachette est sur la carte de Silène.",
+  sac:"Fais de la place dans ton sac : il faut 2 places libres."
 };
+
+/* v1.37 — E2 : l'action 21 s'adapte au couple (genre connu et figé) :
+   couple de même genre → « Demander à adopter », même mécanique. Le serveur
+   dit lequel (`union.enfant_mode`, v161). */
+const ACTION_ADOPTER = { nom:"Demander à adopter",
+  phrase:"Vous avez rempli le dossier à quatre mains et l'avez envoyé. Il en faudra peut-être d'autres.",
+  seul:"{nom} aimerait demander à adopter." };
+function _modeEnfant(){ const u = _union && _union.union; return (u && u.enfant_mode) || "bebe"; }
+function _actionCouple(n){ return (n === 21 && _modeEnfant() === "adoption") ? ACTION_ADOPTER : ACTIONS_COUPLE[n]; }
 
 function _uNom(id){ const it = (typeof item==="function") ? item(id) : null; return it ? it.nom : id; }
 function _uDate(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR", { day:"numeric", month:"long" }); }catch(e){ return ""; } }
@@ -112,6 +138,7 @@ async function chargerUnion(){
     _union = data;
     _appliquerMoiUnion(data.moi);
     majOngletCouple();
+    if(data.union) _coqueEnfant();                      // v1.39 : Mécano
     return data;
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "couple.js#charger"); return null; }
 }
@@ -182,6 +209,8 @@ function _uBlocMarie(u){
   const avert = u.je_suis_hote ? "" :
     `<p class="itip-gris">⚠ Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant, tel que tu l'as laissé. Retire d'abord tes drones.</p>`;
   const d = u.divorce;
+  // v1.40 — décision de l'autrice : divorce et veuvage effacent les enfants du couple.
+  if(_aDesEnfants(u)) h += `<p class="itip-gris">⚠ Au divorce, tout ce qui concerne vos enfants sera effacé : la Famille, les lettres, les cachettes.</p>`;
   if(!d) return h + avert + `<p class="itip-gris">Demander le divorce coûte 50 points de Complicité.</p><div class="actions"><button class="mini danger" data-u="divorcer">Demander le divorce</button></div>`;
   if(d.par_moi){
     const pret = Date.now() >= new Date(d.forcable_le).getTime();
@@ -191,6 +220,7 @@ function _uBlocMarie(u){
   return h + `<p><b>${echapper(u.nom)}</b> demande le divorce. Sans réponse de ta part, il sera prononcé à partir du ${_uDate(d.forcable_le)}.</p>` + avert +
     `<div class="actions"><button class="mini danger" data-u="divorcer">Accepter le divorce</button></div>`;
 }
+function _aDesEnfants(u){ return !!(u && ((u.enfant && u.enfant.stade !== "aucun") || (u.famille && u.famille.length))); }
 function _uBlocChoixFaction(c){
   const f = (typeof _facNomComm === "function") ? _facNomComm : (x => x);
   return `<div class="u-choix"><p>Après ton divorce, tu peux rester dans <b>${f(c.actuelle)}</b> ou rentrer dans <b>${f(c.origine)}</b>, jusqu'au ${_uDate(c.jusqua)}.</p>
@@ -263,7 +293,8 @@ function _uBrancher(el){
       const demande = !!(u && !u.divorce);
       const msg = (demande ? "Demander le divorce ? La Complicité perdra 50 points (sous 20 %, la réserve commune se ferme)."
                            : "Confirmer le divorce ?")
-        + ((u && !u.je_suis_hote) ? " Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant." : "");
+        + ((u && !u.je_suis_hote) ? " Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant." : "")
+        + (_aDesEnfants(u) ? " Tout ce qui concerne vos enfants sera effacé : la Famille, les lettres, les cachettes." : "");   // v1.40 (v164)
       if(!await confirmerJoli("Divorce", msg, "Confirmer", true)) return;
       r = await _uRpc("union_divorcer");
       if(r && r.divorce){ _jc("Le divorce est prononcé.", "alerte"); await _uApresDemenagement(r); }
@@ -282,11 +313,12 @@ function _uBrancher(el){
    ONGLET COUPLE
    =========================================================== */
 function _phraseAction(n, detail, qui){
-  const A = ACTIONS_COUPLE[n]; if(!A) return "";
+  const A = _actionCouple(n); if(!A) return "";
   detail = detail || {};
   if(n === 1) return A.phrase.replace("{cadeau}", detail.cadeau || "petit cadeau");
   if(n === 5 && detail.ratee) return A.ratee;
-  if(n === 21) return detail.tentative ? A.phrase : A.seul.replace("{nom}", qui || "?");
+  // v1.37 : tentative à deux ratée → « Pas cette fois. » (reussi, v161).
+  if(n === 21) return detail.tentative ? A.phrase + (detail.reussi === false ? " Pas cette fois." : "") : A.seul.replace("{nom}", qui || "?");
   return A.phrase;
 }
 async function majCouple(){
@@ -294,12 +326,13 @@ async function majCouple(){
   if(!_union) await chargerUnion();
   const u = _union && _union.union;
   if(!u){ el.innerHTML = `<h2>Couple</h2><p class="vide">Tu n'es pas marié·e. Les demandes se font aux Unions, au Centre.</p>`; return; }
-  const onglets = [["actions","Actions"],["reserve","Réserve"],["confidences","Confidences"],["ceremonie","Cérémonie"]];
+  const onglets = [["actions","Actions"],["famille","Famille"],["reserve","Réserve"],["confidences","Confidences"],["ceremonie","Cérémonie"]];
   el.innerHTML = `<h2>Couple <span class="pts">avec ${echapper(u.nom || "?")}</span></h2>
     <div class="sous-menu">${onglets.map(([k,t]) => `<button class="sous-lien${_coupleOnglet===k?" actif":""}" data-co="${k}">${t}</button>`).join("")}</div>
     <div id="couple-corps"></div>`;
   el.querySelectorAll("[data-co]").forEach(b => b.addEventListener("click", () => { _coupleOnglet = b.dataset.co; majCouple(); }));
   const c = el.querySelector("#couple-corps");
+  if(_coupleOnglet === "famille") return _coupleFamille(c, u);
   if(_coupleOnglet === "reserve") return _coupleReserve(c, u);
   if(_coupleOnglet === "confidences") return _coupleConfidences(c, u);
   if(_coupleOnglet === "ceremonie") return _coupleCeremonie(c, u);
@@ -317,14 +350,14 @@ function _imgAction(n){
   return `<img class="co-img" src="images/couple/${n}.png" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`;
 }
 function _phraseApercu(n){
-  const A = ACTIONS_COUPLE[n]; if(!A) return "";
+  const A = _actionCouple(n); if(!A) return "";
   if(n === 1) return A.phrase.replace("{cadeau}", "petit cadeau");
   return A.phrase;
 }
 function _carteFaite(qui, n, detail, nomQui){
   if(n == null) return `<div class="co-carte co-attente"><div class="co-img co-vide"></div>
       <div><div class="co-qui">${qui}</div><div class="itip-gris">${qui === "Toi" ? "Tu n'as pas encore fait ton action aujourd'hui." : "N'a pas encore fait son action aujourd'hui."}</div></div></div>`;
-  const A = ACTIONS_COUPLE[n] || { nom:"?" };
+  const A = _actionCouple(n) || { nom:"?" };
   return `<div class="co-carte${A.negative ? " co-neg" : ""}">${_imgAction(n)}
       <div><div class="co-qui">${qui} <span class="co-fait">✓ fait</span></div><div class="co-nom">${A.nom}</div>
       <i class="co-phrase">${echapper(_phraseAction(n, detail, nomQui))}</i></div></div>`;
@@ -335,15 +368,21 @@ function _coupleActions(c, u){
     <div class="piste"><div class="remplissage" style="width:${u.complicite}%"></div></div></div>`;
   if(u.en_pause){ c.innerHTML = h + `<p class="vide">Le couple est en pause : ${echapper(u.nom)} est au Couloir. La Complicité est figée.</p>`; return; }
   h += `<div class="co-jour">${_carteFaite(echapper(u.nom || "?"), j.son_choix, j.son_detail, u.nom)}${_carteFaite("Toi", j.mon_choix, j.mon_detail, etat.nom)}</div>`;
-  const dispo = [ ...(j.mes_actions || []), 21, ...((j.toujours || [9,10,20]).filter(a => a !== 21)) ];
+  /* v1.37 — E1 : tant qu'un enfant est attendu ou à la maison, l'action 21
+     est remplacée par une carte grisée. */
+  const enf = (u.enfant && u.enfant.stade !== "aucun") ? u.enfant : null;   // v1.39 : « aucun » = cachette seule
+  const dispo = [ ...(j.mes_actions || []), ...(enf ? [] : [21]), ...((j.toujours || [9,10,20]).filter(a => a !== 21)) ];
   const fait = j.mon_choix != null;
   h += `<h4 class="co-titre">Actions possibles aujourd'hui</h4>`
      + (fait ? `<p class="itip-gris">Tu as déjà fait ton action de couple aujourd'hui. Reviens demain (minuit, heure de Paris).</p>` : "")
      + `<div class="co-liste">` + dispo.map(a => {
-          const A = ACTIONS_COUPLE[a]; if(!A) return "";
+          const A = _actionCouple(a); if(!A) return "";
           return `<button class="co-choix${A.negative ? " co-neg" : ""}" data-act="${a}"${fait ? " disabled" : ""}>
             ${_imgAction(a)}<span><span class="co-nom">${A.nom}</span><i class="co-phrase">${echapper(_phraseApercu(a))}</i></span></button>`;
-        }).join("") + `</div>`;
+        }).join("")
+     + (enf ? `<div class="co-choix co-enfant" aria-disabled="true">${_imgAction(21)}<span><span class="co-nom">${enf.stade === "attendu" ? "Un enfant est attendu" : "Un enfant est déjà là"}</span>
+          <i class="co-phrase">Un seul à la fois. Retrouvez-le dans Famille.</i></span></div>` : "")
+     + `</div>`;
   c.innerHTML = h;
   c.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
     if(b.disabled) return;
@@ -352,6 +391,253 @@ function _coupleActions(c, u){
     if(typeof r.moral === "number"){ etat.jauges = etat.jauges || {}; etat.jauges.moral = r.moral; }
     // v1.36s : plus de phrase au journal — elle s'affiche dans la carte « Toi ».
     await chargerUnion(); majCouple(); if(typeof afficher === "function") afficher();
+  }));
+}
+
+/* ===========================================================
+   v1.37 — FAMILLE (enfants, brique 1 : arrivée, prénom, croissance).
+   Cadrage : PASSATION partie D, E1-E7. Tout est décidé au serveur
+   (v161 : _enfant_tenter, _enfant_maj, enfant_nommer) ; `union.enfant`
+   = l'enfant attendu ou à la maison, `union.famille` = ceux qui sont partis.
+   Stades : petit 3 j, enfant 7 j, adolescent 11 j, départ à 21 j. Un parent
+   en pause ou au Couloir fige tout (décision A, 04/10).
+   =========================================================== */
+const STADES_ENFANT = { attendu:"Attendu", petit:"Petit", enfant:"Enfant", ado:"Adolescence" };
+const RE_PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ]+([ '’-][A-Za-zÀ-ÖØ-öø-ÿŒœ]+)*$/;   // = _enfant_prenom (serveur)
+function _prenomPropre(t){
+  const p = String(t || "").trim().replace(/\s+/g, " ");
+  return (p.length >= 2 && p.length <= 20 && RE_PRENOM.test(p)) ? p : null;
+}
+function _jours(n){ return `${n} jour${n > 1 ? "s" : ""}`; }
+// Affichage seul : le tirage est fait par le serveur (70 % × (C/100)², E1).
+function chanceEnfant(c){ return Math.round(70 * Math.pow((Number(c) || 0) / 100, 2)); }
+
+/* v1.38 — brique 2 : soins, bien-être, vocation, lettre (v162). Textes. */
+const VOCATIONS = { bricoleur:"Bricoleur", eclaireur:"Éclaireur", cuistot:"Cuistot", soigneur:"Soigneur", mecano:"Mécano", gardien:"Gardien" };
+// Ce que l'on apprend (bouton « Lui apprendre ») → la vocation du même nom.
+const DOMAINES_LECON = { bricoleur:"Réparer", eclaireur:"Explorer", cuistot:"Cuisiner", soigneur:"Soigner", mecano:"Mécanique", gardien:"Veiller" };
+const NOURRITURE_ENFANT = ["fab_ration_chaude", "ferragave", "nectine", "sporelle"];   // = _enfant_nourriture (serveur)
+const GESTES_ENFANT = {
+  nourrir:   { nom:"Nourrir", gain:15, stades:["petit","enfant","ado"], phrases:{
+    petit:"Une cuillère dans la bouche, trois sur la table.",
+    enfant:"Assiette vide. Les légumes ont disparu… sous la table.",
+    ado:"L'assiette est vide en trente secondes. Le « merci » est en option." } },
+  calin:     { nom:"Câliner et coucher", gain:8, stades:["petit","enfant","ado"], phrases:{
+    petit:"Une berceuse, deux fois. Chantée faux, et ça a marché.",
+    enfant:"« Encore cinq minutes. » Il y en a eu vingt.",
+    ado:"Un câlin ? « Bon. Vite, alors. »" } },
+  jouer:     { nom:"Jouer", gain:10, stades:["enfant","ado"], phrases:{
+    enfant:"Cache-cache dans la cité. Perdu deux fois, et pas exprès.",
+    ado:"Une partie de cartes. Perdue avec panache." } },
+  apprendre: { nom:"Lui apprendre", gain:5, stades:["enfant"], phrases:{
+    bricoleur:"Un tournevis, une vieille radio, une heure de patience.",
+    eclaireur:"Lire une carte, trouver le nord, compter ses pas.",
+    cuistot:"Éplucher une Ferragave sans y laisser un doigt.",
+    soigneur:"Un pansement sur la patte d'une peluche. Elle s'en remettra.",
+    mecano:"Le nom de chaque pièce d'un moteur. Ou presque.",
+    gardien:"Monter la garde devant la porte. Avec le plus grand sérieux." } }
+};
+function _phraseGeste(g, stade){
+  if(!g) return "";
+  const G = GESTES_ENFANT[g.geste]; if(!G) return "";
+  if(g.geste === "apprendre") return G.phrases[g.detail] || "";
+  return G.phrases[stade] || G.phrases.enfant || "";
+}
+function _nomGeste(g){
+  if(!g) return "";
+  const G = GESTES_ENFANT[g.geste] || { nom:"?" };
+  if(g.geste === "apprendre") return `${G.nom} : ${DOMAINES_LECON[g.detail] || "?"}`;
+  if(g.geste === "nourrir" && g.detail) return `${G.nom} (${_uNom(g.detail)})`;
+  return G.nom;
+}
+/* La lettre (E3d) : 5 modèles × une phrase selon la vocation. Le serveur ne
+   garde que le numéro du modèle : les textes vivent ici. */
+const LETTRE_VOCATION = {
+  bricoleur:"Ici, tout grince. On vient me chercher dès qu'une porte refuse de fermer ; j'ai toujours un tournevis dans la poche.",
+  eclaireur:"Je passe mes journées dehors, à repérer les chemins que personne ne prend. Je compte encore mes pas.",
+  cuistot:"Je fais la cuisine pour toute une tablée maintenant. Personne ne se plaint. Sauf de la salade, comme toujours.",
+  soigneur:"On m'appelle pour les coupures, les fièvres et les chagrins. Les pansements, c'est vous qui me les avez appris.",
+  mecano:"J'ai du cambouis jusqu'aux coudes du matin au soir. Hier, un moteur a redémarré rien qu'en m'entendant arriver. Enfin, presque.",
+  gardien:"Je monte la garde aux portes de la cité. Les nuits sont longues ; je pense à vous, et elles le sont moins.",
+  aucune:"Je ne sais pas encore ce que je veux faire. Je cherche. Vous disiez que ce n'était pas grave : je m'en souviens."
+};
+const LETTRES_ENFANT = {
+  1:"Bonjour à vous deux,\n\nÇa fait des semaines que je veux vous écrire. {voc}\n\nJe vais bien. Mangez correctement, dormez assez — oui, c'est moi qui le dis, pour une fois.\n\n{prenom}",
+  2:"À vous deux,\n\nLa maison me manque, surtout le soir. {voc}\n\nJe ne reviens pas tout de suite, mais je n'oublie rien.\n\nAvec tout mon amour,\n{prenom}",
+  3:"Bonjour,\n\nJe vous écris sur le seul papier que j'ai trouvé, alors je fais court. {voc}\n\nGardez-moi une place à table, au cas où.\n\n{prenom}",
+  4:"À mes parents,\n\nOn me demande souvent d'où je viens. Je réponds : d'une maison où l'on se disputait pour la vaisselle. {voc}\n\nMerci pour tout. Vraiment.\n\n{prenom}",
+  5:"Bonjour à vous deux,\n\nHier soir, j'ai regardé Maar tourner, et j'ai pensé à vous. {voc}\n\nÀ bientôt, j'espère.\n\n{prenom}"
+};
+function texteLettre(p){
+  const m = LETTRES_ENFANT[(p.lettre && p.lettre.modele) || 1] || LETTRES_ENFANT[1];
+  return m.replace("{voc}", LETTRE_VOCATION[p.vocation] || LETTRE_VOCATION.aucune).replace("{prenom}", p.prenom || "");
+}
+
+function _carteGeste(qui, g, stade){
+  if(!g) return `<div class="co-carte co-attente"><div><div class="co-qui">${qui}</div><div class="itip-gris">Pas encore de geste aujourd'hui.</div></div></div>`;
+  return `<div class="co-carte"><div><div class="co-qui">${qui} <span class="co-fait">✓ fait</span></div><div class="co-nom">${echapper(_nomGeste(g))}</div>
+    <i class="co-phrase">${echapper(_phraseGeste(g, stade))}</i></div></div>`;
+}
+function _blocSoins(e, u){
+  const G = e.gestes || {}, fait = !!G.moi, bloque = fait || e.gele;
+  let h = `<div class="jauge fa-jauge"><div class="jauge-tete"><span>Bien-être</span><span class="val">${e.bien_etre}</span></div>
+    <div class="piste"><div class="remplissage${e.bien_etre < 30 ? " fa-bas" : ""}" style="width:${e.bien_etre}%"></div></div></div>`;
+  if(e.soir === 1) h += `<p class="itip-gris">Hier soir : bien-être de 70 ou plus, Complicité +1.</p>`;
+  else if(e.soir === -2) h += `<p class="u-alerte">Hier soir : bien-être sous 30, Complicité −2.</p>`;
+  if(e.jours_zero > 0) h += `<p class="u-alerte">À 0 depuis ${_jours(e.jours_zero)} : au troisième jour entier, l'enfant fugue.</p>`;
+  h += `<div class="co-jour">${_carteGeste(echapper(u.nom || "?"), G.autre, e.stade)}${_carteGeste("Toi", G.moi, e.stade)}</div>`;
+  h += `<h4 class="co-titre">Ton geste du jour</h4>`;
+  if(e.gele) h += `<p class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</p>`;
+  else if(fait) h += `<p class="itip-gris">Tu as fait ton geste aujourd'hui. Reviens demain (minuit, heure de Paris).</p>`;
+  h += `<div class="fa-gestes">`;
+  // Nourrir : une ration ou une plante comestible du SAC.
+  const vivres = NOURRITURE_ENFANT.filter(id => (etat.sac && etat.sac[id]) > 0);
+  if(vivres.length) h += vivres.map(id => `<button class="mini" data-geste="nourrir" data-detail="${id}"${bloque ? " disabled" : ""}>Nourrir — ${echapper(_uNom(id))} <span class="qte">×${etat.sac[id]}</span> (+15)</button>`).join("");
+  else h += `<button class="mini" disabled title="Une ration chaude ou une plante comestible (Ferragave, Nectine, Sporelle) dans le sac.">Nourrir (rien dans le sac)</button>`;
+  h += `<button class="mini" data-geste="calin"${bloque ? " disabled" : ""}>Câliner et coucher (+8)</button>`;
+  if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini" data-geste="jouer"${bloque ? " disabled" : ""}>Jouer (+10)</button>`;
+  h += `</div>`;
+  if(e.stade === "enfant"){
+    h += `<h4 class="co-titre">Lui apprendre <span class="itip-gris">(+5, et une leçon)</span></h4><div class="fa-gestes">`
+      + Object.entries(DOMAINES_LECON).map(([k, t]) => `<button class="mini" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${t} <span class="qte">${(e.lecons || {})[k] || 0}</span></button>`).join("")
+      + `</div><p class="itip-gris">À l'adolescence, le domaine le plus travaillé (par vous deux) devient sa vocation ; à égalité, le hasard tranche. Sans aucune leçon : pas de vocation.</p>`;
+  } else if(e.stade === "ado"){
+    h += `<p>Vocation : <b>${e.vocation ? VOCATIONS[e.vocation] || e.vocation : "aucune"}</b>${e.vocation ? "" : " — faute de leçons, pas d'aide."}</p>`;
+    if(e.vocation) h += _blocAide(e);
+  }
+  h += `<p class="itip-gris">Un geste par jour chacun. Le bien-être perd 10 chaque nuit. Le soir : 70 ou plus → Complicité +1 ; sous 30 → −2. Trois jours entiers à 0 : l'enfant fugue.</p>`;
+  return h;
+}
+
+/* v1.39 — brique 3 : les aides de minuit (v163). Une par nuit, adolescent
+   d'au moins 40 de bien-être le soir. Textes ici ; le serveur décide. */
+const AIDES_VOCATION = {
+  bricoleur:"Chaque nuit, répare de 10 % la structure la plus abîmée de vos deux terrains.",
+  eclaireur:"Tous les 3 jours, repère une cachette sur la carte de Silène : le premier de vous deux qui s'y rend la fouille, le jour même ou le lendemain.",
+  cuistot:"Chaque nuit, cuisine une plante comestible (réserve commune, sinon un coffre) : +5 de moral chacun.",
+  soigneur:"Chaque nuit : +5 de santé chacun.",
+  mecano:"Chaque nuit : +5 PV de coque au vaisseau équipé de chacun.",
+  gardien:"Quand vous êtes tous les deux hors de Silène, les dégâts du Protocole et des expéditions sur vos terrains sont divisés par deux."
+};
+function _blocAide(e){
+  let h = `<p class="itip-gris">${AIDES_VOCATION[e.vocation] || ""} Aucune aide si son bien-être est sous 40 le soir.</p>`;
+  if(e.vocation === "gardien") h += `<p>${e.gardien ? "Veille en ce moment : vous êtes tous les deux hors de Silène." : "Veille dès que vous êtes tous les deux hors de Silène."}</p>`;
+  else if(e.aide && e.aide.texte) h += `<p class="fa-aide">Dernière aide (${_uDate(e.aide.le)}) : ${echapper((typeof joliserItems === "function") ? joliserItems(e.aide.texte) : e.aide.texte)}</p>`;
+  if(e.cachette) h += _blocCachette(e.cachette);
+  return h;
+}
+// Position sur la carte de Silène (null ailleurs : La Braise, Le Suaire, Triptolème).
+function _posSilene(){
+  const s = etat && etat.secteur;
+  if(s === "braise" || s === "suaire" || s === "ecart") return null;
+  return etat.pos || null;
+}
+function _blocCachette(k){
+  if(k.fouillee) return `<p class="itip-gris">La cachette (${k.x}, ${k.y}) a été fouillée${k.par_moi ? " par toi" : ""}.</p>`;
+  const p = _posSilene();
+  const d = p ? Math.round(Math.hypot(p.x - k.x, p.y - k.y)) : null;
+  const ici = d != null && d <= 80;
+  return `<div class="fa-cachette"><p><b>Cachette</b> en <b>(${k.x}, ${k.y})</b> sur la carte de Silène — jusqu'au ${_uDate(k.jusqua)} inclus.
+      <span class="itip-gris">${p ? (ici ? "Tu y es." : `Tu es à ${d} u.`) : "Tu n'es pas sur la carte de Silène."}</span></p>
+    <button class="mini" id="fa-fouiller"${ici ? "" : " disabled"}>Fouiller ici</button></div>`;
+}
+/* Mécano : les PV de coque déposés par le serveur (la coque vit dans donnees). */
+let _coqueTs = 0;
+async function _coqueEnfant(){
+  if(Date.now() - _coqueTs < 60000) return; _coqueTs = Date.now();
+  let d = null; try{ ({ data:d } = await sb.rpc("enfant_coque_prendre")); }catch(e){ return; }
+  if(!d || !d.ok || !(d.points > 0)) return;
+  const qui = d.prenom || "Votre enfant";
+  if(etat.vaisseau && typeof reparerPv === "function"){
+    const g = reparerPv(d.points);
+    _jc(g > 0 ? `${qui} a révisé ton vaisseau : +${g} PV de coque.` : `${qui} a révisé ton vaisseau : la coque était déjà intacte.`, "gain");
+    if(typeof majVaisseau === "function") majVaisseau();
+    if(typeof sauvegarder === "function") sauvegarder();
+  } else _jc(`${qui} voulait réviser ton vaisseau, mais aucun n'est équipé.`, "");
+}
+
+function _coupleFamille(c, u){
+  const e = (u.enfant && u.enfant.stade !== "aucun") ? u.enfant : null, adopt = _modeEnfant() === "adoption";
+  const cachette = u.enfant && u.enfant.cachette;           // v1.39 : peut survivre au départ
+  let h = "";
+  if(!e){
+    h += `<div class="sous-carte fa-carte"><h3>Pas d'enfant à la maison</h3>
+      <p>${adopt ? "Pour accueillir un enfant, choisissez tous les deux « Demander à adopter » le même jour (Actions)."
+                 : "Pour accueillir un enfant, choisissez tous les deux « Essayer d'avoir un bébé » le même jour (Actions)."}</p>
+      <p class="itip-gris">Chance à chaque essai à deux : 70 % × (Complicité ÷ 100)², soit <b>${chanceEnfant(u.complicite)} %</b> aujourd'hui. Un enfant à la fois.</p></div>`;
+  } else if(e.stade === "attendu"){
+    h += `<div class="sous-carte fa-carte"><h3>Un bébé est attendu</h3>
+      <p>${adopt ? "Votre bébé sera à la maison" : "Le bébé arrivera"} dans <b>${_jours(e.restant)}</b> (à minuit, heure de Paris).</p>
+      ${e.gele ? `<p class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</p>` : ""}</div>`;
+  } else {
+    const titre = e.prenom ? echapper(e.prenom) : "Le bébé <span class=\"itip-gris\">(pas encore de prénom)</span>";
+    const suite = { petit:`encore ${_jours(e.restant)} ; son prénom sera ensuite scellé`,
+                    enfant:`encore ${_jours(e.restant)} avant l'adolescence`,
+                    ado:`départ de la maison dans ${_jours(e.restant)}` }[e.stade] || "";
+    h += `<div class="sous-carte fa-carte"><h3>${titre} <span class="qte">${STADES_ENFANT[e.stade] || ""}</span></h3>
+      <p class="itip-gris">Stade « ${(STADES_ENFANT[e.stade] || "").toLowerCase()} » — ${suite}.</p>`;
+    if(e.nommable){
+      h += `<div class="fa-nom"><input type="text" id="fa-prenom" maxlength="20" placeholder="${e.prenom ? "Actuel : " + echapper(e.prenom) : "Un prénom…"}">
+          <button class="mini" id="fa-nommer">${e.prenom ? "Changer" : "Choisir ce prénom"}</button></div>
+        <p class="itip-gris">À choisir à deux : chacun peut le donner ou le changer jusqu'à la fin du stade « petit ». Ensuite, il est scellé. Faute de prénom, on lui en trouvera un.</p>`;
+    }
+    if(typeof e.bien_etre === "number") h += _blocSoins(e, u);      // v1.38 (serveur v162)
+    if(e.histoire && typeof _blocHistoire === "function") h += _blocHistoire(e, u);   // v1.41 (histoires.js, v165)
+    h += `</div>`;
+  }
+  if(cachette && !(e && e.stade === "ado")) h += _blocCachette(cachette);
+  const partis = u.famille || [];
+  if(partis.length){
+    h += `<h4 class="co-titre">Enfants partis</h4><div class="fa-partis">` + partis.map(p => {
+      const voc = p.vocation ? echapper(VOCATIONS[p.vocation] || p.vocation) : "sans vocation";
+      const quand = p.statut === "fugue" ? "parti trop tôt" : p.statut === "proches" ? "chez des proches" : "départ";
+      const lettre = p.lettre ? `<details class="fa-lettre"><summary>Sa lettre (${_uDate(p.lettre.recue_le)})</summary><p>${echapper(texteLettre(p)).replace(/\n/g, "<br>")}</p></details>` : "";
+      return `<div class="fa-parti"><b>${echapper(p.prenom || "?")}</b> — ${voc} <span class="itip-gris">· ${quand}${p.parti_le ? " le " + _uDate(p.parti_le) : ""}</span>${lettre}</div>`;
+    }).join("") + `</div>`;
+  }
+  c.innerHTML = h;
+  const b = c.querySelector("#fa-nommer");
+  if(b) b.addEventListener("click", async () => {
+    const champ = c.querySelector("#fa-prenom");
+    const p = _prenomPropre(champ && champ.value);
+    if(!p){ _jc(UNION_REFUS.prenom, "alerte"); return; }
+    b.disabled = true;
+    const r = await _uRpc("enfant_nommer", { p_prenom:p });
+    b.disabled = false;
+    if(!r) return;
+    _jc(`Prénom choisi : ${r.prenom}.`, "gain");
+    if(champ) champ.value = "";       // la relecture de 45 s ne redessine pas un champ rempli
+    await chargerUnion(); majCouple();
+  });
+  const champ = c.querySelector("#fa-prenom");
+  if(champ) champ.addEventListener("keydown", ev => { if(ev.key === "Enter"){ ev.preventDefault(); b.click(); } });
+  if(e && typeof _brancherHistoire === "function") _brancherHistoire(c, e, u);   // v1.41
+  // v1.39 — la cachette de l'Éclaireur (enfant_fouiller, v163).
+  const bf = c.querySelector("#fa-fouiller");
+  if(bf) bf.addEventListener("click", async () => {
+    const p = _posSilene(); if(!p){ _jc(UNION_REFUS.ailleurs, "alerte"); return; }
+    bf.disabled = true;
+    let d = null; try{ ({ data:d } = await sb.rpc("enfant_fouiller", { p_x:Math.round(p.x), p_y:Math.round(p.y) })); }catch(err){}
+    bf.disabled = false;
+    if(!d){ _jc("Le serveur n'a pas répondu — réessaie.", "alerte"); return; }
+    if(!d.ok){ _jc(d.err === "loin" ? "Rien ici : la cachette est plus loin." : (UNION_REFUS[d.err] || `Fouille refusée (${d.err}).`), "alerte"); return; }
+    const liste = Object.entries(d.gains || {}).map(([id, n]) => `${n}× ${_uNom(id)}`).join(", ");
+    _jc(`Cachette de ${d.prenom || "votre enfant"} : ${liste || "rien"}.`, "gain");
+    if(typeof chargerStocksServeur === "function") await chargerStocksServeur();
+    await chargerUnion(); majCouple(); if(typeof afficher === "function") afficher();
+  });
+  // v1.38 — les gestes (enfant_geste, v162).
+  c.querySelectorAll("[data-geste]").forEach(bt => bt.addEventListener("click", async () => {
+    if(bt.disabled) return;
+    c.querySelectorAll("[data-geste]").forEach(x => { x.disabled = true; });
+    const g = bt.dataset.geste, d = bt.dataset.detail || null;
+    const r = await _uRpc("enfant_geste", { p_geste:g, p_detail:d });
+    if(r){
+      _jc(`${_nomGeste({ geste:g, detail:d })} : bien-être ${r.bien_etre}.`, "gain");
+      if(g === "nourrir" && typeof chargerStocksServeur === "function") await chargerStocksServeur();
+    }
+    await chargerUnion(); majCouple();
+    if(r && typeof afficher === "function") afficher();
   }));
 }
 
@@ -555,6 +841,7 @@ setInterval(() => {
      relecture (du fil seulement) ; et on ne redessine JAMAIS pendant qu'un
      champ de l'onglet a le focus ou contient du texte. */
   if(_coupleOnglet === "confidences") return;
+  if(typeof _histJeuEnCours !== "undefined" && _histJeuEnCours) return;   // v1.41 : pas pendant un mini-jeu d'histoire
   const champ = [...p.querySelectorAll("textarea, input[type=text]")];
   if(champ.some(t => document.activeElement === t || (t.value || "").trim())) return;
   chargerUnion().then(() => majCouple());
