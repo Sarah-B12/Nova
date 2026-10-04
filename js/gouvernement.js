@@ -522,7 +522,7 @@ async function _rendreBureauStratege(el, fac){
     const cMerc = (typeof CERCLES!=="undefined" ? CERCLES : []).find(c=>c.id===CERCLE_MERC) || { nom:"Les Langues-violacées", ic:"👅" };
     h+=`<div id="bureau-guet"></div>`;   // v1.12 : le guet, rempli juste après (RPC)
     h+=`<h4 class="gsec">Mercenaires</h4>`;
-    h+=`<p class="itip-gris" style="font-size:12px">Les <b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
+    h+=`<p class="itip-gris" style="font-size:12px"><b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
     let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
     let rp=0; try{ const { data } = await sb.rpc("cercle_actif",{ p_faction:fac, p_cercle:CERCLE_MERC }); rp=data|0; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9b"); }
     if(rp>=50){

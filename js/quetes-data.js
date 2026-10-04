@@ -591,7 +591,7 @@ const QUETES = [
           "La coursive qui y mène surplombe le quai. Tu y arrives au mauvais moment — ou au bon.",
           "En bas, le quai s'illumine d'une lumière ambrée sur toute sa longueur. Puis une seconde. Puis une troisième, et la cadence s'installe : celle que tu as reproduite sur les corolles, à la fleur près.",
           "APPEL D'EMBARQUEMENT — PERSONNEL NON ÉVACUÉ — PRÉSENTEZ-VOUS AU POINT DE RASSEMBLEMENT.",
-          "Ils sont onze. Ils se rangent le long de la ligne jaune, à intervalles réguliers, et ils attendent. Personne ne vient. Ils attendent quand même, le temps qu'il faut, parce que c'est le temps prévu.",
+          "Ils sont treize. Ils se rangent le long de la ligne jaune, à intervalles réguliers, et ils attendent. Personne ne vient. Ils attendent quand même, le temps qu'il faut, parce que c'est le temps prévu.",
           "Puis les lumières s'éteignent dans l'ordre inverse, et l'un d'eux fait un geste. Ils décrochent leurs casques.",
           "Il y a des visages dessous. Un homme âgé, deux très jeunes. L'un se frotte les yeux. Un autre dit quelque chose et deux épaules se secouent de rire — tu n'entends rien, la vitre est trop épaisse, mais on rit pareil partout.",
           "Dans ton oreillette, Sorn ne dit rien du tout. Pendant très longtemps.",
@@ -668,7 +668,7 @@ const QUETES = [
             "« Bon. » Il redescend la passerelle. « J'ai des relais à écouter, moi. » Il s'arrête sur la dernière marche, sans se retourner. « Si t'entends quelque chose, là-haut — n'importe quoi, en ancien — tu me le dis. Mon grand-père disait qu'un jour, il y aurait quelque chose à entendre. »",
             "Il ne se retourne pas. Sur la console, le mot manuscrit est toujours scotché là : « pour la dernière rotation ». Ce n'était pas la dernière.",
             "ÉTAT DE COQUE : DÉGRADÉ. STOCKS D'ENTRETIEN : ÉPUISÉS. AUTONOMIE DE SERVICE ESTIMÉE : 10 JOURS.",
-            "Elle t'emmènera là-haut. Elle ne t'y gardera pas. D'ici là, il faudra t'en payer une vraie — ou apprendre à en construire une."
+            "Elle t'emmènera là-haut. Elle ne t'y gardera pas. D'ici là, il faudra t'en payer une vraie — ou apprendre à en construire une. J'ai ouî-dire qu'il y a un ferailleur dans une carcasse en haut. Tu devrais y aller pour réparer ton engin."
           ] } }
     ],
     /* ⚠ v0.91 — le permis seul obligeait à attendre qu'un Constructeur mette un
@@ -739,7 +739,7 @@ const QUETES = [
           reussite:[
             "O P E R A. La ligne se referme, et le carré avec elle : le même mot vers l'avant, vers l'arrière, vers le haut, vers le bas. Un objet parfait, qui ne dit rien d'autre que sa propre perfection.",
             "Galm passe le pouce sur la deuxième ligne. « AREPO… » Elle fronce les sourcils, sort un boulon de sa poche, le fait tourner à la lumière. Sur la tête, en tout petit, à peine lisible : AREPO. « Je croyais que c'était une marque de boulons. J'en ai des caisses. C'est gravé sur tout ce que je découpe ici. Tout. »",
-            "Elle regarde la plaque, puis la Carcasse autour d'elle, comme si elle la voyait pour la première fois. « C'est pas une marque de boulons. C'est à qui c'était. »",
+            "Elle regarde la plaque, puis la Carcasse autour d'elle, comme si elle la voyait pour la première fois. « C'est pas une marque de boulons. C'est une marque d'appartenance. »",
             "Sous le carré, une ligne plus petite, en ancien. Tu ne la lis pas. Mais un mot revient deux fois, que Sorn t'a appris à reconnaître : SATOR. Et le long de la paroi du fond, derrière des panneaux sanglés, un faisceau de câbles part vers une jonction de relais."
           ] } },
 
@@ -748,7 +748,7 @@ const QUETES = [
         cible:{ lieu:"epave" }, leurres:[ { lieu:"base" }, { lieu:"asteroides" }, { lieu:"antenne" } ],
         image:"images/quetes/q6/3.png",
         arrivee:[
-          "La jonction est vieille, et elle a été réparée. Pas remplacée : réparée, à la main. Un manchon de fil de cuivre serré en torsade, trois tours, puis un nœud plat, puis trois tours dans l'autre sens. Une étiquette de service est fixée dessus, couverte d'ancien.",
+          "La jonction est vieille, et elle a été réparée. Pas remplacée : réparée, à la main. Un manchon de fil de cuivre serré en torsade, trois tours, puis un nœud plat, puis trois tours dans l'autre sens. Une étiquette de service est fixée dessus, couverte de l'ancien language.",
           "Tu appelles Sorn. Grésillement, long. Puis sa voix, lointaine, comme au fond d'un puits : « …Gamin ? T'es où, là ? T'as une voix de boîte de conserve. »",
           "Tu lui décris le manchon. Trois tours, le nœud, trois tours à l'envers.",
           "Le silence dure si longtemps que tu crois la liaison coupée. Puis : « Lis-moi l'étiquette. Lettre par lettre. Je te la traduis. Ça va me prendre un moment, c'est de l'ancien de service, plein d'abréviations. Bouge pas. »"
