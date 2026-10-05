@@ -9,7 +9,7 @@
    tablette, l'information était donc INATTEIGNABLE.
    Un tap pose `tip-on` sur l'élément ; un tap ailleurs referme tout. Le survol
    continue de marcher à la souris, sans changement. */
-const TIP_SEL = ".comp-nom, .comp-b, .integrite-note, .ip-sig";
+const TIP_SEL = ".comp-nom, .comp-b, .integrite-note, .ip-sig, .reg-note";   // v1.45b : palier du Registre
 function _fermerTips(sauf){
   document.querySelectorAll(".tip-on").forEach(el=>{ if(el!==sauf) el.classList.remove("tip-on"); });
 }

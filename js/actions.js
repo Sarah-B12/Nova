@@ -45,7 +45,8 @@ async function resoudreCombat(opts){
   // Dureté de la patrouille ; les aptitudes de combat (Instinct de combat, Combustion) l'abaissent.
   // v1.31 : sur la carte des débris, dureté +20 (26-46) et 15 XP (debris.js).
   const _deb = (typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci());
-  const cf = Math.max(0, alea(6,26) + (_deb ? DEBRIS_PATR_DURETE : 0) - aptCombatFcReduc());
+  const R = (typeof registreEffets==="function") ? registreEffets() : { durete:0, butin:1, xp:1 };   // v1.45 : Registre
+  const cf = Math.max(0, alea(6,26) + (_deb ? DEBRIS_PATR_DURETE : 0) + R.durete - aptCombatFcReduc());
   /* ⚠ ÉQUILIBRAGE v0.53. Avant : 0,01 + 0,0047×(F−cf), plancher 1 %.
      Un nouveau joueur (Force 10) contre une patrouille moyenne (cf 16) avait
      1 % de victoire — pas « difficile », nul — et perdait 53 santé, donc
@@ -56,11 +57,12 @@ async function resoudreCombat(opts){
   let pWin = Math.min(0.95, Math.max(0.05, 0.22 + 0.0042*(F - cf) + bonusApt));
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
-    const xp = _deb ? DEBRIS_PATR_XP : ((typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10);
-    const g = aptButinCombat(alea(14,30) + bonusCredits()); etat.credits += g; gagnerXp(xp);
+    const xp = Math.round((_deb ? DEBRIS_PATR_XP : ((typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10)) * R.xp);
+    const g = Math.round(aptButinCombat(alea(14,30) + bonusCredits()) * R.butin); etat.credits += g; gagnerXp(xp);
     const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : [];   // v1.11 : liste d'objets
     const btn = (typeof _butinTexte==="function") ? _butinTexte(drop) : "";
     journal(`Patrouille du Protocole neutralisée : +${g} ₡${btn?`, ${btn}`:""}, +${xp} XP.`,"gain");
+    if(typeof registreSignaler==="function") registreSignaler("battue");   // v1.45 : +3 au Registre (débris compris)
   } else {
     /* Santé perdue : ~16 à Force 0, ~5 à Force 200 (+ patrouille costaude).
        Avant : 50 − 0,20×F + cf×0,3, borné 10-55. Divisé par ~3 : un nouveau

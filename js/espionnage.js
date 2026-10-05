@@ -154,14 +154,16 @@ async function hackerProtocoleDepuisCarte(){
   }
   else{ journal("Hack du Protocole raté ! Une patrouille rôde…","alerte"); if(Math.random()<0.7 && typeof ouvrirPatrouille==="function") ouvrirPatrouille(); }
 }
-function _hpInfoNom(i){ return {defense:"Défense du jour",menace:"Offensive",cible:"Cible probable",puissance:"Puissance"}[i]||i; }
+function _hpInfoNom(i){ return {defense:"Défense",menace:"Offensive",cible:"Cible probable",puissance:"Puissance"}[i]||i; }   // v1.46 : plus forcément « du jour »
 
 /* ⚠ v0.68 — LIRE LE RENSEIGNEMENT. « Défense du jour : 78 » ne disait rien :
    aucune échelle, aucun conseil. On traduit en clair, en gardant le chiffre
    pour qui veut comparer d'un jour à l'autre.
    BARÈMES RÉELS (à tenir à jour si le serveur change) :
-   · protocole_defense() = 40 + (hash % 41) → TOUJOURS entre 40 et 80.
-     (resoudre_expedition_auto y ajoute ensuite nb_attaquants×3, plafond 150.)
+   · protocole_defense() = 40 + (hash % 41) → entre 40 et 80, SAUF les jours de
+     forteresse (v171) : 250. resoudre_expedition_auto y ajoute nb_attaquants×3
+     (plafond 150, 400 en forteresse), puis × (1 + priorité moyenne ÷ 200) :
+     le quai se barricade contre les factions qui le harcèlent (Registre).
    · puissance ∈ faible | moyenne | forte | très forte (nova_protocole_planifier)
    · menace : offensive à ~1-5 jours, ou aucune ce jour-là. */
 const HP_DEF_MIN = 40, HP_DEF_MAX = 80;
@@ -173,15 +175,26 @@ function _hpFacNom(id){
 function hpLecture(info, valeur){
   const v=String(valeur==null?"":valeur);
   if(info==="defense"){
-    const n=parseInt(v,10);
-    if(isNaN(n)) return { icone:"🛡️", titre:"Défense du jour", phrase:v, chiffre:"" };
+    /* v1.46 (Registre, v171) : « défense|jour|forteresse ». La défense est celle
+       du JOUR de la prochaine expédition de la faction contre le Protocole (sinon
+       du jour même), quai barricadé compris ; puis plus d'info « défense » tant
+       que ce jour n'est pas passé. Les anciennes valeurs (un nombre seul) restent lues. */
+    const parts=v.split("|"), n=parseInt(parts[0],10), jour=parts[1]||"", fort=parts[2]==="forteresse", expe=parts[3]==="expedition";
+    const quand = jour ? new Date(jour+"T12:00:00").toLocaleDateString("fr-FR",{ weekday:"long", day:"numeric", month:"long" }) : "";
+    const verrou = !jour ? "" : expe ? ` Tes relais ne capteront plus la défense avant ce jour-là passé.`
+                                   : ` Tes relais ne capteront plus la défense avant demain.`;
+    if(fort) return { icone:"🏰", titre: expe ? `Le quai sera barricadé le ${quand}` : "Le quai est barricadé aujourd'hui",
+      phrase:`${expe ? "C'est le jour de votre expédition. Ce jour-là" : "Aujourd'hui"}, le Protocole tient le quai avec tout ce qu'il a : aucune expédition n'a de chance.${expe ? " Déplacez la vôtre." : ""}${verrou}`, chiffre:isNaN(n)?"":`défense ${n}` };
+    if(isNaN(n)) return { icone:"🛡️", titre:"Défense", phrase:v, chiffre:"" };
     const p=(n-HP_DEF_MIN)/(HP_DEF_MAX-HP_DEF_MIN);        // 0 = au plus bas, 1 = au plus haut
     let titre, phrase;
     if(p<0.25){      titre="Le mur est mal tenu";        phrase="Les relèves se font attendre, des portiques restent ouverts. C'est le meilleur jour du moment pour un assaut."; }
     else if(p<0.5){  titre="Garde ordinaire";           phrase="Rien d'inhabituel. Une expédition nombreuse peut passer."; }
     else if(p<0.75){ titre="Le Protocole est sur ses gardes"; phrase="Les patrouilles sont doublées : il faudra du monde et de bons équipements."; }
     else{            titre="Le périmètre est verrouillé"; phrase="Tout est tenu, relève après relève. Un assaut aujourd'hui serait un massacre — mieux vaut attendre."; }
-    return { icone:"🛡️", titre, phrase, chiffre:`défense ${n}/${HP_DEF_MAX}` };
+    if(expe) phrase = `Pour le ${quand}, jour de votre expédition. ${phrase}${verrou}`;
+    else if(jour) phrase = `${phrase}${verrou}`;
+    return { icone:"🛡️", titre, phrase, chiffre:`défense ${n}` };
   }
   if(info==="puissance"){
     const k=v.toLowerCase();

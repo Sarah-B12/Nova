@@ -51,6 +51,7 @@ const PATROUILLE_DROPS = [
    doute — jamais chargé, hors ligne — il vaut 1 : le comportement d'avant. */
 let _facteurPatrouille = 1;
 async function chargerFacteurPatrouille(){
+  chargerRegistre();                                                       // v1.45 : le palier, au même rythme
   if(typeof sb === "undefined" || !sb) return;
   try{ const { data } = await sb.rpc("patrouille_facteur");
     if(data && data.facteur) _facteurPatrouille = Number(data.facteur) || 1;
@@ -61,11 +62,68 @@ async function chargerFacteurPatrouille(){
 setInterval(chargerFacteurPatrouille, 600000);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) chargerFacteurPatrouille(); });
 
+/* ===========================================================
+   v1.45 — LE REGISTRE DU PROTOCOLE (PASSATION F ; serveur v170).
+   Une priorité par joueur, jamais montrée en chiffre : le serveur ne renvoie
+   que le PALIER. Effets sur les patrouilles, par palier (F12, validés 03/10).
+   Gains déclarés : registre_patrouille('battue' +3 | 'piratee' +2), 5 par jour.
+   =========================================================== */
+const REGISTRE_PALIERS = {
+  inconnu:     { nom:"Inconnu du registre", freq:1,    durete:0, butin:1,    xp:1,    cristal:PATROUILLE_CRISTAL },
+  signale:     { nom:"Signalé",             freq:1.08, durete:1, butin:1.15, xp:1.10, cristal:PATROUILLE_CRISTAL },
+  recherche:   { nom:"Recherché",           freq:1.15, durete:2, butin:1.30, xp:1.20, cristal:0.025 },
+  prioritaire: { nom:"Prioritaire",         freq:1.25, durete:4, butin:1.50, xp:1.30, cristal:0.03  }
+};
+let _registrePalier = "inconnu";
+function registreEffets(){ return REGISTRE_PALIERS[_registrePalier] || REGISTRE_PALIERS.inconnu; }
+/* v1.45b — infobulle du palier (même modèle que les compétences : survol à la
+   souris, tap au doigt via TIP_SEL dans systeme.js). Elle dit aussi les deux
+   plafonds : 5 patrouilles et 10 sondes comptées par jour. */
+function _registreEffetsTexte(R){
+  if(R.freq === 1) return "Aucun effet pour l'instant.";
+  const pct = x => Math.round((x - 1) * 100);
+  return `Patrouilles ${pct(R.freq)} % plus fréquentes, dureté +${R.durete}, crédits +${pct(R.butin)} %, XP +${pct(R.xp)} %, Cristal ${String(R.cristal * 100).replace(".", ",")} %.`;
+}
+function _majFicheRegistre(){
+  const el = document.querySelector("#stat-registre"); if(!el) return;
+  const R = registreEffets();
+  el.hidden = false;
+  el.innerHTML = `<span class="reg-note" tabindex="0">Registre du Protocole : <b>${R.nom}</b> <span class="reg-i">ⓘ</span>`
+    + `<span class="tip" role="tooltip"><b>Le Registre du Protocole</b><br>`
+    + `Le Protocole tient un registre de ceux qu'il cherche. Chaque action contre lui t'y fait monter ; le calme t'en fait redescendre, un peu chaque jour (pas pendant une pause ni au Couloir).<br>`
+    + `Plus tu es haut, plus ses patrouilles te trouvent et résistent — mais plus elles rapportent.<br><br>`
+    + `<b>Ton palier : ${R.nom}</b><br>${_registreEffetsTexte(R)}<br><br>`
+    + `<b>Ce qui compte</b><br>Patrouille battue ou piratée (<b>5 par jour au plus</b>), expédition victorieuse contre le Protocole, hack de l'Ombre, sonde détruite (<b>10 par jour au plus</b>). Au-delà, tu gagnes toujours ton butin, mais le Registre ne compte plus.<br><br>`
+    + `Paliers : Inconnu du registre → Signalé → Recherché → Prioritaire.</span></span>`;
+}
+async function chargerRegistre(){
+  try{ const { data } = await sb.rpc("registre_lire"); if(data && data.ok && REGISTRE_PALIERS[data.palier]) _registrePalier = data.palier; }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "patrouille.js#registre"); }
+  _majFicheRegistre();
+}
+// Une patrouille battue ou piratée : le serveur compte (5 par jour au plus) et renvoie le palier.
+async function registreSignaler(type){
+  try{
+    const { data } = await sb.rpc("registre_patrouille", { p_type:type });
+    // v1.45b : prévenir une fois par jour quand le plafond de 5 patrouilles est atteint.
+    if(data && data.ok && data.compte === false){
+      const j = (typeof jourDeJeu === "function") ? jourDeJeu() : new Date().toDateString();
+      if(etat._registrePlafond !== j){ etat._registrePlafond = j;
+        journal("Registre du Protocole : 5 patrouilles comptées aujourd'hui. Les suivantes rapportent toujours leur butin, mais ne font plus monter ton palier avant demain.", "poste"); }
+    }
+    if(data && data.ok && REGISTRE_PALIERS[data.palier]){
+      const avant = _registrePalier; _registrePalier = data.palier; _majFicheRegistre();
+      if(avant !== _registrePalier && Object.keys(REGISTRE_PALIERS).indexOf(_registrePalier) > Object.keys(REGISTRE_PALIERS).indexOf(avant))
+        journal(`Registre du Protocole : tu es désormais « ${registreEffets().nom} ». Les patrouilles te cherchent davantage — et rapportent plus.`, "alerte");
+    }
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "patrouille.js#registreSignaler"); }
+}
+
 function chancePatrouille(){
   const base = (typeof _apt==="function" && _apt("om1")) ? PATROUILLE_TAUX_DISCRET : PATROUILLE_TAUX;
   const m = (typeof boissonMod==="function") ? boissonMod("patrouille", 1) : 1;   // v0.79 : Poussière de route / Le coup du départ
   const deb = (typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci()) ? DEBRIS_PATR_FREQ : 1;   // v1.31 : carte des débris ×1,5
-  return Math.max(0, Math.min(0.6, base * m * _facteurPatrouille * deb));
+  return Math.max(0, Math.min(0.6, base * m * _facteurPatrouille * deb * registreEffets().freq));   // v1.45 : Registre
 }
 // L'Ordinateur de hacking doit être ÉQUIPÉ (en main) pour pouvoir hacker.
 function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITEM_HACK || etat.equipement.arme2===ITEM_HACK)); }
@@ -76,7 +134,7 @@ function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===
 async function butinPatrouille(){
   if(placesLibres() <= 0) return [];
   // Cristal de Nyx : butin très rare du Protocole (seule source ordinaire, en attendant les zones/l'espace).
-  if(Math.random() < PATROUILLE_CRISTAL && typeof item==="function" && item("cristal")){
+  if(Math.random() < registreEffets().cristal && typeof item==="function" && item("cristal")){   // v1.45 : 2 → 3 % selon le Registre
     const rc = await agirServeur({ ajouter:{ cristal:1 }, motif:"patrouille" });
     return (rc && (rc.ajoutes||{}).cristal) ? ["cristal"] : [];
   }
@@ -176,9 +234,12 @@ async function patrouilleHacker(){
   fermerPatrouille();
   const p = Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500);   // Intrusion + Intelligence
   if(Math.random() < p){
-    const g = aptButinCombat(alea(10,22)+bonusCredits()); etat.credits += g;
-    const drop = await butinPatrouille(); gagnerXp(XP_PATROUILLE_HACK);   // v1.11 : tableau
-    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop.length?`, ${_butinTexte(drop)}`:""}, +${XP_PATROUILLE_HACK} XP. Aucun dégât.`,"gain");
+    const R = registreEffets();                                           // v1.45 : Registre
+    const g = Math.round(aptButinCombat(alea(10,22)+bonusCredits()) * R.butin); etat.credits += g;
+    const xpH = Math.round(XP_PATROUILLE_HACK * R.xp);
+    const drop = await butinPatrouille(); gagnerXp(xpH);   // v1.11 : tableau
+    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop.length?`, ${_butinTexte(drop)}`:""}, +${xpH} XP. Aucun dégât.`,"gain");
+    registreSignaler("piratee");
     apresAction();
   } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); await resoudreCombat({}); }
 }

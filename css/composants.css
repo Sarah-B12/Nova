@@ -47,6 +47,16 @@
      tape un <span> sur iOS : sur téléphone et tablette, ces bulles ne
      s'ouvraient jamais. Un tap pose la classe `tip-on` (voir systeme.js). */
   .comp-nom.tip-on .tip, .comp-b.tip-on .tip, .integrite-note.tip-on .tip { display:block; }
+  /* v1.45b — palier du Registre sur la fiche : bulle SOUS la ligne (le haut de la fiche est proche). */
+  .reg-note { position:relative; cursor:help; }
+  .reg-note .reg-i { color:var(--sourdine); font-size:.9em; }
+  .reg-note .tip {
+    display:none; position:absolute; top:135%; left:0; width:280px; max-width:80vw; z-index:20;
+    background:var(--surface-2); border:1px solid var(--edge); border-radius:10px; padding:9px 11px;
+    font-family:"Space Mono",monospace; font-weight:400; font-size:11px; color:var(--texte); line-height:1.45;
+    box-shadow:0 8px 22px rgba(0,0,0,.5); white-space:normal; text-align:left;
+  }
+  .reg-note:hover .tip, .reg-note:focus .tip, .reg-note.tip-on .tip { display:block; }
   .comp-val { font-family:"Space Mono",monospace; font-weight:700; color:var(--bleu); min-width:32px; text-align:right; }
   /* Bonus de compétence : « +3 » cliquable/survolable, réutilise le style .tip
      de .comp-nom pour rester cohérent. `tabindex` sur .comp-b rend l'infobulle

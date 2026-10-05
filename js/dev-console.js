@@ -102,6 +102,8 @@ async function _devChargerCalendrier(){
   for(const e of d.debris) L.push({ t:J(e.debut), quand:`${fj(e.debut)} → ${fj(e.fin)}`, quoi:"☄️ Chute de débris", detail:`${nomCarte(e.carte)}${e.test?" · <i>test dev</i>":""}${e.annonce?"":" · pas encore annoncée"}` });
   for(const p of d.poste) L.push({ t:J(p.debut), quand:`${fh(p.debut)} → ${fh(p.fin)}`, quoi:"📮 Poste perturbée", detail:"retard 48 h, taxe ×3" });
   for(const a of d.protocole) L.push({ t:J(a.date), quand:fh(a.date), quoi:"🤖 Attaque du Protocole", detail:`${echapper(String(a.cible||"?"))} · puissance ${a.puissance}` });
+  // v1.46 — Registre (v171) : jours de forteresse, secrets pour les joueurs.
+  for(const f of (d.forteresses || [])) L.push({ t:J(f), quand:fj(f), quoi:"🏰 Jour de forteresse", detail:"quai barricadé : défense du Protocole 250 (plafond 400), pour toutes les factions" });
   for(const x of d.expeditions) L.push({ t:J(x.date), quand:fh(x.date), quoi:"⚔️ Expédition", detail:`${echapper(String(x.faction||"?"))} → ${echapper(String(x.cible||"?"))} (${echapper(String(x.objectif||"?"))})` });
   // Élections : prochain cycle
   const auj = J(d.jour), jm = auj.getDate();

@@ -594,7 +594,8 @@ async function _expCreer(el){
   journal("Expédition créée.","gain"); if(typeof majCentre==="function") majCentre();
 }
 function _expRapportHtml(row){
-  const r=row.rapport||{}; const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut"};   // v1.44b : « Assaut contre le Protocole » (le « contre » est ajouté plus bas)
+  const r=row.rapport||{}; const barricade = r.forteresse ? " · quai barricadé" : "";   // v1.46 : jour de forteresse (v171)
+  const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut"};   // v1.44b : « Assaut contre le Protocole » (le « contre » est ajouté plus bas)
   const on=noms[r.objectif]||"Expédition";
   const quand=row.date_prevue?new Date(row.date_prevue).toLocaleString("fr-FR"):"—";
   /* v0.92 — CONTRE QUI. Le compte rendu donnait l'objectif, l'heure, le score et
@@ -608,7 +609,7 @@ function _expRapportHtml(row){
   const vs = contre ? ` contre <b>${contre}</b>` : "";
   if(r.raison==="aucun_participant") return `<p class="vide">${on}${vs} du ${quand} : <b>annulée</b>, aucun participant.</p>`;
   const verdict=r.succes?`<b style="color:var(--vert,#4caf50)">SUCCÈS</b>`:`<b style="color:var(--orange,#ff8a3d)">ÉCHEC</b>`;
-  let d=`<p class="itip-gris" style="font-size:12px">${on}${vs} · ${quand} · ${verdict} <span class="itip-gris">(${r.p_att} vs ${r.p_def}, ${r.nb_att} participant(s))</span></p>`;
+  let d=`<p class="itip-gris" style="font-size:12px">${on}${vs} · ${quand} · ${verdict} <span class="itip-gris">(${r.p_att} vs ${r.p_def}, ${r.nb_att} participant(s))${barricade}</span></p>`;
   if(r.objectif==="protocole"){
     if(r.succes){ d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.credits_par} ₡</b> par participant.${r.fragment_nom?` 🧩 Fragment récupéré : <b>${r.fragment_nom}</b> !`:""}</p>`; }
   } else if(r.succes){
