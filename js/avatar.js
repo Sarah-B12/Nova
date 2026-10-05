@@ -5,11 +5,16 @@
    pixel pour pixel, un décalage se verrait immédiatement.
    Nommage : visage / cheveux / accessoire = "<genre>_<n>.png" (h_1, f_1…)
              pilosite = "<n>.png" (homme uniquement).
+   v1.44 — COIFFURES EN DEUX MORCEAUX : "<genre>_<n>_derriere.png" (passe
+             DERRIÈRE le visage) + "<genre>_<n>_devant.png" (devant), et pas
+             de "<genre>_<n>.png". Les déclarer dans AV_CHEVEUX_DEUX. Le joueur
+             choisit une seule coiffure ; les deux morceaux se placent seuls.
    Les COMPTES ci-dessous disent au sélecteur ce qui existe — il suffit de les
    augmenter à mesure que tu ajoutes des images (les rangées apparaissent seules).
    =========================================================== */
 const AV_VISAGE     = { h:6, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
-const AV_CHEVEUX    = { h:7,  f:9 };   // coiffures : f_1..f_4 (aucune pour les hommes pour l'instant)
+const AV_CHEVEUX    = { h:8,  f:9 };   // coiffures disponibles par genre
+const AV_CHEVEUX_DEUX = { h:[8], f:[] }; // v1.44 : coiffures en deux morceaux (_derriere / _devant)
 const AV_PILOSITE   = 0;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
 const AV_ACCESSOIRE = { h:0, f:0 };    // accessoires par genre (morphologies différentes)
 
@@ -34,11 +39,14 @@ function _avFmtDuree(ms){
 }
 
 function _avImg(couche, cls){ return `<img class="${cls}" src="images/avatars/${couche}.png" alt="" onerror="this.style.display='none'">`; }
+function _avDeux(g, n){ return !!n && (AV_CHEVEUX_DEUX[g] || []).includes(n); }
 function _avCouches(a){
   a = a || etat.avatar || {}; const g = a.genre || "h"; const L = [];
+  const deux = _avDeux(g, a.cheveux);                     // v1.44 : arrière des cheveux AVANT le visage
+  if(deux)         L.push(`cheveux/${g}_${a.cheveux}_derriere`);
   if(a.visage)     L.push(`visage/${g}_${a.visage}`);
   if(a.pilosite)   L.push(`pilosite/${a.pilosite}`);
-  if(a.cheveux)    L.push(`cheveux/${g}_${a.cheveux}`);
+  if(a.cheveux)    L.push(deux ? `cheveux/${g}_${a.cheveux}_devant` : `cheveux/${g}_${a.cheveux}`);
   if(a.accessoire) L.push(`accessoire/${g}_${a.accessoire}`);
   return L;
 }
@@ -179,7 +187,11 @@ function _avRangee(titre, couche, n, avecAucun, g){
   if(avecAucun) opts+=`<button class="av-vig${!cur[couche]?" actif":""}" data-choix="${couche}:0" title="Aucun"><span class="av-x">∅</span></button>`;
   for(let i=1;i<=n;i++){
     const file = (couche==="pilosite") ? `${couche}/${i}` : `${couche}/${g}_${i}`;
-    opts+=`<button class="av-vig${cur[couche]===i?" actif":""}" data-choix="${couche}:${i}"><img src="images/avatars/${file}.png" onerror="this.parentElement.style.display='none'"></button>`;
+    // v1.44 : une coiffure en deux morceaux = une seule vignette, les deux calques superposés.
+    const img = (couche==="cheveux" && _avDeux(g, i))
+      ? `<img class="av-vig-c" src="images/avatars/${file}_derriere.png" onerror="this.parentElement.style.display='none'"><img class="av-vig-c" src="images/avatars/${file}_devant.png" alt="">`
+      : `<img src="images/avatars/${file}.png" onerror="this.parentElement.style.display='none'">`;
+    opts+=`<button class="av-vig${cur[couche]===i?" actif":""}" data-choix="${couche}:${i}">${img}</button>`;
   }
   if(!n) opts+=`<span class="itip-gris" style="align-self:center">à venir</span>`;
   return `<div class="av-rangee"><div class="av-rangee-tete">${titre}</div><div class="av-vigs" data-couche="${couche}">${opts}</div></div>`;
@@ -209,6 +221,7 @@ function _avStyle(){
     .av-vigs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; }
     .av-vig{ position:relative; width:60px; aspect-ratio:666/900; height:auto; flex:0 0 auto; border:2px solid var(--line); border-radius:10px; overflow:hidden; background:#0a1730; cursor:pointer; padding:0; }
     .av-vig img{ width:100%; height:100%; object-fit:cover; }
+    .av-vig img.av-vig-c{ position:absolute; inset:0; }
     .av-vig.actif{ border-color:var(--orange); box-shadow:0 0 0 2px var(--orange) inset; }
     .av-x{ color:var(--sourdine); font-size:22px; }
     .av-actions{ display:flex; gap:8px; }

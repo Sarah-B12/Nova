@@ -594,7 +594,7 @@ async function _expCreer(el){
   journal("Expédition créée.","gain"); if(typeof majCentre==="function") majCentre();
 }
 function _expRapportHtml(row){
-  const r=row.rapport||{}; const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut du Protocole"};
+  const r=row.rapport||{}; const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut"};   // v1.44b : « Assaut contre le Protocole » (le « contre » est ajouté plus bas)
   const on=noms[r.objectif]||"Expédition";
   const quand=row.date_prevue?new Date(row.date_prevue).toLocaleString("fr-FR"):"—";
   /* v0.92 — CONTRE QUI. Le compte rendu donnait l'objectif, l'heure, le score et
@@ -633,8 +633,8 @@ async function _expResoudre(){
   const on=noms[res.objectif]||"Assaut";
   if(res.raison==="aucun_participant"){ journal("Personne n'a participé : l'expédition échoue.","alerte"); }
   else if(res.objectif==="protocole"){
-    if(res.succes){ journal(`Assaut du Protocole RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
-    else journal(`Assaut du Protocole ÉCHOUÉ (${res.p_att} vs ${res.p_def}). Le Protocole a résisté.`,"alerte");
+    if(res.succes){ journal(`Assaut contre le Protocole RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
+    else journal(`Assaut contre le Protocole ÉCHOUÉ (${res.p_att} vs ${res.p_def}). Le Protocole a résisté.`,"alerte");
   }
   else if(res.succes){
     if(res.objectif==="sabotage") journal(`${on} RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.objets_touches} objet(s) endommagé(s)${res.objets_detruits?`, ${res.objets_detruits} détruit(s)`:""}.`,"gain");
