@@ -751,9 +751,9 @@ const QUETES = [
           "La jonction est vieille, et elle a été réparée. Pas remplacée : réparée, à la main. Un manchon de fil de cuivre serré en torsade, trois tours, puis un nœud plat, puis trois tours dans l'autre sens. Une étiquette de service est fixée dessus, couverte de l'ancien language.",
           "Tu appelles Sorn. Grésillement, long. Puis sa voix, lointaine, comme au fond d'un puits : « …Gamin ? T'es où, là ? T'as une voix de boîte de conserve. »",
           "Tu lui décris le manchon. Trois tours, le nœud, trois tours à l'envers.",
-          "Le silence dure si longtemps que tu crois la liaison coupée. Puis : « Lis-moi l'étiquette. Lettre par lettre. Je te la traduis. Ça va me prendre un moment, c'est de l'ancien de service, plein d'abréviations. Bouge pas. »"
+          "Le silence dure si longtemps que tu crois la liaison coupée. Puis : « Lis-moi l'étiquette. Lettre par lettre. Je te la traduis. Ça va me prendre un moment, c'est de l'ancien de service, plein d'abréviations. Va faire un tour, je te rappelle. »"
         ],
-        defi:{ type:"attente", duree:30*60*1000,
+        defi:{ type:"attente", duree:2*3600*1000,
           texte:["Tu épelles l'étiquette, signe après signe, pendant que Sorn note à l'autre bout. Il te fait répéter, recommencer, vérifier. Tu peux t'éloigner et revenir : il rappellera."],
           reussite:[
             "« Bon. » La voix de Sorn a changé de texture. « RÉVISION DE JONCTION — RELAIS ORBITAL — TECHNICIEN : SORN, E. » Un temps. « Et la date, c'est un compte de jours de service. Deux cent douze jours avant la clôture du secteur. »",
@@ -863,7 +863,7 @@ const QUETES = [
           "La bande remonte. Lentement : l'enregistreur n'a jamais été fait pour revenir en arrière de trois cents ans. Les compteurs défilent à l'envers, et à chaque bloc de journal, une ligne s'affiche, en ancien.",
           "Sorn traduit à mesure, d'une voix de plus en plus basse. Il faudra du temps. Tu peux t'éloigner et revenir."
         ],
-        defi:{ type:"attente", duree:20*60*1000,
+        defi:{ type:"attente", duree:150*60*1000,
           texte:["L'enregistreur rembobine trois siècles. Sorn traduit les entrées du journal au fur et à mesure."],
           reussite:[
             "INSTALLATION — SORN, E. — J-212. « Je laisse tourner. Qui écoute entend. »",
@@ -1119,7 +1119,7 @@ const QUETES = [
           "Le journal est en ancien, en lignes courtes, datées en jours de service. Tu les épelles une par une. Sorn traduit, et à chaque ligne sa voix baisse un peu.",
           "Ça prend du temps. Tu peux t'éloigner et revenir : le journal ne va nulle part."
         ],
-        defi:{ type:"attente", duree:20*60*1000,
+        defi:{ type:"attente", duree:3*3600*1000,
           texte:["Tu lis le journal de la station, ligne après ligne. Sorn traduit."],
           reussite:[
             "J-40 — ESSAI SOUCI : FLORAISON NON CONFORME. RECOMMANDATION : FERMETURE.",
@@ -1301,7 +1301,7 @@ const QUETES = [
           "Trois siècles de relevés. La sonde regardait Silène chaque nuit, à la même heure, et elle a tout gardé. La copie prend du temps. Tu peux t'éloigner et revenir.",
           "Sur l'écran de contrôle, pendant que la copie avance, défilent les en-têtes : RELEVÉ DES CULTURES — MAAR-3 — NUIT — ÉMIS VERS : BUREAU DES CULTURES, TRIPTOLÈME."
         ],
-        defi:{ type:"attente", duree:15*60*1000,
+        defi:{ type:"attente", duree:210*60*1000,
           texte:["La mémoire de la sonde se copie dans ton vaisseau."],
           reussite:[
             "COPIE TERMINÉE. Et une dernière ligne, qui ne fait pas partie des relevés : BUREAU DES CULTURES — DERNIÈRE RÉPONSE REÇUE : IL Y A 109 573 NUITS. ÉMISSION MAINTENUE.",
@@ -1479,7 +1479,7 @@ const QUETES = [
           "Tu appelles Sorn, et tu lui lis le journal. Quand tu arrives à « vaisseau mis en sommeil », il te demande de t'arrêter. Puis de continuer.",
           "Sous le journal, une dernière page, en ancien de direction — un ancien plus serré, plus sec. Il te la fait épeler signe par signe. Ça prend du temps. Tu peux t'éloigner et revenir."
         ],
-        defi:{ type:"attente", duree:20*60*1000,
+        defi:{ type:"attente", duree:4*3600*1000,
           texte:["Tu épelles la décision de classement. Sorn traduit."],
           reussite:[
             "DOSSIER MAAR-3 — DÉCISION DE CLASSEMENT. RELEVÉS DES CULTURES : MAINTENUS. VAISSEAU : EN SOMMEIL. RÉACTIVATION : SUR CONFIRMATION MAAR-3 UNIQUEMENT.",
@@ -1598,7 +1598,7 @@ const QUETES = [
           "Tu déplies la foreuse thermique que Galm t'a glissée dans le sac « au cas où ». Elle mord la glace dans un nuage de vapeur, lentement, trop lentement.",
           "Trois mètres de glace, ça prend du temps. Tu peux remonter à ton vaisseau respirer, et revenir. La foreuse travaille seule."
         ],
-        defi:{ type:"attente", duree:25*60*1000,
+        defi:{ type:"attente", duree:5*3600*1000,
           texte:["La foreuse creuse un puits dans la glace, jusqu'à la coupole."],
           reussite:[
             "La foreuse s'arrête d'elle-même, en butée sur du métal. Au fond du puits, une trappe ronde, sans rouille, gravée du carré. Et autour de la trappe, une inscription en ancien que tu commences à reconnaître : un mot, un seul, répété sur tout le pourtour.",
@@ -1739,7 +1739,7 @@ const QUETES = [
           "Tu poses le dossier sur la plaque chauffante du pupitre, réglée au plus bas. Le givre fond en perles. Les pages se décollent une à une. Sorn traduit à mesure que tu épelles.",
           "Ça prend du temps. Remonte respirer si tu dois : le dossier ne bougera pas."
         ],
-        defi:{ type:"attente", duree:25*60*1000,
+        defi:{ type:"attente", duree:6*3600*1000,
           texte:["Le dossier dégèle, page après page. Sorn traduit le manifeste de semis du secteur."],
           reussite:[
             "MANIFESTE DE SEMIS — SECTEUR TRIPTOLÈME — PROGRAMME SATOR.",
@@ -1932,7 +1932,7 @@ const QUETES = [
           "« Après », dit Sorn. « Après la porte fermée. Il pouvait plus monter, il avait déserté. Mais il avait ses relais. Il a passé sa vie à les réparer, pour écouter. » Un temps. « Et peut-être pour parler, une fois. »",
           "Tu lances la recherche : émissions en provenance de MAAR-3, signées SORN. Trois siècles de trafic à passer au crible. Les baies bourdonnent. Ça prendra du temps. Sorn ne bouge pas de devant l'écran."
         ],
-        defi:{ type:"attente", duree:30*60*1000,
+        defi:{ type:"attente", duree:8*3600*1000,
           texte:["Le relais fouille trois siècles de trafic à la recherche d'une émission de Sorn, E."],
           reussite:[
             "UNE CORRESPONDANCE. ÉMISSION MANUELLE — ORIGINE : MAAR-3, RELAIS DE SURFACE 9 — SIGNATAIRE : SORN, E. (RADIÉ). DESTINATAIRE : DIRECTION. STATUT : NON TRANSMISE — BROUILLAGE. CONSERVÉE.",
