@@ -109,13 +109,17 @@ async function majPoste(){
   if((typeof surBase==="function") && surBase())
     h += `<p class="vide" style="border-left:3px solid var(--orange);padding-left:10px">Poste du Perchoir : tout part en vaisseau. La taxe sur les <b>objets</b> est de <b>15 %</b> au lieu de 5 %.</p>`;
   h += `<p class="itip-gris" style="margin:0 0 10px">Le destinataire a <b>3 jours</b> pour récupérer ou refuser. Sinon, l'envoi <b>retourne à l'expéditeur</b> (3 jours de plus pour le récupérer). Passé ce délai, tout est <b>supprimé</b>. La taxe n'est jamais remboursée.</p>`;
-  h += `<div class="sous-menu"><button class="sous-lien${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte${(recus.length+retours.length)?` (${recus.length+retours.length})`:""}</button><button class="sous-lien${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button></div>`;
+  h += `<div class="sous-menu"><button class="sous-lien${posteVue==="boite"?" actif":""}" data-pv="boite">Boîte${(recus.length+retours.length)?` (${recus.length+retours.length})`:""}</button><button class="sous-lien${posteVue==="envoyer"?" actif":""}" data-pv="envoyer">Envoyer</button><button class="sous-lien${posteVue==="transit"?" actif":""}" data-pv="transit">En transit${envoyes.length?` (${envoyes.length})`:""}</button></div>`;   // v1.49 : onglet « En transit »
   if(posteVue==="envoyer"){ h += _vueEnvoyer(); }
+  else if(posteVue==="transit"){                                    // v1.49 (retour testeurs)
+    h += `<p class="itip-gris" style="margin:0 0 10px">Tes envois que le destinataire n'a pas encore récupérés ou refusés.</p>`;
+    if(!envoyes.length) h += `<p class="vide">Aucun envoi en transit.</p>`;
+    for(const o of envoyes) h += _ligneEnvoye(o);
+  }
   else {
     if(!recus.length && !retours.length) h += `<p class="vide">Ta boîte est vide.</p>`;
     if(recus.length){ h += `<h4 class="comm-titre">Reçus</h4>`; for(const o of recus) h += _ligneRecu(o); }
     if(retours.length){ h += `<h4 class="comm-titre">Retours (non récupérés)</h4>`; for(const o of retours) h += _ligneRetour(o); }
-    if(envoyes.length){ h += `<h4 class="comm-titre">Envoyés (en attente chez le destinataire)</h4>`; for(const o of envoyes) h += _ligneEnvoye(o); }
   }
   z.innerHTML = h;
   _brancherPoste(z);

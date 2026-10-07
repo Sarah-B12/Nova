@@ -313,6 +313,13 @@ async function majAnnonceFaction(el){
   } else {
     h += `<p class="vide">Aucune transmission en cours. Le Régent peut en diffuser une depuis son Bureau.</p>`;
   }
+  // v1.50 — les transmissions ÉPINGLÉES (2 au plus), sous la transmission du moment (annonces_epinglees, v176).
+  let ep = []; try{ const { data } = await sb.rpc("annonces_epinglees"); if(data && data.ok) ep = data.liste || []; }catch(e){}
+  if(jeton !== _annRendu) return;
+  if(ep.length){
+    h += `<h4 class="gsec">📌 Épinglées</h4>` + ep.map(a => `<div class="ann-carte ann-epinglee">
+        <div class="ann-txt">${(typeof _formatMur==="function") ? _formatMur(a.texte) : echapper(a.texte)}</div></div>`).join("");
+  }
   el.innerHTML = h;
   if(typeof majPastillesCentre==="function") majPastillesCentre();
 }
@@ -758,8 +765,10 @@ async function _rendreBureauRegent(el, fac){
   const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">🔒 Privé — régence de ${f.nom}</option>`).join("");
   const facNom=id=>((typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id)||{}).nom||id;
   let h=`<h3>Bureau du Régent</h3><div id="reg-plaintes"></div>`;   // v1.23 : plaintes (traque.js)
+  h+=`<div id="reg-nouveaux"></div>`;   // v1.49 : nouveaux arrivants (regent_nouveaux, v175), rempli juste après
   h+=`<h4 class="gsec">Annonce officielle (vue par tes membres)</h4>`;
   h+=`<div class="mur-outils" id="reg-ann-outils"></div><textarea id="reg-annonce" class="gouv-textarea" rows="3" placeholder="Message à ta faction…">${((_regForm.annonce!=null?_regForm.annonce:(annonce||""))).replace(/</g,"&lt;")}</textarea><div><button class="mini" id="reg-ann-pub">Publier l'annonce</button></div>`;
+  h+=`<div id="reg-epingles"></div>`;   // v1.50 : transmissions épinglées (rempli juste après)
   h+=`<h4 class="gsec" style="margin-top:16px">Messagerie entre Régents</h4>`;
   h+=`<div class="reg-compose"><select id="reg-dest" class="gouv-textarea" style="padding:8px"><option value="">📣 Comm à TOUS les Régents (les 5 factions la voient)</option>${facOpts}</select><p class="itip-gris" style="margin:2px 0 6px;font-size:12px">Choisir une faction = message <b>privé</b> : seule sa régence le lit, et il reste dans ton historique. Ton nom est joint dans les deux cas.</p><textarea id="reg-msg" class="gouv-textarea" rows="2" placeholder="Ton message aux Régents…">${(_regForm.msg||"").replace(/</g,"&lt;")}</textarea><button class="mini" id="reg-envoyer">Envoyer</button></div>`;
   if(!msgs.length) h+=`<p class="vide">Aucun message pour l'instant.</p>`;
@@ -777,6 +786,8 @@ async function _rendreBureauRegent(el, fac){
   }).join("");
   el.innerHTML=h;
   if(typeof rendrePlaintesRegent==="function") rendrePlaintesRegent(el.querySelector("#reg-plaintes"));   // v1.23, sans await
+  _rendreNouveaux(el.querySelector("#reg-nouveaux"));                                                         // v1.49, sans await
+  _rendreEpingles(el.querySelector("#reg-epingles"));                                                         // v1.50, sans await
   if(typeof _remplirBarreMur==="function"){ _remplirBarreMur("#reg-ann-outils"); if(typeof _brancherOutilsMur==="function") _brancherOutilsMur("#reg-annonce","#reg-ann-outils"); }
   _brouillon(el, "#reg-annonce", "annonce", _regForm, "input");
   _brouillon(el, "#reg-dest", "dest", _regForm, "change");
@@ -1329,4 +1340,55 @@ function _voirProgramme(nom, programme){
   m.innerHTML=`<div class="membrane modale-boite"><h2>Programme de ${nom}</h2><div style="white-space:pre-wrap;line-height:1.55;max-height:60vh;overflow:auto">${html}</div><button class="valider" data-fermer="1" style="margin-top:12px">Fermer</button></div>`;
   m.hidden=false;
   m.querySelector("[data-fermer]").addEventListener("click",()=>{ m.hidden=true; });
+}
+
+/* v1.49 — retour testeurs : le Régent voit les membres de SA faction arrivés
+   sur Maar depuis moins de 5 jours, pour aller les accueillir (regent_nouveaux, v175). */
+async function _rendreNouveaux(z){
+  if(!z) return;
+  let d = null; try{ ({ data:d } = await sb.rpc("regent_nouveaux")); }catch(e){ return; }
+  if(!d || !d.ok){ z.innerHTML = ""; return; }
+  const L = d.liste || [];
+  const depuis = iso => { const j = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+                          return j <= 0 ? "aujourd'hui" : j === 1 ? "hier" : `il y a ${j} jours`; };
+  z.innerHTML = `<h4 class="gsec">Nouveaux arrivants (moins de 5 jours)</h4>`
+    + (L.length ? `<div class="reg-nouveaux">${L.map(p => `<div class="reg-nouveau"><a href="#" data-profil="${echapper(p.nom)}">${echapper(p.nom)}</a>
+         <span class="itip-gris">niveau ${p.niveau || 1} · arrivé·e ${depuis(p.arrive_le)}</span></div>`).join("")}</div>
+         <p class="itip-gris">Un mot d'accueil, une Transmission, un coup de main : c'est le moment.</p>`
+      : `<p class="vide">Aucun nouvel arrivant ces 5 derniers jours.</p>`);
+  z.querySelectorAll("[data-profil]").forEach(a => a.addEventListener("click", ev => {
+    ev.preventDefault(); if(typeof voirProfilJoueur === "function") voirProfilJoueur(a.dataset.profil); }));
+}
+
+/* v1.50 — TRANSMISSIONS ÉPINGLÉES (retour testeurs) : 2 par faction, durables,
+   sous la transmission du moment, pour guider les nouveaux ; visibles des seuls
+   membres (choix A). Le Régent les épingle ici et les retire (v176). */
+const EPINGLE_REFUS = { pas_regent:"Seul le Régent peut épingler.", prison:"Impossible depuis la prison.",
+  vide:"Le texte est vide.", trop_long:"2 000 caractères au plus.", plein:"Déjà 2 transmissions épinglées : retires-en une d'abord.",
+  introuvable:"Cette transmission n'est plus épinglée." };
+async function _rendreEpingles(z){
+  if(!z) return;
+  let d = null; try{ ({ data:d } = await sb.rpc("annonces_epinglees")); }catch(e){ return; }
+  if(!d || !d.ok || !d.regent){ z.innerHTML = ""; return; }
+  const L = d.liste || [];
+  z.innerHTML = `<h4 class="gsec" style="margin-top:16px">Transmissions épinglées (${L.length}/2)</h4>
+    <p class="itip-gris">Affichées sous ta transmission, pour toute ta faction. Elles restent jusqu'à ce que tu les retires : idéal pour guider les nouveaux.</p>`
+    + L.map(a => `<div class="ann-carte ann-epinglee"><div class="ann-txt">${(typeof _formatMur==="function") ? _formatMur(a.texte) : echapper(a.texte)}</div>
+        <div class="actions"><button class="mini" data-desepingler="${a.id}">Retirer</button></div></div>`).join("")
+    + (L.length < 2 ? `<textarea id="reg-epingle-txt" class="gouv-textarea" rows="3" maxlength="2000" placeholder="Un conseil durable pour ta faction…"></textarea>
+        <div class="actions"><button class="mini" id="reg-epingle-btn">📌 Épingler</button></div>` : "");
+  const refaire = async (rpc, args) => {
+    let r = null; try{ ({ data:r } = await sb.rpc(rpc, args)); }catch(e){}
+    if(!r || !r.ok){ journal(EPINGLE_REFUS[r && r.err] || "Action impossible.", "alerte"); return; }
+    _rendreEpingles(z);
+  };
+  z.querySelectorAll("[data-desepingler]").forEach(b => b.addEventListener("click", async () => {
+    if(typeof confirmerJoli === "function" && !await confirmerJoli("Retirer cette transmission ?", "Elle disparaîtra pour toute la faction.", "Retirer")) return;
+    refaire("annonce_desepingler", { p_id:Number(b.dataset.desepingler) });
+  }));
+  const be = z.querySelector("#reg-epingle-btn");
+  if(be) be.addEventListener("click", () => {
+    if(typeof refusPrison === "function" && refusPrison("épingler une transmission")) return;
+    refaire("annonce_epingler", { p_texte:(z.querySelector("#reg-epingle-txt").value || "").trim() });
+  });
 }

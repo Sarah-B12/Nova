@@ -491,9 +491,9 @@ function _blocSoins(e, u){
   if(e.soir === 1) h += `<p class="itip-gris">Hier soir : bien-être de 70 ou plus, Complicité +1.</p>`;
   else if(e.soir === -2) h += `<p class="u-alerte">Hier soir : bien-être sous 30, Complicité −2.</p>`;
   if(e.jours_zero > 0) h += `<p class="u-alerte">À 0 depuis ${_jours(e.jours_zero)} : au troisième jour entier, l'enfant fugue.</p>`;
-  h += `<h4 class="co-titre fa-titre">Les gestes du jour</h4>`;   // v1.48 : titre AU-DESSUS des deux cartes
+  h += `<h4 class="gsec">Les gestes du jour</h4>`;   // v1.48 : titre AU-DESSUS des deux cartes
   h += `<div class="co-jour">${_carteGeste(echapper(u.nom || "?"), G.autre, e.stade)}${_carteGeste("Toi", G.moi, e.stade)}</div>`;
-  h += `<h4 class="co-titre fa-titre">Ton geste</h4>`;
+  h += `<h4 class="gsec">Ton geste</h4>`;
   if(e.gele) h += `<p class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</p>`;
   else if(fait) h += `<p class="itip-gris">Tu as fait ton geste aujourd'hui. Reviens demain (minuit, heure de Paris).</p>`;
   h += `<div class="fa-gestes">`;
@@ -505,7 +505,7 @@ function _blocSoins(e, u){
   if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini fa-gbtn" data-geste="jouer"${bloque ? " disabled" : ""}>${_imgGeste("jouer")}Jouer (+10)</button>`;
   h += `</div>`;
   if(e.stade === "enfant"){
-    h += `<h4 class="co-titre">Lui apprendre <span class="itip-gris">(+5, et une leçon)</span></h4><div class="fa-gestes">`
+    h += `<h4 class="gsec">Lui apprendre <span class="itip-gris">(+5, et une leçon)</span></h4><div class="fa-gestes">`
       + Object.entries(DOMAINES_LECON).map(([k, t]) => `<button class="mini fa-gbtn" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${_imgGeste("apprendre", k)}${t} <span class="qte">${(e.lecons || {})[k] || 0}</span></button>`).join("")
       + `</div><p class="itip-gris">À l'adolescence, le domaine le plus travaillé (par vous deux) devient sa vocation ; à égalité, le hasard tranche. Sans aucune leçon : pas de vocation.</p>`;
   } else if(e.stade === "ado"){
@@ -597,7 +597,7 @@ function _coupleFamille(c, u){
   if(cachette && !(e && e.stade === "ado")) h += _blocCachette(cachette);
   const partis = u.famille || [];
   if(partis.length){
-    h += `<h4 class="co-titre">Enfants partis</h4><div class="fa-partis">` + partis.map(p => {
+    h += `<h4 class="gsec">Enfants partis</h4><div class="fa-partis">` + partis.map(p => {
       const voc = p.vocation ? echapper(VOCATIONS[p.vocation] || p.vocation) : "sans vocation";
       const quand = p.statut === "fugue" ? "parti trop tôt" : p.statut === "proches" ? "chez des proches" : "départ";
       const lettre = p.lettre ? `<details class="fa-lettre"><summary>Sa lettre (${_uDate(p.lettre.recue_le)})</summary><p>${echapper(texteLettre(p)).replace(/\n/g, "<br>")}</p></details>` : "";

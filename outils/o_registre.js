@@ -23,5 +23,19 @@
   await resoudreCombat({}); await dort(50);
   Math.random = rnd;
   r.combat = { signal:(appels.find(a => a.nom === "registre_patrouille") || {}).args, journal: journ.slice(0, 3), palier:_registrePalier };
+  // v1.45b — infobulle (tap = tip-on) et plafond du jour prévenu une seule fois
+  const note = document.querySelector("#stat-registre .reg-note");
+  note.dispatchEvent(new MouseEvent("click", { bubbles:true }));
+  const tip = note.querySelector(".tip").textContent;
+  r.bulle = { ouverte: note.classList.contains("tip-on"), cinq: tip.includes("5 par jour"), dix: tip.includes("10 par jour"),
+              effets: tip.slice(tip.indexOf("Ton palier"), tip.indexOf("Ce qui compte")) };
+  document.body.dispatchEvent(new MouseEvent("click", { bubbles:true }));
+  r.bulle.refermee = !note.classList.contains("tip-on");
+  rep.registre_patrouille = () => ({ data:{ ok:true, compte:false, palier:"recherche" }, error:null });
+  journ.length = 0; delete etat._registrePlafond;
+  await registreSignaler("battue"); await registreSignaler("battue");
+  r.plafond = journ.filter(t => t.includes("5 patrouilles comptées")).length;
+  _registrePalier = "inconnu"; _majFicheRegistre();
+  r.inconnu = document.querySelector("#stat-registre .tip").textContent.includes("Aucun effet");
   return r;
 })();

@@ -451,8 +451,14 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 /* v1.48 — pastille « nouveau message » (Couple, Confidences) */
 .a-nouveau::after{ content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:#ff5a5a; margin-left:6px; vertical-align:middle; box-shadow:0 0 6px #ff5a5a; }
 /* v1.48 — titres de Famille plus visibles ; bannière par stade ; images des gestes */
-.fa-carte .fa-titre, .fa-carte .co-titre{ font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--orange-hi,#ffb060); border-bottom:1px solid rgba(255,176,96,.25); padding-bottom:4px; margin:18px 0 8px; }
+/* v1.49 : les titres de Famille prennent la classe .gsec du Gouvernement (même présentation partout). */
 .fa-banniere{ margin:8px 0; }
+/* v1.49 — nouveaux arrivants (Bureau du Régent) */
+.reg-nouveaux{ display:flex; flex-direction:column; gap:5px; margin-bottom:6px; }
+.reg-nouveau{ padding:6px 10px; border:1px solid rgba(255,255,255,.08); border-radius:10px; background:rgba(255,255,255,.02); }
+.reg-nouveau a{ font-weight:600; margin-right:6px; }
+/* v1.50 — transmissions épinglées */
+.ann-epinglee{ border-style:dashed; margin-bottom:8px; }
 .fa-geste-img{ width:44px; height:44px; object-fit:cover; border-radius:8px; flex:0 0 auto; }
 .co-carte .fa-geste-img{ margin-right:8px; }
 .fa-gbtn{ display:inline-flex; align-items:center; gap:6px; }
