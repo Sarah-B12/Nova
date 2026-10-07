@@ -188,7 +188,7 @@ async function majBar(el){
   }
   const reste=boissonResteMs();
   let h=`<h3 style="margin:2px 0">${barNom(fid)}</h3>`;
-  h+=`<img class="bar-banniere" src="images/bar/${fid}.png" alt="" onerror="this.remove()">`;
+  h+=`<img class="bar-banniere" src="images/bar/bar.png" alt="" onerror="this.remove()">`;   // v1.48 : UN seul bar (prochaine carte), une seule image
   h+=_barOnglets();
   h+=`<p class="vide">Le tenancier ne demande pas ton nom. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`;
 

@@ -1285,29 +1285,43 @@ function confirmerJoli(titre, texte, libelleOk, danger, seul){
 }
 
 async function _voter(candidatId, nom){
+  /* v1.46b — retour testeur (Xunbel) : un joueur croyait avoir voté, mais rien
+     n'était arrivé au serveur. Un clic À CÔTÉ de la confirmation l'annule sans
+     un mot (facile au doigt), et un refus ne laissait qu'une ligne de journal.
+     Désormais : l'annulation est dite, et le résultat (enregistré ou refusé)
+     s'affiche dans une fenêtre qu'on ne peut pas manquer. */
   if(!await confirmerJoli(
       "Confirmer ton vote",
       nom ? `Tu votes pour ${nom}. Un seul vote par cycle, et il est définitif.`
           : "Un seul vote par cycle, et il est définitif.",
-      "Voter")) return;
+      "Voter")){
+    journal("Vote annulé : tu n'as pas encore voté.","alerte");
+    return;
+  }
   const { data:res, error } = await sb.rpc("voter", { p_candidat:candidatId });
   if(error || !res || !res.ok){
     const e=res&&res.err;
     /* ⚠ v0.93 — le vote est unique PAR CYCLE, toutes factions confondues. Si le
        joueur a voté ailleurs avant de nous rejoindre, « tu as déjà voté » seul
        serait incompréhensible : on nomme la faction où sa voix est restée. */
+    let msg;
     if(e==="deja_vote"){
       const f = (res && res.faction && typeof FACTIONS!=="undefined") ? FACTIONS.find(x=>x.id===res.faction) : null;
-      journal(f ? `Tu as déjà voté ce cycle-ci, chez ${f.nom}. Ta voix y reste.` : "Tu as déjà voté ce cycle-ci.","alerte");
+      msg = f ? `Tu as déjà voté ce cycle-ci, chez ${f.nom}. Ta voix y reste.` : "Tu as déjà voté ce cycle-ci.";
     }
-    else if(e==="hors_vote") journal("Les votes ne sont pas ouverts (jour 3-4 du mois).","alerte");
-    else if(e==="candidat") journal("Candidat invalide.","alerte");
-    else journal("Vote impossible.","alerte");
+    else if(e==="hors_vote") msg = "Les votes ne sont pas ouverts : on vote les 3 et 4 du mois (heure de Paris).";
+    else if(e==="candidat")  msg = "Ce candidat n'est pas (ou plus) candidat dans ta faction ce mois-ci.";
+    else if(e==="faction")   msg = "Il faut appartenir à une faction pour voter.";
+    else msg = error ? "Le serveur n'a pas répondu : ton vote n'est PAS enregistré. Réessaie." : "Vote impossible : il n'est PAS enregistré.";
+    journal(msg,"alerte");
+    await confirmerJoli("Vote refusé", msg, "Compris", false, true);
     return;
   }
   if(res.rep){ etat.reputation=Math.min(100,(etat.reputation||0)+res.rep); }
-  journal(`Vote enregistré (+${res.rep||0} réputation).`,"gain");
+  const ok = `Ton vote${nom?` pour ${nom}`:""} est enregistré : +${res.rep||0} de réputation de faction.`;
+  journal(ok,"gain");
   if(typeof majCentre==="function") majCentre();
+  await confirmerJoli("Vote enregistré", `${ok}\nIl est définitif.`, "Compris", false, true);
 }
 function _voirProgramme(nom, programme){
   const m=_gouvModal();

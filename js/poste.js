@@ -32,7 +32,7 @@
     .poste-types{ display:flex; flex-wrap:wrap; gap:12px; }
     .poste-types label{ display:flex; align-items:center; gap:7px; cursor:pointer; font-size:14px; white-space:nowrap; }
     .poste-dispo{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
-    .hub-banniere{ width:100%; max-height:150px; object-fit:cover; border-radius:10px; margin-bottom:12px; display:block; }
+    .hub-banniere{ width:100%; aspect-ratio:3/1; max-height:340px; object-fit:cover; border-radius:10px; margin-bottom:12px; display:block; }   /* v1.48 : image entière (3:1, comme les quêtes) */
   `;
   document.head.appendChild(st);
 })();

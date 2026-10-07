@@ -769,6 +769,12 @@ function _devAfficherFiche(p){
         <button class="mini" id="f-cred-btn">Créditer</button></div>
     </div>
 
+    <div class="dev-bloc"><h4>Niveau</h4>
+      <div class="dev-champ"><input id="f-niv" type="number" min="2" max="60" value="${Math.min(60, Math.max(2, ((p.niveau|0) || 1) + 1))}" style="max-width:72px">
+        <button class="mini" id="f-niv-btn">Monter à ce niveau</button></div>
+      <p class="dev-note">v1.47 : monter seulement (les points déjà distribués ne se reprennent pas). Les points de compétence arrivent au prochain chargement du joueur. Tracé dans le journal du staff ; le joueur est prévenu.</p>
+    </div>
+
     <div class="dev-bloc"><h4>Objet</h4>
       <div class="dev-champ"><select id="f-item">${opts}</select>
         <input id="f-qte" type="number" value="1" min="1" style="max-width:64px">
@@ -842,6 +848,25 @@ function _devAfficherFiche(p){
     const { data, error } = await sb.rpc("admin_pause_joueur", { p_profil: p.id, p_en_pause: vers });
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
     journal(`[STAFF] ${p.nom} ${vers?"mis en pause":"réveillé"}.`,"alerte"); rafraichir();
+  });
+
+  // v1.47 — monter un personnage à un niveau (admin_fixer_niveau, v173).
+  z.querySelector("#f-niv-btn").addEventListener("click", async ()=>{
+    const n = parseInt(z.querySelector("#f-niv").value,10)||0;
+    if(n < 2 || n > 60){ alert("Niveau entre 2 et 60."); return; }
+    if(!confirm(`Monter ${p.nom} au niveau ${n} ? On ne peut pas revenir en arrière.`)) return;
+    const { data, error } = await sb.rpc("admin_fixer_niveau", { p_profil: p.id, p_niveau: n });
+    if(error || !data || !data.ok){
+      const e = data && data.err;
+      alert(e==="pas_plus_haut" ? `${p.nom} est déjà au niveau ${n} ou plus haut : l'outil ne fait que monter.`
+          : "Échec : "+(e||(error&&error.message)||"?"));
+      return;
+    }
+    journal(`[STAFF] ${data.nom} passe au niveau ${data.niveau} (${data.xp} XP).`,"gain");
+    // Si c'est soi-même : on adopte le nouveau total tout de suite (points crédités).
+    try{ const ses = (typeof sessionActuelle === "function") ? await sessionActuelle() : null;
+         if(ses && ses.user && ses.user.id === p.id && typeof adopterXpTotal === "function") adopterXpTotal(data.xp); }catch(e){}
+    rafraichir();
   });
 
   z.querySelector("#f-cred-btn").addEventListener("click", async ()=>{

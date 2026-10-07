@@ -296,6 +296,9 @@
   #marche-mesventes[hidden] { display:none; }
   .inn-banniere{ position:relative; width:100%; aspect-ratio:4/1; max-height:220px; border:1px solid var(--edge); border-radius:var(--r-s); overflow:hidden; margin-bottom:12px; background:linear-gradient(120deg, rgba(255,138,61,.18), rgba(90,168,230,.12)); }
   .inn-banniere img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  /* v1.48 — bannières des lieux (Boutique, Arène, Gravier, Prison) : images 3:1, comme les quêtes. */
+  .lieu-banniere{ position:relative; width:100%; aspect-ratio:3/1; max-height:340px; border:1px solid var(--edge); border-radius:var(--r-s); overflow:hidden; margin-bottom:12px; background:#0a1730; }
+  .lieu-banniere img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
   .inn-banniere span{ position:absolute; left:0; right:0; bottom:0; padding:10px 14px; font-family:"Space Mono",monospace; letter-spacing:.12em; text-transform:uppercase; color:var(--orange-hi); text-shadow:0 1px 6px #000; background:linear-gradient(transparent, rgba(4,10,26,.75)); }
   .vente-ligne { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--edge); border-radius:10px; margin-top:8px; }
   .vente-prix { width:76px; font-family:"Space Mono",monospace; padding:5px 7px; background:var(--surface-2); color:var(--texte); border:1px solid var(--edge); border-radius:7px; }
@@ -445,6 +448,15 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 /* v1.37 — Famille (enfants) */
 .co-choix.co-enfant{ opacity:.6; cursor:default; border-style:dashed; }
 .fa-carte{ margin:8px 0 0; }
+/* v1.48 — pastille « nouveau message » (Couple, Confidences) */
+.a-nouveau::after{ content:""; display:inline-block; width:8px; height:8px; border-radius:50%; background:#ff5a5a; margin-left:6px; vertical-align:middle; box-shadow:0 0 6px #ff5a5a; }
+/* v1.48 — titres de Famille plus visibles ; bannière par stade ; images des gestes */
+.fa-carte .fa-titre, .fa-carte .co-titre{ font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--orange-hi,#ffb060); border-bottom:1px solid rgba(255,176,96,.25); padding-bottom:4px; margin:18px 0 8px; }
+.fa-banniere{ margin:8px 0; }
+.fa-geste-img{ width:44px; height:44px; object-fit:cover; border-radius:8px; flex:0 0 auto; }
+.co-carte .fa-geste-img{ margin-right:8px; }
+.fa-gbtn{ display:inline-flex; align-items:center; gap:6px; }
+.fa-gbtn .fa-geste-img{ width:24px; height:24px; border-radius:5px; }
 .fa-carte h3 .qte{ margin-left:6px; }
 .fa-nom{ display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin:8px 0 4px; }
 .fa-nom input{ flex:1 1 180px; min-width:0; background:#0f1830; border:1px solid var(--line, rgba(255,255,255,.1)); border-radius:8px; color:inherit; padding:7px 9px; font:inherit; }

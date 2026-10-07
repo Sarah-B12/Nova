@@ -139,6 +139,7 @@ async function chargerUnion(){
     _appliquerMoiUnion(data.moi);
     majOngletCouple();
     if(data.union) _coqueEnfant();                      // v1.39 : Mécano
+    if(data.union) _cfVerifier();                       // v1.48 : pastille des Confidences
     return data;
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "couple.js#charger"); return null; }
 }
@@ -331,6 +332,7 @@ async function majCouple(){
     <div class="sous-menu">${onglets.map(([k,t]) => `<button class="sous-lien${_coupleOnglet===k?" actif":""}" data-co="${k}">${t}</button>`).join("")}</div>
     <div id="couple-corps"></div>`;
   el.querySelectorAll("[data-co]").forEach(b => b.addEventListener("click", () => { _coupleOnglet = b.dataset.co; majCouple(); }));
+  _cfMarques();                                                    // v1.48 : pastille « nouveau message »
   const c = el.querySelector("#couple-corps");
   if(_coupleOnglet === "famille") return _coupleFamille(c, u);
   if(_coupleOnglet === "reserve") return _coupleReserve(c, u);
@@ -402,7 +404,7 @@ function _coupleActions(c, u){
    Stades : petit 3 j, enfant 7 j, adolescent 11 j, départ à 21 j. Un parent
    en pause ou au Couloir fige tout (décision A, 04/10).
    =========================================================== */
-const STADES_ENFANT = { attendu:"Attendu", petit:"Petit", enfant:"Enfant", ado:"Adolescence" };
+const STADES_ENFANT = { attendu:"Attendu", petit:"Tout-petit", enfant:"Enfant", ado:"Adolescent·e" };
 const RE_PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿŒœ]+([ '’-][A-Za-zÀ-ÖØ-öø-ÿŒœ]+)*$/;   // = _enfant_prenom (serveur)
 function _prenomPropre(t){
   const p = String(t || "").trim().replace(/\s+/g, " ");
@@ -473,9 +475,13 @@ function texteLettre(p){
   return m.replace("{voc}", LETTRE_VOCATION[p.vocation] || LETTRE_VOCATION.aucune).replace("{prenom}", p.prenom || "");
 }
 
+function _imgGeste(g, d){   // v1.48 : comme les actions de couple ; absente = rien
+  const f = g === "apprendre" && d ? `geste_apprendre_${d}` : `geste_${g}`;
+  return `<img class="fa-geste-img" src="images/famille/${f}.png" alt="" onerror="this.remove()">`;
+}
 function _carteGeste(qui, g, stade){
   if(!g) return `<div class="co-carte co-attente"><div><div class="co-qui">${qui}</div><div class="itip-gris">Pas encore de geste aujourd'hui.</div></div></div>`;
-  return `<div class="co-carte"><div><div class="co-qui">${qui} <span class="co-fait">✓ fait</span></div><div class="co-nom">${echapper(_nomGeste(g))}</div>
+  return `<div class="co-carte">${_imgGeste(g.geste, g.detail)}<div><div class="co-qui">${qui} <span class="co-fait">✓ fait</span></div><div class="co-nom">${echapper(_nomGeste(g))}</div>
     <i class="co-phrase">${echapper(_phraseGeste(g, stade))}</i></div></div>`;
 }
 function _blocSoins(e, u){
@@ -485,21 +491,22 @@ function _blocSoins(e, u){
   if(e.soir === 1) h += `<p class="itip-gris">Hier soir : bien-être de 70 ou plus, Complicité +1.</p>`;
   else if(e.soir === -2) h += `<p class="u-alerte">Hier soir : bien-être sous 30, Complicité −2.</p>`;
   if(e.jours_zero > 0) h += `<p class="u-alerte">À 0 depuis ${_jours(e.jours_zero)} : au troisième jour entier, l'enfant fugue.</p>`;
+  h += `<h4 class="co-titre fa-titre">Les gestes du jour</h4>`;   // v1.48 : titre AU-DESSUS des deux cartes
   h += `<div class="co-jour">${_carteGeste(echapper(u.nom || "?"), G.autre, e.stade)}${_carteGeste("Toi", G.moi, e.stade)}</div>`;
-  h += `<h4 class="co-titre">Ton geste du jour</h4>`;
+  h += `<h4 class="co-titre fa-titre">Ton geste</h4>`;
   if(e.gele) h += `<p class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</p>`;
   else if(fait) h += `<p class="itip-gris">Tu as fait ton geste aujourd'hui. Reviens demain (minuit, heure de Paris).</p>`;
   h += `<div class="fa-gestes">`;
   // Nourrir : une ration ou une plante comestible du SAC.
   const vivres = NOURRITURE_ENFANT.filter(id => (etat.sac && etat.sac[id]) > 0);
-  if(vivres.length) h += vivres.map(id => `<button class="mini" data-geste="nourrir" data-detail="${id}"${bloque ? " disabled" : ""}>Nourrir — ${echapper(_uNom(id))} <span class="qte">×${etat.sac[id]}</span> (+15)</button>`).join("");
+  if(vivres.length) h += vivres.map(id => `<button class="mini fa-gbtn" data-geste="nourrir" data-detail="${id}"${bloque ? " disabled" : ""}>${_imgGeste("nourrir")}Nourrir — ${echapper(_uNom(id))} <span class="qte">×${etat.sac[id]}</span> (+15)</button>`).join("");
   else h += `<button class="mini" disabled title="Une ration chaude ou une plante comestible (Ferragave, Nectine, Sporelle) dans le sac.">Nourrir (rien dans le sac)</button>`;
-  h += `<button class="mini" data-geste="calin"${bloque ? " disabled" : ""}>Câliner et coucher (+8)</button>`;
-  if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini" data-geste="jouer"${bloque ? " disabled" : ""}>Jouer (+10)</button>`;
+  h += `<button class="mini fa-gbtn" data-geste="calin"${bloque ? " disabled" : ""}>${_imgGeste("calin")}Câliner et coucher (+8)</button>`;
+  if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini fa-gbtn" data-geste="jouer"${bloque ? " disabled" : ""}>${_imgGeste("jouer")}Jouer (+10)</button>`;
   h += `</div>`;
   if(e.stade === "enfant"){
     h += `<h4 class="co-titre">Lui apprendre <span class="itip-gris">(+5, et une leçon)</span></h4><div class="fa-gestes">`
-      + Object.entries(DOMAINES_LECON).map(([k, t]) => `<button class="mini" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${t} <span class="qte">${(e.lecons || {})[k] || 0}</span></button>`).join("")
+      + Object.entries(DOMAINES_LECON).map(([k, t]) => `<button class="mini fa-gbtn" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${_imgGeste("apprendre", k)}${t} <span class="qte">${(e.lecons || {})[k] || 0}</span></button>`).join("")
       + `</div><p class="itip-gris">À l'adolescence, le domaine le plus travaillé (par vous deux) devient sa vocation ; à égalité, le hasard tranche. Sans aucune leçon : pas de vocation.</p>`;
   } else if(e.stade === "ado"){
     h += `<p>Vocation : <b>${e.vocation ? VOCATIONS[e.vocation] || e.vocation : "aucune"}</b>${e.vocation ? "" : " — faute de leçons, pas d'aide."}</p>`;
@@ -571,11 +578,13 @@ function _coupleFamille(c, u){
       ${e.gele ? `<p class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</p>` : ""}</div>`;
   } else {
     const titre = e.prenom ? echapper(e.prenom) : "Le bébé <span class=\"itip-gris\">(pas encore de prénom)</span>";
-    const suite = { petit:`encore ${_jours(e.restant)} ; son prénom sera ensuite scellé`,
-                    enfant:`encore ${_jours(e.restant)} avant l'adolescence`,
-                    ado:`départ de la maison dans ${_jours(e.restant)}` }[e.stade] || "";
+    // v1.48 — phrasé revu ; une bannière par stade (images/famille/<stade>.png, s'affiche dès qu'elle existe).
+    const suite = { petit:`Encore ${_jours(e.restant)} avant de grandir. Ensuite, son prénom sera définitif.`,
+                    enfant:`Encore ${_jours(e.restant)} avant l'adolescence.`,
+                    ado:`Encore ${_jours(e.restant)} avant de quitter la maison.` }[e.stade] || "";
     h += `<div class="sous-carte fa-carte"><h3>${titre} <span class="qte">${STADES_ENFANT[e.stade] || ""}</span></h3>
-      <p class="itip-gris">Stade « ${(STADES_ENFANT[e.stade] || "").toLowerCase()} » — ${suite}.</p>`;
+      <div class="lieu-banniere fa-banniere"><img src="images/famille/${e.stade}.png" alt="" onerror="this.parentElement.remove()"></div>
+      <p class="itip-gris">${suite}</p>`;
     if(e.nommable){
       h += `<div class="fa-nom"><input type="text" id="fa-prenom" maxlength="20" placeholder="${e.prenom ? "Actuel : " + echapper(e.prenom) : "Un prénom…"}">
           <button class="mini" id="fa-nommer">${e.prenom ? "Changer" : "Choisir ce prénom"}</button></div>
@@ -776,6 +785,7 @@ async function _cfCharger(c, forcerBas){
   let r = null; try{ ({ data:r } = await sb.rpc("union_chat_lire", { p_limite:60 })); }catch(e){}
   if(!r || !r.ok){ fil.innerHTML = `<p class="vide">Lecture impossible.</p>`; return; }
   const liste = r.liste || [];
+  _cfVu(liste);                                                    // v1.48 : lu → la pastille s'éteint
   if(!liste.length){ fil.innerHTML = `<p class="vide">Aucun message pour l'instant.</p>`; return; }
   const enBas = forcerBas || (fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40);
   fil.innerHTML = liste.map(m => {
@@ -847,3 +857,37 @@ setInterval(() => {
   chargerUnion().then(() => majCouple());
 }, 45000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden && etat && etat.inscrit) chargerUnion(); });
+
+/* ===========================================================
+   v1.48 — PASTILLE « NOUVEAU MESSAGE » DES CONFIDENCES (demande de l'autrice).
+   Côté client seulement : on retient la date du dernier message de sa moitié
+   déjà lu (etat._cfVu) ; toutes les 90 s (onglet visible), on regarde s'il y en
+   a un plus récent. Pastille sur l'onglet « Couple » et sur « Confidences » ;
+   elle s'éteint dès que les Confidences sont affichées.
+   =========================================================== */
+let _cfNouveau = false;
+function _cfDernierDeLui(liste){
+  let d = ""; for(const m of (liste || [])) if(!m.moi && m.cree_le && m.cree_le > d) d = m.cree_le;
+  return d;
+}
+function _cfMarques(){
+  const o = document.querySelector('.onglet[data-onglet="couple"]'); if(o) o.classList.toggle("a-nouveau", _cfNouveau);
+  const b = document.querySelector('[data-co="confidences"]'); if(b) b.classList.toggle("a-nouveau", _cfNouveau);
+}
+function _cfVu(liste){
+  const d = _cfDernierDeLui(liste);
+  if(d && (!etat._cfVu || d > etat._cfVu)) etat._cfVu = d;
+  _cfNouveau = false; _cfMarques();
+}
+let _cfVerifTs = 0;
+async function _cfVerifier(){
+  if(!(_union && _union.union) || Date.now() - _cfVerifTs < 60000) return;
+  _cfVerifTs = Date.now();
+  if(_coupleOnglet === "confidences" && document.querySelector("#cf-fil")) return;   // déjà sous les yeux
+  let r = null; try{ ({ data:r } = await sb.rpc("union_chat_lire", { p_limite:60 })); }catch(e){ return; }
+  if(!r || !r.ok) return;
+  const d = _cfDernierDeLui(r.liste);
+  _cfNouveau = !!(d && (!etat._cfVu || d > etat._cfVu));
+  _cfMarques();
+}
+setInterval(() => { if(!document.hidden) _cfVerifier(); }, 90000);

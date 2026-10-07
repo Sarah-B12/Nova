@@ -548,7 +548,7 @@ function majVoler(){
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>🕵️ Voler <span class="qte">· objets</span></h3>
-        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans son sac, en ${3 + Math.floor(((typeof agiliteEffective==="function")?agiliteEffective():0)/25)} tentatives (3 + Agilité ÷ 25) — les objets rares et fabriqués se laissent moins prendre. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
+        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans un sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
@@ -647,7 +647,7 @@ async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   if(typeof _tqStyle==="function") _tqStyle();
   const onglets=[["prison","Prison"],["plaintes","Plaintes"],["wanted","Wanted"]];
-  el.innerHTML=`<div class="tq-menu">${onglets.map(([k,t])=>`<button class="tq-lien${_prisonOnglet===k?" actif":""}" data-ponglet="${k}">${t}</button>`).join("")}</div><div id="prison-corps"></div>`;
+  el.innerHTML=`<div class="lieu-banniere"><img src="images/prison.png" alt="" onerror="this.parentElement.remove()"></div><div class="tq-menu">${onglets.map(([k,t])=>`<button class="tq-lien${_prisonOnglet===k?" actif":""}" data-ponglet="${k}">${t}</button>`).join("")}</div><div id="prison-corps"></div>`;
   el.querySelectorAll("[data-ponglet]").forEach(b=>b.addEventListener("click",()=>{ _prisonOnglet=b.dataset.ponglet; majPrison(el); }));
   const corps=el.querySelector("#prison-corps");
   if(_prisonOnglet==="plaintes" && typeof majPlaintes==="function") return majPlaintes(corps);
