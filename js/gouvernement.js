@@ -189,12 +189,12 @@ async function majGouvernement(el){
   el.innerHTML = `<h3>Gouvernement — ${_gouvFacNom(fac)}</h3>
     ${chezMoi ? "" : `<p class="itip-gris" style="margin:0 0 8px">Tu consultes le gouvernement d'une faction qui n'est pas la tienne.</p>`}
     ${_blasonFaction(fac)}
-    <div class="gouv-caisse"><span>Caisse de la faction</span>${solde===null
+    ${(!chezMoi && solde===null) ? "" : `<div class="gouv-caisse"><span>Caisse de la faction</span>${solde===null
       ? `<b class="itip-gris" title="Réservée aux membres de cette faction">— non communiqué</b>`
-      : `<b class="or">${solde.toLocaleString("fr-FR")} ₡</b>`}</div>
-    <p class="itip-gris">${solde===null
+      : `<b class="or">${solde.toLocaleString("fr-FR")} ₡</b>`}</div>`}
+    ${(!chezMoi && solde===null) ? "" : `<p class="itip-gris">${solde===null
       ? `Le montant d'une caisse n'est connu que de sa faction. L'Ombre peut tenter de l'apprendre par espionnage.`
-      : `Alimentée par les <b>taxes du marché</b> de la faction et les <b>dons</b> des membres.`}</p>
+      : `Alimentée par les <b>taxes du marché</b> de la faction et les <b>dons</b> des membres.`}</p>`}
     ${solde===null ? "" : `<div class="gouv-don">
       <input type="number" id="gouv-don-montant" min="1" max="${reste}" value="${Math.min(100,reste)}" ${reste<=0?"disabled":""}>
       <button class="mini" id="gouv-don-btn" ${reste<=0?"disabled":""}>Faire un don</button>
@@ -230,7 +230,15 @@ async function majGouvernement(el){
   if(_perime()) return;
   const bloc = document.createElement("div");
   const aucunRole = !rolesHtml.trim();
-  bloc.innerHTML = `<h4 class="gsec" style="margin-top:16px">Gouvernement</h4>${aucunRole?'<p class="vide">Aucun rôle connu pour cette faction.</p>':rolesHtml}${jeSuisRegent?'<p class="itip-gris" style="margin-top:6px">Tu es Régent : tu peux nommer ou démettre les autres rôles.</p>':""}`;
+  // v1.51 — le Régent de chaque faction est public (regents_factions, v177).
+  const regents = await _chargerRegents(); if(_perime()) return;
+  const nomReg = (regents.find(x => x.faction === fac) || {}).nom;
+  const regentHtml = nomReg ? `<div class="gouv-role"><span>Régent : <button class="comm-nom" data-profil="${echapper(nomReg)}">${echapper(nomReg)}</button></span></div>`
+                            : '<p class="vide">Pas de Régent pour l\'instant.</p>';
+  const tousRegents = `<h4 class="gsec" style="margin-top:16px">Régents des Factions</h4>` + regents.map(x =>
+    `<div class="gouv-role"><span>${echapper(_gouvFacNom(x.faction))} : ${x.nom ? `<button class="comm-nom" data-profil="${echapper(x.nom)}">${echapper(x.nom)}</button>` : '<span class="itip-gris">vacant</span>'}</span></div>`).join("");
+  bloc.innerHTML = `<h4 class="gsec" style="margin-top:16px">Gouvernement</h4>${aucunRole?regentHtml:rolesHtml}${jeSuisRegent?'<p class="itip-gris" style="margin-top:6px">Tu es Régent : tu peux nommer ou démettre les autres rôles.</p>':""}`;
+  if(chezMoi && regents.length) bloc.insertAdjacentHTML("beforeend", tousRegents);   // v1.51 : visible de tous, dans son Gouvernement
   el.appendChild(bloc);
   bloc.querySelectorAll("[data-profil]").forEach(x=>x.addEventListener("click",()=>{ if(typeof ouvrirPageProfil==="function") ouvrirPageProfil(x.dataset.profil); }));
   bloc.querySelectorAll("[data-nommer]").forEach(b=>b.addEventListener("click",()=>_regentNommer(b.dataset.nommer)));
@@ -1391,4 +1399,13 @@ async function _rendreEpingles(z){
     if(typeof refusPrison === "function" && refusPrison("épingler une transmission")) return;
     refaire("annonce_epingler", { p_texte:(z.querySelector("#reg-epingle-txt").value || "").trim() });
   });
+}
+
+/* v1.51 — les Régents de toutes les factions (noms publics), gardés 60 s. */
+let _regentsCache = null, _regentsTs = 0;
+async function _chargerRegents(){
+  if(_regentsCache && Date.now() - _regentsTs < 60000) return _regentsCache;
+  try{ const { data } = await sb.rpc("regents_factions"); if(data && data.ok){ _regentsCache = data.liste || []; _regentsTs = Date.now(); } }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#regents"); }
+  return _regentsCache || [];
 }

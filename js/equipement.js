@@ -122,12 +122,16 @@ function joursRestantsEquipe(slot){
   return Math.max(0, (t0 + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS);
 }
 function texteUsureEquipe(slot){
+  /* v1.51 — retour de l'autrice : « 27 j avant rupture » sur un pistolet était
+     FAUX (l'équipement porté ne se casse pas ainsi). On n'affiche plus rien,
+     ni dans la bulle de l'emplacement, ni dans le sélecteur. */
+  return "";
   const j = joursRestantsEquipe(slot); if(j == null) return "";
   if(j < 1){  const h = Math.max(1, Math.round(j*24)); return `⚠ se casse dans ${h} h`; }
   const n = Math.floor(j);
   return `${n} jour${n>1?"s":""} avant rupture`;
 }
-function _classeUsure(slot){ const j=joursRestantsEquipe(slot); return (j!=null && j<1) ? " usure-critique" : ((j!=null && j<3) ? " usure-basse" : ""); }
+function _classeUsure(slot){ return ""; /* v1.51 : plus d'alerte d'usure (fausse) */ const j=joursRestantsEquipe(slot); return (j!=null && j<1) ? " usure-critique" : ((j!=null && j<3) ? " usure-basse" : ""); }
 
 /* ---------- Cumul des effets équipés ---------- */
 // Arme à feu sans munition : ni force ni agilité ni intelligence (le reste — poids, O₂ — demeure).
@@ -309,7 +313,7 @@ function ouvrirPicker(slot){
   const dispo = TOUS_ITEMS.filter(a => (etat.sac[a.id]||0)>0 && slotEquip(a.id)===s.cat);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>${s.nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
   if(equipe){
-    html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span><span class="picker-usure${_classeUsure(slot)}">⏳ ${texteUsureEquipe(slot)||"usure inconnue"}</span></span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
+    html += `<div class="picker-ligne equipe" data-item="${equipe}"><span class="picker-ic">${iconeItem(equipe)}</span><span class="picker-nom"><b>${item(equipe).nom}</b> <span class="qte">équipé</span><span class="picker-effet">${effetTexte(equipe)}</span>${texteUsureEquipe(slot) ? `<span class="picker-usure${_classeUsure(slot)}">⏳ ${texteUsureEquipe(slot)}</span>` : ""}</span><button class="mini danger" data-retirer="1">Retirer</button></div>`;
   }
   if(dispo.length){
     for(const it of dispo) html += `<div class="picker-ligne" data-eq="${it.id}" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span><span class="picker-nom"><b>${it.nom}</b>${(typeof mentionNiveauHtml==="function") ? mentionNiveauHtml(it.id) : ""} <span class="qte">×${etat.sac[it.id]}</span>${estDeuxMains(it.id)?' <span class="qte">· 2 mains</span>':''}<span class="picker-effet">${effetTexte(it.id)}</span></span><button class="mini">Équiper</button></div>`;

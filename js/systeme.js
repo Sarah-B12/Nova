@@ -98,7 +98,7 @@ function _categoriser(t){
   if(/demande d'ami|\bami\b|amis\b|bloqu[ée]|d[ée]bloqu/.test(s)) return "social";
   if(/vol[ée]|volé|hack|pirat|dérob|prison|démasqu|sonde|siphonn|intrusion|discrétion|cambafre/.test(s)) return "vol";
   if(/combat|patrouille|protocole|vaincu|défaite|assaut|attaqu|blessé|riposte|évacuation/.test(s)) return "combat";
-  if(/min[ée]|minage|minerai|filon|extra|foreuse|for[ée]|gisement|foraouse/.test(s)) return "minage";
+  if(/\bmin[ée]|minage|minerai|filon|extra|foreuse|for[ée]|gisement|foraouse/.test(s)) return "minage";   // v1.51 : \b — « terminé » n'est pas du minage
   // v1.11 : + arrosage et pose d'une bête (« Jeune Toisard placé »).
   if(/récolt|plant[ée]|sem[ée]|arros|bio-dôme|biodome|serre|animal|élevage|elevage|nourri|enclos|troupeau|traite|tonte|fourrage|cuprin|cuirasson|toisard|nourrin/.test(s)) return "agri";
   if(/vendu|achet[ée]|achat|brad[ée]|march[ée]|commission|crédit|₡|revend|boutique|permis/.test(s)) return "eco";

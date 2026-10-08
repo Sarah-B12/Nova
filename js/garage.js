@@ -21,7 +21,7 @@
    le marché des vaisseaux, que la Navette de réserve lui écorne déjà.
    =========================================================== */
 
-const GARAGE_BANNIERE = "images/garage.png";   // ⚠ à produire (même format que l'auberge)
+const GARAGE_BANNIERE = "images/lieux/garage.png";   // v1.50c : toutes les bannières de lieux dans images/lieux/
 
 function majGarage(){
   const z = document.querySelector("#garage-vue"); if(!z) return;

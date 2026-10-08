@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- ⚠ v1.15 — VERSION DES FICHIERS (« ?v=200 » sur chaque js/css). Sans elle,
+<!-- ⚠ v1.15 — VERSION DES FICHIERS (« ?v=203 » sur chaque js/css). Sans elle,
      un téléphone rejoue l'ancien code après une mise en ligne : un testeur a
      signalé un bug « réparé sur PC, toujours là sur téléphone » alors que le
      correctif était en ligne — c'était son cache.
-     ⚠ À INCRÉMENTER À CHAQUE MISE EN LIGNE : rechercher-remplacer « ?v=200 ». -->
+     ⚠ À INCRÉMENTER À CHAQUE MISE EN LIGNE : rechercher-remplacer « ?v=203 ». -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -14,13 +14,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="css/base.css?v=200">
-<link rel="stylesheet" href="css/fiche.css?v=200">
-<link rel="stylesheet" href="css/jauges-sac.css?v=200">
-<link rel="stylesheet" href="css/carte.css?v=200">
-<link rel="stylesheet" href="css/terrain.css?v=200">
-<link rel="stylesheet" href="css/composants.css?v=200">
-<link rel="stylesheet" href="css/aptitudes.css?v=200">
+<link rel="stylesheet" href="css/base.css?v=203">
+<link rel="stylesheet" href="css/fiche.css?v=203">
+<link rel="stylesheet" href="css/jauges-sac.css?v=203">
+<link rel="stylesheet" href="css/carte.css?v=203">
+<link rel="stylesheet" href="css/terrain.css?v=203">
+<link rel="stylesheet" href="css/composants.css?v=203">
+<link rel="stylesheet" href="css/aptitudes.css?v=203">
 </head>
 
 <body>
@@ -85,6 +85,7 @@
       <div class="carte-jauges">
         <span class="cj">Énergie <b id="braise-energie">100</b>%</span>
         <span class="cj">O₂ <b id="braise-o2">100</b></span>
+        <span class="cj-apercu" id="braise-apercu"></span>   <!-- v1.51 : coût au survol, comme Silène -->
       </div>
       <button class="mini" id="braise-bord">Monter à bord</button>
       <button class="mini" id="braise-decoller">Décoller</button>
@@ -274,7 +275,7 @@
         <div class="hub-vue" id="hub-descente" hidden></div>
 
         <div class="hub-vue" id="hub-inn" hidden>
-          <div class="inn-banniere"><img id="inn-img" src="images/inn.png" alt="" onerror="this.remove()"><span>Auberge</span></div>   <!-- v1.48 : une image par faction (navigation.js) -->
+          <div class="inn-banniere"><img id="inn-img" src="images/lieux/auberge.png" alt="" onerror="this.remove()"><span>Auberge</span></div>   <!-- v1.48 : une image par faction (navigation.js) -->
           <p class="vide">Une auberge pour souffler, loin de chez toi.</p>
           <div class="actions"><button class="action" onclick="reposer()"><span>Se reposer à l'auberge</span><span class="cout">+20 santé/moral (≤70) · 1×/jour</span></button></div>
         </div>
@@ -402,61 +403,61 @@
      évite au passage la panne si le CDN tombe.
      Mise à jour : npm pack @supabase/supabase-js@2, puis copier
      package/dist/umd/supabase.js — penser à changer le nom de version ici. -->
-<script src="js/vendor/supabase-2.116.0.js?v=200"></script>
-<script src="js/serveur.js?v=200"></script>
-<script src="js/config.js?v=200"></script>
-<script src="js/data.js?v=200"></script>
-<script src="js/terrain.js?v=200"></script>
-<script src="js/integrite.js?v=200"></script>
-<script src="js/terrain-serveur.js?v=200"></script>
-<script src="js/couple.js?v=200"></script>
-<script src="js/histoires.js?v=200"></script>
-<script src="js/inventaire.js?v=200"></script>
-<script src="js/etat.js?v=200"></script>
-<script src="js/systeme.js?v=200"></script>
-<script src="js/actions.js?v=200"></script>
-<script src="js/rendu.js?v=200"></script>
-<script src="js/maison.js?v=200"></script>
-<script src="js/drones.js?v=200"></script>
-<script src="js/equipement.js?v=200"></script>
-<script src="js/vaisseau.js?v=200"></script>
-<script src="js/prix.js?v=200"></script>
-<script src="js/usure.js?v=200"></script>
-<script src="js/marche.js?v=200"></script>
-<script src="js/menu-objet.js?v=200"></script>
-<script src="js/boutique.js?v=200"></script>
-<script src="js/carte.js?v=200"></script>
-<script src="js/espace-data.js?v=200"></script>
-<script src="js/placement.js?v=200"></script>
-<script src="js/orbite.js?v=200"></script>
-<script src="js/braise.js?v=200"></script>
-<script src="js/sonde.js?v=200"></script>
-<script src="js/garage.js?v=200"></script>
-<script src="js/formations.js?v=200"></script>
-<script src="js/aptitudes-data.js?v=200"></script>
-<script src="js/aptitudes.js?v=200"></script>
-<script src="js/aptitudes-effets.js?v=200"></script>
-<script src="js/patrouille.js?v=200"></script>
-<script src="js/debris.js?v=200"></script>
-<script src="js/quetes-data.js?v=200"></script>
-<script src="js/glyphes.js?v=200"></script>
-<script src="js/quetes.js?v=200"></script>
-<script src="js/voler.js?v=200"></script>
-<script src="js/traque.js?v=200"></script>
-<script src="js/parametres.js?v=200"></script>
-<script src="js/pause.js?v=200"></script>
-<script src="js/mort.js?v=200"></script>
-<script src="js/comm.js?v=200"></script>
-<script src="js/avatar.js?v=200"></script>
-<script src="js/onboarding.js?v=200"></script>
-<script src="js/profil-page.js?v=200"></script>
-<script src="js/poste.js?v=200"></script>
-<script src="js/gouvernement.js?v=200"></script>
-<script src="js/espionnage.js?v=200"></script>
-<script src="js/bar.js?v=200"></script>
-<script src="js/arene.js?v=200"></script>
-<script src="js/navigation.js?v=200"></script>
-<script src="js/bootstrap.js?v=200"></script>
-<script src="js/dev-console.js?v=200"></script>
+<script src="js/vendor/supabase-2.116.0.js?v=203"></script>
+<script src="js/serveur.js?v=203"></script>
+<script src="js/config.js?v=203"></script>
+<script src="js/data.js?v=203"></script>
+<script src="js/terrain.js?v=203"></script>
+<script src="js/integrite.js?v=203"></script>
+<script src="js/terrain-serveur.js?v=203"></script>
+<script src="js/couple.js?v=203"></script>
+<script src="js/histoires.js?v=203"></script>
+<script src="js/inventaire.js?v=203"></script>
+<script src="js/etat.js?v=203"></script>
+<script src="js/systeme.js?v=203"></script>
+<script src="js/actions.js?v=203"></script>
+<script src="js/rendu.js?v=203"></script>
+<script src="js/maison.js?v=203"></script>
+<script src="js/drones.js?v=203"></script>
+<script src="js/equipement.js?v=203"></script>
+<script src="js/vaisseau.js?v=203"></script>
+<script src="js/prix.js?v=203"></script>
+<script src="js/usure.js?v=203"></script>
+<script src="js/marche.js?v=203"></script>
+<script src="js/menu-objet.js?v=203"></script>
+<script src="js/boutique.js?v=203"></script>
+<script src="js/carte.js?v=203"></script>
+<script src="js/espace-data.js?v=203"></script>
+<script src="js/placement.js?v=203"></script>
+<script src="js/orbite.js?v=203"></script>
+<script src="js/braise.js?v=203"></script>
+<script src="js/sonde.js?v=203"></script>
+<script src="js/garage.js?v=203"></script>
+<script src="js/formations.js?v=203"></script>
+<script src="js/aptitudes-data.js?v=203"></script>
+<script src="js/aptitudes.js?v=203"></script>
+<script src="js/aptitudes-effets.js?v=203"></script>
+<script src="js/patrouille.js?v=203"></script>
+<script src="js/debris.js?v=203"></script>
+<script src="js/quetes-data.js?v=203"></script>
+<script src="js/glyphes.js?v=203"></script>
+<script src="js/quetes.js?v=203"></script>
+<script src="js/voler.js?v=203"></script>
+<script src="js/traque.js?v=203"></script>
+<script src="js/parametres.js?v=203"></script>
+<script src="js/pause.js?v=203"></script>
+<script src="js/mort.js?v=203"></script>
+<script src="js/comm.js?v=203"></script>
+<script src="js/avatar.js?v=203"></script>
+<script src="js/onboarding.js?v=203"></script>
+<script src="js/profil-page.js?v=203"></script>
+<script src="js/poste.js?v=203"></script>
+<script src="js/gouvernement.js?v=203"></script>
+<script src="js/espionnage.js?v=203"></script>
+<script src="js/bar.js?v=203"></script>
+<script src="js/arene.js?v=203"></script>
+<script src="js/navigation.js?v=203"></script>
+<script src="js/bootstrap.js?v=203"></script>
+<script src="js/dev-console.js?v=203"></script>
 </body>
 </html>

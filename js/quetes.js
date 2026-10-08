@@ -1007,7 +1007,7 @@ function _htmlAttente(d){
 function _wireAttente(z,d){
   const a=queteActive(); const dur=d.duree||30000;
   const bs=z.querySelector("#q-att-start"); if(bs) bs.addEventListener("click",()=>{ a._attenteLe=Date.now(); sauvegarder(); rafraichirQuetes(); });
-  const bf=z.querySelector("#q-att-fin"); if(bf) bf.addEventListener("click",()=>{ journal("Scan terminé.","gain"); reussirDefi(); });
+  const bf=z.querySelector("#q-att-fin"); if(bf) bf.addEventListener("click",()=>{ journal("Scan terminé.","gain","quete"); /* v1.51 : allait dans « Minage » */ reussirDefi(); });
   const r=z.querySelector("#q-att-reste");
   if(r){ if(_queteTimer) clearInterval(_queteTimer);
     _queteTimer=setInterval(()=>{ const reste=Math.max(0,dur-(Date.now()-a._attenteLe)); r.textContent=_fmtDuree(reste);

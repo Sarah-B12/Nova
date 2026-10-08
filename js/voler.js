@@ -647,7 +647,7 @@ async function majPrison(el){
   if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
   if(typeof _tqStyle==="function") _tqStyle();
   const onglets=[["prison","Prison"],["plaintes","Plaintes"],["wanted","Wanted"]];
-  el.innerHTML=`<div class="lieu-banniere"><img src="images/prison.png" alt="" onerror="this.parentElement.remove()"></div><div class="tq-menu">${onglets.map(([k,t])=>`<button class="tq-lien${_prisonOnglet===k?" actif":""}" data-ponglet="${k}">${t}</button>`).join("")}</div><div id="prison-corps"></div>`;
+  el.innerHTML=`<div class="lieu-banniere"><img src="images/lieux/prison.png" alt="" onerror="this.parentElement.remove()"></div><div class="tq-menu">${onglets.map(([k,t])=>`<button class="tq-lien${_prisonOnglet===k?" actif":""}" data-ponglet="${k}">${t}</button>`).join("")}</div><div id="prison-corps"></div>`;
   el.querySelectorAll("[data-ponglet]").forEach(b=>b.addEventListener("click",()=>{ _prisonOnglet=b.dataset.ponglet; majPrison(el); }));
   const corps=el.querySelector("#prison-corps");
   if(_prisonOnglet==="plaintes" && typeof majPlaintes==="function") return majPlaintes(corps);

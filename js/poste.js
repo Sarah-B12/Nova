@@ -71,14 +71,13 @@ function _postePerturbee(){ return !!(_postePert && _postePert.active); }
 function _posteMultTaxe(){ return _postePerturbee() ? (_postePert.taxe_mult||3) : 1; }
 function _posteBanniere(){
   if(!_postePerturbee())
-    return `<img src="images/poste.png" alt="La Poste" class="hub-banniere" onerror="this.remove()">`;
+    return `<img src="images/lieux/poste.png" alt="La Poste" class="hub-banniere" onerror="this.remove()">`;
   /* L'image perturbée peut ne pas être encore déposée : le bandeau de repli
      dit la même chose, pour qu'on ne prenne jamais ça pour une panne. */
-  return `<img src="images/poste_perturbee.png" alt="La Poste — perturbations" class="hub-banniere" onerror="this.remove()">
+  return `<img src="images/lieux/poste_perturbee.png" alt="La Poste — perturbations" class="hub-banniere" onerror="this.remove()">
     <div class="poste-perturb">
       <div class="poste-perturb-titre">⚠ PERTURBATIONS DU RÉSEAU</div>
       <p>Les relais dérivent. Pendant <b>5 jours</b>, tout ce que tu envoies met <b>48 h</b> à arriver chez le destinataire, et la <b>taxe est triplée</b>.</p>
-      <p>Pour ce qui presse, passe par le <b>marché</b> : il est ouvert et immédiat.</p>
     </div>`;
 }
 

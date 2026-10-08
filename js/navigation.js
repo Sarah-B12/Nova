@@ -9,13 +9,13 @@ function montrerHub(h){
   document.querySelectorAll(".hub-lien").forEach(b => b.classList.toggle("actif", b.dataset.hub===h));
 }
 /* v1.48 — l'auberge a une image PAR FACTION (images/lieux/auberge_<faction>.png),
-   avec repli sur images/inn.png tant que le fichier n'existe pas. */
+   avec repli sur images/lieux/auberge.png (v1.50c, ex-images/inn.png) tant que le fichier n'existe pas. */
 function _innBanniere(){
   const img = document.querySelector("#inn-img"); if(!img || typeof etat === "undefined" || !etat.faction) return;
   const voulu = `images/lieux/auberge_${etat.faction}.png`;
   if(img.dataset.voulu === voulu) return;
   img.dataset.voulu = voulu;
-  img.onerror = () => { img.onerror = () => img.remove(); img.src = "images/inn.png"; };
+  img.onerror = () => { img.onerror = () => img.remove(); img.src = "images/lieux/auberge.png"; };
   img.src = voulu;
 }
 function changerHub(h){ if(h==="inn") _innBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }

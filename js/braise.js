@@ -209,6 +209,24 @@ function construireCarteBraise(){
     if(p.x < 0 || p.y < 0 || p.x > c.w || p.y > c.h) return;   // hors de l'image (bandes vides)
     _viseeSol.clic(p.x, p.y);   // v1.34e : au doigt, visée d'abord
   });
+  /* v1.51 — aperçu du coût AU SURVOL de la souris, comme sur Silène (carte.js) :
+     même calcul que le déplacement (coutBraise). Au doigt, c'est la visée qui l'affiche. */
+  const apercu = (x, y) => {
+    const z = document.querySelector("#braise-apercu"); if(!z) return;
+    const k = (x === null) ? null : coutBraise(x, y);
+    if(!k){ z.innerHTML = ""; return; }
+    const manqueE = (etat.energie|0) < k.coutE, manqueO = (etat.jauges && (etat.jauges.o2|0) <= k.coutO);
+    z.innerHTML = `<span class="${manqueE?"ap-ko":"ap-ok"}">−${k.coutE} énergie</span> <span class="${manqueO?"ap-ko":"ap-ok"}">−${k.coutO} O₂</span>`;
+  };
+  svg.addEventListener("pointermove", e => {
+    if((e.pointerType||"mouse") === "touch") return;
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    const m = svg.getScreenCTM(); if(!m) return;
+    const p = pt.matrixTransform(m.inverse()), c = surfaceCfg() || BRAISE;
+    if(p.x < 0 || p.y < 0 || p.x > c.w || p.y > c.h){ apercu(null); return; }
+    apercu(p.x, p.y);
+  });
+  svg.addEventListener("pointerleave", () => apercu(null));
   _viseeSol = viseeTactile(svg, {
     cout: (x, y) => { const k = (typeof coutBraise === "function") ? coutBraise(x, y) : null;
                       return k ? `−${k.coutE} % én. · −${k.coutO} O₂` : null; },
