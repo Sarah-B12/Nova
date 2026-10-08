@@ -78,6 +78,7 @@ function _posteBanniere(){
     <div class="poste-perturb">
       <div class="poste-perturb-titre">⚠ PERTURBATIONS DU RÉSEAU</div>
       <p>Les relais dérivent. Pendant <b>5 jours</b>, tout ce que tu envoies met <b>48 h</b> à arriver chez le destinataire, et la <b>taxe est triplée</b>.</p>
+      <p>Pour ce qui presse, passe par le <b>marché</b> : il est ouvert et immédiat.</p>
     </div>`;
 }
 
@@ -86,9 +87,15 @@ async function _chargerPoste(){
   const s=await sessionActuelle(); if(!s) return []; _posteMonId=s.user.id;
   try{ await sb.rpc("poste_purge"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#1"); }
   try{ const { data } = await sb.rpc("poste_perturbee"); _postePert = data || null; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#pert"); }
+  /* v1.52 — UNE seule ligne au journal par perturbation (et non à chaque passage,
+     ni à chaque session) : on retient la perturbation déjà annoncée (début/fin). */
   if(_postePerturbee() && !_posteAvertiSession){
     _posteAvertiSession = true;
-    journal("La Poste est perturbée : 48 h de retard sur les envois et taxe triplée. Le marché, lui, reste immédiat.","alerte");
+    const cle = (_postePert && (_postePert.debut || _postePert.fin || _postePert.jusqua)) || JSON.stringify(_postePert);
+    if(etat._postePertVue !== cle){
+      etat._postePertVue = cle;
+      journal("La Poste est perturbée : 48 h de retard sur les envois et taxe triplée. Le marché, lui, reste immédiat.","alerte");
+    }
   }
   const { data, error } = await sb.from("poste").select("*").order("cree_le",{ascending:false});
   if(error){ console.warn("[poste]", error.message); return []; }
