@@ -79,6 +79,9 @@ let _journalStyleMonte = false;
    cas précis). v1.11 : ajout de « formation » et « faction ». */
 function _categoriser(t){
   const s=(t||"").toLowerCase();
+  // v1.56 — les histoires d'enfant (« a fait l'étape 1 de l'histoire d'Eva ») et les
+  // lettres vont dans Couple, AVANT la règle des quêtes (« étape ») ; sans « (Couple > Famille) ».
+  if(/l'histoire d|petite histoire|une lettre d/.test(s)) return "couple";
   if(/quête|quete|vieux sorn|glyphe|relais|étape|défi/.test(s)) return "quete";
   /* v1.36e — le couple, AVANT la faction (« rester dans ta faction » après un
      divorce) et le social. Les lignes écrites par couple.js portent déjà la

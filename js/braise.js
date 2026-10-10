@@ -139,6 +139,11 @@ async function monterABord(){
 }
 async function decollerBraise(){
   const c = surfaceCfg(); if(!c) return;
+  // v1.56 — plus de vaisseau (périmé, détruit) ou coque hors service : le secours
+  // rapatrie sur Silène (frais de secours), au lieu de bloquer au sol.
+  if(!etat.vaisseau || (typeof vaisseauCloue==="function" && vaisseauCloue())){
+    if(typeof secoursOrbite==="function" && await secoursOrbite()) return;
+  }
   /* v1.34f — On décolle DIRECTEMENT depuis l'aire d'atterrissage : on monte à
      bord au passage. Avant, « Décoller » restait grisé tant qu'on n'avait pas
      appuyé sur « Monter à bord » : les testeurs se croyaient bloqués. */

@@ -1076,7 +1076,7 @@ const QUETES = [
     intro:[
       "Galm te tend son casque sans un mot, et s'en va trier des boulons à l'autre bout de l'atelier. Elle a décidé de ne pas entendre.",
       "Tu racontes à Sorn. La carotte, la terre noire, le pollen, et la couche de cendre, une seule, partout à la même profondeur. « ESSAI CLOS. SECTEUR FERMÉ. » Il ne t'interrompt pas une fois.",
-      "Quand tu as fini, il reste si longtemps silencieux que tu vérifies la liaison. Puis : « \"Le secteur\". Au Muet, il manquait des mots devant. » Sa voix est plate, comme en Q2, quand il a lu la ligne de son aïeul. « Je veux savoir lequel. »",
+      "Quand tu as fini, il reste si longtemps silencieux que tu vérifies la liaison. Puis : « \"Le secteur\". Au Muet, il manquait des mots devant. » Sa voix est plate, alors qu'il lit la ligne de son aïeul. « Je veux savoir lequel. »",
       "« La borne de ta Cuvette, elle a parlé d'une station, non ? Dans les aiguilles, au nord-ouest. Une station qui ferme. » Un temps. « Va voir comment on ferme une planète, gamin. Moi je peux pas. Et je crois que j'ai besoin de le savoir avant de dormir encore une nuit sur Silène. »"
     ],
     etapes:[
@@ -1595,7 +1595,7 @@ const QUETES = [
         cible:{ carte:"suaire", x:1560, y:1090, r:280 }, leurres:[ { carte:"suaire", lieu:"verriere" }, { carte:"suaire", lieu:"dents" }, { carte:"suaire", lieu:"pics" } ],
         image:"images/quetes/q12/4.png",
         arrivee:[
-          "Tu déplies la foreuse thermique que Galm t'a glissée dans le sac « au cas où ». Elle mord la glace dans un nuage de vapeur, lentement, trop lentement.",
+          "Tu déplies la foreuse thermique que Galm t'a glissée dans le sac « au cas où ». Tu ne t'atendais pas à la taille qu'elle ferait en la dépliant mais tu ne cherches pas plus loin. La foreuse mord la glace dans un nuage de vapeur, lentement, trop lentement.",
           "Trois mètres de glace, ça prend du temps. Tu peux remonter à ton vaisseau respirer, et revenir. La foreuse travaille seule."
         ],
         defi:{ type:"attente", duree:5*3600*1000,

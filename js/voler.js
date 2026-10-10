@@ -547,13 +547,13 @@ function majVoler(){
     <p class="vide">Cible un <b>vrai joueur, au hasard,</b> présent ${(typeof enEcart==="function"&&enEcart())?"au Perchoir":"dans cette ville"}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
-        <h3>🕵️ Voler <span class="qte">· objets</span></h3>
+        <h3>Voler <span class="qte">· objets</span></h3>
         <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans un sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
       <div class="vol-carte">
-        <h3>🖥 Hacker <span class="qte">· crédits</span></h3>
+        <h3>Hacker <span class="qte">· crédits</span></h3>
         <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Tu restes anonyme <b>${Math.round(CHANCE_ANONYMAT_HACK*100)} % du temps</b> — sinon ta signature passe. Et l'échec coûte cher : <b>${Math.round(RISQUE_PRISON_HACK*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Intelligence = plus de temps). Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
         <button class="mini" id="vol-hacker" ${dH&&e>=VOL_ENERGIE?"":"disabled"}>Hacker</button>

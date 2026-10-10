@@ -109,7 +109,7 @@ const INDICES_CITES = { ignis:"la montagne qui fume", cultivateurs:"les arbres p
   nomades:"les tentes qui ne restent jamais au même endroit", toundra:"la glace qui craque la nuit", rouage:"les tas de ferraille rouillée" };
 const HIST_REFUS = { pas_histoire:"L'histoire est finie (ou son délai est passé).", etape:"Cette étape a déjà été faite.",
   autre:"Cette étape revient à ta moitié.", texte:"Texte trop court ou trop long.", pas_le_soir:"Seulement le soir, entre 20 h et minuit (heure de Paris).",
-  autre_jour:"Pas le même jour que l'étape précédente : reviens un autre soir.", ailleurs:"Il faut être sur la carte de Silène.",
+  autre_jour:"Une étape par jour : la suite, demain.", ailleurs:"Il faut être sur la carte de Silène.",
   loin:"Ce n'est pas ici : rapproche-toi du point.", gele:"Tout est figé : l'un de vous est en pause ou au Couloir." };
 
 let _histJeuEnCours = false;      // la relecture de 45 s (couple.js) ne redessine pas pendant un mini-jeu
@@ -127,8 +127,12 @@ function _blocHistoire(e, u){
   const reste = Math.max(0, _joursEntre(e.aujourdhui || h.debut, h.fin) + 1);
   s += `<p class="itip-gris">Encore ${_jours(reste)} (dernier jour : ${_uDate(h.fin)}). Étape 1 : l'un de vous ; étape 2 : forcément l'autre ; étape 3 : l'un ou l'autre.</p><ol class="hi-etapes">`;
   const E = HISTOIRES_ETAPES[h.n] || [];
-  E.forEach((st, i) => {
+  E.forEach((st0, i) => {
     const n = i + 1, fait = n < h.etape, cour = n === h.etape;
+    // v1.58 (v181) : l'objet à apporter est tiré à chaque histoire (h.objet).
+    const st = (st0.t === "apporter" && h.objet) ? { ...st0, ...h.objet } : st0;
+    // v1.58 : les étapes à venir restent CACHÉES (la surprise).
+    if(!fait && !cour){ s += `<li class="avenir"><b>Étape ${n}</b> — <span class="itip-gris">à découvrir</span></li>`; return; }
     const qui = h.par && h.par[String(n)] ? (h.par[String(n)] === u.conjoint ? echapper(u.nom || "ta moitié") : "toi") : "";
     let ligne = `<b>${_libEtape(st, h)}</b> — ${echapper(_hX(H.etapes[i], e, h))}`;
     if(fait) ligne += ` <span class="co-fait">✓ ${qui}</span>`;
@@ -148,6 +152,8 @@ function _libEtape(st, h){
 function _actionEtape(st, n, e, u, h){
   if(e.gele) return `<div class="itip-gris">Tout est figé : l'un de vous est en pause ou au Couloir.</div>`;
   if(n === 2 && h.etape1_moi) return `<div class="itip-gris">Cette étape revient à ${echapper(u.nom || "ta moitié")}.</div>`;
+  // v1.57 (v180) : une étape par jour — la suivante, au plus tôt le lendemain.
+  if(n > 1 && h.etape_jour && h.etape_jour >= e.aujourdhui) return `<div class="itip-gris">Une étape par jour : la suite, demain.</div>`;
   let a = `<div class="hi-action">`;
   if(st.t === "apporter"){
     const j = (etat.sac && etat.sac[st.item]) || 0;
@@ -225,16 +231,37 @@ function _lancerJeu(nom, z, h, fin){
   F(false);
 }
 
-/* Recoller : 4 pièces à remettre droites (un quart de tour par clic), 12 coups. */
+/* Recoller — v1.56, retour de l'autrice (« trop facile, pas très intéressant »).
+   Six pièces en 2 × 3, LIÉES comme des engrenages : toucher une pièce la tourne
+   d'un quart de tour ET entraîne ses voisines directes (gauche, droite, haut,
+   bas). Il faut toutes les remettre pointe en haut. Le mélange part de l'état
+   juste et applique des gestes au hasard (toujours soluble) ; on calcule le
+   nombre minimal de gestes (parcours des 4 096 états) : il en faut au moins 4,
+   et le joueur en a ce minimum + 4. */
 function _jeuRecoller(z, fin){
-  const noms = ["Tête", "Bras", "Corps", "Roue"], r = noms.map(() => 1 + Math.floor(Math.random() * 3));
-  let coups = 12;
+  const noms = ["Bras", "Tête", "Bras", "Roue", "Corps", "Roue"], C = 3, N = 6;
+  const voisins = i => [i, ...(i % C ? [i-1] : []), ...(i % C < C-1 ? [i+1] : []), ...(i >= C ? [i-C] : []), ...(i < N-C ? [i+C] : [])];
+  const cle = r => r.join("");
+  const geste = (r, i) => { const t = r.slice(); for(const v of voisins(i)) t[v] = (t[v] + 1) % 4; return t; };
+  const distance = r0 => {   // gestes minimaux pour revenir à 000000
+    const vu = new Map([[cle(r0), 0]]), file = [r0];
+    while(file.length){ const r = file.shift(), d = vu.get(cle(r)); if(r.every(x => x === 0)) return d;
+      for(let i = 0; i < N; i++){ const t = geste(r, i), k = cle(t); if(!vu.has(k)){ vu.set(k, d+1); file.push(t); } } }
+    return 99;
+  };
+  let r, min = 0;
+  for(let essai = 0; essai < 50; essai++){
+    r = new Array(N).fill(0);
+    for(let k = 0; k < 7; k++) r = geste(r, Math.floor(Math.random() * N));
+    min = distance(r); if(min >= 4 && min <= 8) break;
+  }
+  let coups = min + 4;
   const dessin = () => {
-    z.innerHTML = `<p class="itip-gris">Touche une pièce pour la tourner d'un quart de tour. Toutes la pointe en haut. Coups restants : <b>${coups}</b>.</p>
-      <div class="jr-grille">${noms.map((n, i) => `<button class="jr-piece" data-i="${i}" aria-label="${n}">
+    z.innerHTML = `<p class="itip-gris">Les pièces sont liées : en tourner une d'un quart de tour fait tourner aussi ses voisines (à gauche, à droite, au-dessus, en dessous). Remets-les toutes pointe en haut. Gestes restants : <b>${coups}</b>.</p>
+      <div class="jr-grille" style="grid-template-columns:repeat(3,1fr)">${noms.map((n, i) => `<button class="jr-piece" data-i="${i}" aria-label="${n}">
         <svg viewBox="0 0 40 40" style="transform:rotate(${r[i] * 90}deg)"><path d="M20 4 L28 15 H12 Z"/><rect x="11" y="16" width="18" height="18" rx="3"/></svg><span>${n}</span></button>`).join("")}</div>`;
     z.querySelectorAll(".jr-piece").forEach(b => b.addEventListener("click", () => {
-      const i = Number(b.dataset.i); r[i] = (r[i] + 1) % 4; coups--;
+      r = geste(r, Number(b.dataset.i)); coups--;
       if(r.every(x => x === 0)){ z.innerHTML = `<p class="hi-reussi">Toutes les pièces tiennent.</p>`; fin(true); return; }
       if(coups <= 0){ z.innerHTML = ""; fin(false); return; }
       dessin();

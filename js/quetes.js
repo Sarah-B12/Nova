@@ -1627,7 +1627,7 @@ function _htmlMemoire(d){
     }
     const info=Array.isArray(d.info)?d.info.map(x=>`<div>${x}</div>`).join(""):(d.info||"");
     return `<div class="quete-etape">${_par(d.texte)}
-      <p class="quete-indice">Mémorise bien — l'info va disparaître.</p>
+      <p class="quete-indice">Mémorise bien — l'info va disparaître, et <b>le moindre clic la cache</b>.</p>
       <div class="q-mem-info">${info}</div>
       <div class="quete-rep"><span class="itip-gris">Disparition dans <b id="q-mem-cpt">${Math.ceil(_memReste(d)/1000)}</b> s</span></div></div>`;
   }
@@ -1642,9 +1642,22 @@ function _wireMemoire(z,d){
     if(go){ go.addEventListener("click", ()=>{ a._memDebut=Date.now(); sauvegarder(); majQueteHub(); }); return; }
     const cpt=z.querySelector("#q-mem-cpt");
     if(_queteTimer) clearInterval(_queteTimer);
+    /* v1.56 — demande de l'autrice : l'info ne se recopie pas. Pendant l'affichage,
+       le texte n'est pas sélectionnable, et le MOINDRE clic, toucher, touche de
+       clavier, clic droit ou copie le cache aussitôt : il faut alors répondre. */
+    z.querySelectorAll(".quete-etape").forEach(el => { el.style.userSelect = "none"; el.style.webkitUserSelect = "none"; });
+    let fini = false;
+    const cacher = (ev) => {
+      if(fini) return; fini = true;
+      if(ev && ev.type === "copy") ev.preventDefault();
+      ["pointerdown","keydown","contextmenu","copy","selectstart"].forEach(t => document.removeEventListener(t, cacher, true));
+      if(_queteTimer){ clearInterval(_queteTimer); _queteTimer=null; }
+      a._memVue=true; sauvegarder(); majQueteHub();
+    };
+    setTimeout(() => { if(!fini) ["pointerdown","keydown","contextmenu","copy","selectstart"].forEach(t => document.addEventListener(t, cacher, true)); }, 300);
     _queteTimer=setInterval(()=>{ const r=_memReste(d);
       if(cpt) cpt.textContent=Math.ceil(r/1000);
-      if(r<=0){ clearInterval(_queteTimer); _queteTimer=null; a._memVue=true; sauvegarder(); majQueteHub(); } }, 250);
+      if(r<=0) cacher(); }, 250);
     return;
   }
   const b=z.querySelector("#q-mem-btn"), c=z.querySelector("#q-mem-champ");

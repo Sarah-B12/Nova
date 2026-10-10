@@ -1174,10 +1174,10 @@ async function majElections(el){
   const vinfos = (phase==="vote"||phase==="resultat") ? await _chargerVotes(fac) : {decompte:{},monVote:null,total:0};
 
   let h = `<h3>Élections — ${_gouvFacNom(fac)}</h3>`;
-  h += `<p class="itip-gris">📅 Cycle mensuel : <b>candidatures du 1 au 3</b>, <b>votes du 3 au 5</b>, <b>résultat le 5</b>. Voter rapporte <b>+2 réputation</b>.</p>`;
-  const phaseTxt = phase==="depot" ? "🗳️ <b>Dépôt des candidatures</b> ouvert."
-    : phase==="vote" ? "🗳️ <b>Votes en cours</b> — candidatures closes (tu peux te retirer)."
-    : "📊 <b>Résultat de l'élection</b>.";
+  h += `<p class="itip-gris">Cycle mensuel : <b>candidatures du 1 au 3</b>, <b>votes du 3 au 5</b>, <b>résultat le 5</b>. Voter rapporte <b>+2 réputation</b>.</p>`;
+  const phaseTxt = phase==="depot" ? "<b>Dépôt des candidatures</b> ouvert."
+    : phase==="vote" ? "<b>Votes en cours</b> — candidatures closes (tu peux te retirer)."
+    : "<b>Résultat de l'élection</b>.";
   h += `<p>${phaseTxt}</p>`;
 
   if(phase==="resultat"){

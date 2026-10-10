@@ -220,7 +220,7 @@ function majMaison(){
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;
-    html += `<p class="vide">Dépose les matières, puis fournis le travail — <b>${total} actions</b> à ${TRAVAIL_ENERGIE} % d'énergie (soit ${total*TRAVAIL_ENERGIE} % en tout). Le travail s'ouvre au fur et à mesure : livrer la moitié de la recette débloque la moitié des actions. ${(typeof coffreAccessible==="function" && coffreAccessible())?"Ton coffre compte (🏠).":"Hors de ta ville : seul le sac compte."}</p><div class="recette-liste">`;
+    html += `<p class="vide">Dépose les matières, puis fournis le travail — <b>${total} actions</b> à ${TRAVAIL_ENERGIE} % d'énergie (soit ${total*TRAVAIL_ENERGIE} % en tout). Le travail s'ouvre au fur et à mesure : livrer la moitié de la recette débloque la moitié des actions. ${(typeof coffreAccessible==="function" && coffreAccessible())?"Ton coffre à la maison compte.":"Hors de ta ville : seul le sac compte."}</p><div class="recette-liste">`;
     for(const mid in r){ const dej=c.depose[mid]||0, bes=r[mid], plein=dej>=bes;
       const auSac=etat.sac[mid]||0;
       const auCof=(typeof coffreAccessible==="function" && coffreAccessible()) ? (etat.coffre[mid]||0) : 0;

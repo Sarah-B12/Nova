@@ -418,6 +418,9 @@ function chanceEnfant(c){ return Math.round(70 * Math.pow((Number(c) || 0) / 100
 const VOCATIONS = { bricoleur:"Bricoleur", eclaireur:"Éclaireur", cuistot:"Cuistot", soigneur:"Soigneur", mecano:"Mécano", gardien:"Gardien" };
 // Ce que l'on apprend (bouton « Lui apprendre ») → la vocation du même nom.
 const DOMAINES_LECON = { bricoleur:"Réparer", eclaireur:"Explorer", cuistot:"Cuisiner", soigneur:"Soigner", mecano:"Mécanique", gardien:"Veiller" };
+// v1.58 — les leçons deviennent des activités dans « Ton geste » (sans compteur : la vocation reste une surprise).
+const ACTIVITES_LECON = { bricoleur:"Réparer une lampe ensemble", eclaireur:"Faire une chasse au trésor", cuistot:"Préparer le goûter ensemble",
+                          soigneur:"Soigner la poupée blessée", mecano:"Démonter un vieux moteur", gardien:"Faire une ronde à la tombée du jour" };
 const NOURRITURE_ENFANT = ["fab_ration_chaude", "ferragave", "nectine", "sporelle"];   // = _enfant_nourriture (serveur)
 const GESTES_ENFANT = {
   nourrir:   { nom:"Nourrir", gain:15, stades:["petit","enfant","ado"], phrases:{
@@ -448,7 +451,7 @@ function _phraseGeste(g, stade){
 function _nomGeste(g){
   if(!g) return "";
   const G = GESTES_ENFANT[g.geste] || { nom:"?" };
-  if(g.geste === "apprendre") return `${G.nom} : ${DOMAINES_LECON[g.detail] || "?"}`;
+  if(g.geste === "apprendre") return ACTIVITES_LECON[g.detail] || `${G.nom} : ${DOMAINES_LECON[g.detail] || "?"}`;   // v1.58
   if(g.geste === "nourrir" && g.detail) return `${G.nom} (${_uNom(g.detail)})`;
   return G.nom;
 }
@@ -503,16 +506,13 @@ function _blocSoins(e, u){
   else h += `<button class="mini" disabled title="Une ration chaude ou une plante comestible (Ferragave, Nectine, Sporelle) dans le sac.">Nourrir (rien dans le sac)</button>`;
   h += `<button class="mini fa-gbtn" data-geste="calin"${bloque ? " disabled" : ""}>${_imgGeste("calin")}Câliner et coucher (+8)</button>`;
   if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini fa-gbtn" data-geste="jouer"${bloque ? " disabled" : ""}>${_imgGeste("jouer")}Jouer (+10)</button>`;
+  // v1.58 : les leçons, ici, sous forme d'activités (même geste « apprendre », sans compteur).
+  if(e.stade === "enfant") h += Object.entries(ACTIVITES_LECON).map(([k, t]) => `<button class="mini fa-gbtn" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${_imgGeste("apprendre", k)}${t}</button>`).join("");
   h += `</div>`;
-  if(e.stade === "enfant"){
-    h += `<h4 class="gsec">Lui apprendre <span class="itip-gris">(+5, et une leçon)</span></h4><div class="fa-gestes">`
-      + Object.entries(DOMAINES_LECON).map(([k, t]) => `<button class="mini fa-gbtn" data-geste="apprendre" data-detail="${k}"${bloque ? " disabled" : ""}>${_imgGeste("apprendre", k)}${t} <span class="qte">${(e.lecons || {})[k] || 0}</span></button>`).join("")
-      + `</div><p class="itip-gris">À l'adolescence, le domaine le plus travaillé (par vous deux) devient sa vocation ; à égalité, le hasard tranche. Sans aucune leçon : pas de vocation.</p>`;
-  } else if(e.stade === "ado"){
+  if(e.stade === "ado"){
     h += `<p>Vocation : <b>${e.vocation ? VOCATIONS[e.vocation] || e.vocation : "aucune"}</b>${e.vocation ? "" : " — faute de leçons, pas d'aide."}</p>`;
     if(e.vocation) h += _blocAide(e);
   }
-  h += `<p class="itip-gris">Un geste par jour chacun. Le bien-être perd 10 chaque nuit. Le soir : 70 ou plus → Complicité +1 ; sous 30 → −2. Trois jours entiers à 0 : l'enfant fugue.</p>`;
   return h;
 }
 

@@ -484,7 +484,11 @@ function vaisseauSansRetour(){
 }
 
 async function secoursOrbite(){
-  if(!enEcart()) return false;
+  /* v1.56 — retour de l'autrice : posée sur Le Suaire, son vaisseau a PÉRIMÉ, et
+     « Aucun vaisseau équipé » la bloquait au sol sans recours. Le secours vaut
+     désormais AUSSI sur une sous-carte (La Braise, Le Suaire). */
+  const enSurface = (typeof enSurfaceIci === "function") && enSurfaceIci();
+  if(!enEcart() && !enSurface) return false;
   const cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
   /* v0.92 — TROISIÈME CAS : le vaisseau est intact mais à sec, sans bidon et
      sans de quoi en acheter. Le secours n'existait que pour le vaisseau absent
@@ -520,6 +524,7 @@ async function secoursOrbite(){
      rendue, de quoi rejoindre La Carcasse. Sans vaisseau du tout, en revanche,
      il n'y a plus rien à faire là-haut : retour au sol. */
   if(cloue){
+    if(enSurface){ etat.secteur = "ecart"; etat.surface = null; if(typeof fermerCarteBraise==="function") fermerCarteBraise(); }   // v1.56
     const b = espaceLieu("base");
     if(b) etat.posEspace = { x:b.x, y:b.y };
     if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
@@ -530,6 +535,7 @@ async function secoursOrbite(){
   }
 
   const p = _villeDeMaFaction();
+  if(enSurface){ etat.surface = null; if(typeof fermerCarteBraise==="function") fermerCarteBraise(); }   // v1.56
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
   journal(aSec
