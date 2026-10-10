@@ -279,12 +279,17 @@ async function _ppChargerMur(profilId, sel){
     const rows=msgs||[]; const ids=[...new Set(rows.map(r=>r.auteur_id))];
     const noms={}; if(ids.length){ const {data:pubs}=await sb.from("profils_publics").select("id,nom").in("id",ids); for(const pp of (pubs||[])) noms[pp.id]=pp.nom; }
     if(!rows.length){ z.innerHTML=`<p class="vide">Aucun message sur ce mur.</p>`; return; }
-    z.innerHTML = rows.map(r=>{
+    const blocs = rows.map(r=>{
       const auteur=noms[r.auteur_id]||"(inconnu)";
       const monMur = moiId && (profilId===moiId);
       const peutSuppr = monMur || (typeof estAdmin==="function" && estAdmin());
       return `<div class="mur-msg">${peutSuppr?`<button class="mur-x" data-murx="${r.id}" data-mien="${monMur?1:0}">×</button>`:""}<span class="mur-date itip-gris">${_dateHeure(r.cree_le)}</span> <button class="comm-nom" data-profil="${echapper(auteur||"")}">${echapper(auteur||"?")}</button> <span class="mur-txt">${_formatMur(r.texte)}</span></div>`;
-    }).join("");
+    });
+    /* v1.53 — mur repliable (demande de l'autrice) : les 5 plus récents restent
+       visibles, les plus anciens se déplient d'un clic ou d'un toucher. */
+    const VISIBLES = 5;
+    z.innerHTML = blocs.slice(0, VISIBLES).join("")
+      + (blocs.length > VISIBLES ? `<details class="mur-plus"><summary>Voir les ${blocs.length - VISIBLES} message${blocs.length - VISIBLES > 1 ? "s" : ""} plus ancien${blocs.length - VISIBLES > 1 ? "s" : ""}</summary>${blocs.slice(VISIBLES).join("")}</details>` : "");
     z.querySelectorAll("[data-profil]").forEach(b=>b.addEventListener("click",()=>ouvrirPageProfil(b.dataset.profil)));
     z.querySelectorAll("[data-murx]").forEach(b=>b.addEventListener("click",async()=>{ try{ if(b.dataset.mien==="1"){ await sb.from("mur").delete().eq("id",b.dataset.murx); } else { await sb.rpc("admin_suppr_mur",{p_id:Number(b.dataset.murx)}); } }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#3"); } _ppChargerMur(profilId, sel); }));
   }catch(e){ console.warn("[profil] mur:",e.message); z.innerHTML=`<p class="vide">Mur indisponible.</p>`; }

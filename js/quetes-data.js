@@ -959,7 +959,7 @@ const QUETES = [
           "Il n'y a pas de chemin. Il y a des plaques qui tiennent, et des plaques qui ne tiennent pas. De loin, elles se ressemblent toutes.",
           "Ta radio grésille — Galm, depuis l'orbite, la voix hachée : « …la chaleur, tu la sens au travers des semelles, non ? Les plaques solides sont plus froides. Ton détecteur te dira combien de points chauds touchent chaque plaque que t'as déjà franchie. Sers-t'en. »"
         ],
-        defi:{ type:"traversee", colonnes:6, lignes:7, lave:10, plaques:3,
+        defi:{ type:"traversee", colonnes:6, lignes:7, lave:13, plaques:3,
           texte:["Traverse la croûte jusqu'au bord nord. Chaque plaque franchie t'indique combien de plaques brûlantes la touchent."],
           reussite:[
             "Tu poses le pied sur la roche ferme, de l'autre côté, et tu t'aperçois que tu retenais ta respiration — ce qui, avec l'O₂ que tu as, n'est pas idiot.",
@@ -1089,7 +1089,7 @@ const QUETES = [
           "Les aiguilles d'obsidienne montent deux fois plus haut que ton vaisseau, serrées comme les dents d'un peigne. Entre elles, des couloirs de cendre qui tournent, se referment, repartent. La fumée des Solfatares a dérivé jusqu'ici : tu ne vois pas à dix mètres.",
           "Ta radio crache, puis se tait, puis crache encore. L'obsidienne mange le signal. « …pas le temps de… tourner en rond… » dit Sorn, par morceaux. Tu vas devoir te repérer seul."
         ],
-        defi:{ type:"labyrinthe", colonnes:6, lignes:7,
+        defi:{ type:"labyrinthe", colonnes:7, lignes:8,
           texte:["Traverse le Champ d'aiguilles jusqu'à la station. Tu ne vois que ce que tu as déjà approché."],
           reussite:[
             "Les aiguilles s'écartent d'un coup sur une clairière de cendre, parfaitement ronde. Au centre, un bâtiment bas, sans fenêtre, en métal gris qui n'a pas pris une trace de rouille. Sur la porte, gravé : le carré. Et en dessous, une plaque.",
@@ -1104,8 +1104,8 @@ const QUETES = [
           "La porte est scellée, mais elle n'a pas oublié qu'elle était une porte : son lecteur clignote, capricieux, comme un vieux qui cherche ses mots.",
           "« Un lecteur de service », dit Sorn. « Ils laissaient toujours une voie de maintenance. Tu te souviens, au quai ? Pareil. Le signal passe et repasse : attrape-le au bon moment. »"
         ],
-        defi:{ type:"piratage", manches:3,
-          texte:["Le lecteur de la porte a un canal de maintenance, mal protégé. Il faut le saisir trois fois de suite."],
+        defi:{ type:"piratage", manches:4, vitesse:1800,
+          texte:["Le lecteur de la porte a un canal de maintenance, mal protégé. Il faut le saisir quatre fois de suite."],
           reussite:[
             "La porte s'efface dans le mur sans un bruit. L'intérieur est propre. Pas une cendre. Pas une trace de chaleur. On a brûlé une planète entière autour de cette pièce, et elle n'a pas pris un degré.",
             "Une salle de contrôle. Un pupitre. Un journal de bord, allumé depuis trois siècles, qui attend quelqu'un pour le lire."
@@ -1407,7 +1407,7 @@ const QUETES = [
           "Autour, un anneau de débris tourne lentement : des morceaux de coque, des poutres, des plaques qui se heurtent sans bruit. Certains dérivent, inoffensifs. D'autres tournent encore sur eux-mêmes, assez vite pour trancher une coque.",
           "« Ton capteur de proximité », dit Galm. « Il te dit combien de débris tournent autour de chaque trou que t'as déjà traversé. Faufile-toi. »"
         ],
-        defi:{ type:"traversee", colonnes:6, lignes:7, lave:11, plaques:3,
+        defi:{ type:"traversee", colonnes:6, lignes:8, lave:15, plaques:3,
           texte:["Traverse l'anneau de débris jusqu'à la fente. Chaque passage franchi t'indique combien de débris en rotation le bordent."],
           reussite:[
             "Tu passes la dernière rangée de débris et la fente s'ouvre devant toi, immense : des centaines de mètres de poutres arrachées, de ponts suspendus dans le vide, de hangars éventrés. Et partout, gravé sur les poutres, le carré.",
@@ -1437,7 +1437,7 @@ const QUETES = [
           "Les coursives du port montaient autrefois en spirale vers les bers, là où l'on amarrait les vaisseaux. Le désarmement les a tordues, pliées, fermées. Certaines finissent dans le vide. D'autres sur un mur.",
           "Ta lampe n'éclaire pas loin. La lueur rouge, en dessous, remonte par les grilles du sol."
         ],
-        defi:{ type:"labyrinthe", colonnes:6, lignes:7,
+        defi:{ type:"labyrinthe", colonnes:7, lignes:8,
           texte:["Traverse les coursives effondrées jusqu'aux bers. Tu ne vois que ce que tu as déjà approché."],
           reussite:[
             "La dernière coursive débouche sur une galerie immense, en demi-cercle, où s'alignent des bers vides : des berceaux de métal assez grands pour y coucher un vaisseau chacun. Vides. Tous.",
@@ -1544,7 +1544,7 @@ const QUETES = [
     etapes:[
 
       /* ---- 1. La combinaison — LIVRAISON (non ratable), en orbite ---- */
-      { indice:"À La Carcasse : Galm doit doubler ta combinaison contre le froid du Suaire. Apporte deux lingots de Voltane pour les résistances et de la filaine pour l'isolant.",
+      { indice:"À La Carcasse : Galm doit doubler ta combinaison contre le froid du Suaire. Apporte deux câblages pour les résistances, deux biofils renforcés pour l'isolant et une cellule d'énergie pour les alimenter.",
         cible:{ lieu:"epave" }, leurres:[ { lieu:"base" }, { lieu:"asteroides" }, { lieu:"antenne" } ],
         image:"images/quetes/q12/1.png",
         arrivee:[
@@ -1552,8 +1552,8 @@ const QUETES = [
           "« Et ton vaisseau », ajoute-t-elle, « c'est toujours le seul endroit où tu respires. Froid ou chaud, ça change rien : emporte des recharges. »"
         ],
         defi:{ type:"livraison",
-          objets:{ fab_lingot_de_voltane:2, filaine:4 },
-          texte:["Deux lingots de Voltane pour les résistances chauffantes, quatre de filaine pour doubler l'isolant."],
+          objets:{ fab_cablage:2, fab_biofil_renforce:2, fab_cellule_d_energie:1 },   // v1.54 : objets de plus haut niveau (demande de l'autrice)
+          texte:["Deux câblages pour les résistances chauffantes, deux biofils renforcés pour doubler l'isolant, une cellule d'énergie pour tout alimenter."],
           reussite:[
             "Galm coud, soude, branche. Quand tu enfiles la combinaison, elle est chaude comme un lit. « Te plains pas si ça gratte. »",
             "Adaya, à la radio : « Pose-toi dans la plaine de neige, au milieu. Et cherche le lac. Sur les relevés de la sonde, il y a un lac bleu au sud-est qui ne gèle jamais tout à fait. Un lac qui ne gèle pas, sur une planète de glace, c'est qu'il y a quelque chose de chaud dessous. »"
@@ -1567,7 +1567,7 @@ const QUETES = [
           "La Grande Crevasse coupe le glacier en deux, d'un horizon à l'autre. Au fond, rien : un bleu qui devient noir. Par-dessus, la neige a jeté des ponts — des langues blanches, lisses, qui ont l'air solides. Certaines le sont.",
           "« Les ponts de neige, ça se voit pas », dit Galm depuis l'orbite. « Ton détecteur te dira combien de ponts creux touchent chaque bloc que t'as franchi. Le reste, c'est tes jambes. »"
         ],
-        defi:{ type:"traversee", colonnes:6, lignes:7, lave:10, plaques:3,
+        defi:{ type:"traversee", colonnes:7, lignes:8, lave:17, plaques:3,
           texte:["Franchis la crevasse de bloc en bloc. Chaque bloc solide t'indique combien de ponts creux le bordent."],
           reussite:[
             "Tu prends pied sur l'autre lèvre de la crevasse, et tu te retournes : le dernier pont que tu as évité vient de s'effondrer dans le vide, sans un bruit.",
@@ -1631,7 +1631,7 @@ const QUETES = [
           "L'échelle débouche sur un réseau de galeries creusées dans la glace, voûtées, éclairées par des veilleuses bleues qui n'ont jamais cessé de fonctionner. Le froid est si vif qu'il brûle.",
           "Les galeries se ressemblent toutes. Certaines finissent sur un mur de glace. D'autres descendent encore."
         ],
-        defi:{ type:"labyrinthe", colonnes:6, lignes:7,
+        defi:{ type:"labyrinthe", colonnes:8, lignes:9,
           texte:["Traverse les galeries du Grenier jusqu'à la grande salle. Tu ne vois que ce que tu as déjà approché."],
           reussite:[
             "La dernière galerie s'ouvre sur une salle si grande que ta lampe n'en trouve pas le fond. Des rayonnages, à perte de vue, montent jusqu'à la voûte. Et sur chaque rayonnage, alignés au millimètre, des milliers de bocaux de verre, givrés, étiquetés.",

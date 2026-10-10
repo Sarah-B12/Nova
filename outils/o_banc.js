@@ -46,7 +46,10 @@ const DELAIS = {
   vote: { profil: 50, sac: 50, jauges: 50 },
   niveau: { profil: 50, sac: 50, jauges: 50 },
   v149: { profil: 50, sac: 50, jauges: 50 },
-  v150: { profil: 50, sac: 50, jauges: 50 },     // v1.50 : transmissions épinglées (o_v150.js)     // v1.49 : Poste en transit, nouveaux arrivants (o_v149.js)   // v1.47 : console dev, monter un niveau (o_niveau.js)     // v1.46b : retour du vote (o_vote.js) // v1.46 : briques 4-7 côté client (o_registre2.js) // v1.45 : Registre du Protocole (o_registre.js)   // v1.44 : coiffures en deux morceaux (o_avatar.js) // v1.41 : petites histoires et mini-jeux (o_histoires.js)   // v1.37 : enfants, brique 1 (o_famille.js)
+  v150: { profil: 50, sac: 50, jauges: 50 },
+  mur: { profil: 50, sac: 50, jauges: 50 },
+  v154: { profil: 50, sac: 50, jauges: 50 },
+  v155: { profil: 50, sac: 50, jauges: 50 },     // v1.55 : bannière de Famille (o_v155.js)     // v1.54 : corrections de quêtes et de lieux (o_v154.js)      // v1.53 : mur repliable (o_mur.js)     // v1.50 : transmissions épinglées (o_v150.js)     // v1.49 : Poste en transit, nouveaux arrivants (o_v149.js)   // v1.47 : console dev, monter un niveau (o_niveau.js)     // v1.46b : retour du vote (o_vote.js) // v1.46 : briques 4-7 côté client (o_registre2.js) // v1.45 : Registre du Protocole (o_registre.js)   // v1.44 : coiffures en deux morceaux (o_avatar.js) // v1.41 : petites histoires et mini-jeux (o_histoires.js)   // v1.37 : enfants, brique 1 (o_famille.js)
   intel: { profil: 50, sac: 50, jauges: 50 },     // v1.36ab : bonus de l'Intelligence (o_intel.js)// v1.36u : tri des messages serveur (o_journalcat.js)      // v1.36o : pas de loup, flèches seules (o_loup.js)   // v1.36n : repères des calques (o_calques.js) // v1.36l : boîtes maison (o_dialogues.js)    // v1.36f : conduite en prison (o_prison.js)        // v1.36e : Q7 plus difficile (o_q7.js)      // v1.36d : bannière du donneur (o_banq.js)       // v1.36c : séquence Q3/Q5 (o_seq.js)
 }[SCEN];
 

@@ -278,7 +278,10 @@ function majDescente(){
   const z = document.querySelector("#hub-descente"); if(!z) return;
   const c = surfaceCfg(surOrbitePlanete()); if(!c){ z.innerHTML=""; return; }
   const cs = (typeof coutSaut==="function") ? coutSaut() : null;
+  // v1.54 — bannière hors quête au-dessus de « Descendre » : images/lieux/<braise|suaire>.png
+  const sect = (typeof surOrbitePlanete === "function") ? surOrbitePlanete() : "";
   z.innerHTML = `<h3 style="margin:2px 0">${c.nom}</h3>
+    <div class="lieu-banniere"><img src="images/lieux/${sect}.png" alt="" onerror="this.parentElement.remove()"></div>
     <p class="vide">${c.descente}</p>
     <div class="actions"><button class="action" id="braise-descendre"><span>Descendre — ${c.nom}</span><span class="cout">${cs?`${cs.litres} L carburant · ${cs.energie} % énergie`:"vaisseau requis"}</span></button></div>`;
   const b = z.querySelector("#braise-descendre"); if(b) b.addEventListener("click", descendreBraise);

@@ -11,14 +11,31 @@ function montrerHub(h){
 /* v1.48 — l'auberge a une image PAR FACTION (images/lieux/auberge_<faction>.png),
    avec repli sur images/lieux/auberge.png (v1.50c, ex-images/inn.png) tant que le fichier n'existe pas. */
 function _innBanniere(){
+  /* v1.54 — l'image n'est plus SUPPRIMÉE quand un fichier manque (avant : l'image
+     par défaut, absente, était retirée de la page au chargement, et celle de la
+     faction n'avait plus où s'afficher). Masquée tant que rien ne charge. */
   const img = document.querySelector("#inn-img"); if(!img || typeof etat === "undefined" || !etat.faction) return;
   const voulu = `images/lieux/auberge_${etat.faction}.png`;
   if(img.dataset.voulu === voulu) return;
-  img.dataset.voulu = voulu;
-  img.onerror = () => { img.onerror = () => img.remove(); img.src = "images/lieux/auberge.png"; };
+  img.dataset.voulu = voulu; img.dataset.repli = "";
+  img.onload  = () => { img.hidden = false; };
+  img.onerror = () => {
+    if(!img.dataset.repli){ img.dataset.repli = "1"; img.src = "images/lieux/auberge.png"; }
+    else img.hidden = true;
+  };
   img.src = voulu;
 }
-function changerHub(h){ if(h==="inn") _innBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
+/* v1.54 — bannière de la Boutique : celle du Perchoir (Triptolème) diffère de
+   celle de Silène. Masquée tant que le fichier manque (jamais retirée). */
+function _boutiqueBanniere(){
+  const ban = document.querySelector("#boutique-ban"), img = document.querySelector("#boutique-img"); if(!ban || !img) return;
+  const voulu = (typeof etat !== "undefined" && etat && etat.secteur === "ecart") ? "images/lieux/boutique_perchoir.png" : "images/lieux/boutique.png";
+  if(img.dataset.voulu === voulu) return;
+  img.dataset.voulu = voulu; ban.hidden = true;
+  img.onload = () => { ban.hidden = false; }; img.onerror = () => { ban.hidden = true; };
+  img.src = voulu;
+}
+function changerHub(h){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;

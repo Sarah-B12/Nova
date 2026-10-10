@@ -563,10 +563,25 @@ async function _coqueEnfant(){
   } else _jc(`${qui} voulait réviser ton vaisseau, mais aucun n'est équipé.`, "");
 }
 
+function _faBanniere(c, e, adopt){
+  const ban = c.querySelector("#fa-ban"), img = c.querySelector("#fa-ban-img"); if(!ban || !img) return;
+  const ad = adopt || e.adopte;
+  const essais = e.stade === "attendu" ? [ad ? "famille_adoption" : "famille_naissance"]
+               : (ad ? [`famille_${e.stade}_adoption`, `famille_${e.stade}`] : [`famille_${e.stade}`]);
+  let k = 0;
+  img.onload  = () => { ban.hidden = false; };
+  img.onerror = () => { k++; if(k < essais.length) img.src = `images/couple/${essais[k]}.png`; else ban.hidden = true; };
+  img.src = `images/couple/${essais[0]}.png`;
+}
 function _coupleFamille(c, u){
   const e = (u.enfant && u.enfant.stade !== "aucun") ? u.enfant : null, adopt = _modeEnfant() === "adoption";
   const cachette = u.enfant && u.enfant.cachette;           // v1.39 : peut survivre au départ
-  let h = "";
+  /* v1.55 — bannière TOUT EN HAUT selon le stade (dossier images/couple/) :
+     attendu → famille_naissance.png (couple mixte) ou famille_adoption.png (même
+     genre) ; puis famille_petit / famille_enfant / famille_ado.png, avec une
+     variante _adoption si elle existe (ex. famille_petit_adoption.png). Masquée
+     tant qu'aucun fichier ne charge. */
+  let h = e ? `<div class="lieu-banniere fa-banniere" id="fa-ban" hidden><img id="fa-ban-img" alt=""></div>` : "";
   if(!e){
     h += `<div class="sous-carte fa-carte"><h3>Pas d'enfant à la maison</h3>
       <p>${adopt ? "Pour accueillir un enfant, choisissez tous les deux « Demander à adopter » le même jour (Actions)."
@@ -583,7 +598,6 @@ function _coupleFamille(c, u){
                     enfant:`Encore ${_jours(e.restant)} avant l'adolescence.`,
                     ado:`Encore ${_jours(e.restant)} avant de quitter la maison.` }[e.stade] || "";
     h += `<div class="sous-carte fa-carte"><h3>${titre} <span class="qte">${STADES_ENFANT[e.stade] || ""}</span></h3>
-      <div class="lieu-banniere fa-banniere"><img src="images/famille/${e.stade}.png" alt="" onerror="this.parentElement.remove()"></div>
       <p class="itip-gris">${suite}</p>`;
     if(e.nommable){
       h += `<div class="fa-nom"><input type="text" id="fa-prenom" maxlength="20" placeholder="${e.prenom ? "Actuel : " + echapper(e.prenom) : "Un prénom…"}">
@@ -605,6 +619,7 @@ function _coupleFamille(c, u){
     }).join("") + `</div>`;
   }
   c.innerHTML = h;
+  if(e) _faBanniere(c, e, adopt);
   const b = c.querySelector("#fa-nommer");
   if(b) b.addEventListener("click", async () => {
     const champ = c.querySelector("#fa-prenom");

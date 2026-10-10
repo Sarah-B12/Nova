@@ -1184,16 +1184,25 @@ function _travGenerer(C, L, nLave, rnd){
   rnd = rnd || Math.random;
   const depart = (L-1)*C + Math.floor(C/2);
   const interdits = new Set([depart, ..._travVoisins(depart, C, L)]);
-  for(let essai=0; essai<500; essai++){
+  /* v1.54 — retour de l'autrice : « parfois il suffit d'aller tout droit ».
+     On exige désormais (1) au moins 2 cases brûlantes dans la colonne de départ,
+     (2) un chemin sûr le plus court qui fasse au moins 2 pas de côté. À défaut
+     après 3 000 essais, on garde le dernier tracé simplement faisable. */
+  let secours = null;
+  for(let essai=0; essai<3000; essai++){
     const lave = new Array(C*L).fill(false);
     const libres = [...Array(C*L).keys()].filter(i=>!interdits.has(i));
     for(let k=0; k<nLave && libres.length; k++){ const j=Math.floor(rnd()*libres.length); lave[libres.splice(j,1)[0]] = true; }
-    // Chemin sûr du départ jusqu'à la ligne du haut ?
-    const vu = new Set([depart]), file=[depart]; let ok=false;
-    while(file.length){ const c=file.shift(); if(c < C){ ok=true; break; }
-      for(const n of _travVoisins(c,C,L)) if(!lave[n] && !vu.has(n)){ vu.add(n); file.push(n); } }
-    if(ok) return { lave, depart };
+    // Chemin sûr du départ jusqu'à la ligne du haut ? (avec sa longueur)
+    const dist = new Map([[depart, 0]]), file=[depart]; let d=-1;
+    while(file.length){ const c=file.shift(); if(c < C){ d=dist.get(c); break; }
+      for(const n of _travVoisins(c,C,L)) if(!lave[n] && !dist.has(n)){ dist.set(n, dist.get(c)+1); file.push(n); } }
+    if(d < 0) continue;
+    secours = { lave, depart };
+    let colonne = 0; for(let r=0; r<L-1; r++) if(lave[r*C + (depart % C)]) colonne++;
+    if(colonne >= 2 && d >= (L-1) + 2) return { lave, depart };
   }
+  if(secours) return secours;
   return { lave:new Array(C*L).fill(false), depart };   // filet : jamais atteint en pratique
 }
 function _travCompte(i, lave, C, L){ return _travVoisins(i,C,L).filter(n=>lave[n]).length; }
@@ -1395,12 +1404,17 @@ function _triEtat(d){
 }
 function _htmlTriangulation(d){
   const F=d.fouilles||3, M=d.minReleves||3;
+  // v1.54 — le seuil SÛR, dit au joueur : une fouille réussit à moins de d.precision u.
+  // Avec _triForce (100 − distance÷5, arrondi), un signal de 87 garantit moins de 70 u
+  // (86 peut tomber d'un côté ou de l'autre) : seuil = 101 − precision÷5.
+  const SEUIL = 101 - Math.floor((d.precision||70)/5);
   return `<div class="quete-etape">${_par(d.texte)}
     <p class="quete-indice">Cette épreuve se joue <b>en te déplaçant sur la carte</b>, sans changer d'étape :</p>
     <ol class="quete-indice" style="margin:4px 0 6px 18px;padding:0">
       <li>Relève le signal là où tu es.</li>
       <li>Déplace-toi sur la carte (un autre point de la zone), puis relève encore. Recommence : au moins ${M} relevés, en ${M} endroits différents.</li>
       <li>Plus le chiffre est fort, plus tu es près. Va là où il serait le plus fort, et fouille.</li>
+      <li><b>Une fouille ne réussit que si le signal, là où tu fouilles, atteint au moins ${SEUIL}.</b> En dessous, relève encore et rapproche-toi.</li>
     </ol>
     <p class="itip-gris" style="margin:0 0 6px">${F} fouilles ratées — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
     <div class="quete-rep" style="gap:8px;flex-wrap:wrap">
@@ -1482,23 +1496,36 @@ function _triRelevesHtml(carte){
    Murs en masque de bits (ouvertures) : N=1, E=2, S=4, O=8 (_TUY_DIR).
    Paramètres : d.colonnes (6), d.lignes (7). État : a._lab.
    =========================================================== */
+/* v1.54 — retour de l'autrice : « quasiment aucun embranchement, et la sortie
+   est dite dans l'explication ». Deux changements :
+   · l'arbre grandit depuis une case PRISE AU HASARD parmi les cases ouvertes
+     (et non plus toujours la dernière) : beaucoup plus de bifurcations et
+     d'impasses courtes, au lieu de longs couloirs sans choix ;
+   · la sortie n'est plus fixée en haut à droite : c'est, sur la moitié haute,
+     la case la PLUS ÉLOIGNÉE du départ en chemin réel. */
 function _labGenerer(C, L, rnd){
   rnd = rnd || Math.random;
-  const ouv=new Array(C*L).fill(0), vu=new Set(), pile=[(L-1)*C];
-  vu.add(pile[0]);
-  while(pile.length){
-    const i=pile[pile.length-1], x=i%C, y=Math.floor(i/C);
+  const depart=(L-1)*C, ouv=new Array(C*L).fill(0), vu=new Set([depart]), actifs=[depart];
+  while(actifs.length){
+    const k = rnd() < 0.75 ? Math.floor(rnd()*actifs.length) : actifs.length-1;   // surtout au hasard
+    const i=actifs[k], x=i%C, y=Math.floor(i/C);
     const libres=_TUY_DIR.filter(d=>{ const nx=x+d.dx, ny=y+d.dy; return nx>=0&&nx<C&&ny>=0&&ny<L && !vu.has(ny*C+nx); });
-    if(!libres.length){ pile.pop(); continue; }
+    if(!libres.length){ actifs.splice(k,1); continue; }
     const d=libres[Math.floor(rnd()*libres.length)], n=(y+d.dy)*C+(x+d.dx);
-    ouv[i]|=d.b; ouv[n]|=d.op; vu.add(n); pile.push(n);
+    ouv[i]|=d.b; ouv[n]|=d.op; vu.add(n); actifs.push(n);
   }
-  return { ouv, pos:(L-1)*C, sortie:C-1, vus:[(L-1)*C] };
+  // Sortie : la case de la moitié haute la plus éloignée du départ (en pas).
+  const dist=new Map([[depart,0]]), file=[depart];
+  while(file.length){ const c=file.shift(), x=c%C, y=Math.floor(c/C);
+    for(const d of _TUY_DIR) if(ouv[c]&d.b){ const n=(y+d.dy)*C+(x+d.dx); if(!dist.has(n)){ dist.set(n, dist.get(c)+1); file.push(n); } } }
+  let sortie=C-1, best=-1;
+  for(const [c,v] of dist) if(Math.floor(c/C) < Math.ceil(L/2) && v > best){ best=v; sortie=c; }
+  return { ouv, pos:depart, sortie, vus:[depart] };
 }
 function _htmlLabyrinthe(d){
   const C=d.colonnes||6;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Tape une case voisine, sans mur entre les deux, pour avancer. Tu ne vois que ce que tu as déjà approché. La sortie ◆ est quelque part en haut à droite.</p>
+    <p class="quete-indice">Tape une case voisine, sans mur entre les deux, pour avancer. Tu ne vois que ce que tu as déjà approché. Quelque part dans le champ, une sortie ◆ : à toi de la trouver.</p>
     <div id="q-lab" style="display:grid;grid-template-columns:repeat(${C},1fr);gap:0;max-width:420px;margin:10px auto 0;touch-action:manipulation;border:3px solid #6b6457"></div>
   </div>`;
 }
