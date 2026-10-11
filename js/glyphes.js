@@ -38,12 +38,22 @@ const GLYPHES_ANCIEN = {
   PART:["S",""],        CES:["S","point"],       ME:["S","miroir"],
   MENT:["I",""],        POSTE:["I","point"],     CU:["I","renverse"],
   ATION:["O",""],       CON:["O","point"],
-  CAL:["C",""],         RESTREINT:["C","point"]
+  CAL:["C",""],         RESTREINT:["C","point"],
+  // — v1.64 : la balise sous la glace (H43, LORE §11 bis) —
+  RE:["C","barre"],      MANDE:["L","renverse"],  SERV:["D","barre"]
 };
-/* Formes ENCORE SANS SON (pour les prochains) : ["C","barre"] (Χ barré).
-   À éviter : ["T","trait"] (Θ traversé, trop proche de Φ au doigt). */
+/* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
+   nettement distinctes, ex. ["L","barre"] (Λ barré), ["O","barre"] (Ω barré).
+   À éviter : ["T","trait"] (Θ traversé, trop proche de Φ au doigt), et les
+   formes symétriques dont le miroir ou le renversement ne change rien. */
 function glypheSVG(son){
   const g = GLYPHES_ANCIEN[son]; if(!g) return `<span class="gly-inconnu">?</span>`;
+  return glypheFormeSVG(g);
+}
+/* v1.64 — dessiner une FORME [base, variante] sans connaître son son (le
+   mini-jeu « Le message » ne reçoit que la forme du son à deviner). */
+function glypheFormeSVG(g){
+  if(!Array.isArray(g) || !_GLY_BASES[g[0]]) return `<span class="gly-inconnu">?</span>`;
   const [b, v] = g; const d = _GLY_BASES[b];
   const tr = v==="renverse" ? ` transform="translate(0 32) scale(1 -1)"` : (v==="miroir" ? ` transform="translate(24 0) scale(-1 1)"` : "");
   let plus = "";

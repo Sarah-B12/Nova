@@ -1,0 +1,32 @@
+// v1.66 — Drones de surveillance (node outils/o_banc.js . drones)
+(async function(){
+  const r = {};
+  await new Promise(x => setTimeout(x, 1500));
+  const appels = [];
+  confirmerJoli = async () => true;
+  let LIRE = { ok:true, actifs:1, drones:[new Date(Date.now() + 5.5 * 864e5).toISOString()], prix:2000, caisse:2500 };
+  let NIV = { ok:true, faction:etat.faction, niveau:2 };
+  const orig = sb.rpc.bind(sb);
+  sb.rpc = (nom, a) => { appels.push(nom);
+    if(nom === "regent_drones_lire") return Promise.resolve({ data:LIRE, error:null });
+    if(nom === "regent_drone_acheter") return Promise.resolve({ data:{ ok:true, prix:2000, actifs:2 }, error:null });
+    if(nom === "surveillance_niveau") return Promise.resolve({ data:NIV, error:null });
+    return orig(nom, a); };
+  const z = document.createElement("div"); document.body.appendChild(z);
+  await _rendreDronesRegent(z);
+  const t = () => z.textContent.replace(/\s+/g, " ");
+  r.section = t().includes("Drones de surveillance") && t().includes("Drone 1 — encore 6 jours");
+  r.bouton = z.querySelector("#reg-drone-acheter").textContent === "Acheter un drone — 2000 ₡";
+  z.querySelector("#reg-drone-acheter").click(); await new Promise(x => setTimeout(x, 80));
+  r.achat = appels.includes("regent_drone_acheter");
+  LIRE = { ok:true, actifs:3, drones:[], prix:null, caisse:9000 }; await _rendreDronesRegent(z);
+  r.trois = t().includes("Trois drones veillent déjà.");
+  LIRE = { ok:true, actifs:0, drones:[], prix:1000, caisse:300 }; await _rendreDronesRegent(z);
+  r.caissePauvre = z.querySelector("#reg-drone-acheter").disabled && t().includes("La caisse n'y suffit pas (300 ₡).");
+  LIRE = { ok:false, err:"pas_regent" }; await _rendreDronesRegent(z);
+  r.pasRegent = z.innerHTML === "";
+  r.marcheSienne = (await _htmlSurveillanceMarche(etat.faction)).includes("Bien gardé");
+  r.marcheAutre = (await _htmlSurveillanceMarche("zzz")) === "";
+  NIV.niveau = 0; r.sansGardien = (await _htmlSurveillanceMarche(etat.faction)).includes("Les vitrines dorment");
+  return r;
+})();

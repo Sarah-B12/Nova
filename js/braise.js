@@ -192,6 +192,7 @@ async function voyagerBraise(x, y){
      la carte tirée en a (plus fréquentes, plus fortes : patrouille.js/actions.js).
      La Braise et Le Suaire restent sans patrouille le reste du temps. */
   if(typeof debrisApresDeplacement==="function") debrisApresDeplacement();
+  if(typeof missionsApresPas==="function") missionsApresPas();   // v1.65 : relevé de l'entrepôt (H49)
   if(typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci() && typeof tenterPatrouille==="function") tenterPatrouille();
 }
 
@@ -251,6 +252,7 @@ function majCarteBraise(){
       <text x="${l.x}" y="${l.y + l.r + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">${vaiss?"🚀 ":""}${l.nom}</text></g>`;
   }
   if(typeof marqueursQueteCarteHtml==="function") h += marqueursQueteCarteHtml(etat.secteur);
+  if(typeof missionsMarqueursCarte==="function") h += missionsMarqueursCarte(etat.secteur);   // v1.64 : la balise (H37)
   const p = posSurface(), col = (FACTIONS.find(f=>f.id===etat.faction)||{}).couleur || "#ff9a44";
   h += `<circle cx="${p.x}" cy="${p.y}" r="15" fill="#0a1730" stroke="${col}" stroke-width="4"/><circle cx="${p.x}" cy="${p.y}" r="6" fill="${col}"/>`;
   svg.innerHTML = h;
@@ -264,7 +266,7 @@ function majCarteBraise(){
     const ret = coutRetourVaisseau();
     info.innerHTML = abord
       ? `<b>À bord de ton vaisseau.</b> <span class="itip-gris">Ici tu respires. Dehors, chaque pas coûte de l'O₂.</span>`
-      : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>À découvert.</b>"} <span class="itip-gris">· retour au vaisseau : ${ret} O₂</span>`;
+      : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:((typeof missionsLieuIci==="function" && missionsLieuIci()) || "<b>À découvert.</b>")} <span class="itip-gris">· retour au vaisseau : ${ret} O₂</span>`;
   }
   const bb = document.querySelector("#braise-bord"), bd = document.querySelector("#braise-decoller");
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }

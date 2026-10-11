@@ -154,7 +154,8 @@ function _ligneRetour(o){
 }
 
 function _vueEnvoyer(){
-  const sac = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(a.id)));   // v0.97
+  const sac = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && !(typeof estObjetLie==="function" && estObjetLie(a.id))
+                                 && !(typeof estObjetPersonnel==="function" && estObjetPersonnel(a.id)));   // v0.97 ; v1.63 : objets personnels (H32)
   const opts = sac.map(a=>`<option value="${a.id}">${a.nom} (×${etat.sac[a.id]})</option>`).join("");
   return `<div class="poste-envoi">
     <input type="text" id="poste-dest" placeholder="Destinataire (pseudo)" maxlength="24">

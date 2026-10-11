@@ -42,6 +42,7 @@ const DEV_ONGLETS = [
   { id:"evts", nom:"Événements", devSeul:true, sections:[
     { id:"calendrier", titre:"📅 À venir", items:[] },
     { id:"debris", titre:"☄️ Chute de débris (test)", items:[ { sel:"#dev-debris-lancer", bloc:true, titre:false } ] },
+    { id:"missions", titre:"🎯 Missions", items:[ { sel:"#dev-mis-lancer", bloc:true, titre:false } ] },   // v1.61
     { id:"expe", titre:"⚔️ Expédition (test)", items:[ { sel:"#dev-exp-avancer", bloc:true, titre:false } ] },
     { id:"proto", titre:"🤖 Protocole (debug)", items:[ { sel:"#dev-proto", bloc:true, titre:false } ] },
     { id:"tous", titre:"⚠️ Touche TOUS les joueurs", danger:true, note:"Ces boutons agissent sur <b>tous les profils</b>, pas seulement sur toi.", items:[
@@ -105,6 +106,20 @@ async function _devChargerCalendrier(){
   // v1.46 — Registre (v171) : jours de forteresse, secrets pour les joueurs.
   for(const f of (d.forteresses || [])) L.push({ t:J(f), quand:fj(f), quoi:"🏰 Jour de forteresse", detail:"quai barricadé : défense du Protocole 250 (plafond 400), pour toutes les factions" });
   for(const x of d.expeditions) L.push({ t:J(x.date), quand:fh(x.date), quoi:"⚔️ Expédition", detail:`${echapper(String(x.faction||"?"))} → ${echapper(String(x.cible||"?"))} (${echapper(String(x.objectif||"?"))})` });
+  // v1.61 — missions (v182) : prévues (date secrète pour les joueurs), en recrutement, en cours.
+  if(Array.isArray(d.missions)){
+    const st = { prevue:"prévue", recrutement:"recrutement", en_cours:"en cours" };
+    for(const m of d.missions){
+      const nom = (typeof DEV_MISSIONS!=="undefined" && DEV_MISSIONS[m.type]) || m.type;
+      const fin = m.recrutement_fin ? ` · recrutement clos le ${fj(m.recrutement_fin)}` : "";
+      L.push({ t:J(m.jour), quand:fj(m.jour), quoi:`🎯 ${m.type==="casse"?"Casse":"Mission"} : ${echapper(nom)}`,
+               detail:`${st[m.statut]||m.statut}${m.test?" · <i>test dev</i>":""}${m.recruteur?" · recruteur : "+echapper(m.recruteur):""} · ${m.groupes} groupe(s)${fin}` });
+    }
+    _devMisActif = !!d.missions_actif;
+    const e = document.querySelector("#dev-mis-etat");
+    if(e) e.innerHTML = `File : <b>${d.missions_actif ? "allumée" : "éteinte"}</b> · ouvertes : ${(d.missions_ouvertes||[]).map(t=>DEV_MISSIONS[t]||t).join(", ") || "aucune"}.`;
+    document.querySelectorAll("[data-mis-ouv]").forEach(c=>{ c.checked = (d.missions_ouvertes||[]).includes(c.dataset.misOuv); });
+  }
   // Élections : prochain cycle
   const auj = J(d.jour), jm = auj.getDate();
   const debMois = (dt, n) => new Date(dt.getFullYear(), dt.getMonth() + n, 1, 12);
@@ -467,6 +482,18 @@ function majDev(){
         <div class="dev-champ"><select id="dev-debris-carte"><option value="">Au hasard</option><option value="braise">La Braise</option><option value="suaire">Le Suaire</option><option value="silene">Silène</option></select>
           <button class="mini" id="dev-debris-lancer">Lancer maintenant</button><button class="mini danger" id="dev-debris-arreter">Arrêter</button></div>
         <p class="dev-note">Commence <b>aujourd'hui</b>, pour 3 jours, <b>visible par toi seul</b> (l'annonce n'arrive qu'à toi ; les joueurs ne voient rien). Relancer remplace ta chute de test. <b>Arrêter</b> ne touche jamais l'événement du mois.</p></div>`;   // v1.31
+      // v1.61 — Missions (v182-v183, H4, H8).
+      h += `<div class="dev-bloc"><h4>Missions</h4>
+        <p class="dev-note" id="dev-mis-etat">État : ouvre l'onglet pour le lire.</p>
+        <div class="dev-champ"><button class="mini" id="dev-mis-switch">Allumer / éteindre la file</button></div>
+        <div class="dev-champ">${Object.entries(DEV_MISSIONS).map(([k,n])=>`<label style="white-space:nowrap"><input type="checkbox" data-mis-ouv="${k}"> ${n}</label>`).join(" ")}
+          <button class="mini" id="dev-mis-ouv">Enregistrer les missions ouvertes</button></div>
+        <div class="dev-champ"><select id="dev-mis-type">${Object.entries(DEV_MISSIONS).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select>
+          <input id="dev-mis-comptes" placeholder="Comptes invités au test (séparés par des virgules)" style="min-width:16em">
+          <button class="mini" id="dev-mis-lancer">Lancer un test</button><button class="mini danger" id="dev-mis-arreter">Arrêter mon test</button></div>
+        <div class="dev-champ"><span class="dev-note">Mon groupe parti (test) :</span>
+          <button class="mini" data-mis-fin="1">Réussi</button><button class="mini danger" data-mis-fin="0">Raté</button></div>
+        <p class="dev-note"><b>File</b> : éteinte, rien ne surgit ; à l'allumage, la 1<sup>re</sup> mission tombe 3 à 7 jours plus tard (H4). Seules les missions <b>ouvertes</b> sont tirées. <b>Test</b> : surgit tout de suite, pour toi et les comptes nommés seulement ; il ne touche pas la file (H8). Relancer remplace ton test ; l'arrêter rend le matériel déposé (au coffre de la maison).</p></div>`;
       h += `<div class="dev-bloc"><h4>Staff actuel</h4><div id="dev-staff"><p class="dev-note">Chargement…</p></div></div>`;
       h += `<div class="dev-bloc"><h4>Expédition (test)</h4><p class="dev-note">Avance l'échéance de l'expédition de ta faction à <b>maintenant</b>. Le cron la résoudra à la minute suivante, exactement comme en vrai.</p><div class="dev-champ"><button class="mini" id="dev-exp-avancer">Avancer l'échéance à maintenant</button></div></div>`;
       // (Le journal admin a son propre onglet — l'onglet Gouvernement était trop long.)
@@ -504,6 +531,12 @@ function majDev(){
     const _paB = g.querySelector("#dev-pa-btn"); if(_paB) _paB.addEventListener("click", devDonnerPA);   // v1.26
     const _dbL = g.querySelector("#dev-debris-lancer");  if(_dbL) _dbL.addEventListener("click", devDebrisLancer);    // v1.31
     const _dbA = g.querySelector("#dev-debris-arreter"); if(_dbA) _dbA.addEventListener("click", devDebrisArreter);   // v1.31
+    // v1.61 — Missions
+    const _msS = g.querySelector("#dev-mis-switch"); if(_msS) _msS.addEventListener("click", devMissionsSwitch);
+    const _msO = g.querySelector("#dev-mis-ouv"); if(_msO) _msO.addEventListener("click", devMissionsOuvertes);
+    const _msL = g.querySelector("#dev-mis-lancer"); if(_msL) _msL.addEventListener("click", devMissionLancer);
+    const _msA = g.querySelector("#dev-mis-arreter"); if(_msA) _msA.addEventListener("click", devMissionArreter);
+    g.querySelectorAll("[data-mis-fin]").forEach(b=>b.addEventListener("click", ()=>devMissionFinir(b.dataset.misFin==="1")));
     const ab=g.querySelector("#dev-adm-btn"); if(ab) ab.addEventListener("click", devDefinirRole);
     if(typeof estDev==="function" && estDev()){ _devChargerProto(); _devChargerStaff(); g.querySelectorAll("[data-phase]").forEach(b=>b.addEventListener("click",()=>devForcerPhase(b.dataset.phase||null))); const bre=g.querySelector("#dev-reset-elec"); if(bre) bre.addEventListener("click", devResetElection); const bea=g.querySelector("#dev-exp-avancer"); if(bea) bea.addEventListener("click", devAvancerExpedition); }
   }
@@ -519,6 +552,58 @@ async function devDonnerPA(){
   if(error || !res || !res.ok){ alert("Échec : "+((res&&res.err)||(error&&error.message)||"?")); return; }
   journal(`[DEV] ${n} PA donné${n>1?"s":""} à ${res.nom}.`,"alerte");
   if(id === (typeof _monId!=="undefined" ? _monId : null)) aptConsommerDons();
+}
+/* v1.61 — MISSIONS (v182-v183). Noms : reflet de mission_types (console seulement). */
+const DEV_MISSIONS = { bouture:"La bouture capricieuse", balise:"La balise sous la glace", infiltration:"L'infiltration",
+                       casse:"Le casse", satellite:"Le satellite à la dérive" };
+let _devMisActif = false;
+function _devMisErr(res, error){ alert("Échec : "+((res&&res.err)||(error&&error.message)||"?")+(res&&res.noms?" ("+res.noms.join(", ")+")":"")); }
+async function _devMisApres(){
+  if(typeof missionsCharger==="function") await missionsCharger();
+  if(typeof syncEffetsCombat==="function") await syncEffetsCombat();   // relève l'annonce tout de suite
+  if(typeof missionsRedessiner==="function") missionsRedessiner();
+  _devChargerCalendrier();
+}
+async function devMissionsSwitch(){
+  const vers = !_devMisActif;
+  if(!confirm(vers ? "ALLUMER la file des missions ? La première tombera dans 3 à 7 jours, pour tous les joueurs." : "ÉTEINDRE la file ? Les dates prévues sont annulées ; ce qui est en cours va à son terme.")) return;
+  const { data:res, error } = await sb.rpc("admin_missions_switch", { p_actif:vers });
+  if(error || !res || !res.ok){ _devMisErr(res, error); return; }
+  journal(`[DEV] File des missions ${vers ? "allumée" : `éteinte (${res.annulees} date(s) annulée(s))`}.`, "alerte");
+  _devChargerCalendrier();
+}
+async function devMissionsOuvertes(){
+  const types = [...document.querySelectorAll("[data-mis-ouv]")].filter(c=>c.checked).map(c=>c.dataset.misOuv);
+  const { data:res, error } = await sb.rpc("admin_missions_ouvertes", { p_types:types });
+  if(error || !res || !res.ok){ _devMisErr(res, error); return; }
+  journal(`[DEV] Missions ouvertes : ${(res.ouvertes||[]).map(t=>DEV_MISSIONS[t]||t).join(", ") || "aucune"}.`, "alerte");
+  _devChargerCalendrier();
+}
+async function devMissionLancer(){
+  const type = (document.querySelector("#dev-mis-type")||{}).value;
+  const comptes = ((document.querySelector("#dev-mis-comptes")||{}).value||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const { data:res, error } = await sb.rpc("admin_mission_lancer", { p_type:type, p_comptes:comptes });
+  if(error || !res || !res.ok){ _devMisErr(res, error); return; }
+  journal(`[DEV] Mission de test lancée : ${DEV_MISSIONS[type]||type} (${res.comptes} compte(s)).`, "alerte");
+  await _devMisApres();
+}
+async function devMissionArreter(){
+  const { data:res, error } = await sb.rpc("admin_mission_arreter");
+  if(error || !res || !res.ok){ _devMisErr(res, error); return; }
+  journal(`[DEV] Mission de test arrêtée (${res.arretes}).`, "alerte");
+  if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
+  await _devMisApres();
+}
+async function devMissionFinir(reussi){
+  if(typeof missionsCharger==="function") await missionsCharger();
+  const ms = (typeof _missions!=="undefined" && _missions && _missions.missions) || [];
+  const m = ms.find(x=>x.test && x.mon_groupe && (x.groupes||[]).some(g=>g.id===x.mon_groupe && g.statut==="lance"));
+  if(!m){ alert("Aucun groupe parti dans une mission de test dont tu fais partie."); return; }
+  const { data:res, error } = await sb.rpc("admin_mission_groupe_finir", { p_groupe:m.mon_groupe, p_reussi:reussi });
+  if(error || !res || !res.ok){ _devMisErr(res, error); return; }
+  journal(`[DEV] Groupe ${m.mon_groupe} : ${reussi ? "réussi" : "raté"}.`, "alerte");
+  if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
+  await _devMisApres();
 }
 /* v1.31 — chute de débris de TEST (admin_debris_lancer / admin_debris_arreter). */
 async function devDebrisLancer(){

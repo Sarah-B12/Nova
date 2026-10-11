@@ -130,6 +130,8 @@ setInterval(() => { if(etat.inscrit && typeof compterPoste==="function") compter
 setInterval(() => { if(etat.inscrit && typeof compterAnnonce==="function") compterAnnonce(); }, 60000);
 setInterval(() => { if(_pretASynchro() && typeof syncPrison==="function") syncPrison(); }, 60000);
 setInterval(() => { if(_pretASynchro() && typeof syncEffetsCombat==="function") syncEffetsCombat(); }, 60000);
+// v1.61 — missions : groupes, invitations et gains changent sans message (un coéquipier rejoint, dépose…).
+setInterval(() => { if(_pretASynchro() && typeof missionsCharger==="function") missionsCharger().then(() => { if(typeof missionsRedessiner==="function") missionsRedessiner(); }); }, 120000);
 /* v0.66 — le sac ne se relisait qu'au CHARGEMENT : un objet offert par la
    console du staff, ou tout ajout venu du serveur, n'apparaissait qu'après un
    rafraîchissement manuel. On relit périodiquement (sac_lire est peu coûteux),
@@ -178,6 +180,8 @@ async function syncApresConnexion(){
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
   // v1.35 : l'abandon du terrain est appliqué par le serveur (terrain_lire, via chargerIntegrite).
   if(typeof debrisCharger==="function") t.push(debrisCharger());   // v1.31 : chute de débris en cours
+  if(typeof missionsCharger==="function") t.push(missionsCharger());   // v1.61 : missions (H18 : affaires en cours)
+  if(typeof modulesVaisseauCharger==="function") t.push(modulesVaisseauCharger());   // v1.64 : régulateur d'AREPO
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause

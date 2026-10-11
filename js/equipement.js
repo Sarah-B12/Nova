@@ -26,6 +26,7 @@ function armeSlotBloque(slotId){ const a=autreArme(slotId); return !!(a && etat.
 // À quel emplacement va un objet (ou null si non équipable).
 function slotEquip(id){
   const it = item(id); if(!it) return null;
+  if(id === "cape_voleur") return "torse";   // v1.67 : à la place du plastron (H63)
   const n = (it.nom||"").toLowerCase();
   if(n.includes("casque")) return "tete";
   if(n.includes("plastron")) return "torse";

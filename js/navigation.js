@@ -71,6 +71,9 @@ function majHub(){
     : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false, arene:false,
         boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
         quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
+  /* v1.61 — H18 : une affaire de mission en cours (groupe, invitation, gain)
+     ouvre le lieu Quêtes PARTOUT, pour la suivre loin du comptoir. */
+  if(typeof missionsAffaireEnCours==="function" && missionsAffaireEnCours()) dispo.quete = true;
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){

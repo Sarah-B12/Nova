@@ -333,7 +333,7 @@ async function majAnnonceFaction(el){
 }
 
 let _bureauVue = null;
-function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre",concertation:"Concertation"}[b]||b; }
+function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_guerre:"Stratège",espion:"Ombre",concertation:"Concertation",chronique:"Chronique"}[b]||b; }
 
 /* ===========================================================
    CONCERTATION — discussion entre les quatre charges d'une faction.
@@ -344,6 +344,71 @@ function _bureauNom(b){ return {regent:"Régent",architecte:"Architecte",chef_gu
    Messages effacés au bout de 5 jours (gouv_chat_purge, cron horaire).
    =========================================================== */
 let _concRendu = 0, _concTimer = null;
+
+/* ===========================================================
+   v1.66 — DRONES DE SURVEILLANCE (C4, C15, C21). Le Régent seul les achète,
+   avec la caisse : 3 au plus, 1 000 / 2 000 / 3 000 ₡, 20 jours chacun.
+   Serveur : regent_drones_lire / regent_drone_acheter (v188) ; l'achat et
+   l'usure vont à la Chronique. Ils renforcent la surveillance du marché de
+   la cité contre un casse (+20 % chacun, C17).
+   =========================================================== */
+async function _rendreDronesRegent(z){
+  if(!z) return;
+  let d = null; try{ ({ data:d } = await sb.rpc("regent_drones_lire")); }catch(e){ return; }
+  if(!d || !d.ok){ z.innerHTML = ""; return; }
+  const jours = iso => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
+  let h = `<h4 class="gsec">Drones de surveillance</h4>
+    <p class="itip-gris" style="margin:0 0 6px">Ils veillent sur le marché de ta cité : plus il y en a, plus un casse y est difficile. Trois au plus, 20 jours chacun, payés par la caisse.</p>`;
+  h += (d.drones || []).length ? `<p style="margin:0 0 6px">${d.drones.map((e, i) => `Drone ${i + 1} — encore ${jours(e)} jour${jours(e) > 1 ? "s" : ""}`).join(" · ")}</p>`
+                               : `<p class="vide" style="margin:0 0 6px">Aucun drone ne veille.</p>`;
+  h += d.prix ? `<div class="actions"><button class="mini" id="reg-drone-acheter"${(d.caisse || 0) < d.prix ? " disabled" : ""}>Acheter un drone — ${d.prix} ₡</button>${(d.caisse || 0) < d.prix ? ` <span class="itip-gris">La caisse n'y suffit pas (${d.caisse || 0} ₡).</span>` : ""}</div>`
+              : `<p class="vide">Trois drones veillent déjà.</p>`;
+  z.innerHTML = h;
+  const b = z.querySelector("#reg-drone-acheter");
+  if(b) b.addEventListener("click", async () => {
+    const ok = (typeof confirmerJoli === "function")
+      ? await confirmerJoli("Drone de surveillance", `Acheter un drone de surveillance pour ${d.prix} ₡ (caisse de la faction) ? Il veillera 20 jours.`, "Acheter")
+      : confirm("Acheter ?");
+    if(!ok) return;
+    b.disabled = true;
+    const { data:r } = await sb.rpc("regent_drone_acheter");
+    if(!r || !r.ok){ journal(r && r.err === "caisse" ? `La caisse de la faction n'y suffit pas (${r.prix} ₡).` : "Achat impossible.", "alerte", "faction"); }
+    else journal(`Drone de surveillance acheté (${r.prix} ₡) : ${r.actifs} actif${r.actifs > 1 ? "s" : ""}.`, "gain", "faction");
+    _rendreDronesRegent(z);
+  });
+}
+
+/* ===========================================================
+   v1.62 — CHRONIQUE (G18, H19-H22) : ce que les charges ont fait, ligne par
+   ligne, et ce qui est arrivé aux plaintes et aux fragments. Serveur :
+   chronique_lire() (v184), qui revérifie l'appartenance au gouvernement.
+   Toute la Chronique de la faction, prédécesseurs compris ; 20 jours.
+   Chaque ligne garde le nom et la charge de son auteur AU MOMENT DES FAITS ;
+   les lignes sans auteur sont des faits, pas des actes (classement d'office,
+   capture, fragment). ⚠ Texte serveur : rendreLibelles + joliserItems.
+   =========================================================== */
+async function _rendreChronique(z, fac){
+  z.innerHTML = `<h3>Chronique — ${_gouvFacNom(fac)}</h3>
+    <p class="itip-gris" style="margin:0 0 8px">Ce que le gouvernement a fait, visible des seules charges de ta faction. Les lignes s'effacent au bout de <b>20 jours</b>.</p>
+    <div id="chro-liste"><p class="vide">Chargement…</p></div>`;
+  const zl = z.querySelector("#chro-liste");
+  let d = null;
+  try{ const r = await sb.rpc("chronique_lire"); if(r.error) throw r.error; d = r.data; }
+  catch(e){ zl.innerHTML = `<p class="vide">Chronique indisponible.</p>`; if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#chronique"); return; }
+  if(!d || !d.ok){ zl.innerHTML = `<p class="vide">La Chronique est réservée aux charges du gouvernement.</p>`; return; }
+  const lignes = d.lignes || [];
+  if(!lignes.length){ zl.innerHTML = `<p class="vide">Rien n'a encore été consigné.</p>`; return; }
+  const quand = s => new Date(s).toLocaleString("fr-FR", { weekday:"short", day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  const rendre = t => { let x = echapper(String(t||"")); if(typeof rendreLibelles==="function") x = rendreLibelles(x); if(typeof joliserItems==="function") x = joliserItems(x); return x; };
+  zl.innerHTML = lignes.map(l => `<div class="chro-ligne"><span class="chro-quand">${quand(l.quand)}</span>
+      ${l.auteur ? `<b>${echapper(l.auteur)}</b>${l.role ? ` <span class="itip-gris">(${_bureauNom(l.role)})</span>` : ""} — ` : ""}${rendre(l.texte)}</div>`).join("");
+}
+(function(){
+  const st = document.createElement("style");
+  st.textContent = `.chro-ligne{ padding:6px 0; border-bottom:1px solid var(--line); line-height:1.45; }
+    .chro-quand{ display:inline-block; min-width:9.5em; margin-right:6px; font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine,#8b95a8); }`;
+  document.head.appendChild(st);
+})();
 
 async function _rendreConcertation(z, fac){
   const jeton = ++_concRendu;
@@ -756,6 +821,11 @@ async function syncEffetsCombat(){
          l'historique de l'arène, lui, est une table serveur et a survécu. */
       if(typeof sauverMaintenant==="function") await sauverMaintenant();
       else if(typeof sauvegarder==="function") sauvegarder();
+      // v1.61 — un message de mission (cat `quete`) : on relit les missions.
+      if(evs.some(ev=>ev && ev.cat==="quete") && typeof missionsCharger==="function"){
+        await missionsCharger();
+        if(typeof missionsRedessiner==="function") missionsRedessiner();
+      }
     }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }
@@ -773,6 +843,7 @@ async function _rendreBureauRegent(el, fac){
   const facOpts=(typeof FACTIONS!=="undefined"?FACTIONS:[]).filter(f=>f.id!==fac).map(f=>`<option value="${f.id}">🔒 Privé — régence de ${f.nom}</option>`).join("");
   const facNom=id=>((typeof FACTIONS!=="undefined"?FACTIONS:[]).find(x=>x.id===id)||{}).nom||id;
   let h=`<h3>Bureau du Régent</h3><div id="reg-plaintes"></div>`;   // v1.23 : plaintes (traque.js)
+  h+=`<div id="reg-drones"></div>`;   // v1.66 : drones de surveillance (C15, C21), entre les plaintes et les annonces
   h+=`<div id="reg-nouveaux"></div>`;   // v1.49 : nouveaux arrivants (regent_nouveaux, v175), rempli juste après
   h+=`<h4 class="gsec">Annonce officielle (vue par tes membres)</h4>`;
   h+=`<div class="mur-outils" id="reg-ann-outils"></div><textarea id="reg-annonce" class="gouv-textarea" rows="3" placeholder="Message à ta faction…">${((_regForm.annonce!=null?_regForm.annonce:(annonce||""))).replace(/</g,"&lt;")}</textarea><div><button class="mini" id="reg-ann-pub">Publier l'annonce</button></div>`;
@@ -795,6 +866,7 @@ async function _rendreBureauRegent(el, fac){
   el.innerHTML=h;
   if(typeof rendrePlaintesRegent==="function") rendrePlaintesRegent(el.querySelector("#reg-plaintes"));   // v1.23, sans await
   _rendreNouveaux(el.querySelector("#reg-nouveaux"));                                                         // v1.49, sans await
+  _rendreDronesRegent(el.querySelector("#reg-drones"));                                                       // v1.66, sans await
   _rendreEpingles(el.querySelector("#reg-epingles"));                                                         // v1.50, sans await
   if(typeof _remplirBarreMur==="function"){ _remplirBarreMur("#reg-ann-outils"); if(typeof _brancherOutilsMur==="function") _brancherOutilsMur("#reg-annonce","#reg-ann-outils"); }
   _brouillon(el, "#reg-annonce", "annonce", _regForm, "input");
@@ -930,11 +1002,11 @@ async function majBureau(el){
   /* Onglet commun aux quatre charges : la Concertation appartient au
      GOUVERNEMENT, pas à un rôle. Ajouté en fin de menu pour ne pas déplacer
      les repères des joueurs habitués. */
-  bureaux = bureaux.concat(["concertation"]);
+  bureaux = bureaux.concat(["concertation","chronique"]);   // v1.62 : la Chronique (G18, H19), après la Concertation
   if(!_bureauVue || !bureaux.includes(_bureauVue)) _bureauVue = bureaux[0];
   let h="";
   if(bureaux.length>1) h += `<div class="bur-menu">`+bureaux.map(b=>`<button class="bur-lien${_bureauVue===b?" actif":""}" data-bur="${b}">${_bureauNom(b)}</button>`).join("")+`</div>`;
-  if(_bureauVue !== "concertation"){
+  if(_bureauVue !== "concertation" && _bureauVue !== "chronique"){
     h += _legendeDefense(false);        // v0.59 : même légende dans chaque bureau
     h += `<div id="bureau-caisse" class="gouv-caisse" style="margin:0 0 8px"></div>`;   // v1.16
     h += `<div id="bureau-cercles"></div>`;   // v1.10 : rempli juste après (RPC)
@@ -959,6 +1031,7 @@ async function majBureau(el){
   if(zc) _rendreCerclesFaction(zc, fac);   // v1.10 : sans await, l'encart arrive quand il arrive
   const corps = el.querySelector("#bureau-corps");
   if(_bureauVue==="concertation") await _rendreConcertation(corps, fac);
+  else if(_bureauVue==="chronique") await _rendreChronique(corps, fac);
   else if(_bureauVue==="architecte") await _rendreAtelier(corps, fac);
   else if(_bureauVue==="regent") await _rendreBureauRegent(corps, fac);
   else if(_bureauVue==="chef_guerre") await _rendreBureauStratege(corps, fac);

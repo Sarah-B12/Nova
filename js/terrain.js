@@ -135,7 +135,45 @@ function normCases(c){ const a=Array(N_CASES).fill(null); if(Array.isArray(c)) f
    réparation (REPARATION, integrite.js) — ET sa ligne dans le `case` de
    reparer_structure côté serveur. `outils/o_controle.js` vérifie les deux
    premières ; la troisième ne peut pas l'être d'ici. */
-function typeParcelleConnu(type){ return type === "maison" || Object.prototype.hasOwnProperty.call(STRUCTURES, type); }
+function typeParcelleConnu(type){ return type === "maison" || type === "mousse" || Object.prototype.hasOwnProperty.call(STRUCTURES, type); }   // v1.63 : la Mousse-amie n'est PAS une structure à bâtir
+
+/* ===========================================================
+   v1.63 — LA MOUSSE-AMIE (mission « La bouture capricieuse », H28-H31).
+   Une parcelle `mousse` (serveur : terrain_poser_mousse, v185) : posée depuis
+   le sac (2 % d'énergie), elle vit 10 jours (`extra.pose`, en ms) et donne
+   +5 de croissance par arrosage aux bio-dômes VOISINS DIRECTS (grille 6 × 4),
+   sans cumul. Le serveur fait foi ; ces fonctions ne servent qu'à l'affichage.
+   =========================================================== */
+const MOUSSE_JOURS = 10, MOUSSE_BONUS = 5, MOUSSE_IMG = "images/items/mousse_amie.png";
+function mousseVivante(p){ return !!(p && p.type === "mousse" && p.pose && (Date.now() - p.pose) < MOUSSE_JOURS * 86400000); }
+function mousseJoursRestants(p){ return p && p.pose ? Math.max(0, Math.ceil((p.pose + MOUSSE_JOURS * 86400000 - Date.now()) / 86400000)) : 0; }
+function mousseVoisine(plot){
+  const P = (etat.terrain && etat.terrain.parcelles) || [];
+  const v = [plot - 6, plot + 6];
+  if(plot % 6 !== 0) v.push(plot - 1);
+  if(plot % 6 !== 5) v.push(plot + 1);
+  return v.some(i => i >= 0 && i < N_PLOTS && mousseVivante(P[i]));
+}
+async function poserMousse(i){
+  if(refusPrison("poser une Mousse-amie")) return;
+  if(_refusTerrain()) return;
+  if(etat.terrain.parcelles[i] || !(etat.sac.mousse_amie > 0)) return;
+  const r = await terrainRpc("terrain_poser_mousse", { p_plot:i });
+  if(!r) return;
+  journal("Mousse-amie posée : elle aidera les bio-dômes voisins pendant 10 jours.", "gain", "agri");
+  apresAction();
+}
+async function retirerMousse(i){
+  if(refusPrison("retirer la Mousse-amie")) return;
+  if(_refusTerrain()) return;
+  const p = etat.terrain.parcelles[i]; if(!p || p.type !== "mousse") return;
+  if(!await confirmerJoli("Retirer la Mousse-amie", "Retirer la Mousse-amie ? Elle sera perdue.", "Retirer", true)) return;
+  const r = await terrainRpc("terrain_demolir", { p_plot:i }, { solde:true });
+  if(!r) return;
+  plotSel = null;
+  journal("Mousse-amie retirée.", "alerte", "agri");
+  apresAction();
+}
 function normaliserParcelles(t){
   const arr = Array(N_PLOTS).fill(null);
   const src = (t && Array.isArray(t.parcelles)) ? t.parcelles : (t && Array.isArray(t.structures)) ? t.structures : [];
@@ -383,7 +421,7 @@ function renderStructActions(p, el){
     }
     el.innerHTML=`<p style="margin:0 0 8px"><b>${plante(c.plante).nom}</b> — croissance ${c.croissance}%</p>`;
     if(c.croissance>=PLANT_MAX) btn("Récolter (5-9)",()=>recolterCase(ci),false,"recolter");
-    else btn(memeJour(c.arrose)?"Arrosé aujourd'hui":"Arroser (+"+plante(c.plante).croissance+"%)",()=>arroserCase(ci), memeJour(c.arrose), "arroser");
+    else btn(memeJour(c.arrose)?"Arrosé aujourd'hui":"Arroser (+"+(plante(c.plante).croissance + (mousseVoisine(structSel) ? MOUSSE_BONUS : 0))+"%"+(mousseVoisine(structSel)?", Mousse-amie":"")+")",()=>arroserCase(ci), memeJour(c.arrose), "arroser");   // v1.63
     btn("Retirer",()=>retirerCase(ci, "plante"));
   } else {
     if(!c){
@@ -428,17 +466,19 @@ function majRecolte(){
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {
-      if(p && p.type==="hangar" && !IMG.hangar){
+      if(p && p.type==="mousse"){   // v1.63 : la Mousse-amie, avec ses jours restants
+        cell.innerHTML = `<img src="${MOUSSE_IMG}" alt="Mousse-amie" onerror="this.remove()"><span class="badge-plot">Mousse ${mousseJoursRestants(p)} j</span>`;
+      } else if(p && p.type==="hangar" && !IMG.hangar){
         cell.classList.add("plot-maison");
         const nb = p.drones.filter(Boolean).length;
         cell.innerHTML = `<span class="maison-glyphe">✦</span><span class="badge-plot">Hangar ${nb}/2</span>`;
       } else {
         cell.innerHTML = p ? `<img src="${IMG[p.type]}" alt="${STRUCTURES[p.type].nom}">` : `<span class="vide-plot">+</span>`;
       }
-      cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); if(p) ouvrirStruct(i); });
+      cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); if(p && p.type!=="mousse") ouvrirStruct(i); });
     }
     // v0.91 : pastille d'intégrité (+ bulle au survol), seulement si abîmée.
-    if(p && typeof marqueIntegrite==="function") cell.insertAdjacentHTML("beforeend", marqueIntegrite(i));
+    if(p && p.type!=="mousse" && typeof marqueIntegrite==="function") cell.insertAdjacentHTML("beforeend", marqueIntegrite(i));
     g.appendChild(cell);
   });
   const pa=document.querySelector("#plot-actions"); if(!pa) return; pa.innerHTML="";
@@ -449,6 +489,14 @@ function majRecolte(){
     pa.innerHTML=`<p style="margin:0 0 8px">Parcelle ${plotSel+1} — construire :</p>`;
     if(etat.maison.plot==null){ const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>Logement <small>(construction par étapes)</small></span><span class="cout">choisir l'emplacement</span>`; b.addEventListener("click",()=>placerMaison(plotSel)); row.appendChild(b); }
     for(const t in STRUCTURES){ const s=STRUCTURES[t]; const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>${s.nom} <small>(${s.desc})</small></span><span class="cout">${s.prix} ₡</span>`; b.disabled=etat.credits<s.prix; b.addEventListener("click",()=>batirParcelle(t)); row.appendChild(b); }
+    // v1.63 : une Mousse-amie dans le sac se pose sur une parcelle vide (H31).
+    if((etat.sac.mousse_amie||0) > 0){ const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>Mousse-amie <small>(aide les bio-dômes voisins, 10 jours)</small></span><span class="cout">2 % d'énergie</span>`; b.addEventListener("click",()=>poserMousse(plotSel)); row.appendChild(b); }
+    pa.appendChild(row); return;
+  }
+  if(p.type==="mousse"){   // v1.63
+    pa.innerHTML=`<p style="margin:0 0 8px"><b>Mousse-amie</b> — encore ${mousseJoursRestants(p)} jour${mousseJoursRestants(p)>1?"s":""}. Elle aide les bio-dômes voisins (+${MOUSSE_BONUS} de croissance par arrosage).</p>`;
+    const row=document.createElement("div"); row.className="actions";
+    const b=document.createElement("button"); b.className="achat"; b.innerHTML=`<span>Retirer <small>(elle sera perdue)</small></span>`; b.addEventListener("click",()=>retirerMousse(plotSel)); row.appendChild(b);
     pa.appendChild(row); return;
   }
   if(p.type==="maison"){ pa.innerHTML=`<p class="vide"><b>${etat.maison.chantier?"Chantier de logement":nomPalier(etat.maison.palier)}</b> — gère-le dans le sous-onglet <b>Maison</b>.</p>`; return; }

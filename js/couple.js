@@ -710,7 +710,8 @@ function _coupleReserve(c, u){
 
   const dl = c.querySelector("#reserve-depot");
   const libre = R.place - R.utilise;
-  const sac = Object.entries(etat.sac || {}).filter(([id, n]) => n > 0 && !(typeof estObjetLie === "function" && estObjetLie(id)));
+  const sac = Object.entries(etat.sac || {}).filter(([id, n]) => n > 0 && !(typeof estObjetLie === "function" && estObjetLie(id))
+                                                    && !(typeof estObjetPersonnel === "function" && estObjetPersonnel(id)));   // v1.63 (H32)
   if(!ici || !sac.length){ dl.innerHTML = `<p class="vide">${ici ? "Rien à déposer." : "Rentre chez toi pour déposer."}</p>`; return; }
   for(const [id, n] of sac){
     const d = document.createElement("div"); d.className = "item-ligne";

@@ -150,7 +150,32 @@ const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", 
 const OBJETS_QUETE = [ { id:"bouture", nom:"Bouture de silène", type:"quete", cat:"quete", poids:1 } ];
 const OBJETS_LIES = new Set(["bouture"]);
 function estObjetLie(id){ return OBJETS_LIES.has(id); }
-const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS, ...OBJETS_QUETE];
+/* v1.63 — OBJETS DE MISSION (récompenses des quêtes de groupe, G12).
+   La Mousse-amie (bouture capricieuse, B2-B4, H28-H32) : objet PERSONNEL. */
+const OBJETS_MISSION = [
+  { id:"mousse_amie", nom:"Mousse-amie", type:"mission", cat:"mission", poids:1,
+    desc:"Une touffe de mousse vivante, encore attachée à sa motte. Posée sur une parcelle, elle aide les bio-dômes voisins (+5 de croissance par arrosage). Elle flétrit si elle n'est pas plantée sous 7 jours ; plantée, elle vit 10 jours. Elle ne se vend pas et ne se donne pas." },
+  // v1.64 — la balise sous la glace (D3, H41).
+  { id:"regulateur_arepo", nom:"Régulateur d'AREPO", type:"mission", cat:"vaisseau", poids:1,
+    desc:"Une pièce d'AREPO, intacte depuis trois siècles. Installée sur ton vaisseau (onglet Vaisseau), elle réduit la consommation de carburant de 20 % pendant 15 jours, puis s'use. Elle ne se vend pas et ne se donne pas." },
+  // v1.65 — l'infiltration (I3, H54) : une caisse par nombre d'objets, lisible dans le sac.
+  // v1.68 — le satellite (S3, H72) : le module de vaisseau, 20 jours une fois installé.
+  { id:"module_arepo", nom:"Module d'AREPO", type:"mission", cat:"vaisseau", poids:1,
+    desc:"Un module d'AREPO pour vaisseau. Installé (onglet Vaisseau), il ajoute 3 places de soute et 20 % de coque pendant 20 jours, puis s'use. Il ne se vend pas et ne se donne pas." },
+  // v1.67 — le casse (C8, C14, H63) : la cape de voleur, sur le torse, 15 jours.
+  { id:"cape_voleur", nom:"Cape de voleur", type:"mission", cat:"mission", poids:1,
+    desc:"Une cape sombre, taillée pour passer inaperçu. Équipée sur le torse, elle rend un vol réussi plus discret (signature 1 fois sur 3) et un vol raté moins risqué (prison 30 %). Elle dure 15 jours. Elle ne se vend pas et ne se donne pas, mais se brade." },
+  ...[3,4,5,6].map(n => ({ id:"caisse_arepo_" + n, nom:`Caisse scellée d'AREPO (${n} objets)`, type:"mission", cat:"mission", poids:1,
+    desc:"Une caisse d'AREPO, scellée depuis trois siècles. Elle s'ouvre dans ta cité de faction. Elle ne se vend pas et ne se donne pas." }))
+];
+/* v1.63 — OBJETS PERSONNELS (H32) : ne se vendent pas, ne s'envoient pas, ne se
+   donnent pas ; se rangent (coffre, soute). ⚠ SOURCE DE VÉRITÉ serveur : table
+   `objets_personnels` (v185), lue par deposer_offre, poste_envoyer,
+   reserve_deposer. Ce Set n'en est que le REFLET, pour masquer les boutons
+   (BACKEND_PLAN §6). La cape du casse (C8) s'y ajoutera. */
+const OBJETS_PERSONNELS = new Set(["mousse_amie", "regulateur_arepo", "cape_voleur", "module_arepo", "caisse_arepo_3", "caisse_arepo_4", "caisse_arepo_5", "caisse_arepo_6"]);
+function estObjetPersonnel(id){ return OBJETS_PERSONNELS.has(id); }
+const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS, ...OBJETS_QUETE, ...OBJETS_MISSION];
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
@@ -158,6 +183,12 @@ function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 const IMG_ITEM = {
   // v0.91 — réutilise l'image de la Plaque de coque : c'est exactement ce qu'on rustine.
   kit_reparation:"images/items/plaque_coque.png",
+  mousse_amie:"images/items/mousse_amie.png",   // v1.63 (prompt : PROMPTS_IMAGES_QUETES.md)
+  regulateur_arepo:"images/items/regulateur_arepo.png",   // v1.64
+  cape_voleur:"images/items/cape_voleur.png",              // v1.67
+  module_arepo:"images/items/module_arepo.png",            // v1.68
+  caisse_arepo_3:"images/items/caisse_arepo.png", caisse_arepo_4:"images/items/caisse_arepo.png",   // v1.65
+  caisse_arepo_5:"images/items/caisse_arepo.png", caisse_arepo_6:"images/items/caisse_arepo.png",
   cendrite:"images/items/cendrite.png", voltane:"images/items/voltane.png",
   silite:"images/items/silite.png",     givrite:"images/items/givrite.png",
   cristal:"images/items/cristal.png",   selenite:"images/items/selenite.png",   biofibre:"images/items/biofibre.png",

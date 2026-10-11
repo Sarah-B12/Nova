@@ -125,6 +125,7 @@ function infoItemHTML(id, joursForce){
   if(typeof mentionNiveauHtml==="function"){ const mn=mentionNiveauHtml(id); if(mn) h += `<div class="itip-ligne">${mn}</div>`; }   // v1.33
   const ec=(typeof effetConso==="function")?effetConso(id):null; if(ec){ const parts=Object.keys(ec).map(g=>`+${ec[g]} ${labelJauge(g)}`); h += `<div class="itip-effet">${parts.join(", ")} — cliquer pour utiliser</div>`; }
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]){ const p=PRIX_ITEM[id]; h += `<div class="itip-ligne">Valeur : <b>${p.min}–${p.max} ₡</b> <span class="itip-gris">(moy ${p.moy})</span></div>`; }
+  if(it.desc) h += `<div class="itip-effet">${it.desc}</div>`;   // v1.63 : objets de mission
   if(typeof estObjetLie==="function" && estObjetLie(id)){
     h += `<div class="itip-effet">Objet de quête — lié à toi. Il ne se vend pas, ne se range pas, ne se perd pas, et il te suit même dans la mort.</div>`;
   } else if(typeof dureeVie==="function"){

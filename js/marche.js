@@ -122,6 +122,21 @@ async function _chargerComposantsDefense(){
 }
 function _utileALaDefense(id){ return !!(_composantsDefense && _composantsDefense.has(id)); }
 
+/* v1.66 — C21 : au-dessus du marché de SA PROPRE faction, le niveau de
+   surveillance (drones du Régent, 0 à 3). Les autres factions ne voient rien. */
+const SURVEILLANCE_NIVEAUX = [
+  ["Sans gardien", "Les vitrines dorment, et personne ne veille."],
+  ["Sous un œil", "Un drone passe entre les étals, de temps en temps."],
+  ["Bien gardé", "Deux drones se relaient au-dessus des vitrines."],
+  ["Sous haute surveillance", "Trois drones quadrillent les vitrines. Il faudrait être très habile pour passer."]
+];
+async function _htmlSurveillanceMarche(faction){
+  if(faction !== etat.faction) return "";
+  let d = null; try{ ({ data:d } = await sb.rpc("surveillance_niveau")); }catch(e){ return ""; }
+  if(!d || !d.ok) return "";
+  const [nom, txt] = SURVEILLANCE_NIVEAUX[Math.max(0, Math.min(3, d.niveau || 0))];
+  return `<p class="marche-surv"><b>${nom}</b> — <span class="itip-gris">${txt}</span></p>`;
+}
 async function renderMarche(){
   if(typeof cacherItemTip==="function") cacherItemTip();
   const z = document.querySelector("#marche-vue"); if(!z) return;
@@ -138,6 +153,7 @@ async function renderMarche(){
   const mesN = _offresCache.filter(o=>o.vendeur_id===_marcheMonId).length;
   let html = `<div class="marche-tete"><h3 style="color:${fc.couleur};margin:0">Marché — ${fc.nom}</h3>`
     + `<span class="actions" style="gap:6px"><button class="mini" id="marche-mesventes-btn">Mes ventes${mesN?` (${mesN})`:""}</button><button class="mini" id="marche-vendre-btn">Mettre en vente</button></span></div>`;
+  html += await _htmlSurveillanceMarche(faction);   // v1.66 (C21) : SA cité seulement
   html += `<div class="marche-tabs">` + CAT_MARCHE.map(c=>`<button class="marche-tab${c.id===marcheTab?" actif":""}" data-cat="${c.id}">${c.nom}</button>`).join("") + `</div>`;
   // ⚠ v0.94 : les offres mortes ne s'achètent plus. Elles disparaîtront à la
   // purge horaire ; d'ici là, elles ne doivent ni s'afficher ni se vendre.

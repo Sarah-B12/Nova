@@ -180,7 +180,7 @@ const PV_SEUIL_AVARIE    = 0.30;   // sous ce ratio : avarie
 const PV_MALUS_CARBURANT = 1.5;    // conso majorée en avarie
 const PV_REMORQUAGE      = 0.25;   // navigabilité rendue par le remorquage
 
-function pvMax(id){ const v = VAISSEAUX[id || etat.vaisseau]; return v ? (v.pv || 100) : 0; }
+function pvMax(id){ const v = VAISSEAUX[id || etat.vaisseau]; return v ? Math.round((v.pv || 100) * (moduleActif() ? MODULE_COQUE : 1)) : 0; }   // v1.68 : module d'AREPO (+20 %)
 function pvVaisseau(id){
   id = id || etat.vaisseau; if(!id) return 0;
   const v = (etat.vaisseauPv || {})[id];
@@ -190,7 +190,62 @@ function pvRatio(id){ const mx = pvMax(id); return mx ? pvVaisseau(id)/mx : 1; }
 function vaisseauCloue(){ return !!etat.vaisseau && pvVaisseau() <= 0; }
 function vaisseauAvarie(){ return !!etat.vaisseau && pvRatio() < PV_SEUIL_AVARIE; }
 /* Majoration de carburant en avarie : la falaise doit se voir venir. */
-function malusCarburant(){ return vaisseauAvarie() ? PV_MALUS_CARBURANT : 1; }
+function malusCarburant(){ return (vaisseauAvarie() ? PV_MALUS_CARBURANT : 1) * (regulateurActif() ? REGULATEUR_FACTEUR : 1); }   // v1.64 : régulateur d'AREPO
+
+/* ===========================================================
+   v1.64 — MODULES DE VAISSEAU (régulateur d'AREPO, H41 ; le module du
+   satellite s'ajoutera). Serveur : vaisseau_modules_lire / vaisseau_installer
+   (v186). Attachés au JOUEUR, pas au vaisseau. La date vit côté serveur ;
+   le client n'en garde qu'une copie en mémoire (jamais dans `donnees`).
+   =========================================================== */
+const REGULATEUR_FACTEUR = 0.8;          // −20 % de carburant (D3)
+let _modulesVaisseau = {};               // { regulateur: "ISO d'expiration" }
+async function modulesVaisseauCharger(){
+  if(typeof sb === "undefined") return;
+  try{ const { data } = await sb.rpc("vaisseau_modules_lire"); if(data && data.ok) _modulesVaisseau = data.modules || {}; }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "vaisseau.js#modules"); }
+}
+function moduleJoursRestants(type){
+  const e = _modulesVaisseau[type]; if(!e) return 0;
+  return Math.max(0, Math.ceil((new Date(e).getTime() - Date.now()) / 86400000));
+}
+function regulateurActif(){ const e = _modulesVaisseau.regulateur; return !!e && new Date(e).getTime() > Date.now(); }
+/* v1.68 — le module d'AREPO (S3, H72) : +3 places de soute (comptées par le
+   SERVEUR, soute_capacite v190) et +20 % de coque (ici, pvMax). Usé : la coque
+   se plafonne d'elle-même (pvVaisseau borne à pvMax). */
+const MODULE_COQUE = 1.2;
+function moduleActif(){ const e = (typeof _modulesVaisseau !== "undefined") && _modulesVaisseau.module; return !!e && new Date(e).getTime() > Date.now(); }
+async function installerModule(){
+  if(!(etat.sac.module_arepo > 0)) return;
+  if(moduleActif() && !await confirmerJoli("Module d'AREPO",
+      `Un module est déjà installé (encore ${moduleJoursRestants("module")} jours). Le remplacer ? L'ancien sera perdu.`, "Remplacer", true)) return;
+  const { data, error } = await sb.rpc("vaisseau_installer", { p_item:"module_arepo" });
+  if(error || !data || !data.ok){ journal("Installation impossible.", "alerte"); return; }
+  if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+  _modulesVaisseau.module = data.expire_le;
+  if(typeof chargerStocksServeur === "function") await chargerStocksServeur();   // la soute grandit côté serveur
+  journal("Module d'AREPO installé : +3 places de soute, +20 % de coque pendant 20 jours.", "gain", "voyage");
+  if(typeof afficher === "function") afficher();
+}
+async function installerRegulateur(){
+  if(!(etat.sac.regulateur_arepo > 0)) return;
+  if(regulateurActif() && !await confirmerJoli("Régulateur d'AREPO",
+      `Un régulateur est déjà installé (encore ${moduleJoursRestants("regulateur")} jours). Le remplacer ? L'ancien sera perdu.`, "Remplacer", true)) return;
+  const { data, error } = await sb.rpc("vaisseau_installer", { p_item:"regulateur_arepo" });
+  if(error || !data || !data.ok){ journal("Installation impossible.", "alerte"); return; }
+  if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+  _modulesVaisseau.regulateur = data.expire_le;
+  journal("Régulateur d'AREPO installé : −20 % de carburant pendant 15 jours.", "gain", "voyage");
+  if(typeof afficher === "function") afficher();
+}
+function _htmlModulesVaisseau(){
+  let h = "";
+  if(regulateurActif()) h += `<p style="margin:0 0 6px"><b>Régulateur d'AREPO</b> : encore ${moduleJoursRestants("regulateur")} jours.</p>`;
+  if((etat.sac.regulateur_arepo||0) > 0) h += `<div class="actions" style="margin:0 0 8px"><button class="mini" id="vais-regulateur">Installer un régulateur d'AREPO</button></div>`;
+  if(moduleActif()) h += `<p style="margin:0 0 6px"><b>Module d'AREPO</b> : encore ${moduleJoursRestants("module")} jours.</p>`;   // v1.68
+  if((etat.sac.module_arepo||0) > 0) h += `<div class="actions" style="margin:0 0 8px"><button class="mini" id="vais-module">Installer un module d'AREPO</button></div>`;
+  return h;
+}
 
 function _poserPv(id, n){
   if(!id) return;
@@ -315,7 +370,7 @@ function majVaisseau(){
         <div class="vais-stats">
           <div><span>Soute</span><b>${itemsSoute()}/${v.soute}</b></div>
           <div><span>PV (coque)</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>
-          <div><span>Conso carburant</span><b>${v.conso} L/u${malusCarburant()>1?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}</b></div>
+          <div><span>Conso carburant</span><b>${v.conso} L/u${vaisseauAvarie()?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}${regulateurActif()?` <span style="color:var(--ok,#7bc47f)">−20 %</span>`:""}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
         </div>
@@ -328,6 +383,7 @@ function majVaisseau(){
           <span class="qte">au sac : ${etat.sac[v.carb]||0}</span>
         </div>
         <p class="vide" style="margin:0 0 10px">Ce vaisseau consomme du <b>${item(v.carb).nom}</b>. Le plein est déjà fonctionnel ; la consommation en vol arrivera avec la carte spatiale. La coque s'use (voir durée de vie).</p>
+        ${_htmlModulesVaisseau()}
         <button class="mini" id="vais-desequiper">${plein?"Vide la soute pour ranger":"Ranger dans le sac"}</button>
       </div>
     </div>
@@ -337,6 +393,8 @@ function majVaisseau(){
     </div>`;
   const bd=z.querySelector("#vais-desequiper"); if(bd){ bd.disabled=plein; bd.addEventListener("click",desequiperVaisseau); }
   const bp=z.querySelector("#vais-plein"); if(bp){ bp.disabled = (carb>=v.reservoir) || ((etat.sac[v.carb]||0)<=0); bp.addEventListener("click", ravitailler); }
+  const br=z.querySelector("#vais-regulateur"); if(br) br.addEventListener("click", installerRegulateur);   // v1.64
+  const bm=z.querySelector("#vais-module"); if(bm) bm.addEventListener("click", installerModule);   // v1.68
 
   // Grille de la soute (clic = décharger vers le sac)
   const g=z.querySelector("#soute-grille");

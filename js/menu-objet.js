@@ -12,6 +12,7 @@
    `prix_brade` ferait payer au serveur autre chose que ce qui est annoncé.
    Un Cristal de Nyx se brade donc à 500 ₡, pas 1000. */
 function valeurBrade(id){
+  if(id === "cape_voleur") return 100;   // v1.67 : prix_brade 50 ₡ (= valeurBrade / 2, H63) ; invendable au marché
   if(typeof PRIX_ITEM!=="undefined" && PRIX_ITEM[id]) return PRIX_ITEM[id].min;
   const b = (typeof BOUTIQUE!=="undefined") ? BOUTIQUE.find(a=>a.id===id) : null;
   return b ? b.prix : null;
@@ -37,7 +38,8 @@ function ouvrirMenuObjet(id){
   const brade = valeurBrade(id);
   // v0.91 : le Kit de réparation a sa propre action, hors du système de conso.
   const kit = (id === "kit_reparation");
-  if(!conso && !equip && !vais && !prixMarche && !kit && brade==null) return;   // rien à faire
+  const caisse = /^caisse_arepo_[3-6]$/.test(id);   // v1.65 : la caisse scellée d'AREPO (H54)
+  if(!conso && !equip && !vais && !prixMarche && !kit && !caisse && brade==null) return;   // rien à faire
 
   let html = `<div class="menu-cadre"><div class="menu-tete"><span class="menu-ic">${iconeItem(id)}</span><b>${it.nom}</b> <span class="qte">×${etat.sac[id]}</span><button class="mini" data-fermer="1">✕</button></div>`;
   /* v1.33 — Au doigt, l'infobulle n'existe pas (pas de survol) : la fiche la
@@ -46,6 +48,7 @@ function ouvrirMenuObjet(id){
     const inf = infoItemHTML(id); if(inf) html += `<div class="menu-infos">${inf}</div>`;
   } else if(typeof mentionNiveauHtml==="function"){ const mn=mentionNiveauHtml(id); if(mn) html += `<div class="menu-niveau">${mn}</div>`; }   // v1.33
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
+  if(caisse)     html += `<button class="menu-act" data-act="ouvrir-caisse">Ouvrir</button>`;
   if(kit)        html += `<button class="menu-act" data-act="kit-coque">Réparer la coque (+${(typeof KIT_PV!=="undefined")?KIT_PV:40} PV)</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
   if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
@@ -108,6 +111,7 @@ function menuActionObjet(act, id){
   }
   fermerMenuObjet();
   if(act==="consommer" && typeof utiliser==="function") utiliser(id);
+  if(act==="ouvrir-caisse" && typeof ouvrirCaisseArepo==="function") ouvrirCaisseArepo(id);   // v1.65
   else if(act==="kit-coque" && typeof utiliserKitReparation==="function") utiliserKitReparation();
   else if(act==="equiper" && typeof equiper==="function") equiper(id);
   else if(act==="equiper-vaisseau" && typeof equiperVaisseau==="function") equiperVaisseau(id);

@@ -1788,14 +1788,34 @@ function _priseIci(q){
 }
 
 /* ---------- Onglet « Quêtes » ---------- */
+/* v1.61 — deux sous-onglets : « Quête principale » (l'écran d'avant, INCHANGÉ,
+   dessiné dans #hub-quete-corps) et « Missions » (missions.js). H18 : hors des
+   endroits habituels, l'onglet n'est là que pour une affaire de mission : on
+   ouvre alors directement « Missions ». */
+let _queteSous = null;   // "principale" | "missions" — choix du joueur pendant la session
 function majQueteHub(){
-  const z=document.querySelector("#hub-quete"); if(!z) return;
+  const hub=document.querySelector("#hub-quete"); if(!hub) return;
   /* ⚠ v0.92 — NE PAS REDESSINER PENDANT UN SIMON : le redessin appelle
      `_clearQ()`, qui tuerait les minuteurs de la partie en cours, et
      reconstruirait le DOM en perdant la séquence mémorisée. Voir `_seqEnCours`. */
   if(_seqEnCours()) return;
   _queteStyle();
   _clearQ();
+  let z=hub.querySelector("#hub-quete-corps");
+  if(!z){
+    hub.innerHTML=`<div class="sous-menu" id="quete-sous"><button class="sous-lien" data-qsous="principale">Quête principale</button><button class="sous-lien" data-qsous="missions">Missions</button></div><div id="hub-quete-corps"></div>`;
+    hub.querySelectorAll("[data-qsous]").forEach(b=>b.addEventListener("click",()=>{ _queteSous=b.dataset.qsous; majQueteHub(); if(_queteSous==="missions" && typeof missionsCharger==="function") missionsCharger().then(()=>{ if(_queteSous==="missions") majQueteHub(); }); }));
+    z=hub.querySelector("#hub-quete-corps");
+  }
+  const _missOk = (typeof majMissions==="function");
+  let vue = _queteSous;
+  if(!vue){
+    const aff = _missOk && (typeof missionsAffaireEnCours==="function") && missionsAffaireEnCours();
+    vue = (aff && !queteActive() && !_priseIci(queteProchaine())) ? "missions" : "principale";
+  }
+  if(!_missOk) vue = "principale";
+  hub.querySelectorAll("[data-qsous]").forEach(b=>{ b.classList.toggle("actif", b.dataset.qsous===vue); if(b.dataset.qsous==="missions") b.hidden=!_missOk; });
+  if(vue==="missions"){ majMissions(z); return; }
   const enFac=_enFaction();
   // Donneur : lu sur la quête active (défaut = Vieux Sorn). L'image se déduit du
   // champ donneurImg, sinon d'un nom de fichier dérivé du donneur.
