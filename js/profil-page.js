@@ -512,8 +512,8 @@ async function _ppTerrain(profilId){
       const nom = (NOMS[p.type] && NOMS[p.type].nom) || p.type;
       let dedans = "";
       if(p.type === "maison"){
-        // imgMaison() choisit tentes ou maisons selon estNomade(), qui lit NOTRE
-        // faction : on reconstruit le chemin avec celle du joueur consulté.
+        // imgMaison() lit NOTRE faction (etat.faction) : ici, on reconstruit le chemin
+        // avec celle du joueur consulté (v1.73 : cheminMaison(data.faction, …)).
         const std = ["cabane","petite_maison","maison","villa","palace"];
         const nom5 = ["tente1","tente2","tente3","tente4","tente5"];
         const pal = data.palier || 0;
@@ -526,7 +526,7 @@ async function _ppTerrain(profilId){
            le glyphe 🏠, sans rien casser. */
         const enChantier = !!data.chantier;
         dedans = (pal >= 1 && pal <= 5)
-          ? `<img src="images/maisons/${(data.faction==="nomades"?nom5:std)[pal-1]}.png" alt="Maison" onerror="this.replaceWith(document.createTextNode('🏠'))">`
+          ? `<img src="${cheminMaison(data.faction, pal)}" alt="${nomPalierFaction(data.faction, pal)}" data-repli="images/maisons/${(data.faction==="nomades"?nom5:std)[pal-1]}.png" onerror="_maisonRepli(this, i => i.replaceWith(document.createTextNode('🏠')))">`   // v1.73
           : (enChantier
               ? `<img src="images/maisons/chantier.png" alt="Chantier" onerror="this.replaceWith(document.createTextNode('🏗'))">`
               : `<span class="ppt-glyphe">🏠</span>`);

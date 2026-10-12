@@ -182,7 +182,7 @@ function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 // Chemins relatifs à la page (le rendu se fait via JS dans le document).
 const IMG_ITEM = {
   // v0.91 — réutilise l'image de la Plaque de coque : c'est exactement ce qu'on rustine.
-  kit_reparation:"images/items/plaque_coque.png",
+  kit_reparation:"images/items/kit_reparation.png",   // v1.69 : sa propre image (était plaque_coque)
   mousse_amie:"images/items/mousse_amie.png",   // v1.63 (prompt : PROMPTS_IMAGES_QUETES.md)
   regulateur_arepo:"images/items/regulateur_arepo.png",   // v1.64
   cape_voleur:"images/items/cape_voleur.png",              // v1.67

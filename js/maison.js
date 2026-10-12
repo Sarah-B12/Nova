@@ -27,9 +27,29 @@ const MAISON_IMG_STD = ["cabane","petite_maison","maison","villa","palace"];
 const MAISON_IMG_NOM = ["tente1","tente2","tente3","tente4","tente5"];
 const TRAVAIL_ENERGIE = 3;   // énergie par action de travail
 
-function estNomade(){ return etat.faction === "nomades"; }
-function imgMaison(p){ if(p<1||p>5) return null; return `images/maisons/${(estNomade()?MAISON_IMG_NOM:MAISON_IMG_STD)[p-1]}.png`; }
-function nomPalier(n){ if(n<1||n>5) return "—"; return estNomade() ? MAISON_NOMS_NOMADES[n-1] : MAISON_PALIERS[n-1].nom; }
+/* v1.73 — LOGEMENTS PAR FACTION (H82, H83). Noms propres à chaque faction ;
+   images `images/maisons/<clé>_<palier>.png` (le Rhizome a la clé `rhizome`).
+   Tant qu'une image manque, REPLI sur l'image d'avant (standard, ou tente pour
+   les Nomades) : `data-repli` + `_maisonRepli` (onerror). */
+const MAISON_CLE_FACTION = { ignis:"ignis", cultivateurs:"rhizome", toundra:"toundra", rouage:"rouage", nomades:"nomades" };
+const MAISON_NOMS_FACTION = {
+  ignis:        ["Grotte", "Abri de basalte", "Casemate", "Bastion", "Citadelle"],
+  cultivateurs: ["Hutte", "Cabane", "Serre", "Maison de l'étang", "Canopée"],
+  toundra:      ["Igloo", "Dôme", "Dômes jumeaux", "Dôme-serre", "Station boréale"],
+  rouage:       ["Baraque", "Atelier", "Fabrique", "Verrière", "Palais de rouille"],
+  nomades:      MAISON_NOMS_NOMADES
+};
+function cheminMaison(faction, p){ if(p<1||p>5) return null; const k = MAISON_CLE_FACTION[faction]; return k ? `images/maisons/${k}_${p}.png` : `images/maisons/${MAISON_IMG_STD[p-1]}.png`; }
+function cheminMaisonRepli(faction, p){ if(p<1||p>5) return null; return `images/maisons/${(faction === "nomades" ? MAISON_IMG_NOM : MAISON_IMG_STD)[p-1]}.png`; }
+/* onerror d'une image de logement : d'abord l'image d'avant, puis le repli de l'appelant. */
+function _maisonRepli(img, sinon){
+  if(img.dataset.repli && img.getAttribute("src") !== img.dataset.repli){ img.src = img.dataset.repli; return; }
+  if(typeof sinon === "function") sinon(img);
+}
+window._maisonRepli = _maisonRepli;   // appelée depuis les `onerror` en ligne (maison, terrain, vitrine)
+function imgMaison(p){ return cheminMaison(etat.faction, p); }
+function nomPalierFaction(faction, n){ if(n<1||n>5) return "—"; const l = MAISON_NOMS_FACTION[faction]; return l ? l[n-1] : MAISON_PALIERS[n-1].nom; }
+function nomPalier(n){ return nomPalierFaction(etat.faction, n); }
 function recetteMaison(n){ return (MAISON_PALIERS[n-1]||{}).recette || null; }
 function storageMaison(n){ return (MAISON_PALIERS[n-1]||{}).storage || 0; }
 function travailTotal(n){
@@ -84,7 +104,7 @@ function finirChantierSiPret(verifSeule){
 }
 let _finirEnCours = false;
 function _annonceMaisonFinie(){
-  journal(`${nomPalier(etat.maison.palier)} construite ! Rangement : ${capaciteMaison()} places.`,"gain");
+  journal(`Logement terminé : ${nomPalier(etat.maison.palier)}. Rangement : ${capaciteMaison()} places.`,"gain");   // v1.73 : les noms ont des genres variés
 }
 
 /* ---------- Placement & construction ---------- */
@@ -98,7 +118,7 @@ async function placerMaison(i){
   if(etat.maison.plot!=null){ journal("Tu as déjà un logement (un seul autorisé).","alerte"); return; }
   if(etat.terrain.parcelles[i]) return;
   if(!await terrainRpc("maison_placer", { p_plot:i }, { refus:{ deja:"Tu as déjà un logement (un seul autorisé)." } })) return;
-  journal(`Emplacement du logement posé. Construis ta ${nomPalier(1)} dans le sous-onglet Maison.`,"gain");
+  journal(`Emplacement du logement posé. Construis ton premier logement (${nomPalier(1)}) dans le sous-onglet Maison.`,"gain");   // v1.73
   apresAction();
 }
 async function agrandirMaison(){
@@ -216,7 +236,7 @@ function majMaison(){
      (on vit dedans pendant qu'on bâtit le suivant). Si le fichier n'existe pas,
      le cadre disparaît tout seul : rien ne casse. */
   const vimg = imgMaison(m.palier) || (m.chantier ? "images/maisons/chantier.png" : null);
-  if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt="" onerror="this.parentNode.remove()"></div>`;
+  if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt="" data-repli="${cheminMaisonRepli(etat.faction, m.palier) || ""}" onerror="_maisonRepli(this, i => i.parentNode.remove())"></div>`;   // v1.73
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;

@@ -182,6 +182,7 @@ async function syncApresConnexion(){
   if(typeof debrisCharger==="function") t.push(debrisCharger());   // v1.31 : chute de débris en cours
   if(typeof missionsCharger==="function") t.push(missionsCharger());   // v1.61 : missions (H18 : affaires en cours)
   if(typeof modulesVaisseauCharger==="function") t.push(modulesVaisseauCharger());   // v1.64 : régulateur d'AREPO
+  if(typeof aptAvertirConflit==="function") aptAvertirConflit();   // v1.72 : chasseur OU voleur (H80)
   await Promise.all(t);
   if(typeof afficher==="function") afficher();
   if(typeof majEcranPause==="function") majEcranPause();   // écran bloquant si en pause

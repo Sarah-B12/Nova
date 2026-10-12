@@ -57,6 +57,11 @@
     box-shadow:0 8px 22px rgba(0,0,0,.5); white-space:normal; text-align:left;
   }
   .reg-note:hover .tip, .reg-note:focus .tip, .reg-note.tip-on .tip { display:block; }
+  /* v1.72 — aptitudes d'une voie fermée (chasseur OU voleur) : grisées, infobulle au-dessus. */
+  .apt-noeud.exclu { filter:grayscale(1); }
+  .apt-noeud.exclu > :not(.apt-n-bas) { opacity:.45; }
+  .apt-noeud.exclu .reg-note .tip { top:auto; bottom:135%; }
+  .apt-conflit { border:1px solid var(--edge); border-left:3px solid #ffb060; border-radius:10px; padding:10px 12px; margin:0 0 12px; background:rgba(255,176,96,.06); }
   .comp-val { font-family:"Space Mono",monospace; font-weight:700; color:var(--bleu); min-width:32px; text-align:right; }
   /* Bonus de compétence : « +3 » cliquable/survolable, réutilise le style .tip
      de .comp-nom pour rester cohérent. `tabindex` sur .comp-b rend l'infobulle
@@ -478,7 +483,9 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 /* v1.38 — soins, leçons, lettre */
 .fa-jauge{ margin:10px 0 4px; }
 .fa-jauge .remplissage.fa-bas{ background:#e05a5a; }
-.fa-gestes{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 8px; }
+.fa-gestes{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin:4px 0 8px; }   /* v1.69 : 3 par ligne, largeurs égales */
+.fa-gestes > button{ width:100%; justify-content:flex-start; text-align:left; white-space:normal; }
+@media (max-width:600px){ .fa-gestes{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .fa-lettre{ margin-top:6px; }
 .fa-lettre summary{ cursor:pointer; color:var(--orange-hi,#ffb060); }
 .fa-aide{ font-size:.92em; }

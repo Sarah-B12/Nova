@@ -172,10 +172,15 @@ function _mCarte(m){
   const g = _missionGroupe(m);
   const enGroupe = !!(g && m.mon_statut === "actif" && (g.statut === "formation" || g.statut === "lance"));
   let h = `<div class="mi-carte">`;
+  // v1.74 — bannière de la mission (images/missions/<type>.png ; le casse non
+  // révélé montre le pli). Absente → rien (pas de cadre vide).
+  const ban = (m.secrete && !m.revele) ? "casse_pli" : m.type;
+  h += `<div class="lieu-banniere mi-banniere"><img src="images/missions/${ban}.png" alt="" onerror="this.parentElement.remove()"></div>`;
   h += `<h3 style="margin:2px 0">${_mTitre(m)}${m.test ? ` <span class="mi-test">TEST</span>` : ""}</h3>`;
   if(m.difficulte){
     h += `<p class="vide" style="margin:0 0 8px">${MISSION_RANGS[m.difficulte] || m.difficulte} · niveau ${m.niveau_min} · groupe de ${m.taille_min}${m.taille_max > m.taille_min ? " à " + m.taille_max : ""}`;
-    if(m.statut === "recrutement") h += ` · recrutement jusqu'au ${_mDernierJour(m.recrutement_fin)} inclus`;
+    // v1.73b : plus de date de recrutement une fois MON groupe parti (il n'en a plus besoin).
+    if(m.statut === "recrutement" && !(g && g.statut === "lance")) h += ` · recrutement jusqu'au ${_mDernierJour(m.recrutement_fin)} inclus`;
     h += `</p>`;
   }
   if(m.intro) h += `<p class="quete-indice" style="margin:0 0 10px">${echapper(m.intro)}</p>`;   // v1.63

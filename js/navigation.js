@@ -15,7 +15,8 @@ function _innBanniere(){
      par défaut, absente, était retirée de la page au chargement, et celle de la
      faction n'avait plus où s'afficher). Masquée tant que rien ne charge. */
   const img = document.querySelector("#inn-img"); if(!img || typeof etat === "undefined" || !etat.faction) return;
-  const voulu = `images/lieux/auberge_${etat.faction}.png`;
+  // v1.69 : au Perchoir (Triptolème), l'auberge a sa propre image.
+  const voulu = (etat.secteur === "ecart") ? "images/lieux/auberge_perchoir.png" : `images/lieux/auberge_${etat.faction}.png`;
   if(img.dataset.voulu === voulu) return;
   img.dataset.voulu = voulu; img.dataset.repli = "";
   img.onload  = () => { img.hidden = false; };

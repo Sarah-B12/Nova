@@ -142,6 +142,7 @@ const _VOL_REFUS = {
   proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j) ou délestés hier ou aujourd'hui. Rien n'a été dépensé.`,
   lieu:      ()=>"Va dans une ville, ou au Perchoir, pour cibler quelqu'un.",
   aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
+  chasseur:  ()=>"Un chasseur de primes ne vole pas.",   // v1.72 (H80)
   ordinateur:()=>"Équipe un Ordinateur de hacking pour hacker.",
   energie:   ()=>"Pas assez d'énergie.",
   mort:      ()=>"Tu es mort : impossible d'agir.",

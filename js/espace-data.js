@@ -96,7 +96,7 @@ const ESPACE_LIEUX = [
     usage:"Réparation de coque", desc:"Une coque éventrée. Quelqu'un s'y est installé et découpe dedans ce qui manque aux autres." },
   { id:"antenne", nom:"Le Muet", officiel:"Relais Triptolème-2", img:"antene.png", x:1253, y:118, t:312, type:"lieu",
     usage:"Écoute", desc:"Il émet encore. Vers quoi, c'est une autre question." },
-  { id:"satellite1", nom:null, libelle:"Une sonde à la dérive", officiel:"Sonde Bardane", img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
+  { id:"satellite1", nom:"Bardane", libelle:"Une sonde à la dérive", officiel:"Sonde Bardane",   /* v1.70 (H76) : nom courant = nom de la plaque (lieu de mission) */ img:"satellite1.png", x:1610, y:1353, t:109, type:"decor",
     usage:"", ici:"Une sonde d'AREPO, antennes tournées vers Silène. Elle ne réagit pas à ton approche : ce qu'elle mesure, elle ne le dit qu'à quelqu'un d'autre. Pour l'instant, elle t'ignore.", desc:"" },
   { id:"satellite2", nom:null, libelle:"Une sonde à la dérive", officiel:"Sonde Chardon", img:"satellite2.png", x:668, y:142, t:156, type:"decor",
     usage:"", ici:"Une sonde d'AREPO, antennes tournées vers Silène. Elle ne réagit pas à ton approche : ce qu'elle mesure, elle ne le dit qu'à quelqu'un d'autre. Pour l'instant, elle t'ignore.", desc:"" },
@@ -110,7 +110,7 @@ const ESPACE_LIEUX = [
     usage:"", ici:"Tu la rattrapes un moment. La traînée n'est que glace et poussière, qui te givre le hublot. Elle repartira sans toi, et elle reviendra.", desc:"Elle repasse. Personne ne tient le compte." },
   { id:"anneaux_b", nom:null, libelle:"Une planète à anneaux", officiel:"Campanule", img:"planete_anneaux_bleu.png", x:1087, y:1003, t:141, type:"decor",
     usage:"", ici:"Tu longes les anneaux : de la glace, du gravier, un silence immense. Rien qui vaille une descente — pour l'instant.", desc:"" },
-  { id:"pp_vert", nom:null, libelle:"Une petite planète", officiel:"Mousseron", img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
+  { id:"pp_vert", nom:"Mousseron", libelle:"Une petite planète", officiel:"Mousseron",   /* v1.70 (H76) : nom courant = nom de la plaque (lieu de mission) */ img:"petite_planete_vert.png", x:1461, y:1285, t:109, type:"decor",
     usage:"", ici:"Une petite planète sous un voile vert pâle. Aucun signal, aucune balise. Rien pour s'y poser, pour l'instant.", desc:"" },
   { id:"pp_violet", nom:null, libelle:"Une petite planète", officiel:"Aubépine", img:"petite_planete_violet.png", x:2204, y:250, t:109, type:"decor",
     usage:"", ici:"Une petite planète froide et muette. Tes instruments n'y trouvent rien à dire. Pour l'instant.", desc:"" }

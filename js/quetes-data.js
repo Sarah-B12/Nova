@@ -1992,7 +1992,7 @@ const QUETES = [
           question:"« Quel était le matricule de l'opérateur ? »",
           reponses:["42-u1f","42u1f","42 u1f","42-u1-f"],
           reussite:[
-            "42-U1F. Un matricule du quai. Du Protocole. Quelqu'un, là-bas, sous l'anneau, a entendu Sorn, E. dire « nous restons » — et a répondu « reçu », à la main.",
+            "42-U1F. Un matricule du quai. Du Protocole. Quelqu'un, là-bas, sous l'anneau, vient d'entendre Sorn, E. dire « nous restons » — l'émission que tu as relancée — et a répondu « reçu », à la main.",
             "Tu ne le dis pas à Sorn. Pas encore. Tu ne saurais pas quoi lui dire. Tu le notes dans ton carnet, en bas d'une page, et tu refermes le carnet."
           ] } },
 

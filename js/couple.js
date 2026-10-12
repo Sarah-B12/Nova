@@ -192,7 +192,7 @@ async function majUnions(el){
   if(!_union){ el.innerHTML = `<h3>Unions</h3><p class="vide">Chargement…</p>`; await chargerUnion(); }
   if(!_union){ el.innerHTML = `<h3>Unions</h3><p class="vide">Serveur indisponible.</p>`; return; }
   const u = _union.union;
-  let h = `<h3>Unions</h3>`;
+  let h = `<h3>Unions</h3><div class="lieu-banniere"><img src="images/lieux/unions.png" alt="" onerror="this.parentElement.remove()"></div>`;   // v1.69
   if(u) h += _uBlocMarie(u);
   else {
     if(_union.choix_faction) h += _uBlocChoixFaction(_union.choix_faction);

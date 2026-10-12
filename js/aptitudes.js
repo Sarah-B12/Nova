@@ -53,9 +53,37 @@ function aptCoutParId(id){
 function aptBranche(){ return etat.faction ? APT_FACTIONS[etat.faction] : null; }
 
 /* ---------- Achat / respec / gain ---------- */
+/* v1.72 — CHASSEUR OU VOLEUR (H80). Traque (dernier nœud de Combativité)
+   exclut TOUTE la voie de la Furtivité (`ombre`, om1..om4 — Discrétion ouvre le
+   vol) et réciproquement. Le serveur le vérifie aussi (v193 : vol_preparer,
+   traque_refus, a_aptitude_traque, _mission_refus). */
+const APT_FURTIVITE = ["om1","om2","om3","om4"];
+function aptFurtivitePrise(){ return APT_FURTIVITE.some(aptPris); }
+function aptExclu(chaine, n){
+  if(aptPris(n.id)) return null;
+  if(chaine.id === "ombre" && aptPris("traque")) return "Un chasseur de primes ne suit pas la voie de la Furtivité.";
+  if(n.id === "traque" && aptFurtivitePrise()) return "Un voleur ne suit pas la voie de la traque.";
+  return null;
+}
+function aptConflit(){ return aptPris("traque") && aptFurtivitePrise(); }
+/* Ceux qui étaient déjà dans les deux camps choisissent (points rendus). */
+function aptChoisirCamp(chasseur){
+  const e = aptEtat(); let rendu = 0;
+  const retirer = chasseur ? APT_FURTIVITE : ["traque"];
+  for(const id of retirer) if(e.pris.includes(id)){ rendu += aptCoutParId(id); e.pris = e.pris.filter(x => x !== id); }
+  e.pa += rendu;
+  journal(chasseur ? `Tu restes chasseur de primes : la voie de la Furtivité est retirée, +${rendu} PA à replacer.`
+                   : `Tu restes voleur : Traque est retirée, +${rendu} PA à replacer.`, "gain");
+  sauvegarder(); majAptitudes();
+  if(typeof afficher==="function") afficher();
+}
+function aptAvertirConflit(){
+  if(aptConflit()) journal("Chasseur ou voleur : un choix t'attend dans tes Aptitudes (onglet Profil).", "alerte");
+}
 function acheterApt(chaine, idx){
   const n = chaine.noeuds[idx]; const e = aptEtat();
   if(aptPris(n.id)) return;
+  const ex = aptExclu(chaine, n); if(ex){ journal(ex, "alerte"); return; }   // v1.72
   if(idx > 0 && !aptPris(chaine.noeuds[idx-1].id)){ journal("Il faut d'abord le nœud précédent.","alerte"); return; }
   const cout = aptCout(idx);
   if(e.pa < cout){ journal("Pas assez de points d'Aptitude.","alerte"); return; }
@@ -159,7 +187,9 @@ function aptCarte(chaine, idx){
   const acquis = aptPris(n.id);
   const prereqOk = idx === 0 || aptPris(chaine.noeuds[idx-1].id);
   let cls, bas;
-  if(acquis){ cls = "acquis"; bas = `<span class="apt-tag">✓ acquis</span>`; }
+  const ex = aptExclu(chaine, n);   // v1.72 : voie fermée (H80) — grisée, avec son infobulle
+  if(ex){ cls = "verrou exclu"; bas = `<span class="apt-tag reg-note" tabindex="0">🚫 Voie fermée<span class="tip" role="tooltip">${ex}</span></span>`; }
+  else if(acquis){ cls = "acquis"; bas = `<span class="apt-tag">✓ acquis</span>`; }
   else if(!prereqOk){ cls = "verrou"; bas = `<span class="apt-tag">🔒 ${chaine.noeuds[idx-1].nom}</span>`; }
   else { cls = "dispo"; bas = `<button class="mini apt-buy" ${e.pa>=cout?"":"disabled"}>Acheter · ${cout} PA</button>`; }
   const div = document.createElement("div"); div.className = "apt-noeud " + cls;
@@ -188,6 +218,16 @@ function majAptitudes(){
 
   // Aptitudes communes = tronc (5 voies)
   const com = panneau.querySelector("#apt-vue-communes"); com.innerHTML = "";
+  // v1.72 — déjà dans les deux camps : le choix (H80).
+  if(aptConflit()){
+    const c = document.createElement("div"); c.className = "apt-conflit";
+    c.innerHTML = `<p style="margin:0 0 8px"><b>Chasseur ou voleur ?</b> Tu as à la fois Traque et la voie de la Furtivité : il faut choisir.
+      <i>Chasseur</i> : tes nœuds de Furtivité sont retirés, leurs points rendus. <i>Voleur</i> : Traque est retirée, ses 2 points rendus.
+      Tant que tu n'as pas choisi, ni le vol, ni le piratage, ni la traque ne te sont ouverts.</p>
+      <div class="actions"><button class="mini" data-camp="chasseur">Je reste chasseur</button><button class="mini" data-camp="voleur">Je reste voleur</button></div>`;
+    c.querySelectorAll("[data-camp]").forEach(b => b.addEventListener("click", () => aptChoisirCamp(b.dataset.camp === "chasseur")));
+    com.appendChild(c);
+  }
   const grille = document.createElement("div"); grille.className = "apt-grille";
   APT_TRONC.forEach(v => grille.appendChild(aptColonne(v)));
   com.appendChild(grille);

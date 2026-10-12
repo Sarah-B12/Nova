@@ -462,7 +462,7 @@ function majRecolte(){
       // Le nom du palier est déjà lisible dans l'infobulle et dans la maison :
       // l'étiquette par-dessus l'image alourdissait le terrain pour rien.
       /* Si le fichier manque, on retombe sur le glyphe au lieu d'une image cassée. */
-      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}" onerror="this.parentNode.classList.add('plot-maison');this.parentNode.innerHTML='&lt;span class=\'maison-glyphe\'&gt;⌂&lt;/span&gt;&lt;span class=\'badge-plot\'&gt;${lbl}&lt;/span&gt;'">`; }
+      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}" data-repli="${(typeof cheminMaisonRepli==="function" && cheminMaisonRepli(etat.faction, etat.maison.palier)) || ""}" onerror="_maisonRepli(this, i => { i.parentNode.classList.add('plot-maison'); i.parentNode.innerHTML='&lt;span class=\'maison-glyphe\'&gt;⌂&lt;/span&gt;&lt;span class=\'badge-plot\'&gt;${lbl}&lt;/span&gt;'; })">`; }   // v1.73 : image de faction, puis l'ancienne
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {

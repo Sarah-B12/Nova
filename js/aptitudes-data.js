@@ -46,7 +46,7 @@ const APT_TRONC = [
     { id:"tr2", nom:"Cuirasse",           effet:"En expédition ou contre une attaque du Protocole, tu perds 30 % de santé et de moral en moins si ton camp est battu." },   // v1.36r
     { id:"tr1", nom:"Instinct de combat", effet:"+8 points de chance de victoire contre les patrouilles ; +1 salve contre les sondes (6 au lieu de 5)." },
     { id:"tr3", nom:"Pillage",            effet:"Butin de combat (crédits) +25 %." },
-    { id:"traque", nom:"Traque",          effet:"Chasseur de primes : pister et traquer les têtes mises à prix (Prison → Wanted).", deblocage:true }
+    { id:"traque", nom:"Traque",          effet:"Chasseur de primes : pister et traquer les têtes mises à prix. Ouvre la voie de la traque et ferme celle de la furtivité (vols/hacks).", deblocage:true }   /* v1.72 (H80) */
   ]},
   /* ⚠ v0.94b — RENOMMÉE « Furtivité ». « Ombre » est aussi le nom du rôle
      d'espion au gouvernement (GOUV_ROLES) : deux choses sans rapport portaient
@@ -55,7 +55,7 @@ const APT_TRONC = [
        qui sont écrits dans `donnees.aptitudes.pris`. Renommer l'id effacerait
        les aptitudes déjà prises par tout le monde. Seul le libellé change. */
   { id:"ombre", nom:"Furtivité", noeuds:[
-    { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant." },
+    { id:"om1", nom:"Discrétion", effet:"Réduit le risque de tomber sur une patrouille du Protocole en te déplaçant. Ouvre la voie du vol mais ferme celle de la traque." },   /* v1.72 (H80) */
     { id:"om2", nom:"Repérage",   effet:"Déplacements à découvert : −10 % d'O₂ ; butin de patrouille +25 %." },
     { id:"om3", nom:"Pas léger",  effet:"Énergie −20 % pour te déplacer : à pied (Silène, La Braise, Le Suaire), en vaisseau dans Triptolème et lors des sauts en atmosphère." },
     { id:"om4", nom:"Intrusion",  effet:"Ouvre le piratage des joueurs (onglet Voler/Hacker) ; +25 points pour pirater une patrouille ou brouiller une sonde.", deblocage:true }
