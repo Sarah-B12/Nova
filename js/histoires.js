@@ -117,10 +117,20 @@ function _hX(t, e, h){ const tx = h.textes || {}; return String(t || "").replace
 function _heureParis(){ try{ return Number(new Intl.DateTimeFormat("fr-FR", { timeZone:"Europe/Paris", hour:"numeric", hourCycle:"h23" }).format(new Date())); }catch(err){ return new Date().getHours(); } }
 function _joursEntre(a, b){ return Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 86400000); }
 
+/* v1.75 — icône de chaque histoire : `images/histoires/<clé>_encours.png` tant
+   qu'elle n'est pas résolue (en cours ou ratée), `<clé>_resolue.png` une fois
+   réussie. Absente → rien. */
+const HISTOIRES_ICONE = { 1:"jouet", 2:"cabane", 3:"lumiere", 4:"tresor", 5:"gateau", 6:"soupe",
+  7:"fievre", 8:"bete", 9:"maquette", 10:"vol", 11:"bruit", 12:"anneau" };
+function _iconeHistoire(h){
+  const k = HISTOIRES_ICONE[h.n]; if(!k) return "";
+  return `<img class="hi-icone" src="images/histoires/${k}_${h.resultat === "reussie" ? "resolue" : "encours"}.png" alt="" onerror="this.remove()">`;
+}
+
 /* ---------- Affichage dans Famille ---------- */
 function _blocHistoire(e, u){
   const h = e.histoire, H = HISTOIRES[h.n]; if(!H) return "";
-  let s = `<div class="hi-carte"><h4>Histoire : ${H.titre} <span class="qte">${VOCATIONS[H.domaine] || ""}</span></h4>
+  let s = `<div class="hi-carte">${_iconeHistoire(h)}<h4>Histoire : ${H.titre} <span class="qte">${VOCATIONS[H.domaine] || ""}</span></h4>
     <p class="hi-ouv"><i>${echapper(_hX(H.ouverture, e, h))}</i></p>`;
   if(h.resultat === "reussie") return s + `<p class="hi-fin ok">${echapper(_hX(H.reussite, e, h))}</p><p class="itip-gris">Réussie : Complicité +10, bien-être +20, une leçon.</p></div>`;
   if(h.resultat === "ratee")   return s + `<p class="hi-fin ko">${echapper(_hX(H.echec, e, h))}</p></div>`;

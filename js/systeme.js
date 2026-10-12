@@ -332,7 +332,11 @@ function majJournal(){
    ⚠ Le barème reste ici, côté client : le serveur ne range qu'un entier.
    ⚠ `xp`, `niveau` et `xpTotal` sont dans CLES_SERVEUR : plus jamais persistés
      dans `donnees`. Ce sont des valeurs dérivées, pas un état à garder. */
-function seuilXp(n){ return 20*n; }
+/* v1.74b — XP à gagner DANS le niveau n pour passer au suivant, tirée de la
+   VRAIE courbe (xpCumulPour). L'ancien « 20·n » n'est juste que jusqu'au
+   niveau 19 : au-delà, la cubique de la v1.33 s'étire (niv 20 → 21 : 610, pas
+   400), et l'en-tête affichait « XP 558/400 » sans monter de niveau. */
+function seuilXp(n){ return xpCumulPour((n|0) + 1) - xpCumulPour(n|0); }
 // Total cumulé nécessaire pour ATTEINDRE le niveau n : somme(20k, k=1..n-1).
 /* v1.33 — COURBE D'XP : la plus exigeante de l'ancienne (10·n·(n−1)) et d'une
    cubique (n²·(n−1)/2). Les deux se croisent EXACTEMENT au niveau 20 (3 800 XP) :
