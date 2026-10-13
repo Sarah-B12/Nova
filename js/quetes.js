@@ -441,7 +441,7 @@ function _affutLire(a){
 function _htmlAffut(d){
   const a=queteActive(); const f=(a && a._affut) || { n:0, dernier:null }; const N=d.jours||5; const deja=_affutDeja(f);
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Jours d'affût : <b>${f.n}/${N}</b>. ${deja ? "Tu as tenu l'affût aujourd'hui : reviens un autre jour (après minuit, heure de Paris)." : "Un jour d'affût par jour. Tu peux partir et revenir : manquer un jour ne te fait rien perdre."}</p>
+    <p class="quete-indice">Jours d'affût : <b>${f.n}</b>. ${deja ? "Tu as tenu l'affût aujourd'hui : reviens un autre jour (après minuit, heure de Paris)." : "Un jour d'affût par jour. Tu peux partir et revenir : manquer un jour ne te fait rien perdre."}</p>
     <div class="quete-rep"><button class="mini" id="q-affut" ${deja?"disabled":""}>${d.bouton||"Tenir l'affût aujourd'hui"}</button></div></div>`;
 }
 function _wireAffut(z, d){
@@ -463,7 +463,7 @@ function _wireAffut(z, d){
     const ph = Array.isArray(d.nuits) ? d.nuits[a._affut.n-1] : null;
     if(ph) journal(ph, "", "voyage");
     if(a._affut.n >= N){ reussirDefi(); return; }
-    journal(`Affût : ${a._affut.n}/${N}. Reviens un autre jour.`, "gain");
+    journal(`Affût : ${a._affut.n} jour${a._affut.n > 1 ? "s" : ""} tenu${a._affut.n > 1 ? "s" : ""}. Reviens un autre jour.`, "gain");   // v1.76 : sans le total (la surprise)
     sauvegarder(); rafraichirQuetes();
   });
 }

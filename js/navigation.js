@@ -16,14 +16,17 @@ function _innBanniere(){
      faction n'avait plus où s'afficher). Masquée tant que rien ne charge. */
   const img = document.querySelector("#inn-img"); if(!img || typeof etat === "undefined" || !etat.faction) return;
   // v1.69 : au Perchoir (Triptolème), l'auberge a sa propre image.
-  const voulu = (etat.secteur === "ecart") ? "images/lieux/auberge_perchoir.png" : `images/lieux/auberge_${etat.faction}.png`;
+  // v1.76 : l'auberge de la CITÉ OÙ L'ON EST (et non plus celle de sa faction) ;
+  // le Rhizome accepte aussi `auberge_rhizome.png`. Puis le repli commun.
+  const ici = (typeof villeActuelle === "function" && villeActuelle()) || etat.faction;
+  const essais = (etat.secteur === "ecart") ? ["images/lieux/auberge_perchoir.png"]
+               : [`images/lieux/auberge_${ici}.png`, ...(ici === "cultivateurs" ? ["images/lieux/auberge_rhizome.png"] : [])];
+  essais.push("images/lieux/auberge.png");
+  const voulu = essais[0];
   if(img.dataset.voulu === voulu) return;
-  img.dataset.voulu = voulu; img.dataset.repli = "";
+  img.dataset.voulu = voulu; let k = 0;
   img.onload  = () => { img.hidden = false; };
-  img.onerror = () => {
-    if(!img.dataset.repli){ img.dataset.repli = "1"; img.src = "images/lieux/auberge.png"; }
-    else img.hidden = true;
-  };
+  img.onerror = () => { k++; if(k < essais.length) img.src = essais[k]; else img.hidden = true; };
   img.src = voulu;
 }
 /* v1.54 — bannière de la Boutique : celle du Perchoir (Triptolème) diffère de

@@ -60,7 +60,7 @@ function _ligneEnvoye(o){
 let _posteMonId = null;
 let _postePrec = -1;
 
-/* v1.11 — PERTURBATIONS DU RÉSEAU. Cinq jours par mois, tirés au hasard et sans
+/* v1.11 — PERTURBATIONS DU RÉSEAU. Quatre jours par mois (cinq avant la v1.77), tirés au hasard et sans
    prévenir : 48 h avant qu'un envoi soit retirable, et taxe triplée. L'état
    vient du serveur (`poste_perturbee`) ; le client ne fait que l'afficher.
    ⚠ La taxe envoyée au serveur reste le BARÈME NORMAL (`p_taxe`) : c'est
@@ -77,7 +77,7 @@ function _posteBanniere(){
   return `<img src="images/lieux/poste_perturbee.png" alt="La Poste — perturbations" class="hub-banniere" onerror="this.remove()">
     <div class="poste-perturb">
       <div class="poste-perturb-titre">⚠ PERTURBATIONS DU RÉSEAU</div>
-      <p>Les relais dérivent. Pendant <b>5 jours</b>, tout ce que tu envoies met <b>48 h</b> à arriver chez le destinataire, et la <b>taxe est triplée</b>.</p>
+      <p>Les relais dérivent. Pendant <b>4 jours</b>, tout ce que tu envoies met <b>48 h</b> à arriver chez le destinataire, et la <b>taxe est triplée</b>.</p>
       <p>Pour ce qui presse, passe par le <b>marché</b> : il est ouvert et immédiat.</p>
     </div>`;
 }

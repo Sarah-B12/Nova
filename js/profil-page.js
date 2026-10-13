@@ -484,7 +484,9 @@ function _ppStyleTerrain(){
       border-radius:8px; display:grid; place-items:center; }
     #pp-terrain .ppt-case.plein{ border:1px solid transparent; }
     /* v1.16 : mêmes proportions que son propre terrain (−10 px sur la case). */
-    #pp-terrain .ppt-case img{ width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain; display:block; margin:auto; }
+    #pp-terrain .ppt-case img{ width:82%; height:82%; object-fit:contain; display:block; margin:auto; }   /* v1.76 : comme son propre terrain */
+    #pp-terrain .ppt-case.ppt-logement{ z-index:2; }
+    #pp-terrain .ppt-case.ppt-logement img{ width:125%; height:125%; max-width:none; }
     #pp-terrain .ppt-glyphe{ font-size:18px; }
   `;
   document.head.appendChild(st);
@@ -538,7 +540,7 @@ async function _ppTerrain(profilId){
       // Pas de badge de remplissage : la vitrine montre ce qui est BÂTI, le
       // détail du contenu ne regarde que le propriétaire. L'infobulle du
       // survol donne déjà le nom de la structure.
-      cases.push(`<div class="ppt-case plein" title="${nom}">${dedans}</div>`);
+      cases.push(`<div class="ppt-case plein${p.type === "maison" ? " ppt-logement" : ""}" title="${nom}">${dedans}</div>`);   // v1.76
     }
     const batis = parc.filter(x=>x && x.type).length;
     // v1.36 — le couple : « Vit avec », jamais « chez » (décision 31).

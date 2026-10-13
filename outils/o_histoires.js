@@ -84,7 +84,9 @@
   r.carte.appel = (appels.find(a => a.nom === "histoire_agir") || {}).args;
   // 2. La cabane : le soir (bouton désactivé le jour même)
   cur = U(H({ n:2, etape:3, etape1_fait:true, etape_jour:"2026-10-12" })); await chargerUnion(); await majCouple();
-  r.soir = { memeJour: cv.querySelector('[data-hist="3"]').disabled };
+  // v1.57 (v180) : le jour même de l'étape précédente, plus de bouton du tout —
+  // le message « Une étape par jour » le remplace (le banc attendait encore un bouton grisé).
+  r.soir = { memeJour: !cv.querySelector('[data-hist="3"]') && cv.textContent.includes("Une étape par jour : la suite, demain.") };
   // 2. Le toit : un lâcher change le compteur
   cur = U(H({ n:2, etape:2, etape1_fait:true })); await chargerUnion(); await majCouple();
   cv.querySelector("[data-hist-jeu]").click(); await dort(200);

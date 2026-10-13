@@ -190,7 +190,12 @@ function joliserItems(t){
     _nomsItems = {};
     (typeof TOUS_ITEMS!=="undefined" ? TOUS_ITEMS : []).forEach(i=>{ if(i && i.id && i.nom) _nomsItems[i.id] = i.nom; });
   }
-  return t.replace(/\b[a-z][a-z0-9_]{2,}\b/g, m => _nomsItems[m] || m);
+  /* v1.76 — un identifiant d'UN SEUL MOT (« bouture », « cuir », « cristal »…) est
+     aussi un mot français : on ne le remplace que derrière un « × » (« 4× cuir »,
+     « 4 × cuir »), forme de tous les messages d'objets. Avant, « La bouture a bu »
+     devenait « La Bouture de silène a bu ». Les identifiants à « _ » ne changent pas. */
+  return t.replace(/(×\s?)?\b([a-z][a-z0-9_]{2,})\b/g, (tout, fois, m) =>
+    (_nomsItems[m] && (fois || m.includes("_"))) ? (fois || "") + _nomsItems[m] : tout);
 }
 
 async function chargerStocksServeur(){

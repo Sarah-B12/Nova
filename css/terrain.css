@@ -53,6 +53,11 @@
   .plot.sel.occupe img { filter:drop-shadow(0 0 7px var(--orange)) drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
   /* v1.11 : 10 px de moins que la case (retour testeur : icônes trop grosses). */
   .plot img { width:calc(100% - 10px); height:calc(100% - 10px); object-fit:contain; filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); pointer-events:none; }
+  /* v1.76 : les structures encore un peu plus petites (82 % de la case) ; le
+     LOGEMENT, lui, plus grand (125 %, il déborde un peu sur ses voisines). */
+  .plot img { width:82%; height:82%; }
+  .plot.plot-logement { z-index:2; }
+  .plot.plot-logement img { width:125%; height:125%; max-width:none; }
   .plot.plot-maison { flex-direction:column; background:rgba(90,168,230,.10); }
   .plot-maison .maison-glyphe { font-size:34px; line-height:1; color:var(--orange-hi); text-shadow:0 0 10px rgba(255,158,84,.5); }
   /* v0.91 — bannière du Garage (La Carcasse), même traitement que le logement.

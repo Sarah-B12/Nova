@@ -320,6 +320,8 @@ function _mBouture(m){
     return h;
   }
   if(v.phase !== "soins") return h;
+  // v1.77 (H84) : la règle des soins, écrite noir sur blanc.
+  h += `<p class="quete-indice" style="margin:4px 0 8px">Chaque jour, au moins l'un de vous doit la soigner, sinon elle fane. Et pour avoir ta part, tu dois l'avoir soignée au moins une fois.</p>`;
   // Les quatre jours (H26).
   h += `<div class="mi-jours">${(v.jours || []).map(j => `<div class="mi-jour${(j.soigneurs||[]).length ? " ok" : ""}${v.jour_soin === j.n ? " auj" : ""}">
           <b>Jour ${j.n}</b><span>${(j.soigneurs||[]).length ? j.soigneurs.map(echapper).join(", ") : "—"}</span></div>`).join("")}</div>`;

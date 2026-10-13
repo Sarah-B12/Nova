@@ -451,7 +451,7 @@ function majRecolte(){
   if(astuce) astuce.hidden = !etat.terrain.parcelles.every(p=>!p || p.type==="maison");
   etat.terrain.parcelles.forEach((p,i)=>{
     const cell=document.createElement("div");
-    cell.className="plot"+(p?" occupe":"")+(plotSel===i?" sel":"");
+    cell.className="plot"+(p?" occupe":"")+(p && p.type==="maison"?" plot-logement":"")+(plotSel===i?" sel":"");   // v1.76 : le logement plus grand
     if(p && p.type==="maison"){
       /* v1.11 — MÊME IMAGE DE CHANTIER QUE L'ÉCRAN LOGEMENT. `imgMaison(0)`
          vaut null tant que la Cabane n'est pas debout : la case affichait le
