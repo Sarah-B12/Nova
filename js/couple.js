@@ -503,7 +503,9 @@ function _blocSoins(e, u){
   // Nourrir : une ration ou une plante comestible du SAC.
   const vivres = NOURRITURE_ENFANT.filter(id => (etat.sac && etat.sac[id]) > 0);
   if(vivres.length) h += vivres.map(id => `<button class="mini fa-gbtn" data-geste="nourrir" data-detail="${id}"${bloque ? " disabled" : ""}>${_imgGeste("nourrir")}Nourrir — ${echapper(_uNom(id))} <span class="qte">×${etat.sac[id]}</span> (+15)</button>`).join("");
-  else h += `<button class="mini" disabled title="Une ration chaude ou une plante comestible (Ferragave, Nectine, Sporelle) dans le sac.">Nourrir (rien dans le sac)</button>`;
+  // v1.78 : l'explication était un `title` (survol seulement) — au doigt, une infobulle
+  // qui s'ouvre d'un toucher (`.reg-note`, systeme.js) ; le bouton grisé laisse passer le toucher.
+  else h += `<span class="reg-note fa-gnote" tabindex="0"><button class="mini" disabled>Nourrir (rien dans le sac) ⓘ</button><span class="tip" role="tooltip">Il faut une ration chaude ou une plante comestible (Ferragave, Nectine, Sporelle) dans le sac.</span></span>`;
   h += `<button class="mini fa-gbtn" data-geste="calin"${bloque ? " disabled" : ""}>${_imgGeste("calin")}Câliner et coucher (+8)</button>`;
   if(GESTES_ENFANT.jouer.stades.includes(e.stade)) h += `<button class="mini fa-gbtn" data-geste="jouer"${bloque ? " disabled" : ""}>${_imgGeste("jouer")}Jouer (+10)</button>`;
   // v1.58 : les leçons, ici, sous forme d'activités (même geste « apprendre », sans compteur).

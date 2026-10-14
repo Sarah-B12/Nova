@@ -176,6 +176,7 @@ async function syncApresConnexion(){
   if(typeof chargerBete==="function")      t.push(chargerBete());          // v1.00 : la bête (Q15)
   if(typeof chargerUnion==="function")     t.push(chargerUnion());         // v1.36 : mariage (onglet Couple, déménagement décidé par le conjoint)
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
+  if(typeof choixRejouer==="function")     t.push(choixRejouer());         // v1.79 : gains de choix restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
   // v1.35 : l'abandon du terrain est appliqué par le serveur (terrain_lire, via chargerIntegrite).

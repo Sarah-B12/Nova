@@ -578,3 +578,8 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 .hi-carte{ position:relative; }
 .hi-icone{ float:right; width:72px; height:72px; object-fit:contain; margin:0 0 6px 10px; border-radius:10px; }
 @media (max-width:600px){ .hi-icone{ width:56px; height:56px; } }
+
+/* v1.78 — « Nourrir (rien dans le sac) » : infobulle au toucher. */
+.fa-gnote{ display:block; position:relative; }
+.fa-gnote > button{ width:100%; pointer-events:none; text-align:left; }
+.fa-gnote .tip{ top:auto; bottom:110%; left:0; right:auto; max-width:240px; }

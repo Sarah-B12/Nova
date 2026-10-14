@@ -776,6 +776,73 @@ async function _envoyerCercles(cle, cercles){
   if(data.ok){ if(data.cercles) etat.cercles = data.cercles; return "ok"; }
   console.warn("[cercles] refusé :", data.err); return "refuse";
 }
+/* ---------- v1.79 — LE GAIN DE CHAQUE CHOIX (H86, v195) ----------
+   En plus du Cercle : crédits, XP, objets ou +1 compétence, selon le choix —
+   jamais annoncé avant (v0.66). Le serveur (quete_choix_gain) fait foi et ne
+   paie qu'une fois par quête ; la compétence, qui vit dans `donnees`, est
+   appliquée ici. Sac plein, prison ou réseau : le gain attend
+   (`etat.choixAttente`) et choixRejouer() le redemande à la connexion. */
+function _texteGainChoix(g){
+  const p = [];
+  for(const [id, n] of Object.entries(g.items || {})) p.push(`${n}× ${(typeof item==="function" && item(id) && item(id).nom) || id}`);
+  if(g.credits) p.push(`+${g.credits} ₡`);
+  if(g.xp) p.push(`+${g.xp} XP`);
+  if(g.comp){ const c = (typeof COMPETENCES!=="undefined") && COMPETENCES.find(x => x.id === g.comp); p.push(`+1 ${c ? c.nom : g.comp}`); }
+  return p.join(", ");
+}
+async function _gainChoixQ(quete, idx){
+  if(typeof sb === "undefined" || !sb) return;
+  if(typeof sauverMaintenant === "function") await sauverMaintenant();   // le serveur relit donnees.quetes
+  let data = null;
+  try{ ({ data } = await sb.rpc("quete_choix_gain", { p_quete:quete, p_option:idx })); }catch(e){ data = null; }
+  if(data && data.ok){
+    if(etat.choixAttente && etat.choixAttente[quete] != null){ delete etat.choixAttente[quete]; }
+    if(data.deja){ sauvegarder(); return; }
+    const g = data.gains || {};
+    if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+    if(typeof data.credits === "number") etat.credits = data.credits;
+    if(typeof data.xp === "number" && typeof adopterXpTotal === "function") adopterXpTotal(data.xp);
+    if(g.comp && etat.competences){ etat.competences[g.comp] = Math.min(typeof CAP_COMP!=="undefined" ? CAP_COMP : 200, (etat.competences[g.comp] || 0) + 1); }
+    journal(`Ce choix te rapporte aussi : ${_texteGainChoix(g)}.`, "gain", "quete");
+    sauvegarder(); if(typeof afficher === "function") afficher();
+    return;
+  }
+  if(data && (data.err === "choix" || data.err === "hors_quete")) return;   // pas de gain prévu (Q15…) ou quête non atteinte
+  if(!etat.choixAttente || typeof etat.choixAttente !== "object") etat.choixAttente = {};
+  if(etat.choixAttente[quete] == null){
+    etat.choixAttente[quete] = idx;
+    journal(data && data.err === "sac_plein" ? "Ton sac est plein : la récompense de ton choix t'attend. Fais de la place, elle arrivera à ta prochaine connexion."
+                                             : "La récompense de ton choix t'attend : elle arrivera à ta prochaine connexion.", "alerte", "quete");
+  }
+  sauvegarder();
+}
+async function choixRejouer(){
+  const att = etat.choixAttente; if(!att || typeof att !== "object") { await choixRetro(); return; }
+  for(const q of Object.keys(att)) await _gainChoixQ(q, att[q]);
+  await choixRetro();
+}
+/* v1.79b — LES CHOIX DÉJÀ FAITS (H87, v196) : le serveur retrouve chaque choix
+   passé dans `cercles_gains` et paie ce qui ne l'a jamais été. Une fois tout
+   payé, il ne renvoie plus rien : l'appel ne coûte qu'une requête par connexion. */
+async function choixRetro(){
+  if(typeof sb === "undefined" || !sb) return;
+  let data = null;
+  try{ ({ data } = await sb.rpc("quete_choix_retro")); }catch(e){ return; }
+  if(!data || !data.ok) return;
+  const payes = data.payes || [];
+  if(payes.length){
+    if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+    if(typeof data.credits === "number") etat.credits = data.credits;
+    if(typeof data.xp === "number" && typeof adopterXpTotal === "function") adopterXpTotal(data.xp);
+    for(const p of payes){
+      const g = p.gains || {};
+      if(g.comp && etat.competences) etat.competences[g.comp] = Math.min(typeof CAP_COMP!=="undefined" ? CAP_COMP : 200, (etat.competences[g.comp] || 0) + 1);
+    }
+    journal(`Tes choix passés te rapportent : ${payes.map(p => _texteGainChoix(p.gains || {})).join(" ; ")}.`, "gain", "quete");
+    sauvegarder(); if(typeof afficher === "function") afficher();
+  }
+  if(data.attente) journal("Ton sac est plein : une partie des gains de tes choix passés t'attend (à ta prochaine connexion).", "alerte", "quete");
+}
 /* À la connexion (bootstrap) : renvoie les gains restés en attente. */
 async function cerclesRejouer(){
   const f=etat.cerclesAttente; if(!f || typeof f!=="object") return;
@@ -823,6 +890,7 @@ function _wireChoix(z,d){
     // Drapeaux posés par l'option choisie (ex. cap:"stations") — relisibles plus tard.
     if(o.flags) for(const k in o.flags){ etat[k]=o.flags[k]; }
     journal(o.journal || "Ton choix est scellé.","gain");
+    { const a=queteActive(); if(a) _gainChoixQ(a.id, parseInt(b.dataset.choix,10)); }   // v1.79 (H86) : le gain du choix, découvert après coup
     if(typeof afficher==="function") afficher();
     reussirDefi();
   }));

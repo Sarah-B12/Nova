@@ -485,8 +485,8 @@ function _ppStyleTerrain(){
     #pp-terrain .ppt-case.plein{ border:1px solid transparent; }
     /* v1.16 : mêmes proportions que son propre terrain (−10 px sur la case). */
     #pp-terrain .ppt-case img{ width:82%; height:82%; object-fit:contain; display:block; margin:auto; }   /* v1.76 : comme son propre terrain */
-    #pp-terrain .ppt-case.ppt-logement{ z-index:2; }
-    #pp-terrain .ppt-case.ppt-logement img{ width:125%; height:125%; max-width:none; }
+    #pp-terrain .ppt-case.ppt-logement{ min-width:0; min-height:0; overflow:hidden; }   /* v1.77b : 100 %, jamais plus */
+    #pp-terrain .ppt-case.ppt-logement img{ width:100%; height:100%; max-width:100%; max-height:100%; }
     #pp-terrain .ppt-glyphe{ font-size:18px; }
   `;
   document.head.appendChild(st);
