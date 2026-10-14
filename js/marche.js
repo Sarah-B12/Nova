@@ -151,7 +151,12 @@ async function renderMarche(){
   _offresCache = await _chargerOffres(faction);
   const fc = FACTIONS.find(f=>f.id===faction);
   const mesN = _offresCache.filter(o=>o.vendeur_id===_marcheMonId).length;
-  let html = `<div class="marche-tete"><h3 style="color:${fc.couleur};margin:0">Marché — ${fc.nom}</h3>`
+  // v1.80 — bannière du marché de CETTE cité : images/lieux/marche_<faction>.png
+  // (Rhizome : marche_cultivateurs.png ou marche_rhizome.png), puis marche.png.
+  const banEssais = [`images/lieux/marche_${faction}.png`, ...(faction === "cultivateurs" ? ["images/lieux/marche_rhizome.png"] : []), "images/lieux/marche.png"];
+  let html = `<div class="lieu-banniere"><img src="${banEssais[0]}" alt="" data-essais="${banEssais.slice(1).join("|")}"
+      onerror="const r=(this.dataset.essais||'').split('|').filter(Boolean); if(r.length){ this.dataset.essais=r.slice(1).join('|'); this.src=r[0]; } else this.parentElement.remove();"></div>`;
+  html += `<div class="marche-tete"><h3 style="color:${fc.couleur};margin:0">Marché — ${fc.nom}</h3>`
     + `<span class="actions" style="gap:6px"><button class="mini" id="marche-mesventes-btn">Mes ventes${mesN?` (${mesN})`:""}</button><button class="mini" id="marche-vendre-btn">Mettre en vente</button></span></div>`;
   html += await _htmlSurveillanceMarche(faction);   // v1.66 (C21) : SA cité seulement
   html += `<div class="marche-tabs">` + CAT_MARCHE.map(c=>`<button class="marche-tab${c.id===marcheTab?" actif":""}" data-cat="${c.id}">${c.nom}</button>`).join("") + `</div>`;

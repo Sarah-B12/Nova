@@ -132,7 +132,7 @@ function _blocHistoire(e, u){
   const h = e.histoire, H = HISTOIRES[h.n]; if(!H) return "";
   let s = `<div class="hi-carte">${_iconeHistoire(h)}<h4>Histoire : ${H.titre} <span class="qte">${VOCATIONS[H.domaine] || ""}</span></h4>
     <p class="hi-ouv"><i>${echapper(_hX(H.ouverture, e, h))}</i></p>`;
-  if(h.resultat === "reussie") return s + `<p class="hi-fin ok">${echapper(_hX(H.reussite, e, h))}</p><p class="itip-gris">Réussie : Complicité +10, bien-être +20, une leçon.</p></div>`;
+  if(h.resultat === "reussie") return s + `<p class="hi-fin ok">${echapper(_hX(H.reussite, e, h))}</p><p class="itip-gris">Réussie : Complicité +10, bien-être +20, trois leçons.</p></div>`;
   if(h.resultat === "ratee")   return s + `<p class="hi-fin ko">${echapper(_hX(H.echec, e, h))}</p></div>`;
   const reste = Math.max(0, _joursEntre(e.aujourdhui || h.debut, h.fin) + 1);
   s += `<p class="itip-gris">Encore ${_jours(reste)} (dernier jour : ${_uDate(h.fin)}). Étape 1 : l'un de vous ; étape 2 : forcément l'autre ; étape 3 : l'un ou l'autre.</p><ol class="hi-etapes">`;
