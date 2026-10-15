@@ -114,7 +114,16 @@ const HIST_REFUS = { pas_histoire:"L'histoire est finie (ou son délai est pass�
 
 let _histJeuEnCours = false;      // la relecture de 45 s (couple.js) ne redessine pas pendant un mini-jeu
 function _hX(t, e, h){ const tx = h.textes || {}; return String(t || "").replace(/\[X\]/g, e.prenom || "?").replace(/\[nom\]/g, tx["1"] || tx["2"] || tx["3"] || "?"); }
-function _heureParis(){ try{ return Number(new Intl.DateTimeFormat("fr-FR", { timeZone:"Europe/Paris", hour:"numeric", hourCycle:"h23" }).format(new Date())); }catch(err){ return new Date().getHours(); } }
+/* v1.81b — ⚠ en français, l'heure seule s'écrit « 21 h » : Number("21 h") = NaN,
+   et « C'est le soir » restait grisé à toute heure. On lit la PARTIE « heure »
+   (formatToParts), indépendante de la langue. */
+function _heureParis(){
+  try{
+    const p = new Intl.DateTimeFormat("en-GB", { timeZone:"Europe/Paris", hour:"2-digit", hourCycle:"h23" }).formatToParts(new Date()).find(x => x.type === "hour");
+    const h = p ? parseInt(p.value, 10) : NaN;
+    return Number.isFinite(h) ? h : new Date().getHours();
+  }catch(err){ return new Date().getHours(); }
+}
 function _joursEntre(a, b){ return Math.round((new Date(b + "T12:00:00Z") - new Date(a + "T12:00:00Z")) / 86400000); }
 
 /* v1.75 — icône de chaque histoire : `images/histoires/<clé>_encours.png` tant
