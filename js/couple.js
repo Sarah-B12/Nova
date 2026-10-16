@@ -193,13 +193,13 @@ async function majUnions(el){
   if(!_union){ el.innerHTML = `<h3>Unions</h3><p class="vide">Serveur indisponible.</p>`; return; }
   const u = _union.union;
   let h = `<h3>Unions</h3><div class="lieu-banniere"><img src="images/lieux/unions.png" alt="" onerror="this.parentElement.remove()"></div>`;   // v1.69
-  if(u) h += _uBlocMarie(u);
+  if(u) h += `<h4 class="gsec">Ton union</h4>` + _uBlocMarie(u);   // v1.82 : sections titrées
   else {
     if(_union.choix_faction) h += _uBlocChoixFaction(_union.choix_faction);
     h += _uBlocRecues(_union.recues || []);
     h += _union.envoyee ? _uBlocEnvoyee(_union.envoyee) : await _uBlocDemander();
   }
-  h += `<h4 style="margin:18px 0 6px">Derniers mariages</h4><div id="unions-textes"><p class="vide">Chargement…</p></div>`;
+  h += `<h4 class="gsec" style="margin-top:18px">Derniers mariages</h4><div id="unions-textes"><p class="vide">Chargement…</p></div>`;
   el.innerHTML = h;
   _uBrancher(el);
   _uChargerTextes(el.querySelector("#unions-textes"));
@@ -212,14 +212,14 @@ function _uBlocMarie(u){
   const d = u.divorce;
   // v1.40 — décision de l'autrice : divorce et veuvage effacent les enfants du couple.
   if(_aDesEnfants(u)) h += `<p class="itip-gris">⚠ Au divorce, tout ce qui concerne vos enfants sera effacé : la Famille, les lettres, les cachettes.</p>`;
-  if(!d) return h + avert + `<p class="itip-gris">Demander le divorce coûte 50 points de Complicité.</p><div class="actions"><button class="mini danger" data-u="divorcer">Demander le divorce</button></div>`;
+  if(!d) return h + `<div class="u-divorce"><h4 class="gsec">Divorce</h4>` + avert + `<p class="itip-gris">Demander le divorce coûte 50 points de Complicité.</p><div class="u-actions"><button class="mini danger" data-u="divorcer">Demander le divorce</button></div></div>`;
   if(d.par_moi){
     const pret = Date.now() >= new Date(d.forcable_le).getTime();
-    return h + `<p>Tu as demandé le divorce le ${_uDate(d.depuis)}. ${pret ? "Tu peux maintenant le prononcer." : `Sans réponse, tu pourras le prononcer le ${_uDate(d.forcable_le)}.`}</p>` + avert +
-      `<div class="actions"><button class="mini" data-u="divorce-annuler">Annuler la demande</button>${pret ? `<button class="mini danger" data-u="divorcer">Prononcer le divorce</button>` : ""}</div>`;
+    return h + `<div class="u-divorce"><h4 class="gsec">Divorce</h4><p>Tu as demandé le divorce le ${_uDate(d.depuis)}. ${pret ? "Tu peux maintenant le prononcer." : `Sans réponse, tu pourras le prononcer le ${_uDate(d.forcable_le)}.`}</p>` + avert +
+      `<div class="u-actions"><button class="mini" data-u="divorce-annuler">Annuler la demande</button>${pret ? `<button class="mini danger" data-u="divorcer">Prononcer le divorce</button>` : ""}</div></div>`;
   }
-  return h + `<p><b>${echapper(u.nom)}</b> demande le divorce. Sans réponse de ta part, il sera prononcé à partir du ${_uDate(d.forcable_le)}.</p>` + avert +
-    `<div class="actions"><button class="mini danger" data-u="divorcer">Accepter le divorce</button></div>`;
+  return h + `<div class="u-divorce"><h4 class="gsec">Divorce</h4><p><b>${echapper(u.nom)}</b> demande le divorce. Sans réponse de ta part, il sera prononcé à partir du ${_uDate(d.forcable_le)}.</p>` + avert +
+    `<div class="u-actions"><button class="mini danger" data-u="divorcer">Accepter le divorce</button></div></div>`;
 }
 function _aDesEnfants(u){ return !!(u && ((u.enfant && u.enfant.stade !== "aucun") || (u.famille && u.famille.length))); }
 function _uBlocChoixFaction(c){
@@ -229,7 +229,7 @@ function _uBlocChoixFaction(c){
 }
 function _uBlocRecues(recues){
   if(!recues.length) return "";
-  return `<h4 style="margin:12px 0 6px">Demandes reçues</h4>` + recues.map(r =>
+  return `<h4 class="gsec">Demandes reçues</h4>` + recues.map(r =>
     `<div class="u-demande"><p><b>${echapper(r.nom || "?")}</b> te demande en mariage — ${r.il_vient ? "il ou elle viendrait s'installer dans ta maison" : "tu t'installerais dans sa maison"}${r.il_vient ? "" : " (et dans sa faction)"}.</p>
       <div class="actions"><button class="mini" data-u="accepter" data-id="${r.id}">Accepter</button><button class="mini danger" data-u="refuser" data-id="${r.id}">Décliner</button></div></div>`).join("");
 }
@@ -249,7 +249,7 @@ async function _uBlocDemander(){
     if(Array.isArray(data) && data.length){ const pris = new Set(data); amis = amis.filter(a => !pris.has(a.id)); }
   }catch(e){}
   if(!amis.length) return `<p class="vide">Tous tes amis sont déjà mariés.</p>`;
-  return `<h4 style="margin:12px 0 6px">Demander en mariage</h4>
+  return `<h4 class="gsec">Demander en mariage</h4>
     <div class="u-form">
       <select id="u-cible">${amis.map(a => `<option value="${a.id}">${echapper(a.nom)}</option>`).join("")}</select>
       <label><input type="radio" name="u-ou" value="viens" checked> Viens chez moi</label>
@@ -265,10 +265,11 @@ async function _uChargerTextes(z){
     if(!_unionsTextes.length){ z.innerHTML = `<p class="vide">Aucun texte de mariage pour l'instant.</p>`; return; }
     z.innerHTML = _unionsTextes.map(t => {
       const tx = echapper(t.texte || "").replace(/\n/g, "<br>");
-      const tete = `<b>${echapper(t.a)}</b> & <b>${echapper(t.b)}</b> — ${_uDate(t.marie_le)}`;
+      // v1.82 : chaque texte dans sa carte, l'en-tête (les mariés, la date) bien détaché.
+      const tete = `<span class="u-maries"><b>${echapper(t.a)}</b> & <b>${echapper(t.b)}</b></span><span class="u-date">${_uDate(t.marie_le)}</span>`;
       return (t.texte || "").length > 280
-        ? `<details class="u-texte"><summary>${tete}</summary><p>${tx}</p></details>`
-        : `<div class="u-texte"><p>${tete}</p><p>${tx}</p></div>`;
+        ? `<details class="u-texte"><summary class="u-tete">${tete}</summary><p class="u-corps">${tx}</p></details>`
+        : `<div class="u-texte"><div class="u-tete">${tete}</div><p class="u-corps">${tx}</p></div>`;
     }).join("");
   }catch(e){ z.innerHTML = `<p class="vide">Indisponible.</p>`; }
 }

@@ -330,8 +330,9 @@ function ouvrirVente(){
   for(const it of vendables){ const pr=PRIX_ITEM[it.id]; const dispo=etat.sac[it.id];
     html += `<div class="vente-ligne" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span>`
       + `<span class="picker-nom"><b>${it.nom}</b> <span class="qte">×${dispo}</span><span class="itip-gris">${pr.min}–${pr.max} ₡ · moy ${pr.moy}</span></span>`
-      + `<input type="number" class="vente-qte" min="1" max="${dispo}" value="1" data-id="${it.id}" title="Quantité" style="max-width:58px">`
-      + `<input type="number" class="vente-prix" min="${pr.min}" max="${pr.max}" value="${pr.moy}" data-id="${it.id}" title="Prix unitaire">`
+      // v1.82 : chaque case porte son nom (on ne distinguait pas la quantité du prix).
+      + `<label class="vente-champ"><span>Quantité</span><input type="number" class="vente-qte" min="1" max="${dispo}" value="1" data-id="${it.id}" title="Quantité" style="max-width:58px"></label>`
+      + `<label class="vente-champ"><span>Prix / unité (₡)</span><input type="number" class="vente-prix" min="${pr.min}" max="${pr.max}" value="${pr.moy}" data-id="${it.id}" title="Prix unitaire"></label>`
       + `<button class="mini" data-vendre="${it.id}">Vendre</button></div>`;
   }
   html += `</div>`;

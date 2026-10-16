@@ -131,6 +131,31 @@ function ordiHackEquipe(){ return !!(etat.equipement && (etat.equipement.arme===
 // Butin technologique d'une patrouille neutralisée (chance + place au sac). Renvoie l'id lâché ou null.
 /* ⚠ Renvoie un TABLEAU d'identifiants depuis la v1.11 (0, 1 ou 2 objets) :
    les appelants (actions.js, le hack de patrouille) l'affichent en liste. */
+/* ===========================================================
+   v1.83 — LES PATROUILLES SE MÉFIENT (H90). Contre l'enchaînement de
+   patrouilles pour le butin : par JOUR DE JEU, seules les 5 premières
+   patrouilles neutralisées (combat ou piratage) rapportent crédits et objets ;
+   ensuite, plus que l'XP. Et à partir de la 6ᵉ, chacune est un peu plus dure
+   POUR CE JOUEUR : +4 de dureté au combat et −5 points de chance de piratage
+   par patrouille au-delà de 5 (plafonds +40 et −40). Tout repart à zéro le
+   lendemain. (Compteur côté client, comme le combat lui-même — chantier
+   anti-triche.)
+   =========================================================== */
+const PATR_BUTIN_JOUR = 5, PATR_DURETE_PAS = 4, PATR_DURETE_MAX = 40, PATR_HACK_PAS = 0.05, PATR_HACK_MAX = 0.40;
+function _patrJour(){
+  const j = (typeof jourDeJeu === "function") ? jourDeJeu() : new Date().toISOString().slice(0, 10);
+  if(!etat.patrJour || etat.patrJour.jour !== j) etat.patrJour = { jour:j, n:0 };
+  return etat.patrJour;
+}
+function patrouilleAvecButin(){ return _patrJour().n < PATR_BUTIN_JOUR; }
+function patrouilleMefianceDurete(){ return Math.min(PATR_DURETE_MAX, Math.max(0, _patrJour().n - PATR_BUTIN_JOUR + 1) * PATR_DURETE_PAS); }
+function patrouilleMefianceHack(){ return Math.min(PATR_HACK_MAX, Math.max(0, _patrJour().n - PATR_BUTIN_JOUR + 1) * PATR_HACK_PAS); }
+/* À appeler APRÈS chaque patrouille neutralisée. */
+function patrouilleCompter(){
+  const p = _patrJour(); p.n++;
+  if(p.n === PATR_BUTIN_JOUR) journal("Les patrouilles commencent à se méfier de toi : celles qui suivront aujourd'hui n'auront plus rien sur elles, et elles seront de plus en plus dures.", "alerte");
+}
+
 async function butinPatrouille(){
   if(placesLibres() <= 0) return [];
   // Cristal de Nyx : butin très rare du Protocole (seule source ordinaire, en attendant les zones/l'espace).
@@ -232,12 +257,18 @@ async function patrouilleFaufiler(){
 async function patrouilleHacker(){
   if(!ordiHackEquipe()){ fermerPatrouille(); return; }
   fermerPatrouille();
-  const p = Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500);   // Intrusion + Intelligence
+  const p = Math.max(0.05, Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500) - patrouilleMefianceHack());   // Intrusion + Intelligence ; v1.83 : méfiance
   if(Math.random() < p){
     const R = registreEffets();                                           // v1.45 : Registre
-    const g = Math.round(aptButinCombat(alea(10,22)+bonusCredits()) * R.butin); etat.credits += g;
     const xpH = Math.round(XP_PATROUILLE_HACK * R.xp);
+    if(!patrouilleAvecButin()){                                           // v1.83 : plus de butin aujourd'hui
+      gagnerXp(xpH); patrouilleCompter();
+      journal(`Patrouille piratée et neutralisée : les patrouilles se méfient de toi, rien à prendre sur celle-ci. +${xpH} XP.`, "gain");
+      registreSignaler("piratee"); apresAction(); return;
+    }
+    const g = Math.round(aptButinCombat(alea(10,22)+bonusCredits()) * R.butin); etat.credits += g;
     const drop = await butinPatrouille(); gagnerXp(xpH);   // v1.11 : tableau
+    patrouilleCompter();
     journal(`Patrouille piratée et neutralisée : +${g} ₡${drop.length?`, ${_butinTexte(drop)}`:""}, +${xpH} XP. Aucun dégât.`,"gain");
     registreSignaler("piratee");
     apresAction();

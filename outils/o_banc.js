@@ -28,6 +28,7 @@ const DELAIS = {
   chasseur: { profil: 50, sac: 50, jauges: 50 },  // v1.72 : chasseur ou voleur (o_chasseur.js)
   logements: { profil: 50, sac: 50, jauges: 50 }, // v1.73 : logements par faction (o_logements.js)
   choixgains: { profil: 50, sac: 50, jauges: 50 }, // v1.79 : gains des choix de quête (o_choixgains.js)
+  patrmef: { profil: 50, sac: 50, jauges: 50 },   // v1.83 : les patrouilles se méfient (o_patrmef.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)
   traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (o_traque.js)
