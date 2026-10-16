@@ -32,7 +32,55 @@ function _areneFmt(ts){
   catch(e){ return "—"; }
 }
 
+/* ===========================================================
+   v1.84 — CLASSEMENTS (H92). Deux sous-onglets sous la bannière : « Combats »
+   (l'écran d'avant, inchangé) et « Classements » (arene_classements, v200) :
+   Victoires, Combattants, Contre plus fort — mois en cours, top 10 + ta place,
+   podium du mois précédent. Aucune force n'est montrée.
+   =========================================================== */
+let _areneSous = "combats";
+const ARENE_CLASSEMENTS = [
+  { id:"victoires", titre:"Victoires",        aide:"Duels gagnés ce mois-ci, en défiant ou en étant défié." },
+  { id:"combats",   titre:"Combattants",      aide:"Duels joués jusqu'au bout ce mois-ci (refus et défis expirés exclus)." },
+  { id:"plus_fort", titre:"Contre plus fort", aide:"Victoires contre un adversaire plus fort que toi au moment du duel." }
+];
+function _areneBrancherSous(){
+  const s = document.querySelector("#arene-sous"); if(!s || s.dataset.branche) return;
+  s.dataset.branche = "1";
+  s.querySelectorAll("[data-asous]").forEach(b => b.addEventListener("click", () => { _areneSous = b.dataset.asous; _areneMontrerSous(); }));
+}
+function _areneMontrerSous(){
+  document.querySelectorAll("#arene-sous [data-asous]").forEach(b => b.classList.toggle("actif", b.dataset.asous === _areneSous));
+  const v = document.querySelector("#arene-vue"), c = document.querySelector("#arene-class");
+  if(v) v.hidden = _areneSous !== "combats";
+  if(c) c.hidden = _areneSous !== "classements";
+  if(_areneSous === "classements") majAreneClassements();
+}
+async function majAreneClassements(){
+  const z = document.querySelector("#arene-class"); if(!z) return;
+  z.innerHTML = `<p class="vide">Chargement…</p>`;
+  let d = null;
+  try{ ({ data:d } = await sb.rpc("arene_classements")); }catch(e){ d = null; }
+  if(!d || !d.ok){ z.innerHTML = `<p class="vide">Les classements ne répondent pas.</p>`; return; }
+  const mois = new Date(String(d.mois).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { month:"long", year:"numeric" });
+  const med = r => r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `${r}.`;
+  let h = `<p class="itip-gris" style="margin:0 0 10px">Classements de <b>${mois}</b>. Le 1ᵉʳ du mois, le podium de chaque classement est payé — 500, 300 et 150 ₡ — puis tout repart de zéro. À égalité, le premier à atteindre son total passe devant.</p>`;
+  for(const C of ARENE_CLASSEMENTS){
+    const k = (d.classements || {})[C.id] || {};
+    h += `<div class="ar-class"><h4 class="gsec">${C.titre}</h4><p class="itip-gris" style="margin:0 0 6px">${C.aide}</p>`;
+    h += (k.top || []).length
+      ? `<ol class="ar-top">${k.top.map(x => `<li class="${x.moi ? "moi" : ""}"><span class="ar-r">${med(x.rang)}</span><span class="ar-n">${echapper(x.nom)}</span><b>${x.n}</b></li>`).join("")}</ol>`
+      : `<p class="vide">Personne encore ce mois-ci.</p>`;
+    if(k.moi && k.moi.rang > 10) h += `<p class="ar-moi">Toi : ${k.moi.rang}ᵉ, ${k.moi.n}.</p>`;
+    if((k.precedent || []).length) h += `<p class="itip-gris ar-prec">Le mois dernier : ${k.precedent.map(x => `${med(x.rang)} ${echapper(x.nom)} (${x.n})`).join(" · ")}</p>`;
+    h += `</div>`;
+  }
+  z.innerHTML = h;
+}
+
 async function majArene(){
+  _areneBrancherSous();                                   // v1.84 : sous-onglets
+  if(_areneSous === "classements"){ _areneMontrerSous(); return; }
   const z = document.querySelector("#arene-vue"); if(!z) return;
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){
     z.innerHTML = `<p class="vide">L'arène a besoin du serveur.</p>`; return;
