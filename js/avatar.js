@@ -12,7 +12,7 @@
    Les COMPTES ci-dessous disent au sélecteur ce qui existe — il suffit de les
    augmenter à mesure que tu ajoutes des images (les rangées apparaissent seules).
    =========================================================== */
-const AV_VISAGE     = { h:5, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
+const AV_VISAGE     = { h:7, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
 const AV_CHEVEUX    = { h:7,  f:13 };   // coiffures disponibles par genre
 const AV_CHEVEUX_DEUX = { h:[7], f:[] }; // v1.44 : coiffures en deux morceaux (_derriere / _devant)
 const AV_PILOSITE   = 4;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)

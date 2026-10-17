@@ -2299,7 +2299,8 @@ const QUETES = [
           "La console s'allume au premier contact. Une ligne en ancien, que tu lis sans aide maintenant : DEMANDE — CONFIRMATION. Elle veut savoir qui tu es.",
           "Elle attend une réponse. Elle l'attend depuis 109 573 nuits.",
           "« On avait dit pas répondre », souffle Sorn dans le casque.",
-          "« Je réponds à elle », dis-tu. « Pas à eux. Le canal de maintenance porte pas plus loin que la coque. »",
+          "Tu ne réponds rien. Tu bascules l'écran de la console sur la retransmission de ton casque, pour qu'ils le voient, et tu poses le doigt sur la ligne du bas : CANAL DE MAINTENANCE — PORTÉE : COQUE.",
+          "« Portée : coque », lit Sorn, lentement. Un temps. « Ça sort pas d'elle. C'est à elle qu'on répondrait. Pas à eux. »",
           "Un silence. Puis la voix d'Adaya, plus loin du micro : « … Vas-y. »"
         ],
         defi:{ type:"piratage", manches:4, vitesse:1700,
@@ -2711,14 +2712,14 @@ const QUETES = [
           "« Alors voilà. T'es en Ancolie. MAAR-12. Le coin le plus calme de Maar : y a personne. C'est moi qui t'ai posé là. Bon, posé… Disons que tu es là. »",
           "« J'ai des trucs à faire, et j'ai pas le temps. Toi, t'as un vaisseau qui m'obéit, maintenant. Donc on va s'arranger : tu fais mes trucs, je te rends tes commandes. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
         ],
-        defi:{ type:"scene", bouton:"« Rends-moi mon vaisseau. »" } },
+        defi:{ type:"scene", bouton:"Ne rien répondre, et poser la main sur les commandes" } },
 
       /* ---- 3. Reprendre les commandes — IMPOSSIBLE (K15) ---- */
       { indice:"Au point de chute, dans ton vaisseau : reprends les commandes.",
         cible:{ carte:"ancolie", lieu:"chute" },
         image:"images/quetes/q20/3.png",
         arrivee:[
-          "« Ah. Ça, c'est un non. J'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
+          "Tu ne dis rien. Ta main se pose sur les commandes. Un silence, à l'autre bout. Puis : « Ah. Ça, c'est un non. Tu dis rien, mais j'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
           "L'écran de bord affiche une console de navigation. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper pour que le pilote automatique te rende la main."
         ],
         defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
@@ -2764,17 +2765,17 @@ const QUETES = [
           "Tu regardes les automates tailler l'ancolie, dehors, et le bouton éteint de la borne d'appel. Personne ne viendra. Tu le sais."
         ],
         defi:{ type:"choix",
-          texte:["Tu n'as pas vraiment le choix. Mais tu peux choisir comment tu dis oui."],
+          texte:["Tu n'as pas vraiment le choix. Mais tu peux choisir comment tu acceptes."],
           options:[
-            { texte:"« D'accord. Je ferai tes corvées. Et je m'en souviendrai. » Tu serres les dents, et tu tiens.",
+            { texte:"Hocher la tête vers le haut-parleur, les dents serrées. Tu feras ses corvées, et tu t'en souviendras.",
               cercles:{ racines:5 },
-              journal:"Tu as dit oui à 42-U1F en serrant les dents. « Ouh là. Bon. On va bien s'entendre, je le sens. » Il n'avait pas l'air d'y croire." },
-            { texte:"« D'accord. Mais tu vas me parler. Qui tu es, d'où tu m'entends, et pourquoi moi. »",
+              journal:"Tu as accepté le marché de 42-U1F en serrant les dents. « Ouh là. Il fait peur, ton silence. Bon. On va bien s'entendre, je le sens. » Il n'avait pas l'air d'y croire." },
+            { texte:"Accepter, puis rester planté sous le haut-parleur, bras croisés, jusqu'à ce qu'il dise qui il est, d'où il t'entend, et pourquoi toi.",
               cercles:{ langues:5 },
-              journal:"Tu as dit oui à 42-U1F à condition qu'il parle. « Parler, je sais faire. C'est même la seule chose que je fais bien. Enfin, presque bien. »" },
-            { texte:"« D'accord. » Un matricule qui fait obéir les machines d'AREPO : ça peut servir, à qui sait s'en servir.",
+              journal:"Tu es resté sous le haut-parleur, bras croisés, jusqu'à ce que 42-U1F craque. « Quoi ? Tu veux que je parle ? Parler, je sais faire. C'est même la seule chose que je fais bien. Enfin, presque bien. »" },
+            { texte:"Accepter tout de suite. Un matricule qui fait obéir les machines d'AREPO : ça peut servir, à qui sait s'en servir.",
               cercles:{ eclats:5 },
-              journal:"Tu as dit oui à 42-U1F sans discuter. Il a eu l'air méfiant. « T'acceptes vite, toi. Ça me plaît pas. Enfin si. Mais non. »" }
+              journal:"Tu as accepté le marché de 42-U1F sans discuter. Il a eu l'air méfiant. « T'acceptes vite, toi. Ça me plaît pas. Enfin si. Mais non. »" }
           ],
           reussite:[
             "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé au quai, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. »",
