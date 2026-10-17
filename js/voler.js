@@ -28,7 +28,7 @@ const ITEM_HACK_VOL   = "fab_ordinateur_de_hacking";
 let _volTimer = null, _hackTimer = null, _hackWin = null, _hackLose = null, _hackCleanup = null;
 
 function _vjm(){ return (typeof JOUR_MS!=="undefined")?JOUR_MS:86400000; }
-function _vfmt(ms){ ms=Math.max(0,ms); const s=Math.ceil(ms/1000); if(s<60) return s+" s"; const m=Math.floor(s/60); return m+" min "+(s%60)+" s"; }
+function _vfmt(ms){ return _dureePrison(ms); }   // v1.86 : j / h / min / s (était « 1434 min 12 s »)
 function _apris(id){ return !!(etat.aptitudes && Array.isArray(etat.aptitudes.pris) && etat.aptitudes.pris.includes(id)); }
 function aDiscretion(){ return _apris("om1"); }
 function aIntrusion(){ return _apris("om4"); }
@@ -569,6 +569,20 @@ function _factionNom(fid){
   if(fid==="perchoir") return "Le Perchoir";   // v0.94b : lieu de détention, pas faction
   const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null; return f?f.nom:(fid||"cette faction");
 }
+/* v1.86 — l'avatar du prisonnier (couches d'avatar.js), sinon la silhouette. */
+function _avatarPrison(av){
+  const L = (av && typeof _avCouches==="function") ? _avCouches(av) : [];
+  if(!L.length) return _avatarMini();
+  return `<span class="prison-av prison-av-img">${L.map(c=>_avImg(c,"prison-couche")).join("")}</span>`;
+}
+/* v1.86 — « 1434 min 12 s » → « 23 h 54 min 12 s » ; au-delà d'un jour, « 2 j 3 h 10 min ». */
+function _dureePrison(ms){
+  const s = Math.ceil(Math.max(0, ms)/1000), j = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60), sec = s%60;
+  if(j) return `${j} j ${h} h ${m} min`;
+  if(h) return `${h} h ${m} min ${sec} s`;
+  if(m) return `${m} min ${sec} s`;
+  return `${sec} s`;
+}
 function _avatarMini(){ return `<span class="prison-av"><svg viewBox="0 0 120 130"><path d="M18 128 Q18 88 60 88 Q102 88 102 128 Z"/><path d="M60 20 a32 32 0 0 1 32 32 v8 a32 32 0 0 1 -64 0 v-8 a32 32 0 0 1 32 -32 Z"/><rect x="38" y="46" width="44" height="13" rx="6"/></svg></span>`; }
 async function tenterEvasion(){
   if(!enPrison()) return;
@@ -675,6 +689,11 @@ async function _rendrePrisonCellules(el){
   let prisonniers=[];
   try{ const { data } = await sb.rpc("prison_liste", { p_faction: fid });
     prisonniers = (data||[]).map(r=>({ id:r.profil_id, nom:r.nom||"(?)", reste:new Date(r.jusqua)-Date.now() }));
+    /* v1.86 — l'avatar, comme sur le Wanted (vue publique profils_publics). */
+    if(prisonniers.length){ try{
+      const { data:pubs } = await sb.from("profils_publics").select("id,avatar").in("id", prisonniers.map(p=>p.id));
+      const av = {}; for(const p of (pubs||[])) av[p.id] = p.avatar; prisonniers.forEach(p=>{ p.avatar = av[p.id] || null; });
+    }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#prison_avatars"); } }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#3"); }
   const estRegent = regent && fid===etat.faction;   // Régent de SA propre faction, où qu'il soit
   const s=(typeof sessionActuelle==="function")?await sessionActuelle():null; const moiId=s?s.user.id:null;
@@ -686,9 +705,9 @@ async function _rendrePrisonCellules(el){
   else{
     html+=`<div class="prison-liste">`;
     for(const pr of prisonniers){ const moi=pr.id===moiId;
-      html+=`<div class="prison-ligne${moi?" moi":""}">${_avatarMini()}`
+      html+=`<div class="prison-ligne${moi?" moi":""}">${_avatarPrison(pr.avatar)}`
         + `<button class="prison-nom" data-nom="${pr.nom}">${pr.nom}${moi?" (toi)":""}</button>`
-        + `<span class="qte">${_vfmt(Math.max(0,pr.reste))}</span>`
+        + `<span class="qte">${_dureePrison(Math.max(0,pr.reste))}</span>`
         + (estRegent?`<button class="mini" data-gracier="${pr.id}">Gracier</button>`:`<button class="mini" disabled title="Réservé au Régent">Gracier</button>`)
         + `</div>`;
     }
@@ -741,6 +760,8 @@ function _hackStyle(){
     .prison-ligne{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:8px; padding:6px 10px; }
     .prison-ligne.moi{ border-color:rgba(255,82,87,.5); background:rgba(255,82,87,.08); }
     .prison-av{ width:32px; height:32px; border-radius:8px; overflow:hidden; background:#0a1730; display:grid; place-items:center; flex:0 0 auto; }
+    .prison-av-img{ position:relative; width:40px; height:52px; display:block; background:rgba(0,0,0,.35); }
+    .prison-couche{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
     .prison-av svg{ width:100%; height:100%; } .prison-av path{ fill:#2b4a72; } .prison-av rect{ fill:#5aa8e6; }
     .prison-nom{ flex:1; text-align:left; background:none; border:none; color:var(--bleu); cursor:pointer; font:inherit; text-decoration:underline; padding:0; }
     .hk-cadre{ max-height:92vh; overflow:auto; }

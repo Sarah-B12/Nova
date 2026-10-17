@@ -390,8 +390,11 @@ function _zoneAncolie(cle){
 }
 function enZoneChaude(){ const za=_zoneAncolie("chaude"); if(za!==null) return za; if(typeof etat!=="undefined" && etat && etat.secteur==="braise") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_CHAUDE); }
 function enZoneFroide(){ const za=_zoneAncolie("froide"); if(za!==null) return za; if(typeof etat!=="undefined" && etat && etat.secteur==="suaire") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_FROIDE); }
-function tirerMatiere(bonusRare=0){
-  const pool = MINERAIS.map(m => ({ id:m.id, p: m.poids + (m.poids<20 ? bonusRare : 0) }));
+/* v1.86 — `moinsCendrite` (Œil du mineur, choix B de l'autrice) : retranché au poids
+   de la Cendrite (40 → 24) ; tous les autres minerais montent d'autant, sans en
+   favoriser un. `bonusRare` reste disponible, mais plus personne ne s'en sert. */
+function tirerMatiere(bonusRare=0, moinsCendrite=0){
+  const pool = MINERAIS.map(m => ({ id:m.id, p: Math.max(1, m.poids + (m.poids<20 ? bonusRare : 0) - (m.id==="cendrite" ? moinsCendrite : 0)) }));
   const total = pool.reduce((a,b)=>a+b.p,0);
   let x = Math.random()*total;
   for(const m of pool){ if((x-=m.p)<0) return m.id; }

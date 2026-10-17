@@ -273,7 +273,7 @@ function _hackP3(){
     const code=[]; for(let i=0;i<LON;i++) code.push(Math.floor(Math.random()*SYM.length));
     let saisie=[]; let essais=0; let fini=false;
     const m=document.createElement("div"); m.className="modale"; m.id="hp-p3"; m.hidden=false;
-    m.innerHTML=`<div class="membrane modale-boite"><h2>Reconstruction de signal</h2><p class="itip-gris">Retrouve le code de ${LON} symboles en ${MAXE} essais. Après chaque essai : ● bien placé, ○ présent ailleurs.</p><div class="p3-slots" id="p3-slots"></div><div class="p3-palette" id="p3-pal"></div><button class="mini" id="p3-valider" disabled>Valider l'essai</button><div class="p3-essais" id="p3-essais"></div><div class="f1-msg" id="p3-msg">Essai 1/${MAXE}</div></div>`;
+    m.innerHTML=`<div class="membrane modale-boite"><h2>Reconstruction de signal</h2><p class="itip-gris">Retrouve le code de ${LON} symboles en ${MAXE} essais. Après chaque essai : ● bien placé, ○ présent ailleurs.</p><div class="p3-slots" id="p3-slots"></div><div class="p3-palette" id="p3-pal"></div><button class="mini" id="p3-valider" disabled>Valider l'essai</button><div class="p3-essais" id="p3-essais"></div><div class="f1-msg" id="p3-msg">Encore ${MAXE} essais</div></div>`;
     document.body.appendChild(m);
     const slotsEl=m.querySelector("#p3-slots"), palEl=m.querySelector("#p3-pal"), essaisEl=m.querySelector("#p3-essais"), msg=m.querySelector("#p3-msg"), btn=m.querySelector("#p3-valider");
     function majSlots(){ slotsEl.innerHTML=""; for(let i=0;i<LON;i++){ const d=document.createElement("div"); d.className="p3-slot"; d.textContent = saisie[i]!=null?SYM[saisie[i]]:""; d.onclick=()=>{ if(fini) return; saisie.splice(i,1); majSlots(); btn.disabled=saisie.length!==LON; }; slotsEl.appendChild(d); } }
@@ -290,7 +290,7 @@ function _hackP3(){
       essaisEl.appendChild(row);
       if(bien===LON){ fin(true); return; }
       if(essais>=MAXE){ fin(false); return; }
-      saisie=[]; majSlots(); btn.disabled=true; msg.textContent=`Essai ${essais+1}/${MAXE}`;
+      saisie=[]; majSlots(); btn.disabled=true; msg.textContent=(MAXE-essais<=1)?"Dernier essai !":`Encore ${MAXE-essais} essais`;   // v1.86
     });
     function fin(ok){ fini=true; btn.disabled=true; msg.innerHTML= ok?'<b class="or">Signal reconstruit !</b>':`<b style="color:#ff5257">Signal perdu.</b> Code : ${code.map(i=>SYM[i]).join(" ")}`; setTimeout(()=>{ m.remove(); resolve(ok); }, ok?900:1600); }
   });

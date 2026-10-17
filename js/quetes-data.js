@@ -2237,8 +2237,8 @@ const QUETES = [
     donneurImg:"images/quetes/vieux_sorn.png",
     intro:[
       "Derrière l'établi de Sorn, personne. Un relais éventré, le fer à souder encore tiède, et un bout de carton coincé sous une vis.",
-      "« À la serre. Viens. Elle veut pas que je le fasse sans toi. — S. »",
-      "En dessous, d'une autre écriture, plus serrée : « Et moi je veux pas qu'il le fasse tout court. Viens quand même, petit. — A. »"
+      "« À la serre. Viens. Elle ne veut pas que je le fasse sans toi. — S. »",
+      "En dessous, d'une autre écriture, plus serrée : « Je ne veux pas qu'il le fasse tout court. Dépêches-toi. — A. »"
     ],
     etapes:[
 
@@ -2253,7 +2253,7 @@ const QUETES = [
           "« Et s'il lit, il sait aussi qu'on est encore là. » Adaya pose sa tasse. « <i>Fermeture planifiée, en attente de confirmation.</i> Tu l'as entendu comme moi. Il leur manque une case, Sorn. Une. Tu veux leur rappeler qu'on existe ? »",
           "Un long silence. « Je veux savoir qui écoute », dit Sorn. « C'est tout. »",
           "Adaya le regarde, puis toi. « Savoir, d'accord. Écouter, d'accord. Mais personne ne répond. Personne. »",
-          "Sorn hoche la tête, lentement. « Chardon. La sonde du nord, celle qui nous ignore. L'Ortie est morte au Gravier, elle dira plus rien. Celle-là émet encore. » Il te tend le casque de radio qu'il a bricolé sur le petit relais de la porte. « Va voir à qui elle parle. Et tu dis rien. »",
+          "Sorn hoche la tête, lentement. « Chardon. La sonde du nord, celle qui nous ignore. L'Ortie est morte au Gravier, elle ne dira plus rien. Celle-là émet encore. » Il te tend le casque de radio qu'il a bricolé sur le petit relais de la porte. « Va voir à qui elle parle. Et tu dis rien. »",
           "« Rien du tout, petit », ajoute Adaya."
         ],
         defi:{ type:"scene", bouton:"Prendre le casque et monter →" } },

@@ -30,7 +30,7 @@ const APT_TRONC = [
   { id:"prospecteur", nom:"Prospection", noeuds:[
     { id:"pr1", nom:"Filon profond",   effet:"Nouvelles mines : réserve +50 % (500 → 750)." },
     { id:"pr2", nom:"Cultures vivaces",effet:"Bio-dôme : croissance +25 % ; Enclos : +1 produit à la tonte." },
-    { id:"pr3", nom:"Œil du mineur",   effet:"Plus de Silite et de Givrite (les minerais rares) quand tu exploites une mine." },   /* v1.76 */
+    { id:"pr3", nom:"Œil du mineur",   effet:"Moins de Cendrite quand tu exploites une mine : tous les autres minerais sortent plus souvent." },   /* v1.76 ; v1.86 : choix B de l'autrice */
     { id:"pr4", nom:"Sac renforcé",    effet:"+15 places de sac (50 → 65)." }
   ]},
   { id:"artisan", nom:"Artisanat", noeuds:[

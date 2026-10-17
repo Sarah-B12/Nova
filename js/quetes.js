@@ -1218,7 +1218,10 @@ function _wireCadenas(z,d){
   const ligneHist=(h)=>{ const l=document.createElement("div"); l.className="q-cad-ligne";
     l.innerHTML=`<span class="q-cad-code">${h.g.join(" ")}</span><span class="itip-gris">✔ ${h.bien} bien placé(s) · ~ ${h.pres} présent(s)</span>`; hist.prepend(l); };
   a._cadHist.forEach(ligneHist);
-  const maj=()=>{ cpt.textContent=`Essai ${(a._cadEssais||0)+1}/${maxE}`; }; maj();
+  /* v1.86 — « Essai 7/7 » laissait croire qu'on ne pouvait plus jouer : on
+     affiche ce qui RESTE, et le dernier essai est annoncé comme tel. */
+  const maj=()=>{ const r=maxE-(a._cadEssais||0);
+    cpt.textContent = r<=1 ? "Dernier essai !" : `Encore ${r} essais`; }; maj();
   z.querySelector("#q-cad-go").addEventListener("click",()=>{
     const g=[...z.querySelectorAll(".q-cad-slot")].map(s=>s.value);
     if(g.some(v=>!v)){ journal("Choisis un symbole pour chaque case.","alerte"); return; }

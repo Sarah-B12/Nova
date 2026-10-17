@@ -668,6 +668,10 @@ async function _expCreer(el){
   const { data:res, error } = await sb.rpc("creer_expedition",{ p_cible:cible, p_objectif:obj, p_description:desc, p_date:date });
   if(error||!res||!res.ok){ const e=res&&res.err;
     if(e==="existe") journal("Une expédition est déjà en cours.","alerte");
+    else if(e==="cible_prise") journal("Une autre faction prépare déjà une expédition contre cette cible. Attends qu'elle soit terminée.","alerte");   // v1.86 (v202)
+    /* v1.86 (v202) — une seule expédition à la fois CONTRE une même faction : l'index
+       unique partiel `expeditions_cible_active` refuse la seconde (code 23505). */
+    else if(error && (error.code==="23505" || /expeditions_cible_active/.test(error.message||""))) journal("Une autre faction prépare déjà une expédition contre cette cible. Attends qu'elle soit terminée.","alerte");
     else if(e==="pas_stratege") journal("Réservé au Stratège.","alerte");
     else journal("Création impossible.","alerte"); return; }
   _expForm={ cible:"", obj:"", jours:"1", desc:"" };

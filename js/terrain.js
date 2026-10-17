@@ -223,7 +223,7 @@ async function recolterMine(i){
   const lot=aptMineLot(aptStructureLot(alea(3,6)));   // Fournaise (ig2) en zone chaude
   const n=Math.min(lot, stock, placesLibres());
   if(n<=0){ journal(stock<=0?"Mine épuisée — démolis-la puis reconstruis-en une.":"Sac plein.","alerte"); return; }
-  const gains={}; for(let k=0;k<n;k++){ const m=aptGivriteForcee() ? "givrite" : tirerMatiere(aptBonusRare(0)); gains[m]=(gains[m]||0)+1; }
+  const gains={}; for(let k=0;k<n;k++){ const m=aptGivriteForcee() ? "givrite" : tirerMatiere(0, aptMoinsCendrite()); gains[m]=(gains[m]||0)+1; }
   const cristal = aptVeineCristal();                    // Veine de cristal (to4) : hors réserve de la mine
   if(cristal) gains.cristal = (gains.cristal||0) + 1;
   const r=await terrainRpc("terrain_miner", { p_plot:i, p_gains:gains });   // tirage borné par le serveur
@@ -467,7 +467,11 @@ function majRecolte(){
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {
       if(p && p.type==="mousse"){   // v1.63 : la Mousse-amie, avec ses jours restants
-        cell.innerHTML = `<img src="${MOUSSE_IMG}" alt="Mousse-amie" onerror="this.remove()"><span class="badge-plot">Mousse ${mousseJoursRestants(p)} j</span>`;
+        /* v1.86 — le bandeau « Mousse 10 j » cachait l'image au téléphone : les jours
+           restants passent dans l'infobulle et dans le panneau de la parcelle. */
+        const jm = mousseJoursRestants(p);
+        cell.title = `Mousse-amie — encore ${jm} jour${jm>1?"s":""}`;
+        cell.innerHTML = `<img src="${MOUSSE_IMG}" alt="Mousse-amie" onerror="this.remove()">`;
       } else if(p && p.type==="hangar" && !IMG.hangar){
         cell.classList.add("plot-maison");
         const nb = p.drones.filter(Boolean).length;

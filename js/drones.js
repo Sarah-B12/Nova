@@ -71,7 +71,17 @@ function renderHangar(corps){
       const ct = cibleTypeDrone(dr.type);
       const dispo = etat.terrain.parcelles.map((pp,idx)=>({pp,idx})).filter(o=>o.pp && o.pp.type===ct);
       const row = document.createElement("div"); row.className="actions";
-      dispo.forEach(o=>{ const b=document.createElement("button"); b.className="mini"+(dr.cible===o.idx?" actif":""); b.textContent=`Parcelle ${o.idx+1}`; b.addEventListener("click",()=>assignerDrone(si,o.idx)); row.appendChild(b); });
+      /* v1.86 — retour de l'autrice : chaque hangar proposait AUSSI les parcelles
+         déjà servies par le drone d'un autre hangar (ou de l'autre emplacement),
+         d'où deux drones sur le même bio-dôme. Une parcelle n'a plus qu'un drone. */
+      const prise = idx => { for(let h = 0; h < etat.terrain.parcelles.length; h++){ const ph = etat.terrain.parcelles[h];
+          if(!ph || ph.type !== "hangar" || !Array.isArray(ph.drones)) continue;
+          for(let k = 0; k < ph.drones.length; k++){ const d2 = ph.drones[k];
+            if(d2 && d2.cible === idx && d2.type === dr.type && !(h === structSel && k === si)) return h; } }
+        return -1; };
+      dispo.forEach(o=>{ const b=document.createElement("button"); b.className="mini"+(dr.cible===o.idx?" actif":""); const h=prise(o.idx);
+        if(h >= 0){ b.disabled = true; b.title = h === structSel ? "Déjà servie par l'autre emplacement de ce hangar" : `Déjà servie par le hangar de la parcelle ${h+1}`; }
+        b.textContent=`Parcelle ${o.idx+1}${h>=0?" (prise)":""}`; b.addEventListener("click",()=>{ if(!b.disabled) assignerDrone(si,o.idx); }); row.appendChild(b); });
       if(dispo.length===0){ const n=document.createElement("span"); n.className="vide"; n.textContent=`Aucun ${ct==="biodome"?"bio-dôme":"enclos"} à assigner.`; row.appendChild(n); }
       const bdel=document.createElement("button"); bdel.className="mini danger"; bdel.textContent="Retirer"; bdel.addEventListener("click",()=>retirerDrone(si)); row.appendChild(bdel);
       slot.appendChild(row);

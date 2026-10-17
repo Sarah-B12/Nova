@@ -422,7 +422,21 @@ async function fabriquer(seuil){
   const gagne = Math.min(ptsFab(nom) + aptFabPoints(), CAP_RECETTE - (f.fait[seuil]||0));
   if(gagne > 0){ f.fait[seuil] = (f.fait[seuil]||0) + gagne; f.points += gagne; }
   journal(`Fabriqué : ${nom}${bonus2?" ×2 (série)":""}.` + (rendu?` Récup : +1 ${rendu}.`:"") + (gagne > 0 ? ` +${gagne} pt${gagne>1?"s":""} de formation.` : " (recette épuisée, +0 pt)"), "gain");
+  /* v1.86 — retour de l'autrice : la liste remontait tout en haut après chaque
+     fabrication (on enchaîne vingt lingots de Givrite tout en bas). On note le
+     défilement des conteneurs AVANT le redessin et on le rend APRÈS. */
+  const _defil = _noterDefilement(document.querySelector(".atelier-liste"));
   apresAction(); majStruct();
+  _rendreDefilement(_defil);
+}
+function _noterDefilement(el){
+  const l = [{ el:null, top:(typeof window!=="undefined" ? window.scrollY : 0) }];
+  for(let e = el && el.parentElement; e; e = e.parentElement) if(e.scrollTop > 0) l.push({ el:e, top:e.scrollTop });
+  return l;
+}
+function _rendreDefilement(l){
+  const f = () => l.forEach(x => { if(!x.el){ if(typeof window!=="undefined" && window.scrollTo) window.scrollTo(0, x.top); } else if(x.el.isConnected) x.el.scrollTop = x.top; });
+  f(); if(typeof requestAnimationFrame==="function") requestAnimationFrame(f);
 }
 
 /* ---------- Interface de l'atelier (rendue dans la modale de structure) ---------- */

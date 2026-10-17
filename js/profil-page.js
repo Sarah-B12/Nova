@@ -485,6 +485,11 @@ function _ppStyleTerrain(){
     #pp-terrain .ppt-case.plein{ border:1px solid transparent; }
     /* v1.16 : mêmes proportions que son propre terrain (−10 px sur la case). */
     #pp-terrain .ppt-case img{ width:82%; height:82%; object-fit:contain; display:block; margin:auto; }   /* v1.76 : comme son propre terrain */
+    /* v1.86 — retour de l'autrice : hors logement, les structures débordaient de
+       leur case (une image dans une case de grille sans hauteur définie prend sa
+       taille naturelle). Même garde-fou que le logement, à 82 %. */
+    #pp-terrain .ppt-case{ min-width:0; min-height:0; overflow:hidden; }
+    #pp-terrain .ppt-case:not(.ppt-logement) img{ max-width:82%; max-height:82%; position:absolute; inset:0; }
     #pp-terrain .ppt-case.ppt-logement{ min-width:0; min-height:0; overflow:hidden; }   /* v1.77b : 100 %, jamais plus */
     #pp-terrain .ppt-case.ppt-logement img{ width:100%; height:100%; max-width:100%; max-height:100%; }
     #pp-terrain .ppt-glyphe{ font-size:18px; }
@@ -511,7 +516,7 @@ async function _ppTerrain(profilId){
     for(let i=0;i<24;i++){
       const p = parc[i];
       if(!p || !p.type){ cases.push(`<div class="ppt-case"></div>`); continue; }
-      const nom = (NOMS[p.type] && NOMS[p.type].nom) || p.type;
+      const nom = (NOMS[p.type] && NOMS[p.type].nom) || (p.type === "mousse" ? "Mousse-amie" : p.type);
       let dedans = "";
       if(p.type === "maison"){
         // imgMaison() lit NOTRE faction (etat.faction) : ici, on reconstruit le chemin
@@ -532,6 +537,8 @@ async function _ppTerrain(profilId){
           : (enChantier
               ? `<img src="images/maisons/chantier.png" alt="Chantier" onerror="this.replaceWith(document.createTextNode('🏗'))">`
               : `<span class="ppt-glyphe">🏠</span>`);
+      } else if(p.type === "mousse"){   // v1.86 : la Mousse-amie (elle n'a pas d'entrée dans IMG)
+        dedans = `<img src="${(typeof MOUSSE_IMG!=="undefined") ? MOUSSE_IMG : "images/items/mousse_amie.png"}" alt="Mousse-amie" onerror="this.replaceWith(document.createTextNode('🌿'))">`;
       } else if(IMGT[p.type]){
         dedans = `<img src="${IMGT[p.type]}" alt="${nom}">`;
       } else {

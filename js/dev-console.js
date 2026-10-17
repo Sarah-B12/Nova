@@ -511,10 +511,15 @@ function majDev(){
             : `<b>${echapper(d.nom)}</b> — <b>déverrouillée</b> (régime normal : 5 000 ₡, genre figé).`);
     };
     const _appAppel = async (mode)=>{
-      const pseudo = (g.querySelector("#dev-app-pseudo")||{}).value || "";
+      /* ⚠ v1.86c — retour de l'autrice : le pseudo était ignoré et l'action partait
+         sur SOI. Le bloc est construit dans la zone cachée `g`, puis _devRanger() le
+         DÉPLACE dans son onglet : au moment du clic, `g.querySelector` ne trouvait
+         plus le champ, donc pseudo = "" = moi. On le cherche dans le document.
+         Et l'id se lit dans la vue publique (la table profils ne montre que soi). */
+      const pseudo = (document.querySelector("#dev-app-pseudo")||{}).value || "";
       let pid = null;
       if(pseudo.trim()){
-        try{ const { data } = await sb.from("profils").select("id").eq("nom", pseudo.trim()).maybeSingle();
+        try{ const { data } = await sb.from("profils_publics").select("id").eq("nom", pseudo.trim()).maybeSingle();
           if(!data){ _appZ.textContent = "Joueur introuvable."; return; }
           pid = data.id;
         }catch(e){ _appZ.textContent = "Recherche impossible."; return; }
