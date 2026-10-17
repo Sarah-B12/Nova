@@ -2245,7 +2245,7 @@ const QUETES = [
       /* ---- 0. La serre — SCÈNE : la dispute reprend ---- */
       { indice:"La serre d'Adaya, au Rhizome. Sorn y est. Ils t'attendent tous les deux.",
         cible:{ x:1250, y:770, r:90 },
-        image:"images/quetes/q16/0.png",
+        image:"images/quetes/q16/1.png",
         arrivee:[
           "La serre sent le thé froid et la terre mouillée. Ta bête file droit au bout du rang et se couche contre la bouture, comme chez elle. Ses marques battent avec la lueur du bocal.",
           "Sorn et Adaya ne t'ont pas entendu entrer. Ils se disputent, et cette fois, pas à voix basse.",
@@ -2261,7 +2261,7 @@ const QUETES = [
       /* ---- 1. L'approche — RONDE (ratable) ---- */
       { indice:"Au nord de Triptolème, une sonde d'AREPO dérive, antennes tournées vers Silène. C'est Chardon. Approche-toi.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" }, { lieu:"antenne" } ],
-        image:"images/quetes/q16/1.png",
+        image:"images/quetes/q16/2.png",
         arrivee:[
           "De près, Chardon est plus grande que l'Ortie, et intacte. Un tronc de métal hérissé d'antennes, qui tourne lentement sur lui-même. Sur son flanc, une plaque gravée du carré : SONDE CHARDON — RELEVÉ DES CULTURES — SECTEUR MAAR-3.",
           "Ses antennes balaient l'espace autour d'elle, une à une, au rythme de sa rotation. Sous chacune, un bras replié. Tu te souviens de celui de l'Ortie.",
@@ -2279,7 +2279,7 @@ const QUETES = [
       /* ---- 2. Le panneau de service — CADENAS (ratable) ---- */
       { indice:"Contre la plaque de Chardon, le panneau de service. Il est verrouillé.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" } ],
-        image:"images/quetes/q16/2.png",
+        image:"images/quetes/q16/3.png",
         arrivee:[
           "Le panneau est fermé par une serrure à quatre logements. C'est la même que celle du quai, en plus grand, avec les mêmes pictogrammes : le périmètre, l'alimentation, le rassemblement, l'accès restreint.",
           "Trois siècles que personne ne l'a ouvert. La serrure, elle, n'a rien oublié."
@@ -2294,7 +2294,7 @@ const QUETES = [
       /* ---- 3. Celle qui attend — PIRATAGE (ratable) ---- */
       { indice:"Dans le panneau de service de Chardon, son canal de maintenance. Elle ne parle qu'à son destinataire.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" } ],
-        image:"images/quetes/q16/3.png",
+        image:"images/quetes/q16/4.png",
         arrivee:[
           "La console s'allume au premier contact. Une ligne en ancien, que tu lis sans aide maintenant : DEMANDE — CONFIRMATION. Elle veut savoir qui tu es.",
           "Elle attend une réponse. Elle l'attend depuis 109 573 nuits.",
@@ -2313,7 +2313,7 @@ const QUETES = [
       /* ---- 4. Ce qu'elle mesure — ATTENTE (4 h) ---- */
       { indice:"Chardon vide sa mémoire dans la tienne. Laisse la copie se faire.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" } ],
-        image:"images/quetes/q16/4.png",
+        image:"images/quetes/q16/5.png",
         arrivee:[
           "RELEVÉ DES CULTURES — SECTEUR MAAR-3. Les nuits défilent par milliers, plus vite que tu ne peux les lire. Chaque nuit, la même chose : la ligne, ses deux bras, la souche, les vagues.",
           "La copie va prendre du temps. Chardon n'a jamais été pressée."
@@ -2332,7 +2332,7 @@ const QUETES = [
       /* ---- 5. L'en-tête — GLYPHES (ratable) : deux sons nouveaux, DES et TIN ---- */
       { indice:"Dans la mémoire de Chardon : l'en-tête de son émission, en ancien. Lis-le.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" } ],
-        image:"images/quetes/q16/5.png",
+        image:"images/quetes/q16/6.png",
         arrivee:[
           "Avant chaque relevé, la même tête de page : quatre lignes en ancien, chacune avec son pictogramme, comme sur les panneaux du quai. Tu connais la plupart des sons. Pas tous.",
           "« Lis-moi ça », dit Sorn. « Doucement. »"
@@ -2360,7 +2360,7 @@ const QUETES = [
       /* ---- 6. À qui le confier — CHOIX de Cercle ---- */
       { indice:"Rentre à la serre d'Adaya, au Rhizome. Ils t'attendent.",
         cible:{ x:1250, y:770, r:90 },
-        image:"images/quetes/q16/6.png",
+        image:"images/quetes/q16/7.png",
         arrivee:[
           "Adaya a recopié le code à la craie sur le montant de la porte, sous le petit relais de Sorn. Elle l'a effacé, puis recopié.",
           "Ta bête n'a pas quitté la bouture. Sorn tourne autour de la paillasse comme autour d'un moteur qui refuse de démarrer.",
