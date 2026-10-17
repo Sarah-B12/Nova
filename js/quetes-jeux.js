@@ -35,46 +35,69 @@ function _rondeBoucle(){
   b = b.slice(dec).concat(b.slice(0, dec)); if(sens) b.reverse();
   return b;
 }
+/* v1.86e — retour de l'autrice : la ronde se figeait sur « Pas 1 sur 9 » et ne
+   répondait plus aux clics. Chaque pas redessinait tout l'onglet (majQueteHub),
+   et ce redessin commence par _clearQ() : il tuait le minuteur au premier pas.
+   Désormais : on ne touche qu'à la grille pendant l'observation, et le redessin
+   de l'onglet est suspendu (_seqAnim, comme pour le Simon). Consigne réécrite,
+   et la couleur demandée est montrée à chaque réponse. */
+const RONDE_NOMS = ["orange","bleue","verte","rouge"];
+function _rondeCase(R, i){
+  let p = "";
+  if(R.phase === "pret" || R.phase === "observer")
+    R.boucles.forEach((b, j) => { if(b[R.t % b.length] === i) p = `<span style="background:${RONDE_COUL[j]}"></span>`; });
+  if(R.phase === "repondre"){
+    R.rep.forEach((c, j) => { if(c === i) p = `<span style="background:${RONDE_COUL[j]}"></span>`; });
+    if(!p) R.boucles.forEach((b, j) => { if(j >= R.rep.length && b[R.t % b.length] === i)
+      p = `<span style="background:transparent;border:2px dashed ${RONDE_COUL[j]};box-sizing:border-box"></span>`; });
+  }
+  return p;
+}
 QUETES_JEUX.ronde = {
   html(d){
     const R = _qjEtat(_qjCle(d), () => ({ boucles:Array.from({ length:d.nb || 3 }, _rondeBoucle), t:0, phase:"pret", rep:[] }));
-    const nb = R.boucles.length, k = R.rep.length, obs = d.observe || 8;
-    let h = `<div class="quete-etape">${_par(d.texte)}${d.consigne ? `<p class="quete-indice">${d.consigne}</p>` : ""}`;
-    if(R.phase === "repondre") h += `<p class="vide" style="margin:2px 0">${d.nom || "Repère"} ${k + 1} sur ${nb} : touche la case où il sera <b>${d.avance || 3} pas</b> plus tard.</p>`;
+    const nb = R.boucles.length, k = R.rep.length, obs = d.observe || 8, av = d.avance || 3;
+    let h = `<div class="quete-etape">${_par(d.texte)}`;
+    if(R.phase === "pret") h += `<p class="quete-indice">${d.consigne || ""}</p>
+      <p class="vide" style="margin:2px 0">Chaque point de couleur fait le tour d'un rectangle, <b>une case par pas</b>, toujours dans le même sens. Tu vas le regarder avancer pendant ${obs - 1} pas. Ensuite, pour chaque couleur, touche la case où il sera <b>${av} pas plus tard</b>.</p>`;
+    if(R.phase === "observer") h += `<p class="vide" id="qj-ronde-pas" style="margin:2px 0">Pas ${R.t} sur ${obs - 1}…</p>`;
+    if(R.phase === "repondre") h += `<p class="vide" style="margin:2px 0"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${RONDE_COUL[k]};vertical-align:-1px"></span>
+      ${d.nom || "Repère"} <b>${RONDE_NOMS[k]}</b> (${k + 1} sur ${nb}) : son dernier emplacement est en pointillés. Touche la case où elle sera <b>${av} pas plus tard</b>.</p>`;
     h += `<div class="mi-ro-grille" id="qj-ronde">`;
-    for(let i = 0; i < 36; i++){
-      let p = "";
-      if(R.phase === "observer") R.boucles.forEach((b, j) => { if(b[R.t % b.length] === i) p = `<span style="background:${RONDE_COUL[j]}"></span>`; });
-      if(R.phase === "repondre") R.rep.forEach((c, j) => { if(c === i) p = `<span style="background:${RONDE_COUL[j]};opacity:.6"></span>`; });
-      h += `<div class="mi-ro-case" data-qr="${i}">${p}</div>`;
-    }
+    for(let i = 0; i < 36; i++) h += `<div class="mi-ro-case" data-qr="${i}" style="${R.phase === "repondre" ? "cursor:pointer" : ""}">${_rondeCase(R, i)}</div>`;
     h += `</div>`;
     if(R.phase === "pret") h += `<div class="quete-rep"><button class="mini" id="qj-ronde-go">Observer</button></div>`;
-    if(R.phase === "observer") h += `<p class="vide">Pas ${R.t} sur ${obs}…</p>`;
     return h + `</div>`;
   },
   wire(z, d){
     const R = _qjEtat(_qjCle(d), () => ({})), obs = d.observe || 8, av = d.avance || 3;
     const go = z.querySelector("#qj-ronde-go");
     if(go) go.addEventListener("click", () => {
-      R.phase = "observer"; R.t = 0; majQueteHub();
-      if(_queteTimer) clearInterval(_queteTimer);
-      _queteTimer = setInterval(() => {
+      R.phase = "observer"; R.t = 0;
+      _seqAnim = Date.now();                       // pas de redessin de l'onglet pendant l'observation
+      majQueteHubForce();
+      const tick = setInterval(() => {
+        const g = document.querySelector("#qj-ronde");
+        if(!g){ clearInterval(tick); _seqFin(); R.phase = "pret"; R.t = 0; return; }   // onglet quitté : on recommencera
         R.t++;
-        if(R.t >= obs){ clearInterval(_queteTimer); _queteTimer = null; R.phase = "repondre"; }
-        majQueteHub();
-      }, d.vitesse || 450);
+        if(R.t >= obs){ clearInterval(tick); R.t = obs - 1; R.phase = "repondre"; _seqFin(); majQueteHub(); return; }
+        g.querySelectorAll("[data-qr]").forEach(c => { c.innerHTML = _rondeCase(R, +c.dataset.qr); });
+        const lp = document.querySelector("#qj-ronde-pas"); if(lp) lp.textContent = `Pas ${R.t} sur ${obs - 1}…`;
+      }, d.vitesse || 650);
     });
     if(R.phase === "repondre") z.querySelectorAll("[data-qr]").forEach(c => c.addEventListener("click", () => {
       R.rep.push(+c.dataset.qr);
       if(R.rep.length < R.boucles.length){ majQueteHub(); return; }
-      const bon = R.boucles.every((b, j) => b[(obs - 1 + av) % b.length] === R.rep[j]);
+      const bon = R.boucles.every((b, j) => b[(R.t + av) % b.length] === R.rep[j]);
       const a = queteActive(); if(a) a._qj = null;
       if(bon){ journal("Repérage juste.", "gain"); reussirDefi(); }
       else echouerDefi(d.echec || `Raté : ${d.nom ? d.nom.toLowerCase() : "un repère"} n'était pas où tu l'attendais. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
     }));
   }
 };
+/* Le redessin « forcé » ignore la suspension (_seqAnim) : utilisé une seule fois,
+   pour passer de « Observer » à la grille en mouvement. */
+function majQueteHubForce(){ const s = _seqAnim; _seqAnim = 0; majQueteHub(); _seqAnim = s; }
 
 /* ---------- Le nœud (Q17) ---------- */
 QUETES_JEUX.noeud = {
@@ -196,9 +219,10 @@ QUETES_JEUX.impossible = {
     const lacher = z.querySelector("#qj-imp-lacher");
     if(lacher) lacher.addEventListener("click", () => { const a = queteActive(); if(a) a._qj = null; reussirDefi(); });
     if(!go || !ch) return;
-    const perdre = () => { if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } I.tour++; I.ligne = _impLigne(18 + I.tour * 8); sauvegarder(); majQueteHub(); };
+    const perdre = () => { if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); I.tour++; I.ligne = _impLigne(18 + I.tour * 8); sauvegarder(); majQueteHub(); };
     go.addEventListener("click", () => {
       if(_queteTimer) return;
+      _seqAnim = Date.now();   // v1.86e : un redessin de l'onglet tuerait le minuteur
       ch.disabled = false; ch.value = ""; ch.focus();
       const duree = Math.max(1800, 6000 - I.tour * 2500), debut = Date.now(), lg = z.querySelector("#qj-imp-ligne"), barre = z.querySelector("#qj-imp-barre");
       _queteTimer = setInterval(() => {

@@ -5,7 +5,7 @@
   await new Promise(x=>setTimeout(x,1200));
   const r = { erreurs:[] };
   const a = { id:"q16", etape:0 }; queteActive = () => a; sauvegarder = () => {}; rafraichirQuetes = () => {};
-  majQueteHub = () => {}; sauverMaintenant = async () => {};
+  const _mqhOrig = majQueteHub; majQueteHub = () => {}; sauverMaintenant = async () => {};
   let ok = 0, ko = 0; reussirDefi = () => { ok++; }; echouerDefi = () => { ko++; };
   const z = document.createElement("div"); document.body.appendChild(z);
   // 1. Toutes les étapes de Q16 → Q20 se dessinent et se branchent sans erreur.
@@ -19,13 +19,19 @@
       }catch(err){ r.erreurs.push(`${id}/${i} : ${err.message}`); } });
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; }
   }
-  // 2. La ronde : la bonne réponse gagne.
-  a.id = "q16"; a.etape = 1; a._qj = null; const dR = queteData("q16").etapes[1].defi;
-  z.innerHTML = _defiHTML(dR); const R = a._qj; R.phase = "repondre";
-  z.innerHTML = _defiHTML(dR); _defiWire(z, dR);
-  for(const b of R.boucles){ z.innerHTML = _defiHTML(dR); _defiWire(z, dR);
-    z.querySelector(`[data-qr="${b[(dR.observe - 1 + dR.avance) % b.length]}"]`).click(); }
-  r.rondeGagnee = ok === 1;
+  // 2. La ronde : le minuteur tourne jusqu'au bout MALGRÉ les redessins, puis la bonne réponse gagne.
+  ok = 0; a.id = "q16"; a.etape = 1; a._qj = null; const dR = queteData("q16").etapes[1].defi;
+  const hub = document.querySelector("#hub-quete") || (()=>{ const h=document.createElement("div"); h.id="hub-quete"; document.body.appendChild(h); return h; })();
+  majQueteHub = _mqhOrig;
+  const zq = () => document.querySelector("#hub-quete-corps") || z;
+  // on joue dans un conteneur à nous : _defiHTML + _defiWire, et le redessin = la même chose
+  majQueteHub = () => { if(_seqEnCours()) return; _clearQ(); z.innerHTML = _defiHTML(dR); _defiWire(z, dR); };
+  majQueteHub(); z.querySelector("#qj-ronde-go").click();
+  for(let k = 0; k < 4; k++){ await new Promise(x=>setTimeout(x,400)); majQueteHub(); }   // redessins parasites
+  await new Promise(x=>setTimeout(x, (dR.observe) * 650 + 400));
+  const R = a._qj; r.ronde = { phase:R && R.phase, t:R && R.t };
+  for(const b of R.boucles){ z.querySelector(`[data-qr="${b[(R.t + dR.avance) % b.length]}"]`).click(); }
+  r.rondeGagnee = ok === 1; majQueteHub = () => {};
   // 3. La crevasse : le plus court chemin (BFS) sort ; le labyrinthe est parfait.
   ok = 0; a.id = "q17"; a.etape = 0; a._qj = null; const dC = queteData("q17").etapes[0].defi;
   z.innerHTML = _defiHTML(dC); const G = a._qj, n = G.n, fin = (n - 1) * n + G.ce;
