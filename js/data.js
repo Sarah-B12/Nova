@@ -362,7 +362,7 @@ function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x,
    utiliser enEcart() pour dire « pas sur Silène » : sur La Braise, enEcart()
    est faux, et le joueur serait resté « dans sa ville » (etat.pos inchangé). */
 function horsSilene(){ return !!(typeof etat!=="undefined" && etat && etat.secteur && etat.secteur !== "silene"); }
-function enSurface(){ return !!(typeof etat!=="undefined" && etat && (etat.secteur === "braise" || etat.secteur === "suaire")); }
+function enSurface(){ return !!(typeof etat!=="undefined" && etat && (etat.secteur === "braise" || etat.secteur === "suaire" || etat.secteur === "ancolie")); }   // v1.85 : + Ancolie
 function villeActuelle(){
   if(horsSilene()) return null;
   if(!etat.pos) return null;
@@ -382,8 +382,14 @@ const ZONE_CHAUDE = { x:1225, y:325, r:350 };
 const ZONE_FROIDE = { x:1920, y:355, r:350 };
 function _dansZoneTh(z){ return !!(typeof etat!=="undefined" && etat && etat.pos && Math.hypot(etat.pos.x-z.x, etat.pos.y-z.y) <= z.r); }
 // v0.98 — La Braise est tout entière zone chaude, Le Suaire tout entier zone froide.
-function enZoneChaude(){ if(typeof etat!=="undefined" && etat && etat.secteur==="braise") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_CHAUDE); }
-function enZoneFroide(){ if(typeof etat!=="undefined" && etat && etat.secteur==="suaire") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_FROIDE); }
+/* v1.85 — Ancolie : deux zones (SURFACES.ancolie.zonesTh), lues sur la position au sol. */
+function _zoneAncolie(cle){
+  if(!(typeof etat!=="undefined" && etat && etat.secteur==="ancolie" && typeof SURFACES!=="undefined")) return null;
+  const z = SURFACES.ancolie.zonesTh[cle], p = etat.surface; if(!z || !p) return false;
+  return Math.hypot(p.x - z.x, p.y - z.y) <= z.r;
+}
+function enZoneChaude(){ const za=_zoneAncolie("chaude"); if(za!==null) return za; if(typeof etat!=="undefined" && etat && etat.secteur==="braise") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_CHAUDE); }
+function enZoneFroide(){ const za=_zoneAncolie("froide"); if(za!==null) return za; if(typeof etat!=="undefined" && etat && etat.secteur==="suaire") return true; if(horsSilene()) return false; return _dansZoneTh(ZONE_FROIDE); }
 function tirerMatiere(bonusRare=0){
   const pool = MINERAIS.map(m => ({ id:m.id, p: m.poids + (m.poids<20 ? bonusRare : 0) }));
   const total = pool.reduce((a,b)=>a+b.p,0);

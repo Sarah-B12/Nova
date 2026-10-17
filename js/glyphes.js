@@ -40,7 +40,9 @@ const GLYPHES_ANCIEN = {
   ATION:["O",""],       CON:["O","point"],
   CAL:["C",""],         RESTREINT:["C","point"],
   // — v1.64 : la balise sous la glace (H43, LORE §11 bis) —
-  RE:["C","barre"],      MANDE:["L","renverse"],  SERV:["D","barre"]
+  RE:["C","barre"],      MANDE:["L","renverse"],  SERV:["D","barre"],
+  // — v1.85 : Q16, l'en-tête de Chardon (« Destination ») —
+  DES:["L","barre"],     TIN:["O","barre"]
 };
 /* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
    nettement distinctes, ex. ["L","barre"] (Λ barré), ["O","barre"] (Ω barré).

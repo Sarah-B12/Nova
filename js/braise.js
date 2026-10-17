@@ -60,8 +60,36 @@ const SURFACES = {
     arrivee:"Le vaisseau se pose dans une gerbe de neige. Dehors, tout est blanc, bleu et silencieux. À bord, l'air tient ; dehors, il n'y en a pas.",
     depart:"Le vaisseau arrache ses patins à la glace. En dessous, Le Suaire redevient une bille blanche.",
     couleur:"#7dd3fc"
+  },
+  /* v1.85 — ANCOLIE (MAAR-12), K6, K23. Sur Maar, comme Silène, mais « très très
+     loin » : on y va depuis Silène (bouton « Partir pour Ancolie »), pas depuis
+     l'orbite. L'ancolie a pris normalement : l'AIR Y EST RESPIRABLE (air:true),
+     comme sur Silène — l'O₂ s'use en marchant et se refait tout seul. Deux zones
+     thermiques (enZoneChaude / enZoneFroide, data.js). Pas de Protocole, pas de
+     patrouille. Fond carte_ancolie.png (1536 × 1024 → monde × 1,5625). */
+  ancolie: {
+    nom:"Ancolie", orbite:null, img:"images/carte_ancolie.png", w:2400, h:1600,
+    o2Mult:1, air:true, depuisSilene:true, coutMult:1.5,
+    vaisseau:{ x:1110, y:960, r:70 },
+    zonesTh:{ chaude:{ x:360, y:270, r:540 }, froide:{ x:1910, y:380, r:580 } },
+    lieux:[
+      { id:"atterrissage", nom:"Le quai", x:1110, y:960, r:70, desc:"Une aire ronde, lisse, balisée. Elle attend des vaisseaux depuis trois cents ans." },
+      { id:"station",      nom:"La station", x:1031, y:880, r:110, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser." },
+      { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
+      { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
+      { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." }
+    ],
+    arrivee:"Le vaisseau se pose au quai, dans un souffle de pétales. Dehors, l'ancolie à perte de vue, bleue sous la lumière. L'air est bon.",
+    depart:"Le vaisseau décolle du quai. En dessous, Ancolie s'efface : une tache bleue, puis plus rien. Silène est loin.",
+    couleur:"#8fb8ff"
   }
 };
+/* v1.85 — coût d'un trajet Silène ⇄ Ancolie : un saut × coutMult. */
+function coutSautSurface(c){
+  const cs = (typeof coutSaut==="function") ? coutSaut() : null; if(!cs) return null;
+  const m = (c && c.coutMult) || 1;
+  return Object.assign({}, cs, { litres:Math.ceil(cs.litres * m), energie:Math.ceil(cs.energie * m) });
+}
 /* Compatibilité : BRAISE désigne la configuration de La Braise. */
 const BRAISE = SURFACES.braise;
 const PAS_SURF_E  = (typeof PAS    !== "undefined") ? PAS    : 63;   // mêmes pas que Silène (carte.js)
@@ -80,7 +108,7 @@ function auVaisseauBraise(){ const c=surfaceCfg(); if(!c) return false; const p=
    'suaire') ou null. C'est de là qu'on descend. */
 function surOrbitePlanete(){
   if(!((typeof enEcart==="function") && enEcart() && typeof surLieuEspace==="function" && typeof espaceLieu==="function")) return null;
-  for(const k in SURFACES) if(surLieuEspace(espaceLieu(SURFACES[k].orbite))) return k;
+  for(const k in SURFACES) if(SURFACES[k].orbite && surLieuEspace(espaceLieu(SURFACES[k].orbite))) return k;   // v1.85 : Ancolie n'a pas d'orbite
   return null;
 }
 function surOrbiteBraise(){ return !!surOrbitePlanete(); }       // compatibilité (navigation.js)
@@ -152,6 +180,7 @@ async function decollerBraise(){
     etat.surface = { ...posSurface(), abord:true };
   }
   if(_viseeSol) _viseeSol.effacer();
+  if(c.depuisSilene){ await _decollerVersSilene(c); return; }
   if(!await _payerSaut(`Décollage — ${c.nom}`)) return;
   etat.secteur = "ecart";
   etat.surface = null;
@@ -160,6 +189,47 @@ async function decollerBraise(){
   fermerCarteBraise();
   if(typeof majApresDeplacement==="function") majApresDeplacement();
   if(typeof ouvrirOrbite==="function") ouvrirOrbite();
+}
+
+/* ---------- v1.85 — Silène ⇄ Ancolie ---------- */
+function ancolieConnue(){ return etat.ancolie === true; }
+function verrouMaar(){ return etat.verrouMaar === true; }    // K16 : de la fin de Q20 à la fin de Q30
+function _qActiveId(){ const a = (typeof queteActive==="function") ? queteActive() : null; return a ? a.id : null; }
+async function partirVersAncolie(){
+  const c = SURFACES.ancolie;
+  if(!ancolieConnue()){ journal("Tu ne connais pas de route vers Ancolie.","alerte"); return; }
+  if(enSurfaceIci()){ ouvrirCarteBraise(); return; }
+  if(typeof enEcart==="function" && enEcart()){ journal("Ancolie est sur Maar : redescends d'abord sur Silène.","alerte"); return; }
+  if(!etat.vaisseau){ journal("Il te faut un vaisseau équipé pour rejoindre Ancolie.","alerte"); return; }
+  if(typeof villeActuelle==="function" && !villeActuelle()){ journal("On ne décolle pas depuis la nature : rejoins une ville d'abord.","alerte"); return; }
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : ton vaisseau ne quittera pas le sol.","alerte"); return; }
+  const cs = coutSautSurface(c); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
+  if(auto < 2*cs.litres){
+    journal(`Départ refusé : il faut de quoi revenir. L'aller-retour coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout.`,"alerte","voyage");
+    return;
+  }
+  if(!await _payerSaut("Départ pour Ancolie", cs)) return;
+  etat.secteur = "ancolie";
+  etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
+  journal(c.arrivee,"gain","voyage");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  if(typeof majApresDeplacement==="function") majApresDeplacement();
+  ouvrirCarteBraise();
+}
+async function _decollerVersSilene(c){
+  if(_qActiveId() === "q20"){
+    journal("Les commandes ne répondent pas. Dans la radio, une voix bâille : « Non non non. Pas tant qu'on n'a pas causé, toi et moi. »","alerte","voyage");
+    return;
+  }
+  const cs = coutSautSurface(c); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  if(!await _payerSaut(`Retour sur Silène — ${c.nom}`, cs)) return;
+  etat.secteur = "silene";
+  etat.surface = null;
+  journal(c.depart,"gain","voyage");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  fermerCarteBraise();
+  if(typeof majApresDeplacement==="function") majApresDeplacement();
 }
 
 /* ---------- Déplacement au sol ---------- */
@@ -171,12 +241,12 @@ async function voyagerBraise(x, y){
   if(rq){ x = rq.x; y = rq.y; }
   const c = coutBraise(x, y); if(!c) return;
   const o2 = etat.jauges ? (etat.jauges.o2|0) : 0;
-  if(c.coutO >= o2){
+  if(c.coutO >= o2 && !cfg.air){
     journal(`Pas assez d'O₂ pour ce trajet (−${c.coutO}, il t'en reste ${o2}). Respire une recharge, ou avance moins loin.`,"alerte");
     return;
   }
   // Point de non-retour : on AVERTIT (comme sur Silène), on n'interdit pas.
-  const reste = o2 - c.coutO, retour = coutRetourVaisseau({ x, y });
+  const reste = o2 - c.coutO, retour = cfg.air ? 0 : coutRetourVaisseau({ x, y });
   if(retour > 0 && retour >= reste){
     if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir au vaisseau.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
   }
@@ -264,14 +334,18 @@ function majCarteBraise(){
   const info = document.querySelector("#braise-info");
   if(info){
     const ret = coutRetourVaisseau();
-    info.innerHTML = abord
+    info.innerHTML = cfg.air
+      ? (abord ? `<b>Au quai, à bord de ton vaisseau.</b> <span class="itip-gris">Ici, l'air est bon.</span>`
+               : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est respirable</span>`)
+      : abord
       ? `<b>À bord de ton vaisseau.</b> <span class="itip-gris">Ici tu respires. Dehors, chaque pas coûte de l'O₂.</span>`
       : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:((typeof missionsLieuIci==="function" && missionsLieuIci()) || "<b>À découvert.</b>")} <span class="itip-gris">· retour au vaisseau : ${ret} O₂</span>`;
   }
   const bb = document.querySelector("#braise-bord"), bd = document.querySelector("#braise-decoller");
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }
   if(bd){ bd.disabled = !(abord || auVaisseauBraise());   /* v1.34f : depuis l'aire aussi */ const cs = (typeof coutSaut==="function") ? coutSaut() : null;
-    bd.textContent = cs ? `Décoller — ${cs.litres} L, ${cs.energie} % énergie` : "Décoller"; }
+    const cs2 = cfg.depuisSilene ? coutSautSurface(cfg) : cs;
+    bd.textContent = cs2 ? `${cfg.depuisSilene ? "Rentrer sur Silène" : "Décoller"} — ${cs2.litres} L, ${cs2.energie} % énergie` : "Décoller"; }
   if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
 }
 function ouvrirCarteBraise(){
@@ -301,4 +375,5 @@ function majDescente(){
   if(q("#braise-bord"))     q("#braise-bord").addEventListener("click", monterABord);
   if(q("#braise-decoller")) q("#braise-decoller").addEventListener("click", decollerBraise);
   if(q("#ouvrir-braise"))   q("#ouvrir-braise").addEventListener("click", ouvrirCarteBraise);
+  if(q("#ouvrir-ancolie"))  q("#ouvrir-ancolie").addEventListener("click", partirVersAncolie);   // v1.85
 })();

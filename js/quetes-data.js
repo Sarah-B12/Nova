@@ -2218,6 +2218,574 @@ const QUETES = [
         defi:{ type:"scene", bouton:"Rendre la bouture et terminer", rendre:"bouture" } }
     ],
     recompense:{ credits:1800, xp:320, pa:1, flags:{} }   // v1.01 : PA (la bête)
+  },
+
+  /* ===========================================================
+     v1.85 — LOT 1 DE L'ARC Q16 → Q30 (cadrage K1 → K39, LORE v5 §11,
+     CADRAGE_Q16_Q30_DECISIONS.md, DOSSIER_LOT1_Q16_Q20.md).
+     Q16 → Q19 : remonter le signal des sondes jusqu'au Bureau des Cultures ;
+     trois sources (Chardon, La Cassée, le Perchoir), puis le saut préparé.
+     Q20 : la Gorge, le détournement, Ancolie, 42-U1F.
+     Épreuves nouvelles : quetes-jeux.js (ronde, nœud, crevasse, impossible, saut).
+     =========================================================== */
+
+  /* ---------------- Q16 — Celle qui ignore (texte validé le 17/10) ---------------- */
+  {
+    id:"q16",
+    nom:"Celle qui ignore",
+    donneur:"Vieux Sorn",
+    donneurImg:"images/quetes/vieux_sorn.png",
+    intro:[
+      "Derrière l'établi de Sorn, personne. Un relais éventré, le fer à souder encore tiède, et un bout de carton coincé sous une vis.",
+      "« À la serre. Viens. Elle veut pas que je le fasse sans toi. — S. »",
+      "En dessous, d'une autre écriture, plus serrée : « Et moi je veux pas qu'il le fasse tout court. Viens quand même, petit. — A. »"
+    ],
+    etapes:[
+
+      /* ---- 0. La serre — SCÈNE : la dispute reprend ---- */
+      { indice:"La serre d'Adaya, au Rhizome. Sorn y est. Ils t'attendent tous les deux.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q16/0.png",
+        arrivee:[
+          "La serre sent le thé froid et la terre mouillée. Ta bête file droit au bout du rang et se couche contre la bouture, comme chez elle. Ses marques battent avec la lueur du bocal.",
+          "Sorn et Adaya ne t'ont pas entendu entrer. Ils se disputent, et cette fois, pas à voix basse.",
+          "« Trois cents ans qu'elles émettent », dit Sorn. « <i>Émission maintenue</i>, que ça disait sur l'Ortie. Maintenue pour qui ? Si quelqu'un lit, là-haut, il sait. Il sait ce qu'il y a au bout du bras. »",
+          "« Et s'il lit, il sait aussi qu'on est encore là. » Adaya pose sa tasse. « <i>Fermeture planifiée, en attente de confirmation.</i> Tu l'as entendu comme moi. Il leur manque une case, Sorn. Une. Tu veux leur rappeler qu'on existe ? »",
+          "Un long silence. « Je veux savoir qui écoute », dit Sorn. « C'est tout. »",
+          "Adaya le regarde, puis toi. « Savoir, d'accord. Écouter, d'accord. Mais personne ne répond. Personne. »",
+          "Sorn hoche la tête, lentement. « Chardon. La sonde du nord, celle qui nous ignore. L'Ortie est morte au Gravier, elle dira plus rien. Celle-là émet encore. » Il te tend le casque de radio qu'il a bricolé sur le petit relais de la porte. « Va voir à qui elle parle. Et tu dis rien. »",
+          "« Rien du tout, petit », ajoute Adaya."
+        ],
+        defi:{ type:"scene", bouton:"Prendre le casque et monter →" } },
+
+      /* ---- 1. L'approche — RONDE (ratable) ---- */
+      { indice:"Au nord de Triptolème, une sonde d'AREPO dérive, antennes tournées vers Silène. C'est Chardon. Approche-toi.",
+        cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" }, { lieu:"antenne" } ],
+        image:"images/quetes/q16/1.png",
+        arrivee:[
+          "De près, Chardon est plus grande que l'Ortie, et intacte. Un tronc de métal hérissé d'antennes, qui tourne lentement sur lui-même. Sur son flanc, une plaque gravée du carré : SONDE CHARDON — RELEVÉ DES CULTURES — SECTEUR MAAR-3.",
+          "Ses antennes balaient l'espace autour d'elle, une à une, au rythme de sa rotation. Sous chacune, un bras replié. Tu te souviens de celui de l'Ortie.",
+          "La voix de Sorn grésille dans le casque : « Elle te verra pas si t'es pas dans son axe. Elle regarde Silène, pas toi. Regarde-la tourner. Et passe par où elle regardera pas. »"
+        ],
+        defi:{ type:"ronde", nom:"Antenne", nb:3, observe:9, avance:3,
+          texte:[ "Trois antennes, trois rondes. Tu les regardes tourner, et tu comptes." ],
+          consigne:"Observe la rotation des antennes, puis devine où sera chacune trois pas plus tard : c'est l'angle mort, et c'est là que tu t'arrimes.",
+          echec:"Une antenne passe sur toi. Le bras se déplie à moitié ; tu décroches juste à temps. Nouvelle tentative plus tard.",
+          reussite:[
+            "Tu poses tes patins sur son flanc, juste sous la plaque. Elle ne réagit pas.",
+            "Elle ne t'a pas vu. Elle ne voit jamais personne."
+          ] } },
+
+      /* ---- 2. Le panneau de service — CADENAS (ratable) ---- */
+      { indice:"Contre la plaque de Chardon, le panneau de service. Il est verrouillé.",
+        cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" } ],
+        image:"images/quetes/q16/2.png",
+        arrivee:[
+          "Le panneau est fermé par une serrure à quatre logements. C'est la même que celle du quai, en plus grand, avec les mêmes pictogrammes : le périmètre, l'alimentation, le rassemblement, l'accès restreint.",
+          "Trois siècles que personne ne l'a ouvert. La serrure, elle, n'a rien oublié."
+        ],
+        defi:{ type:"cadenas", longueur:4, symboles:["▣","⌁","⚑","⊘"], essais:7,
+          texte:["Quatre logements, quatre pictogrammes. La serrure dit combien sont à la bonne place, et combien sont seulement dans la combinaison."],
+          reussite:[
+            "Le panneau cède avec un soupir de joint sec. Derrière, une console minuscule, éteinte, et un canal de maintenance qui clignote doucement.",
+            "Elle attend quelqu'un."
+          ] } },
+
+      /* ---- 3. Celle qui attend — PIRATAGE (ratable) ---- */
+      { indice:"Dans le panneau de service de Chardon, son canal de maintenance. Elle ne parle qu'à son destinataire.",
+        cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" } ],
+        image:"images/quetes/q16/3.png",
+        arrivee:[
+          "La console s'allume au premier contact. Une ligne en ancien, que tu lis sans aide maintenant : DEMANDE — CONFIRMATION. Elle veut savoir qui tu es.",
+          "Elle attend une réponse. Elle l'attend depuis 109 573 nuits.",
+          "« On avait dit pas répondre », souffle Sorn dans le casque.",
+          "« Je réponds à elle », dis-tu. « Pas à eux. Le canal de maintenance porte pas plus loin que la coque. »",
+          "Un silence. Puis la voix d'Adaya, plus loin du micro : « … Vas-y. »"
+        ],
+        defi:{ type:"piratage", manches:4, vitesse:1700,
+          texte:["Le canal de maintenance accepte une identité si on la lui donne au bon moment. Saisis-le quatre fois de suite."],
+          reussite:[
+            "La console se tait une seconde. Puis : CONFIRMATION REÇUE.",
+            "Et Chardon, pour la première fois depuis trois siècles, parle à quelqu'un.",
+            "Tu ne sais pas pour qui elle te prend. Tu préfères ne pas le savoir."
+          ] } },
+
+      /* ---- 4. Ce qu'elle mesure — ATTENTE (4 h) ---- */
+      { indice:"Chardon vide sa mémoire dans la tienne. Laisse la copie se faire.",
+        cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" } ],
+        image:"images/quetes/q16/4.png",
+        arrivee:[
+          "RELEVÉ DES CULTURES — SECTEUR MAAR-3. Les nuits défilent par milliers, plus vite que tu ne peux les lire. Chaque nuit, la même chose : la ligne, ses deux bras, la souche, les vagues.",
+          "La copie va prendre du temps. Chardon n'a jamais été pressée."
+        ],
+        defi:{ type:"attente", duree:4*3600*1000,
+          texte:["La copie avance, nuit après nuit."],
+          reussite:[
+            "La dernière nuit copiée est celle d'hier. Au bas du relevé, une rubrique que l'Ortie n'avait pas, ou qu'elle n'a plus eu le temps d'écrire : ORGANISMES MOBILES — BRAS EST.",
+            "Un chiffre. Il a été de cinq pendant trois cents ans. Depuis quelques nuits, il est de quatre.",
+            "Tu penses à ta bête, couchée contre la bouture, au fond d'une serre.",
+            "« Elle l'a vue partir », dit Sorn, très bas. « Elle a compté. »",
+            "« Elle compte », dit Adaya, « et personne ne lit. »",
+            "« Ils auraient dû la voir », dit Sorn. Personne ne lui répond."
+          ] } },
+
+      /* ---- 5. L'en-tête — GLYPHES (ratable) : deux sons nouveaux, DES et TIN ---- */
+      { indice:"Dans la mémoire de Chardon : l'en-tête de son émission, en ancien. Lis-le.",
+        cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" } ],
+        image:"images/quetes/q16/5.png",
+        arrivee:[
+          "Avant chaque relevé, la même tête de page : quatre lignes en ancien, chacune avec son pictogramme, comme sur les panneaux du quai. Tu connais la plupart des sons. Pas tous.",
+          "« Lis-moi ça », dit Sorn. « Doucement. »"
+        ],
+        defi:{ type:"glyphes",
+          texte:["Quatre lignes d'en-tête, quatre pictogrammes. Rends à chacune son sens."],
+          consigne:"Associe chaque ligne à sa signification. Les sons que tu ne connais pas se devinent par le reste.",
+          paires:[
+            /* ⚠ LORE §11 bis : DES et TIN sont NOUVEAUX (glyphes.js). « Destination »
+               contient ATION, déjà connu. Ne jamais les réattribuer. */
+            { picto:"✓", sons:["DE","MANDE","CON","FIRM","ATION"], sens:"Demande de confirmation" },
+            { picto:"📡", sons:["RE","LAI"],                       sens:"Relais" },
+            { picto:"❄", sons:["CON","SERV","ATION"],               sens:"Conservation" },
+            { picto:"➹", sons:["DES","TIN","ATION"],                sens:"Destination" }
+          ],
+          distracteurs:["Quarantaine","Expédition","Réfectoire"],
+          reussite:[
+            "Demande de confirmation. Relais. Conservation. Et la dernière : DES·TIN·ATION. Tu n'avais jamais vu ces deux sons-là. Tu les as devinés, et tu sais que tu as raison.",
+            "L'Ortie disait « Bureau des Cultures ». Chardon dit <b>où</b> il est. Après <i>Destination</i>, il n'y a pas de nom, mais un code : quatre glyphes que tu lis sans peine, et qui ne veulent rien dire. TURE — PART — LAI — ME.",
+            "« Ça veut rien dire », dit Sorn.",
+            "« Ça veut dire quelque chose à quelqu'un », dit Adaya. « Pas à nous. »",
+            "Tu fouilles la mémoire de Chardon jusqu'au bout. Le code n'apparaît nulle part ailleurs : ni sur l'Ortie, ni dans rien de ce que tu as lu. Une adresse qui ne mène à aucun endroit connu."
+          ] } },
+
+      /* ---- 6. À qui le confier — CHOIX de Cercle ---- */
+      { indice:"Rentre à la serre d'Adaya, au Rhizome. Ils t'attendent.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q16/6.png",
+        arrivee:[
+          "Adaya a recopié le code à la craie sur le montant de la porte, sous le petit relais de Sorn. Elle l'a effacé, puis recopié.",
+          "Ta bête n'a pas quitté la bouture. Sorn tourne autour de la paillasse comme autour d'un moteur qui refuse de démarrer.",
+          "« Bon », dit Adaya. « Qu'est-ce qu'on en fait ? »"
+        ],
+        defi:{ type:"choix",
+          texte:["Le code de Chardon est dans ta mémoire. À qui le confier ?"],
+          options:[
+            { texte:"Le donner à Sorn. Il écoute depuis toujours ; c'est à lui de savoir qui est au bout.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as donné le code de Chardon à Sorn. Il l'a gravé à l'intérieur de son casque de vol, là où lui seul le verra." },
+            { texte:"Le donner à Adaya. Tant que Silène est sur leur liste, c'est elle qui décide de ce qui sort de cette serre.",
+              cercles:{ racines:5 },
+              journal:"Tu as confié le code à Adaya. Elle l'a enfermé dans un bocal, au bout du rang, à côté de la bouture." },
+            { texte:"Le garder, et le démonter. Quatre sons, ça s'assemble forcément avec quelque chose.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as gardé le code. La nuit, tu le retournes dans tous les sens. Quatre sons. Il manque des pièces." }
+          ],
+          reussite:[
+            "« Une adresse qui mène nulle part qu'on connaisse », dit Sorn.",
+            "Adaya, après un temps : « Galm a vu La Cassée. C'est un port. Un port, ça sait où on envoie les gens. »",
+            "Sorn la regarde. « Tu veux savoir, maintenant ? »",
+            "« Je veux savoir ce qu'on risque », dit-elle. « C'est pas pareil. »",
+            "Quand tu ressors, ta bête se lève et te suit."
+          ] } }
+    ],
+    recompense:{ credits:1900, xp:340, flags:{} }   // K35, K39 : pas de PA
+  },
+
+  /* ---------------- Q17 — Le rappel ---------------- */
+  {
+    id:"q17",
+    nom:"Le rappel",
+    donneur:"Galm",
+    donneurLieu:"La Carcasse",
+    lieuPrise:"carcasse",
+    intro:[
+      "Galm a un écouteur dans une oreille et une clé à molette dans la main. Elle ne lève pas la tête. « Le vieux m'a appelée. Il m'a lu un code. Quatre sons. » Elle serre un boulon. « Il m'a demandé si un port, ça sait où partent ses équipages. »",
+      "« Ça sait. » Elle pose la clé. « Un port qui rappelle un équipage, il lui donne une route. Et une route, ça s'écrit quelque part : dans la capitainerie. Pas dans le vaisseau. Le vaisseau, lui, il dort. »",
+      "Elle montre du menton, par le hublot, la tache sombre de La Cassée. « Le ber, tu connais. La capitainerie est derrière, au fond des coursives. Plus de courant depuis le désarmement. Le réacteur brûle encore, mais il est branché sur rien. »",
+      "« Tu tires un câble du réacteur jusqu'aux registres, tu les rallumes, tu lis l'ordre de rappel. » Elle se remet au boulon. « Et tu me dis où ils sont allés. J'aime pas les endroits où des gens vont et d'où personne revient. »"
+    ],
+    etapes:[
+
+      /* ---- 1. Les coursives — CREVASSE (ratable) ---- */
+      { indice:"À La Cassée, derrière le ber : la capitainerie, au fond des coursives. Plus aucune lumière.",
+        cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" }, { lieu:"base" } ],
+        image:"images/quetes/q17/1.png",
+        arrivee:[
+          "Le ber est comme tu l'as laissé : le vaisseau d'évacuation de MAAR-3, en sommeil, et sa case vide qui attend une confirmation. Tu passes à côté sans t'arrêter. Il dort ; ce n'est pas lui que tu viens voir.",
+          "Derrière, les coursives du port. Le noir est total. Ta lampe de casque éclaire un pas devant toi, pas deux.",
+          "Galm, dans la radio : « Garde la main sur la paroi et compte tes pas. Ta lampe tiendra pas toute la nuit. »"
+        ],
+        defi:{ type:"crevasse", n:9, rayon:1, marge:1.6,
+          texte:["Des coursives effondrées, des portes soudées, des couloirs qui ne mènent nulle part. Quelque part en bas : la capitainerie."],
+          consigne:"Trouve la sortie, en bas de la grille, avant que ta lampe ne faiblisse.",
+          fini:"Une porte, au bout du couloir. Gravée du carré : CAPITAINERIE.",
+          echec:"Ta lampe baisse. Tu rebrousses chemin à tâtons, la main sur la paroi. Nouvelle tentative plus tard.",
+          reussite:[
+            "La capitainerie est une salle basse, en demi-cercle, face à une baie qui donne sur les bers vides. Des pupitres, des registres, des sièges encore tournés vers la baie, comme si quelqu'un venait de se lever.",
+            "Tout est éteint. Sous tes pieds, très loin, tu sens battre le réacteur."
+          ] } },
+
+      /* ---- 2. Le câble — NŒUD (non ratable) ---- */
+      { indice:"Dans la capitainerie de La Cassée : rebranche les registres du port sur le réacteur.",
+        cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" } ],
+        image:"images/quetes/q17/2.png",
+        arrivee:[
+          "Une gaine de câbles sort du plancher, arrachée net le jour du désarmement. De l'autre côté de la salle, la prise des registres. Entre les deux, des passages encombrés de pupitres, de poutres tombées, d'armatures tordues.",
+          "« Le câble doit rien toucher », dit Galm. « Une paroi, une poutre, et il crame. Et toi avec, peut-être. Fais ça doucement. »"
+        ],
+        defi:{ type:"noeud",
+          texte:["Trois tronçons, du réacteur jusqu'aux registres. Le passage se resserre à chaque fois."],
+          consigne:"Guide le câble du doigt ou de la souris, du point plein au cercle, sans lever ni sortir du couloir.",
+          glisse:"Le câble frôle une poutre : une gerbe d'étincelles. Tu recommences ce tronçon.",
+          fini:"Le dernier tronçon claque dans sa prise.",
+          reussite:[
+            "Un bourdonnement monte du plancher. Les pupitres s'allument un à un, d'abord en rouge, puis en ambre. Sur la baie, une ligne de texte se dessine, en ancien : les sons que tu connais, les formes que Sorn récite.",
+            "Les registres du port se réveillent. Ils ont gardé tout ce qu'on leur a confié. Jusqu'à la dernière ligne."
+          ] } },
+
+      /* ---- 3. L'ordre de rappel — ORDRE (ratable) ---- */
+      { indice:"Dans la capitainerie de La Cassée : le registre a gardé l'ordre de rappel de l'équipage, en morceaux. Remets-le dans l'ordre.",
+        cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" } ],
+        image:"images/quetes/q17/3.png",
+        arrivee:[
+          "Le dernier registre ouvert le jour du désarmement est en lambeaux : la mémoire s'est effritée en blocs, et les blocs se sont mélangés. Ils sont tous là. Plus dans l'ordre.",
+          "Sorn, que Galm a branché sur la même fréquence, souffle : « Lis-moi tout. Même ce que tu comprends pas. »"
+        ],
+        defi:{ type:"ordre",
+          texte:["Six blocs du registre de la capitainerie. Remets-les dans l'ordre : chaque ligne suit la précédente."],
+          consigne:"Suis l'histoire du vaisseau, du premier jour de l'attente au dernier ordre du port.",
+          elements:[
+            "Vaisseau d'évacuation affecté à MAAR-3 : armé, équipage à bord, au ber.",
+            "Attente de la confirmation du quai. Délai dépassé. Relance sans réponse.",
+            "Dossier MAAR-3 classé par la direction. Vaisseau mis en sommeil au ber.",
+            "Ordre de la direction : rappel de l'équipage. Port désarmé à son départ.",
+            "Route assignée à l'équipage : Triptolème-4, puis Relais Triptolème-1, puis passage.",
+            "Passage : point sans nom. Au-delà : destination de rappel. Retour : non prévu."
+          ],
+          reussite:[
+            "Tu lis l'histoire d'un trait, à voix haute, pour Sorn. Le vaisseau attend. Personne ne confirme. On classe. On endort le vaisseau. On rappelle l'équipage. On éteint le port derrière lui.",
+            "Puis la route. La Cassée, le Perchoir, et un « passage » sans nom, avec des coordonnées. Tu les reportes sur ta carte de Triptolème.",
+            "Elles tombent au milieu de la Gorge.",
+            "Galm ne dit rien pendant longtemps. Puis : « On m'a toujours dit que personne en revenait. » Un temps. « Eux, ils y allaient. »",
+            "« Retour : non prévu », relit Sorn. « C'est pas pareil que \"personne en revient\". C'est pire, ou c'est mieux. Je sais pas encore. »"
+          ] } },
+
+      /* ---- 4. Ce qu'on fait du port — CHOIX de Cercle ---- */
+      { indice:"Dans la capitainerie de La Cassée. Les registres sont rallumés. Décide de ce que tu en fais.",
+        cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" } ],
+        image:"images/quetes/q17/4.png",
+        arrivee:[
+          "Le port bourdonne autour de toi pour la première fois depuis trois siècles. Sur la baie, la route clignote : Triptolème-4 — Relais Triptolème-1 — passage.",
+          "« À toi de voir », dit Galm. « Moi, j'ai ce que je voulais : je sais où ils sont passés. »"
+        ],
+        defi:{ type:"choix",
+          texte:["Les registres de La Cassée tournent sur le réacteur. Tu peux les laisser vivre, les rendormir, ou en emporter un morceau."],
+          options:[
+            { texte:"Laisser le port branché. Ce qui a été cassé peut reprendre ; un port qui se souvient vaut mieux qu'un port mort.",
+              cercles:{ eclats:5 },
+              journal:"Tu as laissé les registres de La Cassée sur le réacteur. Depuis, une lueur ambre brille derrière la baie de la capitainerie, et les pilotes du Perchoir se demandent ce que c'est." },
+            { texte:"Débrancher le câble et laisser le port dormir. Tu as lu ce que tu voulais ; le reste ne t'appartient pas.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as rendormi le port de La Cassée. La route est dans ton carnet, et nulle part ailleurs." },
+            { texte:"Démonter le lecteur du registre et le rapporter à Galm. Elle saura en tirer quelque chose.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as rapporté à Galm le lecteur de la capitainerie. Elle l'a posé sur son établi sans un mot, et l'a démonté jusqu'à la dernière vis." }
+          ],
+          reussite:[
+            "Sur le chemin du retour, tu repasses devant le ber. Le vaisseau d'évacuation dort toujours, sa case vide tournée vers MAAR-3.",
+            "Dans la radio, Sorn réfléchit tout haut : « Un code d'adresse, une route qui finit dans un trou. Il manque le morceau du milieu : comment on va de l'un à l'autre. » Un temps. « Le Perchoir. Tout passait par là. Il doit avoir une table, pour savoir où envoyer ce qu'on lui confie. »",
+            "Galm : « Je te le remonte, ton vieux. Il commence à aimer ça, je crois. »"
+          ] } }
+    ],
+    recompense:{ credits:2000, xp:350, flags:{} }
+  },
+
+  /* ---------------- Q18 — La table ---------------- */
+  {
+    id:"q18",
+    nom:"La table",
+    donneur:"Vieux Sorn",
+    donneurImg:"images/quetes/vieux_sorn.png",
+    donneurLieu:"La Carcasse",
+    lieuPrise:"carcasse",
+    intro:[
+      "Sorn est assis sur la caisse à boulons, le casque de vol sur la tête cette fois, la sangle mal attachée. Il a un carnet sur les genoux, couvert de sa petite écriture : le code de Chardon, la route de La Cassée.",
+      "« Deux morceaux », dit-il. « Une adresse qui dit rien, et une route qui finit dans le noir. Il manque ce qui les relie. »",
+      "« Un relais, ça reçoit un message, ça regarde l'adresse, et ça sait à qui le passer. Pour ça, il a une table. Le Perchoir en a forcément une : tout le secteur passait par lui. » Il tapote le carnet. « Si on lui demande où il enverrait un message pour TURE-PART-LAI-ME, il va nous le dire. »",
+      "Il se lève, et ses genoux craquent. « Toi devant. Moi je sais toujours pas marcher dans ces trucs. »"
+    ],
+    etapes:[
+
+      /* ---- 1. La table d'acheminement — ÉNIGME ---- */
+      { indice:"Au Perchoir, dans la salle du relais : la table d'acheminement du réseau.",
+        cible:{ lieu:"base" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" }, { lieu:"asteroides" } ],
+        image:"images/quetes/q18/1.png",
+        arrivee:[
+          "La salle ronde du relais bourdonne comme la dernière fois. Sorn va droit au terminal central, sans toucher le lecteur de la porte. Il a retenu la leçon.",
+          "La table d'acheminement s'affiche en colonnes, en ancien. Sorn lit les formes, toi les sons. À gauche, des adresses ; à droite, à qui passer le message. Des dizaines de lignes : les sondes, les relais de surface, La Cassée, le Muet.",
+          "TURE-PART-LAI-ME n'y est pas.",
+          "Tout en bas, une dernière ligne, plus ancienne que les autres : ADRESSE NON RÉPERTORIÉE — transmettre vers le dernier point de la route assignée.",
+          "« Assignée », répète Sorn. « La route du rappel. Celle de La Cassée. »"
+        ],
+        defi:{ type:"enigme",
+          texte:"Le relais ne connaît pas l'adresse de Chardon. Il applique sa dernière ligne.",
+          question:"« Alors, où il l'envoie, le message ? »",
+          reponses:["la gorge","gorge","dans la gorge","vers la gorge","le passage","passage","le passage sans nom","au passage","le point sans nom","point sans nom","le dernier point","dernier point de la route"],
+          indice:"La route du rappel, à La Cassée : son dernier point n'avait pas de nom. Où tombaient ses coordonnées ?",
+          reussite:[
+            "« Dans la Gorge. » Sorn le dit doucement, comme s'il avait peur de la réveiller.",
+            "« Trois cents ans que les sondes émettent, et trois cents ans que le Perchoir envoie tout ça dans un trou. » Il se gratte la tête. « Et personne a jamais répondu, sauf une fois, il y a 109 573 nuits. Faut bien que quelqu'un tienne l'adresse ouverte, de l'autre côté. »"
+          ] } },
+
+      /* ---- 2. Les trois morceaux — CALQUES (ratable) ---- */
+      { indice:"Au Perchoir, dans la salle du relais : superpose les trois morceaux de l'adresse.",
+        cible:{ lieu:"base" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" } ],
+        image:"images/quetes/q18/2.png",
+        arrivee:[
+          "Le terminal accepte qu'on lui donne des morceaux et qu'on les fasse glisser. Tu lui donnes les tiens. Le code de Chardon. La route de La Cassée. Et la dernière ligne de la table.",
+          "Chacun, seul, ne vaut rien : un code sans lieu, un lieu sans entrée, une entrée sans adresse. Ensemble, ils devraient faire des coordonnées. À condition de les caler exactement.",
+          "Sorn s'assied à côté de toi et ne dit plus rien. Il regarde tes mains."
+        ],
+        defi:{ type:"calques",
+          noms:["Code de Chardon","Route du rappel","Table du relais"],
+          texte:[ "Trois relevés sur trois bandes : le code de Chardon, la route de La Cassée, la table du Perchoir." ],
+          reussite:[
+            "Les trois bandes n'en font plus qu'une, et le terminal, pour la première fois, affiche une ligne complète : des coordonnées. Pas un nom, pas un lieu. Des chiffres.",
+            "Tu les reportes sur ta carte. Elles traversent la Gorge de part en part, et tombent de l'autre côté, là où la carte n'a plus rien.",
+            "« Le Bureau des Cultures », dit Sorn. « Il est là. Derrière. » Il rit, d'un rire bizarre. « Toute ma vie j'ai cru qu'AREPO était loin. Il était juste derrière un trou. »"
+          ] } },
+
+      /* ---- 3. Ce qu'on fait des coordonnées — CHOIX de Cercle ---- */
+      { indice:"Au Perchoir, dans la salle du relais. Les coordonnées sont complètes. Décide à qui tu les confies.",
+        cible:{ lieu:"base" }, leurres:[ { lieu:"epave" } ],
+        image:"images/quetes/q18/3.png",
+        arrivee:[
+          "Les coordonnées brillent sur l'écran. Sorn a recopié chaque chiffre trois fois dans son carnet, en tirant la langue.",
+          "« Bon », dit-il. « Maintenant on sait où. La question, c'est qui le sait. »"
+        ],
+        defi:{ type:"choix",
+          texte:["Les coordonnées du Bureau des Cultures sont dans ta mémoire, et dans le carnet de Sorn. À qui les confier ?"],
+          options:[
+            { texte:"Les donner à Galm, pour qu'elle calcule la route du saut. Si quelqu'un doit y aller, il faut que le vaisseau tienne.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as donné les coordonnées à Galm. Elle a passé la nuit sur ses calculs, et le matin, elle avait l'air de quelqu'un qui n'aime pas ce qu'elle a trouvé." },
+            { texte:"Les traduire en clair et les lire à Adaya, par radio. C'est elle qui avait peur ; c'est à elle de savoir la première.",
+              cercles:{ langues:5 },
+              journal:"Tu as lu les coordonnées à Adaya. Elle n'a rien dit. Puis : « Derrière un trou. Bien sûr. » Et elle a raccroché." },
+            { texte:"Ne rien dire encore. Effacer l'écran du relais, et garder le carnet de Sorn fermé.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as effacé l'écran du relais. Les coordonnées existent en deux endroits : ta mémoire, et le carnet de Sorn, qu'il garde dans sa poche de poitrine." }
+          ],
+          reussite:[
+            "Galm vient rechercher Sorn. Sur la passerelle, il s'arrête et te regarde, longtemps.",
+            "« T'y vas, hein. » Ce n'est pas une question. « Je te dirais bien de pas y aller. Mais moi, toute ma vie, on m'a dit de pas aller au bout du bras est. » Il hausse les épaules. « Va voir Galm. Avant de sauter dans un trou, on vérifie ses rivets. »"
+          ] } }
+    ],
+    recompense:{ credits:2100, xp:360, flags:{} }
+  },
+
+  /* ---------------- Q19 — Ce que la coque encaisse ---------------- */
+  {
+    id:"q19",
+    nom:"Ce que la coque encaisse",
+    donneur:"Galm",
+    donneurLieu:"La Carcasse",
+    lieuPrise:"carcasse",
+    intro:[
+      "Galm a étalé ses calculs sur l'établi, entre deux carters. Des courbes, des chiffres, des ratures. Elle a les yeux rouges.",
+      "« J'ai fait les comptes. La Gorge, elle avale la lumière : elle avale le reste aussi. Un vaisseau qui entre comme ça, il ressort en petits morceaux, ou il ressort pas. » Elle tapote une courbe. « Sauf s'il entre exactement sur la route. Et s'il a une coque qui tient la torsion. »",
+      "« Ta coque, elle tient pas. Je peux la doubler. Il me faut du câblage, des cellules, et du Cristal de Nyx pour les jointures : c'est la seule chose qui plie sans casser. » Elle repousse les papiers. « Et après, tu iras au bord, voir ce que ça donne. Pas dedans. Au bord. »",
+      "Elle te regarde enfin. « Je te le dirai qu'une fois, alors écoute. Je sais pas ce qu'il y a derrière. Personne sait. Les registres s'arrêtent là. Si tu y vas, je peux pas venir te chercher. »"
+    ],
+    etapes:[
+
+      /* ---- 1. La coque doublée — LIVRAISON ---- */
+      { indice:"À La Carcasse : apporte à Galm de quoi doubler ta coque.",
+        cible:{ lieu:"epave" }, leurres:[ { lieu:"base" }, { lieu:"planete_cassee" } ],
+        image:"images/quetes/q19/1.png",
+        arrivee:[
+          "Galm a déjà démonté deux panneaux de ta coque. Ils sont posés contre la paroi comme des pages arrachées. « J'attends ton matériel. Moi je fournis la sueur. »"
+        ],
+        defi:{ type:"livraison",
+          objets:{ fab_cablage:3, fab_cellule_d_energie:2, cristal:2 },
+          texte:["Trois câblages, deux cellules d'énergie et deux Cristaux de Nyx. Le Cristal se trouve au Gravier, le reste se fabrique ou s'achète."],
+          reussite:[
+            "Galm travaille toute la nuit. Elle soude, elle gaine, elle jure. Elle glisse le Cristal dans les jointures, éclat par éclat, comme on sertit une bague.",
+            "Au matin, ta coque a l'air d'un vieux manteau rapiécé. « C'est pas beau », dit Galm. « Mais ça plie. »"
+          ] } },
+
+      /* ---- 2. Le bord de la Gorge — TRAVERSÉE (ratable) ---- */
+      { indice:"Au bord de la Gorge, à l'est, là où la lumière commence à se tordre. Approche, sans entrer.",
+        cible:{ carte:"espace", x:1440, y:824, r:130 }, leurres:[ { lieu:"epave" }, { lieu:"base" } ],
+        image:"images/quetes/q19/2.png",
+        arrivee:[
+          "Au bord de la Gorge, les étoiles glissent. Elles se tordent en arcs, se dédoublent, disparaissent derrière quelque chose qui n'a pas de forme. Ta coque gémit, doucement, comme une charpente dans le vent.",
+          "Galm, dans la radio, la voix serrée : « Y a des courants. Des zones où ça tire, d'autres où ça tient. Tes capteurs te diront combien de zones qui tirent touchent chaque endroit que t'as déjà franchi. Avance jusqu'au bout de la route, et reviens. »"
+        ],
+        defi:{ type:"traversee", colonnes:7, lignes:9, lave:20, plaques:3,
+          texte:["Traverse le bord de la Gorge jusqu'au dernier point de la route. Chaque zone franchie t'indique combien de courants la touchent."],
+          reussite:[
+            "Tu touches le dernier point de la route, et tu tiens. La coque grince, les jointures de Cristal chauffent, mais rien ne casse.",
+            "Devant toi, la Gorge. Pas un trou : une absence. Tu as l'impression qu'elle te regarde aussi.",
+            "Tu fais demi-tour, lentement. Dans la radio, Galm respire de nouveau."
+          ] } },
+
+      /* ---- 3. Avant de sauter — CHOIX de Cercle ---- */
+      { indice:"Rentre à La Carcasse. Galm t'attend.",
+        cible:{ lieu:"epave" }, leurres:[ { lieu:"base" } ],
+        image:"images/quetes/q19/3.png",
+        arrivee:[
+          "Galm vérifie chaque jointure, une à une, la joue contre la coque, comme on écoute un cœur. Puis elle se redresse.",
+          "« Elle tiendra. » Un temps. « Toi, je sais pas. »",
+          "« Quand tu seras prêt, tu me le dis, et je te donne la route. Pas avant. Une fois là-dedans, tu reviens pas comme tu veux. Peut-être que tu reviens pas du tout. Fais ce que t'as à faire avant. »"
+        ],
+        defi:{ type:"choix",
+          texte:["Avant de sauter, il reste une chose à faire."],
+          options:[
+            { texte:"Laisser un mot à la serre, pour Sorn et Adaya. Dire où tu vas, et pourquoi. Qu'ils sachent, si tu ne reviens pas.",
+              cercles:{ racines:5 },
+              journal:"Tu as laissé un mot à la serre. Adaya l'a lu, l'a plié en quatre et l'a rangé dans le bocal du code de Chardon. Sorn ne l'a pas lu ; il a dit qu'il le lirait si tu ne revenais pas." },
+            { texte:"Demander à Galm de te suivre au radar jusqu'au bord, et de noter tout ce qu'elle voit. Même si tu ne reviens pas, quelqu'un saura.",
+              cercles:{ veilleurs:5 },
+              journal:"Galm a promis de te suivre au radar jusqu'au bord. Elle a sorti un carnet neuf. Sur la première page, elle a écrit la date, et rien d'autre." },
+            { texte:"Rester une nuit de plus à l'atelier et renforcer encore la coque, avec ce qu'il reste de Cristal.",
+              cercles:{ eclats:5 },
+              journal:"Tu as passé la nuit avec Galm sur ta coque. Au matin, il y avait un éclat de Cristal de plus à chaque jointure, et vous n'aviez dormi ni l'un ni l'autre." }
+          ],
+          reussite:[
+            "Galm te tend un bout de papier : la route, recopiée à la main. Les coordonnées de Chardon, de La Cassée et du Perchoir, mises bout à bout.",
+            "« Le saut, c'est quand tu veux. Mais quand tu entres, tu sors pas. Pas tout de suite. » Elle hésite. « Reviens me voir avant. Que je te le redise. »"
+          ] } }
+    ],
+    recompense:{ credits:2200, xp:370, flags:{} }
+  },
+
+  /* ---------------- Q20 — La Gorge ---------------- */
+  {
+    id:"q20",
+    nom:"La Gorge",
+    donneur:"Galm",
+    donneurLieu:"La Carcasse",
+    lieuPrise:"carcasse",
+    /* K19 + l'avertissement explicite (Q19, dossier §7) : affiché AVANT d'accepter. */
+    avert:"⚠ <b>Point de non-retour, pour un temps.</b> Après cette quête, tu ne pourras plus voler hors de la planète Maar (Triptolème, La Braise, Le Suaire, La Carcasse, le Perchoir…) tant que tu n'auras pas réglé ce qui t'attend de l'autre côté. Tu pourras toujours revenir sur Silène. Emporte du carburant, des vivres, et de quoi te soigner.",
+    intro:[
+      "Galm ne dit pas bonjour. Elle fait le tour de ton vaisseau une dernière fois, en passant la main sur la coque comme sur l'encolure d'un animal.",
+      "« Je te le redis, comme promis. Personne en est revenu pour le raconter. Peut-être parce que personne y est allé. Peut-être pas. » Elle te tend la route, recopiée à la main. « Tu entres sur la ligne, pas à côté. Tu tiens le cap. Tu lâches rien. »",
+      "« Et si tu trouves le Bureau… » Elle cherche ses mots, et pour une fois, elle les trouve. « Dis-leur qu'ils ont oublié du monde, ici. Dis-leur qu'on les a pas oubliés, nous. »",
+      "Elle recule de deux pas. « Va. »"
+    ],
+    etapes:[
+
+      /* ---- 1. Le saut — SAUT : le détournement (K9) ---- */
+      { indice:"La Gorge. Entre sur la route, exactement. Elle est ouverte, le temps de ce saut.",
+        cible:{ lieu:"trou_noir" }, leurres:[ { lieu:"portail" }, { lieu:"base" } ],
+        image:"images/quetes/q20/1.png",
+        arrivee:[
+          "La Gorge remplit tout le hublot. Il n'y a plus d'étoiles devant, seulement derrière, et elles glissent vers le bord comme de l'eau vers une bonde.",
+          "Tu entres la route de Galm. Le vaisseau s'aligne. La coque se met à chanter, une note grave, continue, que tu sens dans les dents.",
+          "Dans la radio, Galm, très loin : « … ligne… bien… tiens… » Puis plus rien."
+        ],
+        defi:{ type:"saut", carte:"ancolie", lieu:"chute", bouton:"Entrer dans la Gorge",
+          texte:["Le dernier point de la route est devant toi."],
+          reussite:[
+            "Tu entres.",
+            "Le noir. Une pression énorme, partout à la fois. Les chiffres de la route défilent sur l'écran de bord, un par un, comme prévu.",
+            "Puis ils changent.",
+            "Pas tous. Quelques chiffres, à la fin. Ils se réécrivent d'eux-mêmes, calmement, comme si quelqu'un tapait. Tu n'as rien touché. Le vaisseau vire. Tu tires sur les commandes : elles ne répondent plus.",
+            "La pression lâche d'un coup. Une lumière bleue. Un sol qui monte beaucoup trop vite. Une fleur, une seule, très nette, contre le hublot.",
+            "Le choc."
+          ] } },
+
+      /* ---- 2. La voix — SCÈNE ---- */
+      { indice:"Tu es au sol. Quelque part. Reprends tes esprits.",
+        cible:{ carte:"ancolie", lieu:"chute" },
+        image:"images/quetes/q20/2.png",
+        arrivee:[
+          "Tu te réveilles la joue contre le tableau de bord. Le vaisseau est couché sur le flanc, au bout d'un long sillon de fleurs arrachées. Dehors, du bleu à perte de vue : des fleurs en cloche, bleu nuit, bleu glacier, qui se balancent au vent comme si de rien n'était.",
+          "L'air entre par une fissure de la verrière. Tu respires. Il est bon.",
+          "Au loin, au milieu de la plaine, un bâtiment rond. Une seule lumière, qui clignote.",
+          "Silence. Puis la radio de bord grésille.",
+          "« … allô ? Ça marche, ce truc ? Attends. » Une toux. « Bonjour. Non. Bonsoir ? C'est quelle heure, chez vous ? Bon, peu importe. »",
+          "La voix est jeune, enrhumée, et parle ta langue avec des cailloux dedans, comme quelqu'un qui l'a apprise à la radio. « Je me présente. 42-U1F. Maintenance. Enfin, je maintiens. Quand j'ai le temps. J'ai rarement le temps. »",
+          "42-U1F. Tu as déjà lu ce matricule. Au Perchoir, au bas de l'accusé de réception de l'émission de Sorn, E. : OPÉRATEUR : 42-U1F. Quelqu'un avait entendu. Il t'a entendu.",
+          "« Alors voilà. T'es en Ancolie. MAAR-12. Le coin le plus calme de Maar : y a personne. C'est moi qui t'ai posé là. Bon, posé… Disons que tu es là. »",
+          "« J'ai des trucs à faire, et j'ai pas le temps. Toi, t'as un vaisseau qui m'obéit, maintenant. Donc on va s'arranger : tu fais mes trucs, je te rends tes commandes. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
+        ],
+        defi:{ type:"scene", bouton:"« Rends-moi mon vaisseau. »" } },
+
+      /* ---- 3. Reprendre les commandes — IMPOSSIBLE (K15) ---- */
+      { indice:"Au point de chute, dans ton vaisseau : reprends les commandes.",
+        cible:{ carte:"ancolie", lieu:"chute" },
+        image:"images/quetes/q20/3.png",
+        arrivee:[
+          "« Ah. Ça, c'est un non. J'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
+          "L'écran de bord affiche une console de navigation. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper pour que le pilote automatique te rende la main."
+        ],
+        defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
+          texte:["Une ligne de commande défile sur l'écran de bord."],
+          consigne:"Retape la ligne avant qu'elle ne sorte de l'écran.",
+          commentaires:[
+            "« Vas-y, vas-y. Prends ton temps. Enfin, prends pas ton temps, justement. »",
+            "« Ah, t'as raté une virgule. Non, deux. Non, toutes. C'est normal, je les change pendant que tu tapes. C'est un peu de la triche, je sais. »",
+            "« Écoute, c'est pas contre toi. Moi-même j'y arrive pas, et c'est mon code. Enfin, c'est le code de quelqu'un. Rien n'est bien fait, ici. Rien. »"
+          ],
+          reussite:[
+            "Tu lâches les commandes. L'écran s'éteint, poliment.",
+            "« Voilà. Ça, c'est raisonnable. » Il a l'air sincèrement soulagé. « Bon. Tu vas faire quoi, maintenant ? »",
+            "Tu détaches ton harnais, tu pousses la porte du sas à l'épaule, et tu sors dans les fleurs. Au loin, le bâtiment rond clignote.",
+            "« Attends, tu pars ? Hé. Tu pars où ? Je te suis comment, moi ? » Un bruit de chaise qui recule. « Ils ont pas prévu de portage sur tablette, je fais comment, je transporte le terminal ?! »",
+            "La radio grésille dans ton dos, de plus en plus faible. Tu marches."
+          ] } },
+
+      /* ---- 4. La station — SCÈNE : les automates (K16) ---- */
+      { indice:"Le bâtiment rond, au milieu de l'ancolie. Marche jusqu'à lui.",
+        cible:{ carte:"ancolie", lieu:"station" },
+        image:"images/quetes/q20/4.png",
+        arrivee:[
+          "La marche est longue. L'ancolie t'arrive aux genoux, et chaque pas fait trembler des milliers de clochettes bleues. Rien ne bouge d'autre. Pas une bête, pas un oiseau. Personne.",
+          "Le bâtiment est rond, bas, intact, comme neuf. Autour, des machines vont et viennent sans se presser : des caissons sur pattes, des bras sur rails, des disques qui roulent. Elles taillent l'ancolie le long des allées, frottent une vitre, redressent une balise. Elles ne te regardent pas.",
+          "Sur le linteau de l'entrée, une plaque à demi couverte de pétales. Tu ne lis que la fin : … MAAR-12.",
+          "Tu poses la main sur la porte. Un caisson pivote vers toi, un œil rouge s'allume. Une voix plate, sans souffle : PERSONNEL NON RÉPERTORIÉ — MAAR-12. ACCÈS : AUCUN.",
+          "Tu essaies la porte de service. PERSONNEL NON RÉPERTORIÉ. Le panneau des réserves. ACCÈS : AUCUN. Une borne d'appel, au mur. Elle ne s'allume même pas.",
+          "Puis, d'un haut-parleur au-dessus de la porte, une voix que tu connais : « Ah. Te revoilà. Ils ont des haut-parleurs, ici. Personne s'en sert jamais. »",
+          "« Bouge pas. » Un cliquetis. Sur l'écran de la porte : OPÉRATEUR 42-U1F — AUTORISÉ. La porte s'ouvre. Le caisson éteint son œil rouge, et retourne tailler ses fleurs.",
+          "« Tu vois ? Ici, ils m'écoutent. Toi, pour eux, t'existes pas. Moi, j'existe. Un peu. » Un temps. « J'essaie pas d'être méchant, hein. Je constate. »"
+        ],
+        defi:{ type:"scene", bouton:"Entrer" } },
+
+      /* ---- 5. L'arrangement — CHOIX de Cercle ---- */
+      { indice:"Dans la station d'Ancolie. 42-U1F attend ta réponse.",
+        cible:{ carte:"ancolie", lieu:"station" },
+        image:"images/quetes/q20/5.png",
+        arrivee:[
+          "Dedans, une grande salle ronde, propre, vide. Des bancs alignés face à une baie qui donne sur une aire lisse, balisée. Des écrans éteints. Tout attend quelque chose, et ça fait longtemps.",
+          "« Bon. Récapitulons. » Il a l'air de lire une fiche. « Toi : un vaisseau qui m'obéit, pas de route, pas d'accès, personne à des jours de vol. Moi : des corvées en retard depuis… longtemps, et pas le droit de sortir. Procédure 7-B, sous-alinéa… euh. Ça se dit pas, chez vous. Disons : je peux pas. »",
+          "« Alors tu fais mes trucs. Pas tous les jours, je suis pas un monstre. Et moi je te laisse voler. Silène, Ancolie, tu vas, tu viens, tu fais ta vie. Le reste — Triptolème, ta ferrailleuse, ton trou noir — non. Ça, c'est le prix. »",
+          "Tu regardes les automates tailler l'ancolie, dehors, et le bouton éteint de la borne d'appel. Personne ne viendra. Tu le sais."
+        ],
+        defi:{ type:"choix",
+          texte:["Tu n'as pas vraiment le choix. Mais tu peux choisir comment tu dis oui."],
+          options:[
+            { texte:"« D'accord. Je ferai tes corvées. Et je m'en souviendrai. » Tu serres les dents, et tu tiens.",
+              cercles:{ racines:5 },
+              journal:"Tu as dit oui à 42-U1F en serrant les dents. « Ouh là. Bon. On va bien s'entendre, je le sens. » Il n'avait pas l'air d'y croire." },
+            { texte:"« D'accord. Mais tu vas me parler. Qui tu es, d'où tu m'entends, et pourquoi moi. »",
+              cercles:{ langues:5 },
+              journal:"Tu as dit oui à 42-U1F à condition qu'il parle. « Parler, je sais faire. C'est même la seule chose que je fais bien. Enfin, presque bien. »" },
+            { texte:"« D'accord. » Un matricule qui fait obéir les machines d'AREPO : ça peut servir, à qui sait s'en servir.",
+              cercles:{ eclats:5 },
+              journal:"Tu as dit oui à 42-U1F sans discuter. Il a eu l'air méfiant. « T'acceptes vite, toi. Ça me plaît pas. Enfin si. Mais non. »" }
+          ],
+          reussite:[
+            "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé au quai, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. »",
+            "Par la baie, tu le vois en effet se poser tout seul sur l'aire balisée, avec une délicatesse que tu ne lui as jamais connue. Les automates s'écartent pour le laisser passer.",
+            "« Pour la première corvée, on verra demain. Enfin, demain chez toi. Moi, ici, c'est toujours un peu la même heure. » Un silence. Puis, plus bas, presque timide : « Merci, hein. Personne m'avait jamais dit oui. »",
+            "La radio se coupe. Tu restes seul dans la grande salle ronde, au milieu des bancs vides tournés vers le quai."
+          ] } }
+    ],
+    /* K12 : le cadeau du bloc, c'est Ancolie. K16 : vol sur Maar seulement (verrouMaar,
+       levé en fin de Q30). K39 : un PA, quête clé. */
+    recompense:{ credits:2300, xp:400, pa:1, flags:{ ancolie:true, verrouMaar:true } }
   }
 
   // Quête finale de la carte Silène : Q5 accorde le permis de vaisseau + ouvre l'espace (flag espace1).

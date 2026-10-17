@@ -94,8 +94,8 @@ function _villeDeMaFaction(){
 
 /* Vérifie PUIS débite. Comme pour les trajets au sol, on refuse avant de
    toucher à quoi que ce soit : jamais de panne en cours de route. */
-async function _payerSaut(quoi){
-  const c = coutSaut();
+async function _payerSaut(quoi, cout){
+  const c = cout || coutSaut();   // v1.85 : coût fourni (Silène ⇄ Ancolie, × 1,5)
   if(!c){ journal("Aucun vaisseau équipé.","alerte"); return false; }
   const cuve = etat.carburant || 0;
   if(cuve < c.litres){
@@ -116,6 +116,11 @@ async function partirVersEcart(){
     return;
   }
   if(enEcart()){ ouvrirOrbite(); return; }
+  /* v1.85 — K16 : de la fin de Q20 à la fin de Q30, 42-U1F tient le vaisseau. */
+  if(typeof verrouMaar==="function" && verrouMaar()){
+    journal("Le vaisseau refuse de prendre le cap. Dans la radio, une voix traînante : « Hé. Hé hé. Triptolème, c'est non. Tu restes sur Maar tant que t'as pas fini mes trucs. Silène, Ancolie, tu fais ta vie. Le reste : non. »","alerte","voyage");
+    return;
+  }
   if(typeof villeActuelle==="function" && !villeActuelle()){
     journal("On ne décolle pas depuis la nature : rejoins une ville d'abord.","alerte"); return;
   }
@@ -547,6 +552,14 @@ async function secoursOrbite(){
   return true;
 }
 
+/* v1.85 — un lieu `verrou:"q20"` (la Gorge) s'ouvre SEULEMENT pendant la
+   première étape de Q20 ; il se referme ensuite jusqu'à l'arc suivant (K27). */
+function lieuOuvert(l){
+  if(!l || !l.verrou) return true;
+  const a = (typeof queteActive==="function") ? queteActive() : null;
+  return !!(a && a.id === l.verrou && a.etape === 0);
+}
+
 /* Conditions d'accès */
 function orbiteDebloquee(){ return etat.espace1===true && !!etat.vaisseau; }
 
@@ -561,6 +574,12 @@ function majBoutonOrbite(){
     const c=(typeof surfaceCfg==="function")?surfaceCfg():null; const sp=bb.querySelector("span");
     if(sp && c) sp.textContent = `Carte — ${c.nom}`; }
   const ok = orbiteDebloquee() && !surf;
+  /* v1.85 — « Partir pour Ancolie », à côté, dès qu'Ancolie est connue (fin de Q20). */
+  const ba=document.querySelector("#ouvrir-ancolie");
+  if(ba){ const okA = (typeof ancolieConnue==="function") && ancolieConnue() && !surf && !enEcart() && !!etat.vaisseau;
+    ba.hidden = !okA; ba.style.display = okA ? "" : "none";
+    if(okA){ const cA = (typeof coutSautSurface==="function") ? coutSautSurface(SURFACES.ancolie) : null;
+      const k = ba.querySelector(".cout"); if(k) k.textContent = cA ? `${cA.litres} L carburant · ${cA.energie} % énergie` : "en vaisseau"; } }
   b.hidden = !ok;
   // button.action impose display:flex, qui l'emporterait sur l'attribut hidden.
   b.style.display = ok ? "" : "none";
@@ -569,14 +588,15 @@ function majBoutonOrbite(){
     const cs=coutSaut();
     const c=b.querySelector(".cout");
     if(c) c.textContent = enEcart() ? "tu y es"
-      : (cs ? `${cs.litres} L carburant · ${cs.energie} % énergie` : "en vaisseau");
+      : ((typeof verrouMaar==="function" && verrouMaar()) ? "42-U1F tient ton vaisseau"
+      : (cs ? `${cs.litres} L carburant · ${cs.energie} % énergie` : "en vaisseau"));
   }
   // La carte de Silène n'a pas de sens depuis l'orbite.
   const bc=document.querySelector("#ouvrir-carte");
   if(bc){ const loin = enEcart() || surf;
     bc.disabled = loin;
     bc.style.opacity = loin ? ".45" : "";
-    const c2=bc.querySelector(".cout"); if(c2) c2.textContent = surf ? "tu es sur La Braise" : (loin ? "tu es en orbite" : "se déplacer"); }
+    const c2=bc.querySelector(".cout"); if(c2) c2.textContent = surf ? `tu es sur ${(typeof surfaceCfg==="function" && surfaceCfg()) ? surfaceCfg().nom : "une autre planète"}` : (loin ? "tu es en orbite" : "se déplacer"); }
 }
 
 /* ⚠ v0.83 — les destinations dessinées « à la main » (rectangles, cercles)
@@ -727,7 +747,7 @@ function majOrbite(){
         if(!enEcart()){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`; return; }
         volVers(l); return;
       }
-      if(l.verrou){
+      if(l.verrou && !lieuOuvert(l)){
         z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
         return;
       }

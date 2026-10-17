@@ -539,7 +539,7 @@ function _blocAide(e){
 // Position sur la carte de Silène (null ailleurs : La Braise, Le Suaire, Triptolème).
 function _posSilene(){
   const s = etat && etat.secteur;
-  if(s === "braise" || s === "suaire" || s === "ecart") return null;
+  if(s === "braise" || s === "suaire" || s === "ancolie" || s === "ecart") return null;
   return etat.pos || null;
 }
 function _blocCachette(k){

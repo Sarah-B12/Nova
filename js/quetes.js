@@ -73,7 +73,7 @@ function _varie(v){
 function _cibleResolue(c){
   if(!c) return null;
   // v0.98/v0.99 — un lieu d'une surface : { carte:"braise"|"suaire", lieu:"…" } (braise.js).
-  if(c.lieu && (c.carte==="braise" || c.carte==="suaire")){
+  if(c.lieu && typeof SURFACES!=="undefined" && SURFACES[c.carte]){   // v1.85 : + Ancolie
     const l = (typeof surfaceLieu==="function") ? surfaceLieu(c.carte, c.lieu) : null; if(!l) return null;
     return { carte:c.carte, x:l.x, y:l.y, r:c.r||l.r, lieu:c.lieu };
   }
@@ -84,12 +84,12 @@ function _cibleResolue(c){
   return { carte:c.carte||"silene", x:c.x, y:c.y, r:c.r||70 };
 }
 function _carteJoueur(){
-  if(etat.secteur==="braise" || etat.secteur==="suaire") return etat.secteur;   // v0.98 : sous-cartes
+  if(typeof SURFACES!=="undefined" && SURFACES[etat.secteur]) return etat.secteur;   // v0.98 : sous-cartes (v1.85 : + Ancolie)
   return (typeof enEcart==="function" && enEcart()) ? "espace" : "silene";
 }
 function _posJoueur(carte){
   if(carte==="espace") return (typeof posEspace==="function") ? posEspace() : null;
-  if(carte==="braise" || carte==="suaire") return (typeof posSurface==="function") ? posSurface() : null;
+  if(typeof SURFACES!=="undefined" && SURFACES[carte]) return (typeof posSurface==="function") ? posSurface() : null;
   return etat.pos || null;
 }
 function _dansCible(c){
@@ -271,6 +271,7 @@ function echouerDefi(msg){ const a=queteActive(); if(!a) return;
   _verrous()[_cleVerrou(a)] = Date.now();   // v0.91 : le verrou survit à l'abandon
   a._memVue=false; a._memDebut=0; a._cadSecret=null; a._cadEssais=0; a._cadHist=[]; a._trav=null; a._tuy=null; a._tri=null; a._lab=null;
   a._calq=null; a._loup=null;   // v1.00 : une partie ratée repart de zéro
+  a._qj=null;                   // v1.85 : épreuves de quetes-jeux.js
   journal(msg||"Échec — reviens tenter à nouveau plus tard.","alerte"); sauvegarder(); rafraichirQuetes(); }
 
 /* ---------- Modules de défi : rendu ---------- */
@@ -298,7 +299,10 @@ function _defiHTML(d){
     case "affut":     return _htmlAffut(d);
     case "calques":   return _htmlCalques(d);
     case "loup":      return _htmlLoup(d);
-    default:          return `<p class="vide">Épreuve « ${d.type} » (à venir).</p>`;
+    default:
+      /* v1.85 — épreuves de quetes-jeux.js (ronde, nœud, crevasse, impossible, saut). */
+      if(typeof QUETES_JEUX!=="undefined" && QUETES_JEUX[d.type]) return QUETES_JEUX[d.type].html(d);
+      return `<p class="vide">Épreuve « ${d.type} » (à venir).</p>`;
   }
 }
 function _defiWire(z, d){
@@ -325,6 +329,7 @@ function _defiWire(z, d){
     case "affut":     _wireAffut(z,d); break;
     case "calques":   _wireCalques(z,d); break;
     case "loup":      _wireLoup(z,d); break;
+    default: if(typeof QUETES_JEUX!=="undefined" && QUETES_JEUX[d.type]) QUETES_JEUX[d.type].wire(z,d);
   }
 }
 
@@ -527,7 +532,7 @@ function _htmlCalques(d){
     <div class="qc-ligne qc-${quoi}" data-qc-ligne="${quoi}">${_calqLigneHtml(c,quoi)}</div></div>`;
   return `<div class="quete-etape">${_par(d.texte)}
     <p class="quete-indice">Fais glisser les deux bandes du bas (au doigt, ou ◀ ▶ case par case) jusqu'à ce que les trois signaux se superposent exactement. <b>Touche la bande du haut pour poser un repère vertical</b> (encore une fois pour l'enlever) ; à la souris, une colonne suit aussi le pointeur. ${CALQ_ESSAIS} vérifications au plus — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
-    <div class="qc-zone"><div class="qc-regle">${Array.from({length:CALQ_N},(_,i)=>`<span>${(i+1)%5===0?i+1:""}</span>`).join("")}</div>${ligne("A","Appel du quai",false)}${ligne("B","Lueur de la silène",true)}${ligne("C","Marques des bêtes",true)}</div>
+    <div class="qc-zone"><div class="qc-regle">${Array.from({length:CALQ_N},(_,i)=>`<span>${(i+1)%5===0?i+1:""}</span>`).join("")}</div>${ligne("A",(d.noms||[])[0]||"Appel du quai",false)}${ligne("B",(d.noms||[])[1]||"Lueur de la silène",true)}${ligne("C",(d.noms||[])[2]||"Marques des bêtes",true)}</div>
     <div class="quete-rep" style="margin-top:10px"><button class="mini" id="q-calq-ok">Superposer (${reste} restante${reste>1?"s":""})</button></div></div>`;
 }
 function _wireCalques(z, d){
@@ -1521,7 +1526,7 @@ function _wireTriangulation(z, d){
       journal(`Relevé effacé (force ${r.f}). Tu peux relever à nouveau ici.`, "", "quete");
       dessiner();
     }));
-    if(typeof majCarteBraise==="function" && (carte==="braise" || carte==="suaire")) majCarteBraise();
+    if(typeof majCarteBraise==="function" && (typeof SURFACES!=="undefined" && SURFACES[carte])) majCarteBraise();
     if(typeof majOrbite==="function" && carte==="espace") majOrbite();
   };
   z.querySelector("#q-tri-rel").addEventListener("click", ()=>{
@@ -1924,7 +1929,7 @@ function majQueteHub(){
       return;
     }
     const q=queteProchaine(); let html=banniere;
-    if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
+    if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}${q.avert?`<div class="quete-avert dur">${q.avert}</div>`:""}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
     else html+=`<p class="vide">Toutes les quêtes disponibles sont accomplies. Le Vieux Sorn n'a rien de plus pour l'instant.</p>`;
     z.innerHTML=html;
     const acc=z.querySelector("#quete-accepter"); if(acc) acc.addEventListener("click",()=>{ const nx=queteProchaine(); if(nx) accepterQuete(nx.id); });
