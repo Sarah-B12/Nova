@@ -63,13 +63,19 @@ const SURFACES = {
   },
   /* v1.85 — ANCOLIE (MAAR-12), K6, K23. Sur Maar, comme Silène, mais « très très
      loin » : on y va depuis Silène (bouton « Partir pour Ancolie »), pas depuis
-     l'orbite. L'ancolie a pris normalement : l'AIR Y EST RESPIRABLE (air:true),
-     comme sur Silène — l'O₂ s'use en marchant et se refait tout seul. Deux zones
-     thermiques (enZoneChaude / enZoneFroide, data.js). Pas de Protocole, pas de
-     patrouille. Fond carte_ancolie.png (1536 × 1024 → monde × 1,5625). */
+     l'orbite. Deux zones thermiques (enZoneChaude / enZoneFroide, data.js). Pas de
+     Protocole, pas de patrouille. Fond carte_ancolie.png (1536 × 1024 → monde × 1,5625).
+     ⚠ v1.87 — K47 : UN HAUT PLATEAU. L'air y est bon, mais mince : dehors, l'O₂
+     coûte DEUX FOIS plus que sur Silène et ne se refait jamais. Il ne se recharge
+     que dans la zone de la station (`abri`, qui englobe le quai : la station EST le
+     quai, K23), où les automates tiennent l'air au standard du personnel ; ailleurs,
+     Recharges et Tanks. Serveur : air_respirable (v204), même centre, même rayon.
+     ⚠ `abri` existe des DEUX côtés (ici et dans v204) : un rayon changé d'un côté =
+     un joueur qui suffoque devant une porte que le client croit ouverte. */
   ancolie: {
     nom:"Ancolie", orbite:null, img:"images/carte_ancolie.png", w:2400, h:1600,
-    o2Mult:1, air:true, depuisSilene:true, coutMult:1.5,
+    o2Mult:2, depuisSilene:true, coutMult:1.5,
+    abri:{ x:1031, y:880, r:160 },
     vaisseau:{ x:1110, y:960, r:70 },
     zonesTh:{ chaude:{ x:360, y:270, r:540 }, froide:{ x:1910, y:380, r:580 } },
     lieux:[
@@ -77,9 +83,12 @@ const SURFACES = {
       { id:"station",      nom:"La station", x:1031, y:880, r:110, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser." },
       { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
       { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
-      { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." }
+      { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." },
+      /* v1.87 — K48 : le gisement de Sélénite, au lac gelé. Invisible tant que Q23 ne
+         l'a pas fait trouver (`si` : drapeau de etat). Mécanique : selenite.js. */
+      { id:"selenite",     nom:"Le lac gelé", x:1780, y:600, r:70, si:"seleniteConnue", desc:"Des aiguilles pâles poussent dans la glace bleue. Quand le vent passe, elles brillent." }
     ],
-    arrivee:"Le vaisseau se pose au quai, dans un souffle de pétales. Dehors, l'ancolie à perte de vue, bleue sous la lumière. L'air est bon.",
+    arrivee:"Le vaisseau se pose au quai, dans un souffle de pétales. Dehors, l'ancolie à perte de vue, bleue sous la lumière. L'air est bon, mais il est mince : au bout de dix pas, on a le souffle court. Seule la station le tient au standard.",
     depart:"Le vaisseau décolle du quai. En dessous, Ancolie s'efface : une tache bleue, puis plus rien. Silène est loin.",
     couleur:"#8fb8ff"
   }
@@ -101,8 +110,16 @@ function posSurface(){
   const c=surfaceCfg()||BRAISE;
   return { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
 }
+/* v1.87 — K47 : la zone de la station d'Ancolie (quai compris). On y respire ; on y
+   prend les quêtes de 42-U1F (_priseIci, quetes.js). */
+function aLaStation(depuis){
+  if(!(etat && etat.secteur === "ancolie")) return false;
+  const a = SURFACES.ancolie.abri, p = depuis || posSurface();
+  return Math.hypot(p.x - a.x, p.y - a.y) <= a.r;
+}
+function lieuVisible(l){ return !l.si || !!(etat && etat[l.si]); }   // v1.87 : un lieu caché tant qu'une quête ne l'a pas révélé
 function surfaceLieu(secteur, id){ const c=surfaceCfg(secteur); return c ? (c.lieux.find(l => l.id === id) || null) : null; }
-function lieuBraiseIci(){ const c=surfaceCfg(); if(!c) return null; const p=posSurface(); return c.lieux.find(l => Math.hypot(p.x-l.x, p.y-l.y) <= l.r) || null; }
+function lieuBraiseIci(){ const c=surfaceCfg(); if(!c) return null; const p=posSurface(); return c.lieux.find(l => lieuVisible(l) && Math.hypot(p.x-l.x, p.y-l.y) <= l.r) || null; }
 function auVaisseauBraise(){ const c=surfaceCfg(); if(!c) return false; const p=posSurface(), v=c.vaisseau; return Math.hypot(p.x-v.x, p.y-v.y) <= v.r; }
 /* En orbite, au-dessus d'une planète à surface : renvoie son secteur ('braise',
    'suaire') ou null. C'est de là qu'on descend. */
@@ -126,9 +143,10 @@ function coutBraise(x, y, depuis){
     coutO: aptO2Deplacement(coutO2(Math.max(1, Math.round(d/(PAS_SURF_O2/(c.o2Mult||1))))))
   };
 }
-/* O₂ pour rejoindre le vaisseau depuis un point (0 si on y est). */
+/* O₂ pour rejoindre le vaisseau depuis un point (0 si on y est).
+   v1.87 — en Ancolie, l'abri n'est pas le vaisseau mais la station (qui l'englobe). */
 function coutRetourVaisseau(depuis){
-  const v=(surfaceCfg()||BRAISE).vaisseau, p=depuis||posSurface();
+  const cfg=surfaceCfg()||BRAISE, v=cfg.abri || cfg.vaisseau, p=depuis||posSurface();
   if(Math.hypot(p.x-v.x, p.y-v.y) <= v.r) return 0;
   const c = coutBraise(v.x, v.y, p); return c ? c.coutO : 0;
 }
@@ -214,6 +232,9 @@ async function partirVersAncolie(){
   etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
   journal(c.arrivee,"gain","voyage");
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  /* v1.87 — K47 : le quai est dans la zone de la station. L'O₂ est une jauge serveur :
+     un appel sans coût la fait remonter tout de suite (comme « Monter à bord »). */
+  await agirServeur({ motif:"air_station" });
   if(typeof majApresDeplacement==="function") majApresDeplacement();
   ouvrirCarteBraise();
 }
@@ -248,14 +269,22 @@ async function voyagerBraise(x, y){
   // Point de non-retour : on AVERTIT (comme sur Silène), on n'interdit pas.
   const reste = o2 - c.coutO, retour = cfg.air ? 0 : coutRetourVaisseau({ x, y });
   if(retour > 0 && retour >= reste){
-    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir au vaisseau.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
+    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir ${cfg.abri ? "à la station" : "au vaisseau"}.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
   }
+  const dansAbri = cfg.abri ? aLaStation() : false;
   if(!await agirServeur({ cout:c.coutE, jauges:{ o2:-c.coutO }, motif:"deplacement" })) return;
   // On quitte le bord APRÈS l'appel : le premier pas se fait avec un plein d'air.
   etat.surface = { x:Math.round(x), y:Math.round(y), abord:false };
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   const l = lieuBraiseIci();
   journal(`Déplacement — ${cfg.nom} (${Math.round(c.d)} u). −${c.coutE} % énergie, −${c.coutO} O₂.${l?` Tu es à ${l.nom}.`:""}`,"","voyage");
+  /* v1.87 — K47 : en entrant dans la zone de la station, l'air se refait. Le serveur
+     lit la position SAUVÉE (donnees.surface) : l'appel vient donc après la sauvegarde,
+     comme pour « Monter à bord ». */
+  if(cfg.abri && !dansAbri && aLaStation()){
+    await agirServeur({ motif:"air_station" });
+    journal("Tu passes sous l'auvent de la station. L'air y est épais, tiède, réglementaire : tu respires enfin à fond.","gain","voyage");
+  }
   if(typeof queteArrivee==="function") queteArrivee();
   apresBraise();
   /* v1.31 — au sol, AUCUNE patrouille d'ordinaire. Pendant une chute de débris,
@@ -317,6 +346,7 @@ function majCarteBraise(){
   const tt = document.querySelector("#surface-titre"); if(tt) tt.textContent = cfg.nom;
   let h = `<image href="${cfg.img}" x="0" y="0" width="${cfg.w}" height="${cfg.h}" preserveAspectRatio="none"/>`;
   for(const l of cfg.lieux){
+    if(!lieuVisible(l)) continue;   // v1.87 : le gisement de Sélénite, après Q23
     const vaiss = (l.id === "atterrissage");
     h += `<g style="pointer-events:none"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="${vaiss?"#ffffff14":"#00000033"}" stroke="${vaiss?"#f5e9d3":cfg.couleur}" stroke-opacity=".7" stroke-width="3" stroke-dasharray="${vaiss?"":"8 10"}"/>
       <text x="${l.x}" y="${l.y + l.r + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">${vaiss?"🚀 ":""}${l.nom}</text></g>`;
@@ -334,7 +364,10 @@ function majCarteBraise(){
   const info = document.querySelector("#braise-info");
   if(info){
     const ret = coutRetourVaisseau();
-    info.innerHTML = cfg.air
+    info.innerHTML = cfg.abri   /* v1.87 — K47 : Ancolie */
+      ? (aLaStation() ? `<b>${abord ? "Au quai, à bord de ton vaisseau." : (ici ? ici.nom : "À la station.")}</b> <span class="itip-gris">La station tient l'air au standard : ici, ton O₂ se refait. Dehors, il est mince et chaque pas en coûte le double.</span>`
+                      : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est mince · retour à la station : ${ret} O₂</span>`)
+      : cfg.air
       ? (abord ? `<b>Au quai, à bord de ton vaisseau.</b> <span class="itip-gris">Ici, l'air est bon.</span>`
                : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est respirable</span>`)
       : abord

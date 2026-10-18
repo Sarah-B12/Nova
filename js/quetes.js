@@ -115,7 +115,8 @@ function _fmtDuree(ms){
 }
 
 // Mini-jeux ratables : un essai par jour.
-const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup"]);
+const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup",
+  "ronde","crevasse","tir","goupilles","reaction"]);   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
 /* ⚠ Le verrou ne dure plus 24 h glissantes mais jusqu'au PROCHAIN MINUIT
    PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
    23 h ne bloque donc plus toute la journée du lendemain. Repli sur l'ancien
@@ -661,7 +662,10 @@ function _htmlEnigme(d){
 function _wireEnigme(z,d){
   const b=z.querySelector("#q-enig-btn"), c=z.querySelector("#q-enig-champ");
   const go=()=>{
-    if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){
+    /* v1.87 — `d.motsCles` : une réponse en phrase passe si un de ces mots y figure
+       (début de mot, accents ignorés : « radi » prend radié, radiée, radiation). */
+    const _rep=_qnorm(c.value), _mc=(d.motsCles||[]).some(m=>(" "+_rep).includes(" "+_qnorm(m)));
+    if(_mc || (d.reponses||d.reponse||[]).map(_qnorm).includes(_rep)){
       journal("Bonne réponse !","gain"); reussirDefi(); return;
     }
     _enigEchecs++;
@@ -1473,7 +1477,9 @@ function _triEtat(d){
   // Partie en cours avec une source mal placée : on la retire tant qu'aucun relevé n'a été fait.
   if(a._tri && a._tri.src && !(a._tri.releves||[]).length && !_triLibre(a._tri.src, _triObstacles(c.carte))) a._tri = null;
   if(!a._tri || !a._tri.src){
-    a._tri = { src:_triTirer(c), releves:[], ratees:0 };
+    /* v1.87 — `d.source` : une source FIXE (Q23 : l'automate est au lac gelé, là où
+       sera le gisement de Sélénite). Sinon, tirée au hasard dans la zone. */
+    a._tri = { src:(d && d.source) ? { x:d.source.x, y:d.source.y } : _triTirer(c), releves:[], ratees:0 };
     sauvegarder();
   }
   return a._tri;
@@ -1546,9 +1552,9 @@ function _wireTriangulation(z, d){
   z.querySelector("#q-tri-fou").addEventListener("click", ()=>{
     if(t.releves.length < M){ journal(`Relève d'abord le signal en ${M} endroits différents (${t.releves.length}/${M}) : déplace-toi sur la carte entre deux relevés.`,"alerte"); return; }
     const p=_posJoueur(carte); if(!p) return;
-    if(Math.hypot(p.x-t.src.x, p.y-t.src.y) <= PREC){ journal("Sous la croûte, ta pioche sonne sur du métal.","gain"); reussirDefi(); return; }
+    if(Math.hypot(p.x-t.src.x, p.y-t.src.y) <= PREC){ journal(d.trouve || "Sous la croûte, ta pioche sonne sur du métal.","gain"); reussirDefi(); return; }   // v1.87 : d.trouve
     t.ratees++; sauvegarder();
-    if(t.ratees >= F){ echouerDefi(`Rien, encore rien — et ton temps d'air file. Tu remballes : nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+    if(t.ratees >= F){ echouerDefi(d.echec || `Rien, encore rien — et ton temps d'air file. Tu remballes : nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }   // v1.87 : d.echec
     journal(`Rien ici. Encore ${F-t.ratees} fouille(s) avant de devoir renoncer pour aujourd'hui.`,"alerte");
     dessiner();
   });
@@ -1601,7 +1607,7 @@ function _labGenerer(C, L, rnd){
 function _htmlLabyrinthe(d){
   const C=d.colonnes||6;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Tape une case voisine, sans mur entre les deux, pour avancer. Tu ne vois que ce que tu as déjà approché. Quelque part dans le champ, une sortie ◆ : à toi de la trouver.</p>
+    <p class="quete-indice">Tape une case voisine, sans mur entre les deux, pour avancer. Tu ne vois que ce que tu as déjà approché. ${d.consigne || "Quelque part dans le champ, une sortie ◆ : à toi de la trouver."}</p>
     <div id="q-lab" style="display:grid;grid-template-columns:repeat(${C},1fr);gap:0;max-width:420px;margin:10px auto 0;touch-action:manipulation;border:3px solid #6b6457"></div>
   </div>`;
 }
@@ -1625,9 +1631,9 @@ function _wireLabyrinthe(z, d){
   };
   g.addEventListener("click", e=>{
     const b=e.target.closest("[data-i]"); if(!b) return; const i=+b.dataset.i;
-    if(!voisinsOuverts(t.pos).includes(i)){ if(i!==t.pos) journal("Une aiguille te barre le passage — ou c'est trop loin. Avance case par case.","alerte"); return; }
+    if(!voisinsOuverts(t.pos).includes(i)){ if(i!==t.pos) journal(d.bloque || "Une aiguille te barre le passage — ou c'est trop loin. Avance case par case.","alerte"); return; }   // v1.87 : d.bloque
     t.pos=i; if(!t.vus.includes(i)) t.vus.push(i); sauvegarder();
-    if(i===t.sortie){ dessiner(); journal("Les aiguilles s'écartent : tu es sorti du champ.","gain"); reussirDefi(); return; }
+    if(i===t.sortie){ dessiner(); journal(d.fini || "Les aiguilles s'écartent : tu es sorti du champ.","gain"); reussirDefi(); return; }   // v1.87 : d.fini
     dessiner();
   });
   dessiner();
@@ -1737,7 +1743,9 @@ function _wireMemoire(z,d){
     return;
   }
   const b=z.querySelector("#q-mem-btn"), c=z.querySelector("#q-mem-champ");
-  const go=()=>{ if((d.reponses||d.reponse||[]).map(_qnorm).includes(_qnorm(c.value))){ journal("Bonne mémoire !","gain"); reussirDefi(); } else echouerDefi(`Raté — mauvaise mémorisation. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); };
+  /* v1.87 — `d.compacte` : un code se compare sans espaces, tirets ni barres (« 12-7 B » = « 127b »). */
+  const _n = v => d.compacte ? _qnorm(v).replace(/[^a-z0-9]/g,"") : _qnorm(v);
+  const go=()=>{ if((d.reponses||d.reponse||[]).map(_n).includes(_n(c.value))){ journal(d.fini || "Bonne mémoire !","gain"); reussirDefi(); } else echouerDefi(d.echec || `Raté — mauvaise mémorisation. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); };
   if(b&&c){ b.addEventListener("click",go); c.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); }
 }
 
@@ -1860,6 +1868,9 @@ function repereQueteSousCarte(carte, x, y){
    `lieuPrise:"carcasse"` : chez Galm, à La Carcasse (Q6→). */
 function _priseIci(q){
   if(q && q.lieuPrise==="carcasse") return (typeof surCarcasse==="function") && surCarcasse();
+  /* v1.87 — `lieuPrise:"station"` : à la station d'Ancolie (Q21 →), donneur 42-U1F.
+     La zone de la station englobe le quai : on prend la quête en descendant du vaisseau. */
+  if(q && q.lieuPrise==="station") return (typeof aLaStation==="function") && aLaStation();
   return _enFaction();
 }
 
@@ -1914,7 +1925,7 @@ function majQueteHub(){
      une quête `lieuPrise:"carcasse"`, et elle revient quand la quête est
      finie. Les quêtes prises en ville (Sorn) gardent leur bannière : on doit
      se déplacer pour les étapes, il n'y a jamais les deux à la fois. */
-  const _masquee = !!(_qa0 && _qd0 && _qd0.lieuPrise === "carcasse");
+  const _masquee = !!(_qa0 && _qd0 && (_qd0.lieuPrise === "carcasse" || _qd0.lieuPrise === "station"));   // v1.87 : + station
   const banniere = (_ici && !_masquee) ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
   const a=queteActive();
 
@@ -1926,6 +1937,8 @@ function majQueteHub(){
       const _galm = qp && !qp.lieuPrise && (typeof surCarcasse==="function") && surCarcasse();
       z.innerHTML = (qp && qp.lieuPrise==="carcasse")
         ? `<p class="vide">Personne n'a de travail pour toi ici. Là-haut, dans le secteur Triptolème, on dit qu'à <b>La Carcasse</b> une ferrailleuse cherche toujours des bras.</p>`
+        : (qp && qp.lieuPrise==="station")   /* v1.87 */
+        ? `<p class="vide">Ta radio grésille. « Je t'attends à <b>la station d'Ancolie</b>. Oui, celle-là. Il y en a d'autres, mais c'est la mienne. Prends le vaisseau, je vais pas venir te chercher. » Un temps. « Je peux pas venir te chercher. »</p>`
         : _galm
         ? `<p class="vide">Galm ne lève pas le nez de son établi. « J'ai plus rien pour toi. Le vieux t'attend en bas, à son comptoir. Il a dit que tu saurais pourquoi. »</p>`
         : `<p class="vide">Les quêtes se prennent au <b>comptoir de ta ville de faction</b>. Rejoins-la pour voir ce qu'on te réserve.</p>`;
@@ -1974,11 +1987,20 @@ function majQueteHub(){
     <p class="quete-indice">« ${e.indice||"—"} »</p>
     <p class="vide" style="margin:0">${e.cache
       ? "Aucun repère sur la carte. Déplace-toi : après chaque trajet, la bouture te dit si tu t'es rapproché."
-      : (({espace:"Ouvre la carte de Triptolème", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire"})[carteEtapeActive()] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place."}</p>
+      : _objectifCarteTexte()}</p>
     ${(e.defi && e.defi.type==="chasse") ? _chasseRouteHtml() : ""}</div>`;
   html+=`<button class="mini danger" id="quete-abandon" style="margin-top:6px">Abandonner</button>`;
   z.innerHTML=html;
   const ab=z.querySelector("#quete-abandon"); if(ab) ab.addEventListener("click",abandonnerQuete);
+}
+
+/* v1.87 — l'objectif dit quelle carte ouvrir ; entre Silène et Ancolie, il dit d'abord
+   qu'il faut faire le trajet (les repères d'une carte ne se voient pas de l'autre). */
+function _objectifCarteTexte(){
+  const c = carteEtapeActive(), ici = _carteJoueur();
+  if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins ton vaisseau au quai et rentre (« Rentrer sur Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
+  if(c==="ancolie" && ici!=="ancolie") return "C'est en Ancolie. Depuis une ville de Silène, prends le vaisseau (« Partir pour Ancolie »), puis ouvre la carte : des repères ★ y sont apparus.";
+  return (({espace:"Ouvre la carte de Triptolème", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire", ancolie:"Ouvre la carte d'Ancolie"})[c] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place.";
 }
 
 /* ---------- Style + rafraîchissement ---------- */

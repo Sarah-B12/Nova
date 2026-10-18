@@ -80,6 +80,9 @@ function majGarage(){
    =========================================================== */
 function majGisement(){
   const z = document.querySelector("#gisement-vue"); if(!z) return;
+  /* v1.87 — K48 : le même onglet sert au gisement de Sélénite, au lac gelé d'Ancolie
+     (mécanique à part : selenite.js). */
+  if(typeof surSelenite === "function" && surSelenite()){ majSelenite(z); return; }
 
   if(typeof surGravier !== "function" || !surGravier()){
     /* ⚠ Ne jamais laisser un panneau VIDE : si cet écran s'ouvre alors qu'on

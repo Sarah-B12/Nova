@@ -31,6 +31,7 @@ const DELAIS = {
   patrmef: { profil: 50, sac: 50, jauges: 50 },   // v1.83 : les patrouilles se méfient (o_patrmef.js)
   arclass: { profil: 50, sac: 50, jauges: 50 },   // v1.84 : classements de l'Arène (o_arclass.js)
   lot1: { profil: 50, sac: 50, jauges: 50 },      // v1.85 : Q16 → Q20, Ancolie (o_lot1.js)
+  lot2: { profil: 50, sac: 50, jauges: 50 },      // v1.87 : Q21 → Q25, air d'Ancolie, Sélénite (o_lot2.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)
   traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (o_traque.js)

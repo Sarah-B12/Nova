@@ -60,7 +60,10 @@ function majHub(){
   const dispo = auDessusBraise
     ? { ...vide, descente:true, quete:qEnCours }
     : (typeof enSurface==="function" && enSurface())
-    ? { ...vide, quete:qEnCours }                // v0.98 : au sol d'une planète, pas de service
+    /* v0.98 : au sol d'une planète, pas de service. v1.87 : en Ancolie, à la station,
+       42-U1F donne ses quêtes (lieuPrise:"station") ; au lac gelé, le gisement de Sélénite. */
+    ? { ...vide, quete:qEnCours || ((typeof aLaStation==="function") && aLaStation()),
+        gisement:(typeof surSelenite==="function") && surSelenite() }
     : carcasse
     ? { ...vide, garage:true, quete:true }   // v0.97 : Galm donne les quêtes Q6→
     : gravier

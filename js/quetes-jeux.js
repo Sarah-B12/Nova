@@ -265,3 +265,300 @@ QUETES_JEUX.saut = {
     });
   }
 };
+
+/* ===========================================================
+   v1.87 — LOT 2 (Q21 → Q25) : quatre épreuves de plus, reprises des missions et
+   jouées côté client. Mêmes règles que les précédentes : `_qjEtat` garde la
+   partie dans la quête active ; un échec passe par echouerDefi (verrou 8 h).
+   · tir       (Q21) éclater ce qui passe dans le conduit, coups comptés
+   · reaction  (Q22) relancer les bornes d'un relais : la réaction en chaîne
+   · goupilles (Q23) dégager à petits coups ; aussi le gisement de Sélénite
+   · rangement (Q24) remettre les modules d'un automate dans son caisson
+   =========================================================== */
+
+/* ---------- Le tir (Q21) ---------- */
+QUETES_JEUX.tir = {
+  html(d){
+    const T = _qjEtat(_qjCle(d), () => ({ phase:"pret" }));
+    const cible = d.cible || 10, tirs = d.tirs || 16, duree = d.duree || 30;
+    return `<div class="quete-etape">${_par(d.texte)}
+      <p class="quete-indice">${d.consigne || "Touche ce qui passe avant que ça ne sorte de l'écran."} <b>${cible} à toucher, ${tirs} coups, ${duree} s.</b></p>
+      <svg id="qj-tir" viewBox="0 0 300 180" style="width:100%;max-width:360px;background:#060b14;border:1px solid var(--line);border-radius:8px;touch-action:none;display:block"></svg>
+      <p class="vide" id="qj-tir-etat">Touchés : 0 / ${cible} · Coups : ${tirs} · ${duree} s</p>
+      ${T.phase === "pret" ? `<div class="quete-rep"><button class="mini" id="qj-tir-go">${d.bouton || "Commencer"}</button></div>` : ""}</div>`;
+  },
+  wire(z, d){
+    const go = z.querySelector("#qj-tir-go"), svg = z.querySelector("#qj-tir"); if(!go || !svg) return;
+    const cible = d.cible || 10, duree = d.duree || 30, coul = d.couleur || "#8fb8ff";
+    go.addEventListener("click", () => {
+      go.disabled = true;
+      const t0 = performance.now();
+      const P = { actif:true, touches:0, tirs:d.tirs || 16, fin:t0 + duree * 1000, objets:[], der:t0, pause:0 };
+      _seqAnim = Date.now();                       // aucun redessin de l'onglet pendant la partie
+      const finir = (gagne) => {
+        if(!P.actif) return; P.actif = false; _seqFin();
+        const a = queteActive(); if(a) a._qj = null;
+        if(gagne){ journal(d.fini || "C'est dégagé.", "gain"); reussirDefi(); }
+        else echouerDefi(d.echec || `Raté. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
+      };
+      const pas = t => {
+        if(!P.actif) return;
+        if(!document.body.contains(svg)){ P.actif = false; _seqFin(); const a = queteActive(); if(a) a._qj = null; return; }   // onglet quitté : on recommencera
+        const dt = (t - P.der) / 1000; P.der = t;
+        P.pause -= dt;
+        if(P.pause <= 0){ P.pause = 0.55 + Math.random() * 0.55; P.objets.push({ x:-14, y:20 + Math.random() * 140, v:65 + Math.random() * 70, r:9 + Math.random() * 5 }); }
+        P.objets.forEach(o => o.x += o.v * dt); P.objets = P.objets.filter(o => o.x < 318);
+        svg.innerHTML = P.objets.map(o => `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="${o.r.toFixed(1)}" fill="${coul}33" stroke="${coul}" stroke-width="2"/><circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="2.5" fill="${coul}"/>`).join("");
+        const reste = Math.max(0, (P.fin - t) / 1000);
+        const e = z.querySelector("#qj-tir-etat"); if(e) e.textContent = `Touchés : ${P.touches} / ${cible} · Coups : ${P.tirs} · ${Math.ceil(reste)} s`;
+        if(reste <= 0) return finir(false);
+        requestAnimationFrame(pas);
+      };
+      svg.addEventListener("pointerdown", ev => {
+        if(!P.actif || P.tirs <= 0) return;
+        const r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * 300 / (r.width || 300), y = (ev.clientY - r.top) * 180 / (r.height || 180);
+        P.tirs--;
+        const k = P.objets.findIndex(o => Math.hypot(o.x - x, o.y - y) <= o.r + 4);
+        if(k >= 0){ P.objets.splice(k, 1); P.touches++; }
+        if(P.touches >= cible) finir(true);
+        else if(P.tirs <= 0) finir(false);
+      });
+      QUETES_JEUX.tir._partie = P;                  // pour le banc d'essai
+      requestAnimationFrame(pas);
+    });
+  }
+};
+
+/* ---------- Les goupilles (Q23, et le gisement de Sélénite) ----------
+   Un curseur va et vient ; on « bloque » quand il passe dans le vert. La zone
+   rétrécit et le curseur accélère à chaque goupille. Le moteur est partagé :
+   `goupillesMoteur(zone, opts)` sert aussi au gisement (selenite.js). */
+function _goupZoneQ(k, nb){ const w = 0.30 - k * (0.18 / Math.max(1, nb - 1)); return [0.5 - w / 2, 0.5 + w / 2]; }
+function goupillesMoteur(zone, o){
+  const nb = o.nb || 5;
+  const G = { k:0, pos:0, sens:1, actif:true, raf:null };
+  const dessiner = () => {
+    const [a, b] = _goupZoneQ(G.k, nb);
+    zone.innerHTML = `<p style="margin:6px 0"><b>${o.libelle || "Goupille"} ${G.k + 1} sur ${nb}.</b> ${o.aide || "Bloque quand le curseur passe dans le vert."}</p>
+      <div class="mi-gp"><div class="mi-gp-zone" style="left:${a * 100}%;width:${(b - a) * 100}%"></div><div class="mi-gp-cur" data-gp-cur style="left:${G.pos * 100}%"></div></div>
+      <div class="mi-btns"><button class="mini" data-gp-coup>${o.bouton || "Bloquer"}</button></div>`;
+    zone.querySelector("[data-gp-coup]").addEventListener("click", coup);
+  };
+  const arreter = () => { G.actif = false; if(G.raf) cancelAnimationFrame(G.raf); };
+  const coup = () => {
+    if(!G.actif) return;
+    const [a, b] = _goupZoneQ(G.k, nb);
+    if(G.pos >= a && G.pos <= b){
+      G.k++;
+      if(G.k >= nb){ arreter(); o.gagne && o.gagne(); return; }
+      dessiner();
+    } else {
+      const encore = o.rate ? o.rate(G.k) : false;   // vrai = on recommence à zéro ; faux = c'est fini
+      if(encore){ G.k = 0; dessiner(); } else arreter();
+    }
+  };
+  let der = performance.now();
+  const pas = t => {
+    if(!G.actif) return;
+    if(!document.body.contains(zone)){ G.actif = false; o.quitte && o.quitte(); return; }
+    const dt = Math.min(0.1, (t - der) / 1000); der = t;
+    G.pos += G.sens * dt * ((o.vitesse || 0.55) + G.k * (o.accel || 0.16));
+    if(G.pos >= 1){ G.pos = 1; G.sens = -1; } if(G.pos <= 0){ G.pos = 0; G.sens = 1; }
+    const c = zone.querySelector("[data-gp-cur]"); if(c) c.style.left = (G.pos * 100) + "%";
+    G.raf = requestAnimationFrame(pas);
+  };
+  dessiner(); G.raf = requestAnimationFrame(pas);
+  return { etat:G, coup, arreter };
+}
+QUETES_JEUX.goupilles = {
+  html(d){
+    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} ${d.felures ? `<b>${d.felures} fêlure${d.felures > 1 ? "s" : ""} et c'est fini pour aujourd'hui.</b>` : ""}</p>
+      <div id="qj-goup"><div class="quete-rep"><button class="mini" id="qj-goup-go">${d.bouton || "Commencer"}</button></div></div></div>`;
+  },
+  wire(z, d){
+    const go = z.querySelector("#qj-goup-go"), zone = z.querySelector("#qj-goup"); if(!go || !zone) return;
+    go.addEventListener("click", () => {
+      let felures = 0, fin = false;
+      _seqAnim = Date.now();
+      const m = goupillesMoteur(zone, {
+        nb:d.nb || 6, libelle:d.libelle || "Coup", aide:d.aide, bouton:d.boutonCoup || "Frapper",
+        gagne:() => { fin = true; _seqFin(); journal(d.fini || "C'est dégagé.", "gain"); reussirDefi(); },
+        rate:() => {
+          felures++;
+          if(felures >= (d.felures || 2)){ fin = true; _seqFin(); echouerDefi(d.echec || `Raté. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return false; }
+          journal(d.fele || "Une fêlure. Reprends depuis le début, plus doucement.", "alerte"); return true;
+        },
+        quitte:() => { if(!fin) _seqFin(); }
+      });
+      QUETES_JEUX.goupilles._partie = m;           // pour le banc d'essai
+    });
+  }
+};
+
+/* ---------- La réaction en chaîne (Q22) ----------
+   Des bornes (carrés) sur une grille de points reliés par des pistes. Une
+   impulsion allume tout ce qui lui est relié jusqu'à `portee` pistes de
+   distance. Il faut allumer toutes les bornes avec `n` impulsions. Niveau tiré
+   puis vérifié par force brute : au moins une solution à n, aucune à n − 1. */
+function _reacVoisins(R){ const v = Array.from({ length:R.w * R.h }, () => []); R.pistes.forEach(([a, b]) => { v[a].push(b); v[b].push(a); }); return v; }
+function _reacPortee(R, vois, s){
+  const d = new Map([[s, 0]]), f = [s];
+  while(f.length){ const i = f.shift(); if(d.get(i) >= R.portee) continue; for(const j of vois[i]) if(!d.has(j)){ d.set(j, d.get(i) + 1); f.push(j); } }
+  return [...d.keys()];
+}
+function _reacAllume(R, impulsions){ const vois = _reacVoisins(R), s = new Set(); impulsions.forEach(i => _reacPortee(R, vois, i).forEach(x => s.add(x))); return s; }
+function _reacSolutions(R, n, max){
+  const N = R.w * R.h, vois = _reacVoisins(R), por = Array.from({ length:N }, (_, i) => new Set(_reacPortee(R, vois, i)));
+  let compte = 0;
+  const rec = (deb, choisis) => {
+    if(compte >= max) return;
+    if(choisis.length === n){ if(R.bornes.every(b => choisis.some(c => por[c].has(b)))) compte++; return; }
+    for(let i = deb; i < N; i++){ choisis.push(i); rec(i + 1, choisis); choisis.pop(); if(compte >= max) return; }
+  };
+  rec(0, []); return compte;
+}
+function reacGenerer(w, h, n, nb, portee, maxSol){
+  for(let essai = 0; essai < 400; essai++){
+    // Arbre couvrant au hasard sur la grille, plus quelques pistes de traverse.
+    const N = w * h, pistes = [], vu = new Set([Math.floor(Math.random() * N)]), front = [...vu];
+    while(vu.size < N){
+      const i = front[Math.floor(Math.random() * front.length)], x = i % w, y = Math.floor(i / w);
+      const cand = [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].filter(([a, b]) => a >= 0 && b >= 0 && a < w && b < h && !vu.has(b * w + a));
+      if(!cand.length){ front.splice(front.indexOf(i), 1); continue; }
+      const [a, b] = cand[Math.floor(Math.random() * cand.length)], j = b * w + a; pistes.push([i, j]); vu.add(j); front.push(j);
+    }
+    for(let k = 0; k < Math.round(N / 10); k++){ const i = Math.floor(Math.random() * N), x = i % w, y = Math.floor(i / w);
+      if(x + 1 < w && !pistes.some(([p, q]) => (p === i && q === i + 1) || (q === i && p === i + 1))) pistes.push([i, i + 1]); }
+    const R = { w, h, pistes, portee, n, bornes:[] };
+    // Les bornes : au bout de la portée de n impulsions tirées au hasard, aussi loin que possible.
+    const vois = _reacVoisins(R), graines = []; while(graines.length < n){ const g = Math.floor(Math.random() * N); if(!graines.includes(g)) graines.push(g); }
+    const bornes = new Set();
+    graines.forEach(g => { const d = new Map([[g, 0]]), f = [g];
+      while(f.length){ const i = f.shift(); if(d.get(i) >= portee) continue; for(const j of vois[i]) if(!d.has(j)){ d.set(j, d.get(i) + 1); f.push(j); } }
+      const loin = [...d.entries()].filter(([, v]) => v >= portee - 1).map(([k]) => k).sort(() => Math.random() - .5);
+      loin.slice(0, Math.ceil(nb / n)).forEach(b => bornes.add(b)); });
+    R.bornes = [...bornes];
+    if(R.bornes.length < nb - 1) continue;
+    /* Réglage (banc o_lot2) : 7 × 5, 8 bornes, portée 2, 3 impulsions, au plus 20
+       solutions sur ~6 500 combinaisons → un niveau sur trois passe ; jamais faisable à 2. */
+    const sol = _reacSolutions(R, n, (maxSol || 20) + 1);
+    if(sol < 1 || sol > (maxSol || 20)) continue;  // trop de solutions = trop facile
+    if(n > 1 && _reacSolutions(R, n - 1, 1) > 0) continue;   // faisable avec moins : pas assez dur
+    return R;
+  }
+  return null;
+}
+QUETES_JEUX.reaction = {
+  _etat(d){ return _qjEtat(_qjCle(d), () => ({ R:reacGenerer(d.colonnes || 7, d.lignes || 5, d.impulsions || 3, d.bornes || 8, d.portee || 2, d.solutionsMax || 20), choix:[], essais:0, dernier:null })); },
+  html(d){
+    const S = this._etat(d), R = S.R;
+    if(!R) return `<div class="quete-etape"><p class="vide">Le boîtier ne répond pas. Reviens plus tard.</p></div>`;
+    const pas = 52, X = i => 30 + (i % R.w) * pas, Y = i => 30 + Math.floor(i / R.w) * pas;
+    const allume = S.dernier ? new Set(S.dernier) : null;
+    let svg = R.pistes.map(([a, b]) => `<line x1="${X(a)}" y1="${Y(a)}" x2="${X(b)}" y2="${Y(b)}" stroke="#c98a3a" stroke-width="4" stroke-linecap="round"/>`).join("");
+    for(let i = 0; i < R.w * R.h; i++){
+      const borne = R.bornes.includes(i), imp = S.choix.includes(i), lu = allume && allume.has(i);
+      svg += `<g data-reac="${i}" style="cursor:pointer"><circle cx="${X(i)}" cy="${Y(i)}" r="18" fill="transparent"/>`
+        + (borne ? `<rect x="${X(i) - 10}" y="${Y(i) - 10}" width="20" height="20" fill="${lu ? "#7bc47f" : "#cfd6df"}" stroke="#0b1220" stroke-width="2"/>` : `<circle cx="${X(i)}" cy="${Y(i)}" r="5" fill="${lu ? "#7bc47f" : "#8a8f96"}"/>`)
+        + (imp ? `<circle cx="${X(i)}" cy="${Y(i)}" r="13" fill="none" stroke="#ffb060" stroke-width="4"/>` : "") + `</g>`;
+    }
+    const reste = (d.essais || 2) - S.essais;
+    return `<div class="quete-etape">${_par(d.texte)}
+      <p class="quete-indice">${d.consigne || ""} <b>Impulsions : ${R.n - S.choix.length} / ${R.n}.</b> ${reste} essai${reste > 1 ? "s" : ""} avant que le cuivre ne chauffe trop.</p>
+      <svg viewBox="0 0 ${60 + (R.w - 1) * pas} ${60 + (R.h - 1) * pas}" style="width:100%;max-width:380px;background:rgba(40,20,10,.35);border:1px solid var(--line);border-radius:8px;display:block">${svg}</svg>
+      <p class="vide" style="margin:4px 0">${d.aide || `Une impulsion allume ce qui lui est relié par les pistes, jusqu'à ${R.portee} de distance. Les carrés sont les bornes : il faut toutes les allumer.`}${allume ? " <b>Vert : ce qu'a allumé ton dernier essai.</b>" : ""}</p>
+      <div class="quete-rep"><button class="mini" id="qj-reac-go" ${S.choix.length ? "" : "disabled"}>${d.bouton || "Lancer"}</button></div></div>`;
+  },
+  wire(z, d){
+    const S = this._etat(d), R = S.R; if(!R) return;
+    z.querySelectorAll("[data-reac]").forEach(g => g.addEventListener("click", () => {
+      const i = +g.dataset.reac, k = S.choix.indexOf(i);
+      if(k >= 0) S.choix.splice(k, 1); else if(S.choix.length < R.n) S.choix.push(i);
+      majQueteHub();
+    }));
+    const go = z.querySelector("#qj-reac-go");
+    if(go) go.addEventListener("click", () => {
+      if(go.disabled) return; go.disabled = true;
+      const lu = _reacAllume(R, S.choix);
+      if(R.bornes.every(b => lu.has(b))){ const a = queteActive(); if(a) a._qj = null; journal(d.fini || "Toutes les bornes sont allumées.", "gain"); reussirDefi(); return; }
+      S.essais++; S.dernier = [...lu];
+      if(S.essais >= (d.essais || 2)){ const a = queteActive(); if(a) a._qj = null; echouerDefi(d.echec || `Raté. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+      journal(`${R.bornes.filter(b => lu.has(b)).length} borne(s) sur ${R.bornes.length} allumée(s). Il en manque.`, "alerte");
+      S.choix = []; sauvegarder(); majQueteHub();
+    });
+  }
+};
+
+/* ---------- Le rangement (Q24) ----------
+   Les modules d'un automate : une grille découpée au hasard en pièces, que le
+   joueur doit tout remettre dans le caisson. Comme la découpe remplit la grille,
+   « tout est posé » = « rien ne ballotte ». Pas ratable : c'est un casse-tête. */
+function _rgCellules(piece, r){
+  let c = piece.map(([x, y]) => [x, y]);
+  for(let k = 0; k < (r || 0); k++) c = c.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...c.map(p => p[0])), my = Math.min(...c.map(p => p[1]));
+  return c.map(([x, y]) => [x - mx, y - my]);
+}
+function rangementGenerer(w, h, tmin, tmax){
+  for(let essai = 0; essai < 200; essai++){
+    const prop = Array(w * h).fill(-1), pieces = []; let ok = true;
+    for(let i = 0; i < w * h && ok; i++){
+      if(prop[i] >= 0) continue;
+      const k = pieces.length, cible = tmin + Math.floor(Math.random() * (tmax - tmin + 1)), cel = [i]; prop[i] = k;
+      while(cel.length < cible){
+        const front = []; cel.forEach(c => { const x = c % w, y = Math.floor(c / w);
+          [[x+1,y],[x-1,y],[x,y+1],[x,y-1]].forEach(([a, b]) => { if(a >= 0 && b >= 0 && a < w && b < h && prop[b * w + a] < 0) front.push(b * w + a); }); });
+        if(!front.length) break;
+        const n = front[Math.floor(Math.random() * front.length)]; prop[n] = k; cel.push(n);
+      }
+      if(cel.length < 2){ ok = false; break; }   // un module d'une case : on recommence
+      pieces.push(cel.map(c => [c % w, Math.floor(c / w)]));
+    }
+    if(!ok || pieces.length < 6) continue;
+    // Présentées tournées au hasard, dans le désordre.
+    const p2 = pieces.map(p => _rgCellules(p, Math.floor(Math.random() * 4))).sort(() => Math.random() - .5);
+    return { w, h, pieces:p2, pose:[], sel:0, rot:0 };
+  }
+  return null;
+}
+/* La case d'ancrage d'un module : sa première case en lisant de gauche à droite et de
+   haut en bas. On pose un module en touchant la case où ira SA case d'ancrage : ainsi la
+   case touchée est toujours une case qu'il occupera (un coin de cadre vide pouvait
+   tomber sur un module voisin, et le clic le retirait au lieu de poser). */
+function _rgAncre(cel){ return cel.slice().sort((u, v) => u[1] - v[1] || u[0] - v[0])[0]; }
+function _rgOccupation(R){ const occ = {}; R.pose.forEach((p, k) => _rgCellules(R.pieces[p.p], p.r).forEach(([x, y]) => { occ[(p.y + y) * R.w + (p.x + x)] = k; })); return occ; }
+QUETES_JEUX.rangement = {
+  _etat(d){ return _qjEtat(_qjCle(d), () => ({ R:rangementGenerer(d.colonnes || 6, d.lignes || 5, d.min || 3, d.max || 6) })); },
+  html(d){
+    const R = this._etat(d).R; if(!R) return `<div class="quete-etape"><p class="vide">Le caisson est coincé. Reviens plus tard.</p></div>`;
+    const occ = _rgOccupation(R), poses = new Set(R.pose.map(p => p.p)), coul = k => `hsl(${(k * 53 + 20) % 360} 45% 52%)`;
+    const pct = Math.round(Object.keys(occ).length / (R.w * R.h) * 100);
+    let h = `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""}</p>
+      <div class="mi-rg-grille" style="grid-template-columns:repeat(${R.w},1fr)">`;
+    for(let i = 0; i < R.w * R.h; i++){ const k = occ[i]; h += `<div class="mi-rg-case" data-qrg-case="${i}"${k != null ? ` style="background:${coul(R.pose[k].p)}"` : ""}></div>`; }
+    h += `</div><p class="vide" style="margin:4px 0">Rempli : ${pct} %. Choisis un module, tourne-le, puis touche la case où poser sa case marquée d'un point ; touche un module posé pour le reprendre.</p><div class="mi-rg-pieces">`;
+    R.pieces.forEach((pc, k) => {
+      if(poses.has(k)) return;
+      const c = _rgCellules(pc, k === R.sel ? R.rot : 0), w = Math.max(...c.map(p => p[0])) + 1, hh = Math.max(...c.map(p => p[1])) + 1, an = _rgAncre(c);
+      h += `<button class="mi-rg-piece${k === R.sel ? " actif" : ""}" data-qrg-piece="${k}" style="grid-template-columns:repeat(${w},12px);grid-template-rows:repeat(${hh},12px)">`
+         + c.map(([x, y]) => `<span style="grid-column:${x + 1};grid-row:${y + 1};background:${coul(k)}${x === an[0] && y === an[1] ? ";box-shadow:inset 0 0 0 3px #0b1220" : ""}"></span>`).join("") + `</button>`;
+    });
+    return h + `</div><div class="mi-btns"><button class="mini" id="qj-rg-tourner">Tourner</button></div></div>`;
+  },
+  wire(z, d){
+    const R = this._etat(d).R; if(!R) return;
+    z.querySelectorAll("[data-qrg-piece]").forEach(b => b.addEventListener("click", () => { R.sel = +b.dataset.qrgPiece; R.rot = 0; majQueteHub(); }));
+    const bt = z.querySelector("#qj-rg-tourner"); if(bt) bt.addEventListener("click", () => { R.rot = (R.rot + 1) % 4; majQueteHub(); });
+    z.querySelectorAll("[data-qrg-case]").forEach(c => c.addEventListener("click", () => {
+      const i = +c.dataset.qrgCase, occ = _rgOccupation(R);
+      if(occ[i] != null){ R.pose.splice(occ[i], 1); majQueteHub(); return; }
+      if(R.pose.some(p => p.p === R.sel)) return;
+      const cel = _rgCellules(R.pieces[R.sel], R.rot), an = _rgAncre(cel), x = i % R.w - an[0], y = Math.floor(i / R.w) - an[1];
+      if(cel.some(([a, b]) => x + a < 0 || y + b < 0 || x + a >= R.w || y + b >= R.h || occ[(y + b) * R.w + (x + a)] != null)){ journal(d.bute || "Ça ne rentre pas là.", "alerte"); return; }
+      R.pose.push({ p:R.sel, r:R.rot, x, y });
+      if(R.pose.length === R.pieces.length){ const a = queteActive(); if(a) a._qj = null; journal(d.fini || "Tout est rangé.", "gain"); reussirDefi(); return; }
+      const libre = R.pieces.findIndex((_, k) => !R.pose.some(p => p.p === k)); if(libre >= 0){ R.sel = libre; R.rot = 0; }
+      sauvegarder(); majQueteHub();
+    }));
+  }
+};
