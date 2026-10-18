@@ -75,19 +75,19 @@ QUETES_JEUX.ronde = {
     if(go) go.addEventListener("click", () => {
       R.phase = "observer"; R.t = 0;
       _seqAnim = Date.now();                       // pas de redessin de l'onglet pendant l'observation
-      majQueteHubForce();
+      _qjRedessiner(z, d);
       const tick = setInterval(() => {
         const g = document.querySelector("#qj-ronde");
         if(!g){ clearInterval(tick); _seqFin(); R.phase = "pret"; R.t = 0; return; }   // onglet quitté : on recommencera
         R.t++;
-        if(R.t >= obs){ clearInterval(tick); R.t = obs - 1; R.phase = "repondre"; _seqFin(); majQueteHub(); return; }
+        if(R.t >= obs){ clearInterval(tick); R.t = obs - 1; R.phase = "repondre"; _seqFin(); _qjRedessiner(z, d); return; }
         g.querySelectorAll("[data-qr]").forEach(c => { c.innerHTML = _rondeCase(R, +c.dataset.qr); });
         const lp = document.querySelector("#qj-ronde-pas"); if(lp) lp.textContent = `Pas ${R.t} sur ${obs - 1}…`;
       }, d.vitesse || 650);
     });
     if(R.phase === "repondre") z.querySelectorAll("[data-qr]").forEach(c => c.addEventListener("click", () => {
       R.rep.push(+c.dataset.qr);
-      if(R.rep.length < R.boucles.length){ majQueteHub(); return; }
+      if(R.rep.length < R.boucles.length){ _qjRedessiner(z, d); return; }
       const bon = R.boucles.every((b, j) => b[(R.t + av) % b.length] === R.rep[j]);
       const a = queteActive(); if(a) a._qj = null;
       if(bon){ journal("Repérage juste.", "gain"); reussirDefi(); }
@@ -95,9 +95,22 @@ QUETES_JEUX.ronde = {
     }));
   }
 };
-/* Le redessin « forcé » ignore la suspension (_seqAnim) : utilisé une seule fois,
-   pour passer de « Observer » à la grille en mouvement. */
+/* Le redessin « forcé » ignore la suspension (_seqAnim). v1.87c : plus utilisé par
+   la ronde (_qjRedessiner ne regarde pas _seqAnim) ; gardé pour qui en aurait besoin. */
 function majQueteHubForce(){ const s = _seqAnim; _seqAnim = 0; majQueteHub(); _seqAnim = s; }
+
+/* v1.87c — REDESSINER L'ÉPREUVE SEULE. Avant, chaque clic (un pas dans la crevasse,
+   un module posé, une impulsion choisie…) appelait majQueteHub() : tout l'onglet
+   était reconstruit, la bannière et l'image de l'étape rechargées, et la page
+   remontait puis redescendait. Ici on ne remplace que la zone de l'épreuve
+   ([data-qj-zone], posée par _defiHTML). Si la zone n'existe plus (onglet quitté,
+   étape changée), on retombe sur le redessin complet. */
+function _qjRedessiner(z, d){
+  const J = (typeof QUETES_JEUX !== "undefined") && QUETES_JEUX[d.type];
+  const zone = (z && z.hasAttribute && z.hasAttribute("data-qj-zone")) ? z : (z && z.querySelector && z.querySelector("[data-qj-zone]"));
+  if(!J || !zone || !document.body.contains(zone)){ majQueteHub(); return; }
+  zone.innerHTML = J.html(d); J.wire(zone, d);
+}
 
 /* ---------- Le nœud (Q17) ---------- */
 QUETES_JEUX.noeud = {
@@ -118,7 +131,7 @@ QUETES_JEUX.noeud = {
     const N = _qjEtat(_qjCle(d), () => ({})), svg = z.querySelector("#qj-noeud"); if(!svg) return;
     let actif = false;
     const pt = e => { const r = svg.getBoundingClientRect(); return [(e.clientX - r.left) * 300 / r.width, (e.clientY - r.top) * 300 / r.height]; };
-    const rater = () => { actif = false; N.prog = 0; N.pts = _noeudTracer(N.k); journal(d.glisse || "Le câble a glissé : recommence ce tronçon.", "alerte"); majQueteHub(); };
+    const rater = () => { actif = false; N.prog = 0; N.pts = _noeudTracer(N.k); journal(d.glisse || "Le câble a glissé : recommence ce tronçon.", "alerte"); _qjRedessiner(z, d); };
     svg.addEventListener("pointerdown", e => {
       const [x, y] = pt(e), p0 = N.pts[0];
       if(Math.hypot(x - p0[0], y - p0[1]) > NOEUD_TOL[N.k]) return;
@@ -134,7 +147,7 @@ QUETES_JEUX.noeud = {
         if(f) f.setAttribute("d", "M" + pts.slice(0, best + 1).map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L")); }
       if(N.prog >= pts.length - 2){
         actif = false;
-        if(N.k < 2){ N.k++; N.pts = null; N.prog = 0; majQueteHub(); }
+        if(N.k < 2){ N.k++; N.pts = null; N.prog = 0; _qjRedessiner(z, d); }
         else { const a = queteActive(); if(a) a._qj = null; journal(d.fini || "Le câble tient.", "gain"); reussirDefi(); }
       }
     });
@@ -190,7 +203,7 @@ QUETES_JEUX.crevasse = {
       g.pos += { N:-n, E:1, S:n, O:-1 }[k]; g.pas++;
       if(g.pos === (n - 1) * n + g.ce){ const a = queteActive(); if(a) a._qj = null; journal(d.fini || "Tu es sorti.", "gain"); reussirDefi(); return; }
       if(g.pas >= g.max){ const a = queteActive(); if(a) a._qj = null; echouerDefi(d.echec || `Ta lampe faiblit : tu rebrousses chemin. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
-      majQueteHub();
+      _qjRedessiner(z, d);
     }));
   }
 };
@@ -219,7 +232,7 @@ QUETES_JEUX.impossible = {
     const lacher = z.querySelector("#qj-imp-lacher");
     if(lacher) lacher.addEventListener("click", () => { const a = queteActive(); if(a) a._qj = null; reussirDefi(); });
     if(!go || !ch) return;
-    const perdre = () => { if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); I.tour++; I.ligne = _impLigne(18 + I.tour * 8); sauvegarder(); majQueteHub(); };
+    const perdre = () => { if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); I.tour++; I.ligne = _impLigne(18 + I.tour * 8); sauvegarder(); _qjRedessiner(z, d); };
     go.addEventListener("click", () => {
       if(_queteTimer) return;
       _seqAnim = Date.now();   // v1.86e : un redessin de l'onglet tuerait le minuteur
@@ -474,7 +487,7 @@ QUETES_JEUX.reaction = {
     z.querySelectorAll("[data-reac]").forEach(g => g.addEventListener("click", () => {
       const i = +g.dataset.reac, k = S.choix.indexOf(i);
       if(k >= 0) S.choix.splice(k, 1); else if(S.choix.length < R.n) S.choix.push(i);
-      majQueteHub();
+      _qjRedessiner(z, d);
     }));
     const go = z.querySelector("#qj-reac-go");
     if(go) go.addEventListener("click", () => {
@@ -484,7 +497,7 @@ QUETES_JEUX.reaction = {
       S.essais++; S.dernier = [...lu];
       if(S.essais >= (d.essais || 2)){ const a = queteActive(); if(a) a._qj = null; echouerDefi(d.echec || `Raté. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
       journal(`${R.bornes.filter(b => lu.has(b)).length} borne(s) sur ${R.bornes.length} allumée(s). Il en manque.`, "alerte");
-      S.choix = []; sauvegarder(); majQueteHub();
+      S.choix = []; sauvegarder(); _qjRedessiner(z, d);
     });
   }
 };
@@ -547,18 +560,18 @@ QUETES_JEUX.rangement = {
   },
   wire(z, d){
     const R = this._etat(d).R; if(!R) return;
-    z.querySelectorAll("[data-qrg-piece]").forEach(b => b.addEventListener("click", () => { R.sel = +b.dataset.qrgPiece; R.rot = 0; majQueteHub(); }));
-    const bt = z.querySelector("#qj-rg-tourner"); if(bt) bt.addEventListener("click", () => { R.rot = (R.rot + 1) % 4; majQueteHub(); });
+    z.querySelectorAll("[data-qrg-piece]").forEach(b => b.addEventListener("click", () => { R.sel = +b.dataset.qrgPiece; R.rot = 0; _qjRedessiner(z, d); }));
+    const bt = z.querySelector("#qj-rg-tourner"); if(bt) bt.addEventListener("click", () => { R.rot = (R.rot + 1) % 4; _qjRedessiner(z, d); });
     z.querySelectorAll("[data-qrg-case]").forEach(c => c.addEventListener("click", () => {
       const i = +c.dataset.qrgCase, occ = _rgOccupation(R);
-      if(occ[i] != null){ R.pose.splice(occ[i], 1); majQueteHub(); return; }
+      if(occ[i] != null){ R.pose.splice(occ[i], 1); _qjRedessiner(z, d); return; }
       if(R.pose.some(p => p.p === R.sel)) return;
       const cel = _rgCellules(R.pieces[R.sel], R.rot), an = _rgAncre(cel), x = i % R.w - an[0], y = Math.floor(i / R.w) - an[1];
       if(cel.some(([a, b]) => x + a < 0 || y + b < 0 || x + a >= R.w || y + b >= R.h || occ[(y + b) * R.w + (x + a)] != null)){ journal(d.bute || "Ça ne rentre pas là.", "alerte"); return; }
       R.pose.push({ p:R.sel, r:R.rot, x, y });
       if(R.pose.length === R.pieces.length){ const a = queteActive(); if(a) a._qj = null; journal(d.fini || "Tout est rangé.", "gain"); reussirDefi(); return; }
       const libre = R.pieces.findIndex((_, k) => !R.pose.some(p => p.p === k)); if(libre >= 0){ R.sel = libre; R.rot = 0; }
-      sauvegarder(); majQueteHub();
+      sauvegarder(); _qjRedessiner(z, d);
     }));
   }
 };

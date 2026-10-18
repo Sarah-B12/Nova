@@ -154,6 +154,21 @@
   etat.surface = { x:1780, y:600, abord:false }; majHub(); r.sel.ongletGisement = document.querySelector('.hub-lien[data-hub="gisement"]').style.display !== "none";
   etat.surface = { x:1031, y:880, abord:false }; majHub(); r.ongletQueteStation = document.querySelector('.hub-lien[data-hub="quete"]').style.display !== "none";
 
+  // 9 bis. v1.87c — un clic ne redessine que l'épreuve : la bannière reste le MÊME nœud,
+  // et l'onglet entier n'est jamais reconstruit (la page ne saute plus).
+  { let complets = 0; const vMaj = majQueteHub; majQueteHub = () => { complets++; };
+    a.id = "q17"; a.etape = 0; a._qj = null;
+    const dC = queteData("q17").etapes[0].defi, hub = document.createElement("div"); document.body.appendChild(hub);
+    hub.innerHTML = `<img id="banniere-test" src="x.png">` + _defiHTML(dC); _defiWire(hub, dC);
+    const img = hub.querySelector("#banniere-test"), g = a._qj;
+    // un pas possible depuis la case de départ
+    const k = ["N","E","S","O"].find(k => g.cases[g.pos] & { N:1, E:2, S:4, O:8 }[k]);
+    hub.querySelector(`[data-qcv="${k}"]`).click();
+    const k2 = ["N","E","S","O"].find(k => g.cases[g.pos] & { N:1, E:2, S:4, O:8 }[k]);
+    hub.querySelector(`[data-qcv="${k2}"]`).click();
+    r.redessinLocal = { pas:g.pas, banniereIntacte:hub.querySelector("#banniere-test") === img, redessinsComplets:complets };
+    majQueteHub = vMaj; hub.remove(); }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");

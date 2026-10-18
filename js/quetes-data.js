@@ -2054,7 +2054,7 @@ const QUETES = [
     etapes:[
 
       /* ---- 1. La souche — SCÈNE (texte ET image selon le choix de Q3) ---- */
-      { indice:"Le creux de la souche, là où la ligne se sépare en deux. C'est de là que part le bras est.",
+      { indice:"Le creux de la souche, au milieu de la ligne : d'un côté le bras qui va à l'anneau, de l'autre le bras est.",   // v1.87b : la ligne ne se sépare pas (LORE §4)
         cible:{ x:700, y:1062, r:80 }, leurres:[ {x:1350,y:1150,r:80}, {x:520,y:1400,r:80} ],
         image:{ selon:"q3Souche", defaut:"relevee", valeurs:{
           tranchee:"images/quetes/q15/1_tranchee.png", relevee:"images/quetes/q15/1_relevee.png", pillee:"images/quetes/q15/1_pillee.png" } },
@@ -2295,7 +2295,7 @@ const QUETES = [
         arrivee:[
           "La console s'allume dès que tu l'effleures. Une seule ligne en ancien, que tu lis maintenant sans l'aide de personne : DEMANDE — CONFIRMATION. Elle veut savoir qui tu es. Elle attend cette réponse depuis 109 573 nuits, et elle a l'air prête à l'attendre encore autant.",
           "« On avait dit qu'on répondait pas », souffle Sorn dans le casque. Tu ne dis rien. Tu bascules l'écran de la console sur la retransmission de ton casque, pour qu'ils le voient eux aussi, et tu poses le doigt sur la ligne du bas : CANAL DE MAINTENANCE — PORTÉE : COQUE.",
-          "Sorn la lit à mi-voix en détachant les mots, et il lui faut un moment pour comprendre. « Ça sort pas d'elle, alors. C'est à elle qu'on répondrait, pas à eux. » Il y a un long silence plein de grésillements, puis la voix d'Adaya, plus loin du micro, presque à regret : « … Vas-y, petit. »"
+          "Sorn la lit à mi-voix en détachant les mots, puis il comprend d'un coup et se met à parler plus vite. « Portée coque… Mais oui ! Ce canal-là, c'est juste pour la maintenance. Rien de ce qu'on lui dira sortira de sa carcasse : aucune chance qu'ils nous repèrent. » Il y a un long silence plein de grésillements, puis la voix d'Adaya, plus loin du micro, presque à regret : « … Alors vas-y, petit. »"
         ],
         defi:{ type:"piratage", manches:4, vitesse:1700,
           texte:["Le canal de maintenance accepte une identité si on la lui donne au bon moment. Saisis-le quatre fois de suite."],

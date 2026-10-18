@@ -302,7 +302,9 @@ function _defiHTML(d){
     case "loup":      return _htmlLoup(d);
     default:
       /* v1.85 — épreuves de quetes-jeux.js (ronde, nœud, crevasse, impossible, saut). */
-      if(typeof QUETES_JEUX!=="undefined" && QUETES_JEUX[d.type]) return QUETES_JEUX[d.type].html(d);
+      /* v1.87c — enveloppées dans [data-qj-zone] : un clic ne redessine QUE l'épreuve
+         (_qjRedessiner), pas tout l'onglet (bannière, image : la page sautait). */
+      if(typeof QUETES_JEUX!=="undefined" && QUETES_JEUX[d.type]) return `<div data-qj-zone>${QUETES_JEUX[d.type].html(d)}</div>`;
       return `<p class="vide">Épreuve « ${d.type} » (à venir).</p>`;
   }
 }
