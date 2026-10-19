@@ -2709,8 +2709,8 @@ const QUETES = [
           "« … allô ? Ça marche, ce truc ? Attends. » Une toux. « Bonjour. Non. Bonsoir ? C'est quelle heure, chez vous ? Bon, peu importe. »",
           "La voix est jeune, enrhumée, et parle ta langue avec des cailloux dedans, comme quelqu'un qui l'a apprise à la radio. « Je me présente. 42-U1F. Maintenance. Enfin, je maintiens. Quand j'ai le temps. J'ai rarement le temps. »",
           "42-U1F. Tu as déjà lu ce matricule. Au Perchoir, au bas de l'accusé de réception de l'émission de Sorn, E. : OPÉRATEUR : 42-U1F. Quelqu'un avait entendu. Il t'a entendu.",
-          "« Alors voilà. T'es en Ancolie. MAAR-12. Le coin le plus calme de Maar : y a personne. C'est moi qui t'ai posé là. Bon, posé… Disons que tu es là. »",
-          "« J'ai des trucs à faire, et j'ai pas le temps. Toi, t'as un vaisseau qui m'obéit, maintenant. Donc on va s'arranger : tu fais mes trucs, je te rends tes commandes. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
+          "« Alors voilà. T'es en Ancolie. MAAR-12. Le coin le plus calme de Maar : y a personne. C'est moi qui t'ai posé là. Bon, posé… J'avais visé la station, hein. J'ai eu la plaine. À quelques kilomètres près, c'est pareil. »",   // v1.87l : K54
+          "« Et ton calculateur de saut… bon. Il a pris un peu cher. J'ai réécrit ta route en plein saut, et j'ai pas tout remis comme c'était. Maintenant il connaît plus que Maar : Silène, Ancolie, et c'est tout. » Il renifle. « C'était pas prévu. Mais je vais pas te mentir, ça m'arrange. Moi, j'ai des trucs à faire et pas le temps. Toi, t'as un calculateur que je suis le seul à savoir réécrire. Donc on s'arrange : tu fais mes trucs, je te répare ton calculateur. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
         ],
         defi:{ type:"scene", bouton:"Ne rien répondre, et poser la main sur les commandes" } },
 
@@ -2720,7 +2720,7 @@ const QUETES = [
         image:"images/quetes/q20/3.png",
         arrivee:[
           "Tu ne dis rien. Ta main se pose sur les commandes. Un silence, à l'autre bout. Puis : « Ah. Ça, c'est un non. Tu dis rien, mais j'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
-          "L'écran de bord affiche une console de navigation. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper pour que le pilote automatique te rende la main."
+          "L'écran de bord affiche la console du calculateur de saut. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper proprement pour que le calculateur retrouve ses routes, et toi les tiennes."
         ],
         defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
           colle:"« Copier-coller ? » Un petit rire enrhumé dans la radio. « Bien tenté. Chez nous aussi c'est interdit. Et chez nous aussi, ça marche pas. »",   // v1.87h
@@ -2728,8 +2728,8 @@ const QUETES = [
           consigne:"Retape la ligne avant qu'elle ne sorte de l'écran.",
           commentaires:[
             "« Vas-y, vas-y. Prends ton temps. Enfin, prends pas ton temps, justement. »",
-            "« Ah, t'as raté une virgule. Non, deux. Non, toutes. C'est normal, je les change pendant que tu tapes. C'est un peu de la triche, je sais. »",
-            "« Écoute, c'est pas contre toi. Moi-même j'y arrive pas, et c'est mon code. Enfin, c'est le code de quelqu'un. Rien n'est bien fait, ici. Rien. »"
+            "« Ah, t'as raté une virgule. Non, deux. Non, toutes. C'est pas moi, hein ! C'est lui. Il se réécrit tout seul depuis que je l'ai… un peu touché. »",
+            "« Écoute, c'est pas contre toi. Moi-même j'y arrive pas comme ça, et c'est moi qui l'ai cassé. Faut le reprendre par le réseau, morceau par morceau. Rien n'est bien fait, ici. Rien. »"
           ],
           reussite:[
             "Tu lâches les commandes. L'écran s'éteint, poliment.",
@@ -2761,8 +2761,8 @@ const QUETES = [
         image:"images/quetes/q20/5.png",
         arrivee:[
           "Dedans, une grande salle ronde, propre, vide. Des bancs alignés face à une baie qui donne sur une aire lisse, balisée. Des écrans éteints. Tout attend quelque chose, et ça fait longtemps.",
-          "« Bon. Récapitulons. » Il a l'air de lire une fiche. « Toi : un vaisseau qui m'obéit, pas de route, pas d'accès, personne à des jours de vol. Moi : des corvées en retard depuis… longtemps, et pas le droit de sortir. Procédure 7-B, sous-alinéa… euh. Ça se dit pas, chez vous. Disons : je peux pas. »",
-          "« Alors tu fais mes trucs. Pas tous les jours, je suis pas un monstre. Et moi je te laisse voler. Silène, Ancolie, tu vas, tu viens, tu fais ta vie. Le reste — Triptolème, ta ferrailleuse, ton trou noir — non. Ça, c'est le prix. »",
+          "« Bon. Récapitulons. » Il a l'air de lire une fiche. « Toi : un vaisseau qui sait plus sortir de Maar, et c'est un peu ma faute. Pas d'accès, personne à des jours de vol. Moi : des corvées en retard depuis… longtemps, et pas le droit de sortir. Procédure 7-B, sous-alinéa… euh. Ça se dit pas, chez vous. Disons : je peux pas. »",
+          "« Alors tu fais mes trucs. Pas tous les jours, je suis pas un monstre. Et moi, à la fin, je te répare ton calculateur. En attendant, Silène, Ancolie, tu vas, tu viens, tu fais ta vie : ça, il sait encore faire. Le reste — Triptolème, ta ferrailleuse, ton trou noir — il sait plus. C'est la panne. » Un reniflement. « Et c'est aussi le prix. »",
           "Tu regardes les automates tailler l'ancolie, dehors, et le bouton éteint de la borne d'appel. Personne ne viendra. Tu le sais."
         ],
         defi:{ type:"choix",
@@ -2779,14 +2779,16 @@ const QUETES = [
               journal:"Tu as accepté le marché de 42-U1F sans discuter. Il a eu l'air méfiant. « T'acceptes vite, toi. Ça me plaît pas. Enfin si. Mais non. »" }
           ],
           reussite:[
-            "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé au quai, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. »",
+            "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé devant la station, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. »",
             "Par la baie, tu le vois en effet se poser tout seul sur l'aire balisée, avec une délicatesse que tu ne lui as jamais connue. Les automates s'écartent pour le laisser passer.",
             "« Pour la première corvée, on verra demain. Enfin, demain chez toi. Moi, ici, c'est toujours un peu la même heure. » Un silence. Puis, plus bas, presque timide : « Merci, hein. Personne m'avait jamais dit oui. »",
-            "La radio se coupe. Tu restes seul dans la grande salle ronde, au milieu des bancs vides tournés vers le quai."
+            "La radio se coupe. Tu restes seul dans la grande salle ronde, au milieu des bancs vides tournés vers la baie."
           ] } }
     ],
     /* K12 : le cadeau du bloc, c'est Ancolie. K16 : vol sur Maar seulement (verrouMaar,
-       levé en fin de Q30). K39 : un PA, quête clé. */
+       levé en fin de Q30) — v1.87l, K54 : parce que 42-U1F a CASSÉ le calculateur de saut
+       en détournant le vaisseau (il ne connaît plus que Maar), pas parce qu'il le
+       retient ; il le réparera par le réseau à la fin de Q30. K39 : un PA, quête clé. */
     recompense:{ credits:2300, xp:400, pa:1, flags:{ ancolie:true, verrouMaar:true } }
   },
 
@@ -2816,7 +2818,7 @@ const QUETES = [
       "Sur l'écran au-dessus des bancs, une tache noire grésille, s'étire, prend forme : des épaules, une tête, rien de plus. Une combinaison close, vue à travers trois siècles de câbles. La silhouette te fait un petit signe de la main, avec un temps de retard sur le son.",
       "« Ah. T'es là. Bonjour. Bonsoir. J'ai toujours pas compris votre heure. » Il mâche. « Barre protéinée. Goût <i>nature</i>. Je sais pas ce que c'est, la nature, mais si c'est ça, vous avez pas de chance. »",
       "« Bon. Première corvée. Le conduit MAAR-12-C-409. Il passe sous la station, il porte le câble du réseau, et il est bouché. Je devais le nettoyer… » Il compte sur ses doigts. Il manque de doigts. « … depuis un certain temps. J'avais la flemme. J'ai toujours la flemme, remarque. C'est pour ça que t'es là. »",
-      "« Tu le nettoies, tu gardes ton vaisseau. Tu le nettoies pas, tu gardes… » Un temps. « … les fleurs. Elles sont jolies, non ? Moi je les vois en gris. L'écran est en monochrome. Rien n'est bien fait. »",
+      "« Tu le nettoies, je m'occupe de ton calculateur. Tu le nettoies pas, tu gardes… » Il cherche. « … les fleurs. Elles sont jolies, non ? Moi je les vois en gris. L'écran est en monochrome. Rien n'est bien fait. »",
       "« Les automates t'ouvriront la trappe de visite. Je leur ai dit que t'étais mon tournevis. Un tournevis autorisé. Enfin, presque. Leur parle pas, ils sont susceptibles. »"
     ],
     etapes:[
@@ -2908,7 +2910,7 @@ const QUETES = [
               journal:"Tu as démonté le souffleur de l'automate, puis tu l'as remonté. Il te reste une vis. Asulf : « Il en reste toujours une. C'est la règle. Personne sait d'où elle vient. »" }
           ],
           reussite:[
-            "« Bon. » Asulf a repris sa voix de fiche. « Corvée numéro un : faite. Vaisseau : à toi. Silène, Ancolie, tu vas, tu viens. Le reste : non. Le marché tient. »",
+            "« Bon. » Asulf a repris sa voix de fiche. « Corvée numéro un : faite. Ton calculateur : toujours en panne, mais c'est noté. Silène, Ancolie, tu vas, tu viens. Le reste, quand j'aurai réparé. Le marché tient. »",
             "« Demain, je te trouve autre chose. J'ai une liste. » Un bruit de papier qu'il n'a sûrement pas. « Elle est longue. Elle est très longue. Tu vas adorer. »",
             "Sous tes pieds, le C-409 siffle sa note fausse. Dehors, les automates taillent l'ancolie le long des allées. Ta bête s'est couchée sous un banc, ses marques éteintes. Elle a l'air de bouder."
           ] } }
@@ -2928,7 +2930,7 @@ const QUETES = [
       "« Asulf, au rapport. » Il a l'air très content de le dire. Il le redit. « Asulf, au rapport. Ça sonne bien. On dirait quelqu'un. »",
       "« Deuxième corvée. Il y a un relais de surface au pied du volcan, au nord-ouest. C'est lui qui porte la station jusqu'au réseau. Tous les après-midi, quand la roche chauffe, il décroche. Et quand il décroche, je perds la station. Les portes, les automates, les haut-parleurs. Tout. »",
       "Un temps. « Et ça, ça fait un rapport. <i>Relais MAAR-12, coupure, opérateur de maintenance : 42-U1F.</i> Avec mon matricule dessus. Et un rapport avec mon matricule dessus, quelqu'un pourrait le lire. Il pourrait se demander pourquoi la maintenance s'occupe d'un relais d'Ancolie. Il pourrait poser des questions. Je déteste les questions. »",
-      "« Donc tu le répares. Sinon… » Il cherche une menace. Il la trouve. « Sinon, pas de vaisseau. Voilà. C'est du chantage. Je préfère le dire, comme ça on perd pas de temps. »",
+      "« Donc tu le répares. Sinon… » Il cherche une menace. Il la trouve. « Sinon, pas de calculateur. Toi tu restes coincé sur Maar, et moi je reste coincé avec mes rapports. Voilà. C'est du chantage. Je préfère le dire, comme ça on perd pas de temps. »",
       "Puis, beaucoup plus bas : « Et en rentrant… tu passes par chez toi ? Sur Silène ? J'ai entendu des trucs, à la radio. Des gens qui parlent de <i>rations chaudes</i>. Chaudes. » Un silence. « Exprès ? »",
       "« Au dos de l'anneau, côté mer, il y a une trappe de conduit. Personne passe jamais par là. Moi, j'y passe. Enfin, mes mains y passent. Trois rations chaudes, et je te pose plus jamais de question. » Un temps. « C'est faux. Je vais t'en poser plein. »"
     ],

@@ -217,6 +217,13 @@
       nonSelectionnable:/user-select:none/.test(zi.innerHTML) };
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); zi.remove(); }
 
+  // 9 sexies. v1.87k — une seule ligne sous la carte, pas de 🚀 sur la station.
+  { etat.secteur = "ancolie"; etat.surface = { x:391, y:1250, abord:false }; majCarteBraise();
+    const inf = document.querySelector("#braise-info");
+    r.ligneCarte = { chute:inf.textContent, uneLigne:/nowrap/.test(inf.getAttribute("style") || ""), bulle:!!inf.querySelector("b[title]"),
+      fuseeStation:/🚀\s*La station/.test(document.querySelector("#carte-braise").innerHTML) };
+    etat.surface = { x:1031, y:880, abord:true }; majCarteBraise(); r.ligneCarte.station = inf.textContent; }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");

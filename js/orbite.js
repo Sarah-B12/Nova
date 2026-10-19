@@ -116,9 +116,11 @@ async function partirVersEcart(){
     return;
   }
   if(enEcart()){ ouvrirOrbite(); return; }
-  /* v1.85 — K16 : de la fin de Q20 à la fin de Q30, 42-U1F tient le vaisseau. */
+  /* v1.85 — K16 : de la fin de Q20 à la fin de Q30, pas de vol hors de Maar.
+     v1.87l — K54 : parce que 42-U1F a cassé le calculateur de saut en détournant le
+     vaisseau ; il ne connaît plus que Maar. 42-U1F le réparera en fin de Q30. */
   if(typeof verrouMaar==="function" && verrouMaar()){
-    journal("Le vaisseau refuse de prendre le cap. Dans la radio, une voix traînante : « Hé. Hé hé. Triptolème, c'est non. Tu restes sur Maar tant que t'as pas fini mes trucs. Silène, Ancolie, tu fais ta vie. Le reste : non. »","alerte","voyage");
+    journal("Le calculateur de saut cherche la route de Triptolème, ne la trouve pas, et affiche MAAR. Rien que MAAR. Dans la radio, une voix enrhumée : « Ah. Oui. Ça, c'est toujours cassé. Fais mes trucs, et je te le répare. Silène, Ancolie, ça, il sait encore. »","alerte","voyage");
     return;
   }
   if(typeof villeActuelle==="function" && !villeActuelle()){
@@ -588,7 +590,7 @@ function majBoutonOrbite(){
     const cs=coutSaut();
     const c=b.querySelector(".cout");
     if(c) c.textContent = enEcart() ? "tu y es"
-      : ((typeof verrouMaar==="function" && verrouMaar()) ? "42-U1F tient ton vaisseau"
+      : ((typeof verrouMaar==="function" && verrouMaar()) ? "calculateur en panne"
       : (cs ? `${cs.litres} L carburant · ${cs.energie} % énergie` : "en vaisseau"));
   }
   // La carte de Silène n'a pas de sens depuis l'orbite.

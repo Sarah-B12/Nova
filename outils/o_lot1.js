@@ -60,7 +60,7 @@
   // 8. Le verrou de Maar : partir pour Triptolème est refusé, avec la voix de 42-U1F.
   etat.secteur = "silene"; etat.verrouMaar = true; etat.espace1 = true; const vSauve = etat.vaisseau; etat.vaisseau = etat.vaisseau || "navette_legere";
   const j0 = (typeof _journal!=="undefined" ? 0 : 0); let dernier = ""; const jOrig = journal; journal = (t) => { dernier = t; };
-  await partirVersEcart(); r.verrouTriptoleme = /Triptolème, c.est non/.test(dernier); etat.vaisseau = vSauve;
+  await partirVersEcart(); r.verrouTriptoleme = /affiche MAAR/.test(dernier);   // v1.87l : K54, le calculateur en panne etat.vaisseau = vSauve;
   // 9. Décoller d'Ancolie pendant Q20 : refusé.
   etat.secteur = "ancolie"; etat.surface = { x:1110, y:960, abord:true }; a.id = "q20";
   await _decollerVersSilene(SURFACES.ancolie); r.decollageQ20Refuse = /causé/.test(dernier) && etat.secteur === "ancolie";

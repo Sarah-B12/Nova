@@ -1927,7 +1927,7 @@ function repereQueteSousCarte(carte, x, y){
 function _priseIci(q){
   if(q && q.lieuPrise==="carcasse") return (typeof surCarcasse==="function") && surCarcasse();
   /* v1.87 — `lieuPrise:"station"` : à la station d'Ancolie (Q21 →), donneur 42-U1F.
-     La zone de la station englobe le quai : on prend la quête en descendant du vaisseau. */
+     On se pose à la station (v1.87j) : on prend la quête en descendant du vaisseau. */
   if(q && q.lieuPrise==="station") return (typeof aLaStation==="function") && aLaStation();
   return _enFaction();
 }
@@ -2056,7 +2056,7 @@ function majQueteHub(){
    qu'il faut faire le trajet (les repères d'une carte ne se voient pas de l'autre). */
 function _objectifCarteTexte(){
   const c = carteEtapeActive(), ici = _carteJoueur();
-  if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins ton vaisseau au quai et rentre (« Rentrer sur Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
+  if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins ton vaisseau à la station et rentre (« Rentrer sur Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
   if(c==="ancolie" && ici!=="ancolie") return "C'est en Ancolie. Depuis une ville de Silène, prends le vaisseau (« Partir pour Ancolie »), puis ouvre la carte : des repères ★ y sont apparus.";
   return (({espace:"Ouvre la carte de Triptolème", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire", ancolie:"Ouvre la carte d'Ancolie"})[c] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place.";
 }

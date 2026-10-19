@@ -76,11 +76,13 @@ const SURFACES = {
     nom:"Ancolie", orbite:null, img:"images/carte_ancolie.png", w:2400, h:1600,
     o2Mult:2, depuisSilene:true, coutMult:1.5,
     abri:{ x:1031, y:880, r:160 },
-    vaisseau:{ x:1110, y:960, r:70 },
+    /* v1.87j — retour de l'autrice : pas de quai à part. On se pose et on décolle À LA
+       STATION (la station EST le quai, K23), où l'on respire. Rayon 120 : couvre aussi
+       l'ancien point d'atterrissage (1110, 960), où dorment les vaisseaux déjà posés. */
+    vaisseau:{ x:1031, y:880, r:120 },
     zonesTh:{ chaude:{ x:360, y:270, r:540 }, froide:{ x:1910, y:380, r:580 } },
     lieux:[
-      { id:"atterrissage", nom:"Le quai", x:1110, y:960, r:70, desc:"Une aire ronde, lisse, balisée. Elle attend des vaisseaux depuis trois cents ans." },
-      { id:"station",      nom:"La station", x:1031, y:880, r:110, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser." },
+      { id:"station",      nom:"La station", x:1031, y:880, r:110, vaisseau:true, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser ; ton vaisseau attend devant la baie." },
       { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
       { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
       { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." },
@@ -88,8 +90,8 @@ const SURFACES = {
          l'a pas fait trouver (`si` : drapeau de etat). Mécanique : selenite.js. */
       { id:"selenite",     nom:"Le lac gelé", x:1780, y:600, r:70, si:"seleniteConnue", desc:"Des aiguilles pâles poussent dans la glace bleue. Quand le vent passe, elles brillent." }
     ],
-    arrivee:"Le vaisseau se pose au quai, dans un souffle de pétales. Dehors, l'ancolie à perte de vue, bleue sous la lumière. L'air est bon, mais il est mince : au bout de dix pas, on a le souffle court. Seule la station le tient au standard.",
-    depart:"Le vaisseau décolle du quai. En dessous, Ancolie s'efface : une tache bleue, puis plus rien. Silène est loin.",
+    arrivee:"Le vaisseau se pose devant la station, dans un souffle de pétales. Dehors, l'ancolie à perte de vue, bleue sous la lumière. L'air est bon, mais il est mince : au bout de dix pas, on a le souffle court. Seule la station le tient au standard.",
+    depart:"Le vaisseau décolle de devant la station. En dessous, Ancolie s'efface : une tache bleue, puis plus rien. Silène est loin.",
     couleur:"#8fb8ff"
   }
 };
@@ -232,7 +234,7 @@ async function partirVersAncolie(){
   etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
   journal(c.arrivee,"gain","voyage");
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  /* v1.87 — K47 : le quai est dans la zone de la station. L'O₂ est une jauge serveur :
+  /* v1.87 — K47 : on se pose à la station (v1.87j). L'O₂ est une jauge serveur :
      un appel sans coût la fait remonter tout de suite (comme « Monter à bord »). */
   await agirServeur({ motif:"air_station" });
   if(typeof majApresDeplacement==="function") majApresDeplacement();
@@ -347,7 +349,7 @@ function majCarteBraise(){
   let h = `<image href="${cfg.img}" x="0" y="0" width="${cfg.w}" height="${cfg.h}" preserveAspectRatio="none"/>`;
   for(const l of cfg.lieux){
     if(!lieuVisible(l)) continue;   // v1.87 : le gisement de Sélénite, après Q23
-    const vaiss = (l.id === "atterrissage");
+    const vaiss = (l.id === "atterrissage" || l.vaisseau);   // v1.87j : en Ancolie, le vaisseau est à la station
     h += `<g style="pointer-events:none"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="${vaiss?"#ffffff14":"#00000033"}" stroke="${vaiss?"#f5e9d3":cfg.couleur}" stroke-opacity=".7" stroke-width="3" stroke-dasharray="${vaiss?"":"8 10"}"/>
       <text x="${l.x}" y="${l.y + l.r + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">${vaiss?"🚀 ":""}${l.nom}</text></g>`;
   }
@@ -365,7 +367,7 @@ function majCarteBraise(){
   if(info){
     const ret = coutRetourVaisseau();
     info.innerHTML = cfg.abri   /* v1.87 — K47 : Ancolie */
-      ? (aLaStation() ? `<b>${abord ? "Au quai, à bord de ton vaisseau." : (ici ? ici.nom : "À la station.")}</b> <span class="itip-gris">La station tient l'air au standard : ici, ton O₂ se refait. Dehors, il est mince et chaque pas en coûte le double.</span>`
+      ? (aLaStation() ? `<b>${abord ? "À la station, à bord de ton vaisseau." : (ici ? ici.nom : "À la station.")}</b> <span class="itip-gris">La station tient l'air au standard : ici, ton O₂ se refait. Dehors, il est mince et chaque pas en coûte le double.</span>`
                       : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est mince · retour à la station : ${ret} O₂</span>`)
       : cfg.air
       ? (abord ? `<b>Au quai, à bord de ton vaisseau.</b> <span class="itip-gris">Ici, l'air est bon.</span>`
