@@ -47,6 +47,10 @@ function _rondeCase(R, i){
   if(R.phase === "pret" || R.phase === "observer")
     R.boucles.forEach((b, j) => { if(b[R.t % b.length] === i) p = `<span style="background:${RONDE_COUL[j]}"></span>`; });
   if(R.phase === "repondre"){
+    /* v1.88c — le circuit du point en cours est rappelé en pâle (sans le sens) : il reste
+       à se souvenir de son SENS et à compter. Retour de l'autrice : trop dur à trois. */
+    const k = R.rep.length, cir = R.boucles[k];
+    if(cir && cir.includes(i) && !(R.boucles[k][R.t % R.boucles[k].length] === i)) p = `<span style="background:${RONDE_COUL[k]};opacity:.22"></span>`;
     R.rep.forEach((c, j) => { if(c === i) p = `<span style="background:${RONDE_COUL[j]}"></span>`; });
     if(!p) R.boucles.forEach((b, j) => { if(j >= R.rep.length && b[R.t % b.length] === i)
       p = `<span style="background:transparent;border:2px dashed ${RONDE_COUL[j]};box-sizing:border-box"></span>`; });
@@ -59,10 +63,13 @@ QUETES_JEUX.ronde = {
     const nb = R.boucles.length, k = R.rep.length, obs = d.observe || 8, av = d.avance || 3;
     let h = `<div class="quete-etape">${_par(d.texte)}`;
     if(R.phase === "pret") h += `<p class="quete-indice">${d.consigne || ""}</p>
-      <p class="vide" style="margin:2px 0">Chaque point de couleur fait le tour d'un rectangle, <b>une case par pas</b>, toujours dans le même sens. Tu vas le regarder avancer pendant ${obs - 1} pas. Ensuite, pour chaque couleur, touche la case où il sera <b>${av} pas plus tard</b>.</p>`;
+      <div class="vide" style="margin:2px 0;line-height:1.5"><b>Comment ça marche.</b><br>
+        1. Chaque point de couleur tourne en rond sur son petit circuit (le bord d'un rectangle), <b>une case à chaque pas</b>, toujours dans le même sens.<br>
+        2. Clique sur « Observer » : ${nb > 1 ? `les ${nb} points` : "le point"} vont avancer pendant ${obs - 1} pas. Retiens le circuit de chacun, et surtout <b>dans quel sens il tourne</b>.<br>
+        3. Puis tout s'arrête. Pour chaque point, à tour de rôle, touche la case où il sera <b>${av} pas plus tard</b> : pars de sa dernière case (en pointillés) et compte ${av} cases le long de son circuit, dans son sens.</div>`;
     if(R.phase === "observer") h += `<p class="vide" id="qj-ronde-pas" style="margin:2px 0">Pas ${R.t} sur ${obs - 1}…</p>`;
     if(R.phase === "repondre") h += `<p class="vide" style="margin:2px 0"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${RONDE_COUL[k]};vertical-align:-1px"></span>
-      ${d.nom || "Repère"} <b>${RONDE_NOMS[k]}</b> (${k + 1} sur ${nb}) : son dernier emplacement est en pointillés. Touche la case où elle sera <b>${av} pas plus tard</b>.</p>`;
+      ${d.nom || "Repère"} <b>${RONDE_NOMS[k]}</b> (${k + 1} sur ${nb}) : sa dernière case est en pointillés, son circuit en pâle. Compte ${av} cases le long du circuit, <b>dans le sens où elle tournait</b>, et touche la case d'arrivée.</p>`;
     h += `<div class="mi-ro-grille" id="qj-ronde">`;
     for(let i = 0; i < 36; i++) h += `<div class="mi-ro-case" data-qr="${i}" style="${R.phase === "repondre" ? "cursor:pointer" : ""}">${_rondeCase(R, i)}</div>`;
     h += `</div>`;

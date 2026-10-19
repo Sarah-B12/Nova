@@ -111,21 +111,35 @@ function _barDuree(ms){
 }
 
 /* ---------- Ligne sur SA PROPRE fiche (jamais sur celle des autres) ---------- */
+/* ⚠ v1.88b — retour de l'autrice : la ligne s'affichait en vrac (nom, durée, liste à
+   puces, tout à plat). Les styles `.bo-*` ne sont posés que par _barStyle(), appelée
+   jusqu'ici par la seule vue du bar : sans passer par le bar dans la session, la fiche
+   n'avait aucun style. On les pose ici aussi. Et au doigt (téléphone), le survol
+   n'existe pas : un toucher ouvre ou ferme la bulle, un toucher ailleurs la ferme. */
 function majBoissonFiche(){
   const z=document.querySelector("#fiche-boisson"); if(!z) return;
+  _barStyle();
   const b = etat && etat.boisson;
   if(!b || boissonResteMs()<=0){ z.hidden=true; z.innerHTML=""; return; }
   z.hidden=false;
+  const etaitOuverte = !!z.querySelector(".bo-ligne.ouvert");   // la fiche se redessine souvent : on garde la bulle ouverte
   const det = Object.entries(b.mods||{}).map(([k,v])=>{
     const t=barEffetTexte(k,v); if(!t) return "";
     return `<li class="${barEffetBon(k,v)?"bon":"mauvais"}">${t}</li>`;
   }).join("");
-  z.innerHTML = `<span class="bo-ligne" tabindex="0">
+  z.innerHTML = `<span class="bo-ligne" tabindex="0" role="button" aria-label="Effets de la boisson">
       <span class="bo-pastille ${b.tirage==="bon"?"bon":(b.tirage==="mauvais"?"mauvais":"mixte")}"></span>
-      <b>${echapper(b.nom)}</b> <span class="itip-gris">— ${_barDuree(boissonResteMs())}</span>
+      <b>${echapper(b.nom)}</b>
       <span class="bo-bulle"><b>${echapper(b.nom)}</b><ul>${det||"<li>Aucun effet.</li>"}</ul>
         <span class="itip-gris">Il reste ${_barDuree(boissonResteMs())}. Une seule boisson par 24 h.</span></span>
     </span>`;
+  const l = z.querySelector(".bo-ligne");
+  if(l && etaitOuverte) l.classList.add("ouvert");
+  if(l) l.addEventListener("click", e => { e.stopPropagation(); l.classList.toggle("ouvert"); });
+  if(!majBoissonFiche._fermeur){
+    majBoissonFiche._fermeur = true;
+    document.addEventListener("click", () => document.querySelectorAll(".bo-ligne.ouvert").forEach(x => x.classList.remove("ouvert")));
+  }
 }
 
 /* ---------- Vue du bar ---------- */
@@ -154,7 +168,8 @@ function _barStyle(){
     .bo-bulle{ display:none; position:absolute; left:0; top:calc(100% + 6px); z-index:40; min-width:230px;
       background:#0f1830; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12px;
       box-shadow:0 8px 24px rgba(0,0,0,.55); }
-    .bo-ligne:hover .bo-bulle, .bo-ligne:focus .bo-bulle{ display:block; }   /* focus = accessible au doigt */
+    .bo-ligne:hover .bo-bulle, .bo-ligne.ouvert .bo-bulle{ display:block; }   /* v1.88b : .ouvert = au doigt (toucher) */
+    .bo-bulle{ max-width:min(280px, 82vw); white-space:normal; }
     .bo-bulle ul{ margin:6px 0; padding-left:16px; }
     .bo-bulle li.bon{ color:#8bd450; } .bo-bulle li.mauvais{ color:#ff6b6b; }
   `;
@@ -365,10 +380,11 @@ async function boire(id, bouton){
   const txt=barEffetsTexte(res.mods);
   const ton = res.tirage==="bon" ? "gain" : (res.tirage==="mauvais" ? "alerte" : "");
   const intro = res.tirage==="bon" ? "Bonne pioche" : (res.tirage==="mauvais" ? "Mauvaise pioche" : "Les deux à la fois");
-  journal(`${res.nom} (−${res.prix} ₡). ${intro} : ${txt||"aucun effet notable"}. 24 h.`, ton);
-  if(barStation()){   // v1.88 : K55 — CONSOMMATION IMPUTÉE, et Asulf râle
-    journal(`CONSOMMATION — OPÉRATEUR 42-U1F — IMPUTÉE. ${BAR_ASULF[Math.floor(Math.random()*BAR_ASULF.length)]}`, "");
-  }
+  /* v1.88c — retour de l'autrice : trois lignes pour un seul verre (la boisson, la
+     réplique d'Asulf, puis l'événement du serveur). UNE ligne, dans « Économie » ;
+     le serveur n'écrit plus d'événement (v206). */
+  const asulf = barStation() ? ` Imputé au matricule 42-U1F. ${BAR_ASULF[Math.floor(Math.random()*BAR_ASULF.length)]}` : "";
+  journal(`${res.nom} (−${res.prix} ₡). ${intro} : ${txt||"aucun effet notable"}. 24 h.${asulf}`, ton, "eco");
 
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();   // santé/moral/énergie immédiats
   if(typeof afficher==="function") afficher();

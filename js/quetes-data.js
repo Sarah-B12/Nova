@@ -2273,8 +2273,8 @@ const QUETES = [
           "De près, Chardon est bien plus grande que l'Ortie, et elle est intacte : un long tronc de métal hérissé d'antennes, qui tourne sur lui-même avec la lenteur d'une chose qui n'a jamais été pressée. Sur son flanc, une plaque gravée du carré annonce SONDE CHARDON — RELEVÉ DES CULTURES — SECTEUR MAAR-3. Ses antennes balaient l'espace une à une, au rythme de la rotation, et sous chacune dort un bras replié. Tu as encore en tête celui de l'Ortie, et la façon dont il s'était déplié.",
           "Dans le casque, la voix de Sorn grésille, plus basse que d'habitude, comme s'il avait peur qu'elle l'entende : « Elle regarde Silène, pas toi. Tant que t'es pas dans son axe, t'existes pas. Alors tu la regardes tourner, tu comptes, et tu passes par où elle regardera pas. »"
         ],
-        defi:{ type:"ronde", nom:"Antenne", nb:3, observe:9, avance:3,
-          texte:[ "Trois antennes qui tournent, chacune à son rythme. Tu les regardes faire, et tu comptes." ],
+        defi:{ type:"ronde", nom:"Antenne", nb:2, observe:9, avance:3,   // v1.88c : deux antennes (retour de l'autrice : trois, c'était trop dur)
+          texte:[ "Deux antennes qui tournent, chacune sur son circuit. Tu les regardes faire, et tu comptes." ],
           consigne:"Observe la rotation des antennes, puis devine où sera chacune trois pas plus tard : c'est l'angle mort, et c'est là que tu t'arrimes.",
           echec:"Une antenne te balaie de plein fouet, et le bras en dessous commence à se déplier ; tu décroches juste à temps, le cœur dans la gorge. Nouvelle tentative dans 8 h.",
           reussite:[

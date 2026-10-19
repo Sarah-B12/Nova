@@ -71,6 +71,7 @@ const JOURNAL_RETENTION = 2*86400000;         // 2 jours réels (indépendant de
 // Purge = 100 % côté client : le journal vit dans etat.journal, donc dans profils.donnees.
 // Un cron serveur serait inutile (la prochaine sauvegarde du client réécrit tout le JSON).
 let _journalFiltre = "tout";
+let _journalVoir = 80;   // v1.88c : nombre de lignes affichées (« Plus ancien » en ajoute 80)
 let _journalStyleMonte = false;
 /* ⚠ L'ORDRE FAIT TOUT : la première règle qui accroche gagne. Trois pièges déjà
    payés — « message » et « envoi » se ressemblent (Poste avant Social) ;
@@ -135,7 +136,12 @@ function journal(t, type="", cat=null, quand=null){
      passé ne peut donc PAS être simplement empilée en tête : on la glisse à sa
      place. ⚠ Sans ça, corriger l'heure aurait affiché la bonne date au mauvais
      endroit — plus trompeur encore que le bug d'origine. */
-  const e = { t, type, cat: cat || _categoriser(t), d };
+  /* v1.88c — retour de l'autrice : des lignes de quête tombaient dans « Système » ou
+     « Agri./élevage » (« Ta lampe baisse… », un choix qui parle de la serre, « Un
+     courant te happe… »). Les 74 appels des quêtes ne donnent pas de catégorie ; plutôt
+     que de les reprendre un à un, tout texte écrit dans une quête est reconnu
+     (_texteDeQuete, quetes.js) et rangé dans « Quêtes ». */
+  const e = { t, type, cat: cat || ((typeof _texteDeQuete==="function" && _texteDeQuete(t)) ? "quete" : _categoriser(t)), d };
   let i = 0; while(i < etat.journal.length && (etat.journal[i].d||0) > d) i++;
   etat.journal.splice(i, 0, e);
   _purgerJournal();
@@ -313,12 +319,18 @@ function majJournal(){
   const bar=document.querySelector("#journal-filtres");
   if(bar){
     bar.innerHTML=JOURNAL_CATS.map(c=>`<button class="jf-b${_journalFiltre===c.id?" actif":""}" data-jf="${c.id}">${c.nom}</button>`).join("");
-    bar.querySelectorAll("[data-jf]").forEach(b=>b.addEventListener("click",()=>{ _journalFiltre=b.dataset.jf; z.dataset.jsig=""; majJournal(); }));
+    bar.querySelectorAll("[data-jf]").forEach(b=>b.addEventListener("click",()=>{ _journalFiltre=b.dataset.jf; _journalVoir=80; z.dataset.jsig=""; majJournal(); }));
   }
-  const list=etat.journal.filter(e=>_journalFiltre==="tout"||e.cat===_journalFiltre).slice(0,80);
+  /* v1.88c — on n'affichait que les 80 premières entrées, le reste semblait perdu.
+     Tout ce qui est gardé (2 jours, 300 entrées) se consulte désormais : « Plus
+     ancien » ajoute 80 lignes à la fois. */
+  const tout=etat.journal.filter(e=>_journalFiltre==="tout"||e.cat===_journalFiltre);
+  const list=tout.slice(0, _journalVoir);
   z.innerHTML = list.length
     ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-h">${_heureJ(e.d)}</span><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
+      + (tout.length > list.length ? `<p style="text-align:center;margin:6px 0"><button class="mini" id="journal-plus">Plus ancien (${tout.length - list.length})</button></p>` : "")
     : `<p class="vide" style="margin:6px 0">Aucune entrée${_journalFiltre!=="tout"?" dans cette catégorie":""}.</p>`;
+  const bp=z.querySelector("#journal-plus"); if(bp) bp.addEventListener("click",()=>{ _journalVoir+=80; z.dataset.jsig=""; majJournal(); });
 }
 
 /* ---------- Niveaux ---------- */

@@ -1924,6 +1924,25 @@ function repereQueteSousCarte(carte, x, y){
 
 /* v0.97 — OÙ SE PREND UNE QUÊTE. Par défaut au comptoir de sa cité de faction ;
    `lieuPrise:"carcasse"` : chez Galm, à La Carcasse (Q6→). */
+/* v1.88c — les textes des quêtes, pour ranger leurs lignes de journal dans « Quêtes »
+   (journal(), systeme.js). Construit une fois : toutes les chaînes d'au moins 20
+   caractères des données de quête (réussites, échecs, choix, répliques…), plus les
+   messages génériques du moteur. */
+let _qTextes = null;
+const Q_TEXTES_MOTEUR = /nouvelle tentative (dans \d+ ?h|plus tard)|^repérage juste|^bonne réponse|^bonne mémoire|^ton choix est scellé|reviens tenter à nouveau|^ça ne rentre pas là|^ce n'est pas l'ordre/i;
+function _texteDeQuete(t){
+  if(!t) return false;
+  if(Q_TEXTES_MOTEUR.test(t)) return true;
+  if(!_qTextes){
+    _qTextes = new Set();
+    const net = x => (typeof sansEmoji === "function" ? sansEmoji(x) : x).trim();
+    const tour = (o) => { if(typeof o === "string"){ if(o.length >= 20) _qTextes.add(net(o)); return; }
+      if(Array.isArray(o)) o.forEach(tour); else if(o && typeof o === "object") Object.values(o).forEach(tour); };
+    if(typeof QUETES !== "undefined") tour(QUETES);
+  }
+  return _qTextes.has(String(t).trim());
+}
+
 function _priseIci(q){
   if(q && q.lieuPrise==="carcasse") return (typeof surCarcasse==="function") && surCarcasse();
   /* v1.87 — `lieuPrise:"station"` : à la station d'Ancolie (Q21 →), donneur 42-U1F.

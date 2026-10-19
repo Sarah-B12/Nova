@@ -1,5 +1,11 @@
 /* ===========================================================
-   AVATAR en couches : visage → pilosité → cheveux → accessoire.
+   AVATAR en couches : visage → pilosité → accessoire → cheveux.
+   v1.88c — l'ACCESSOIRE passe DERRIÈRE les cheveux (retour de l'autrice).
+   v1.88c — COULEUR DES CHEVEUX (cheveux ET pilosité) : brun (les fichiers actuels,
+             sans suffixe), blond, noir, roux, gris. Nommage : on ajoute
+             « _<couleur> » avant « .png » — cheveux/h_3_blond.png,
+             cheveux/h_7_derriere_roux.png, pilosite/2_gris.png. Un fichier de
+             couleur absent retombe sur le brun (jamais de trou dans le portrait).
    Toutes les images : images/avatars/<couche>/<fichier>.png (666×900 transparent).
    Toutes les couches doivent partager le MÊME cadrage : elles se superposent
    pixel pour pixel, un décalage se verrait immédiatement.
@@ -15,8 +21,15 @@
 const AV_VISAGE     = { h:7, f:7 };   // visages disponibles par genre (compté sur images/avatars/visage/)
 const AV_CHEVEUX    = { h:7,  f:13 };   // coiffures disponibles par genre
 const AV_CHEVEUX_DEUX = { h:[7], f:[] }; // v1.44 : coiffures en deux morceaux (_derriere / _devant)
-const AV_PILOSITE   = 5;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
+const AV_PILOSITE   = 7;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
 const AV_ACCESSOIRE = { h:0, f:0 };    // accessoires par genre (morphologies différentes)
+const AV_COULEURS = [                  // v1.88c : la première est celle des fichiers sans suffixe
+  { id:"brun",  nom:"Brun",           teinte:"#5b3a24" },
+  { id:"blond", nom:"Blond",          teinte:"#d9b46a" },
+  { id:"noir",  nom:"Noir",           teinte:"#1c1916" },
+  { id:"roux",  nom:"Roux",           teinte:"#a5482a" },
+  { id:"gris",  nom:"Poivre et sel",  teinte:"#9b9b98" }
+];
 
 let _svgPortrait = null, _avStyleMonte = false;
 
@@ -28,7 +41,7 @@ let _svgPortrait = null, _avStyleMonte = false;
 let _avObligatoire = false;  // inscription : ni Annuler, ni fermeture au clic hors cadre
 let _avEtatServeur = null;   // dernière réponse de apparence_etat()
 let _avBrouillon   = null;   // copie de travail, jamais persistée
-const _AV_VIDE = { genre:"h", visage:0, cheveux:0, pilosite:0, accessoire:0 };
+const _AV_VIDE = { genre:"h", visage:0, cheveux:0, pilosite:0, accessoire:0, couleur:"brun" };
 
 function _avFmtDuree(ms){
   ms = Math.max(0, ms);
@@ -38,16 +51,23 @@ function _avFmtDuree(ms){
   return h > 1 ? `${h} h` : "moins d'une heure";
 }
 
-function _avImg(couche, cls){ return `<img class="${cls}" src="images/avatars/${couche}.png" alt="" onerror="this.style.display='none'">`; }
+/* Une couche = "dossier/fichier", ou "dossier/fichier@couleur" (v1.88c) : on tente le
+   fichier de couleur, et s'il manque, le brun, puis rien. */
+function _avImg(couche, cls){
+  const [base, coul] = String(couche).split("@");
+  if(!coul) return `<img class="${cls}" src="images/avatars/${base}.png" alt="" onerror="this.style.display='none'">`;
+  return `<img class="${cls}" src="images/avatars/${base}_${coul}.png" alt="" onerror="if(!this.dataset.r){this.dataset.r='1';this.src='images/avatars/${base}.png';}else{this.style.display='none';}">`;
+}
+function _avCoul(a){ const c = a && a.couleur; return (c && c !== "brun" && AV_COULEURS.some(x => x.id === c)) ? "@" + c : ""; }
 function _avDeux(g, n){ return !!n && (AV_CHEVEUX_DEUX[g] || []).includes(n); }
 function _avCouches(a){
   a = a || etat.avatar || {}; const g = a.genre || "h"; const L = [];
-  const deux = _avDeux(g, a.cheveux);                     // v1.44 : arrière des cheveux AVANT le visage
-  if(deux)         L.push(`cheveux/${g}_${a.cheveux}_derriere`);
+  const deux = _avDeux(g, a.cheveux), c = _avCoul(a);    // v1.44 : arrière des cheveux AVANT le visage
+  if(deux)         L.push(`cheveux/${g}_${a.cheveux}_derriere${c}`);
   if(a.visage)     L.push(`visage/${g}_${a.visage}`);
-  if(a.pilosite)   L.push(`pilosite/${a.pilosite}`);
-  if(a.cheveux)    L.push(deux ? `cheveux/${g}_${a.cheveux}_devant` : `cheveux/${g}_${a.cheveux}`);
-  if(a.accessoire) L.push(`accessoire/${g}_${a.accessoire}`);
+  if(a.pilosite)   L.push(`pilosite/${a.pilosite}${c}`);
+  if(a.accessoire) L.push(`accessoire/${g}_${a.accessoire}`);   // v1.88c : derrière les cheveux
+  if(a.cheveux)    L.push(deux ? `cheveux/${g}_${a.cheveux}_devant${c}` : `cheveux/${g}_${a.cheveux}${c}`);
   return L;
 }
 
@@ -162,6 +182,10 @@ function _renderAvModal(){
         ${fige?`<span class="itip-gris" style="align-self:center">genre figé</span>`:""}
       </div></div>`;
   h+=_avRangee("Visage","visage", AV_VISAGE[g]||0, false, g);
+  // v1.88c : la couleur des cheveux (et de la pilosité), avant les coiffures.
+  const coulCur = a.couleur || "brun";
+  h+=`<div class="av-rangee"><div class="av-rangee-tete">Couleur des cheveux</div><div class="av-couleurs">${AV_COULEURS.map(c=>
+      `<button class="av-coul${coulCur===c.id?" actif":""}" data-couleur="${c.id}" title="${c.nom}"><span style="background:${c.teinte}"></span>${c.nom}</button>`).join("")}</div></div>`;
   h+=_avRangee("Cheveux","cheveux", AV_CHEVEUX[g]||0, true, g);
   if(g==="h") h+=_avRangee("Pilosité","pilosite", AV_PILOSITE, true, g);   // hommes uniquement
   h+=_avRangee("Accessoire","accessoire", AV_ACCESSOIRE[g]||0, true, g);
@@ -178,6 +202,7 @@ function _renderAvModal(){
     a.genre=b.dataset.genre; a.visage=0; a.cheveux=0; a.pilosite=0; a.accessoire=0;
     _majAvPortrait(); _renderAvModal(); }));
   m.querySelectorAll("[data-choix]").forEach(b=>b.addEventListener("click",()=>{ const p=b.dataset.choix.split(":"); a[p[0]]=parseInt(p[1],10); _majAvPortrait(); _renderAvModal(); }));
+  m.querySelectorAll("[data-couleur]").forEach(b=>b.addEventListener("click",()=>{ a.couleur=b.dataset.couleur; _majAvPortrait(); _renderAvModal(); }));   // v1.88c
   // (les [data-choix] écrivent dans _avBrouillon, jamais dans etat.avatar)
   _avScrollsEcrire(m, _pos);   // rendre au joueur la position où il était
 }
@@ -187,10 +212,15 @@ function _avRangee(titre, couche, n, avecAucun, g){
   if(avecAucun) opts+=`<button class="av-vig${!cur[couche]?" actif":""}" data-choix="${couche}:0" title="Aucun"><span class="av-x">∅</span></button>`;
   for(let i=1;i<=n;i++){
     const file = (couche==="pilosite") ? `${couche}/${i}` : `${couche}/${g}_${i}`;
+    /* v1.88c : cheveux et pilosité en vignette dans la couleur choisie (repli sur le brun ;
+       la vignette ne disparaît que si même le brun manque). */
+    const c = (couche==="cheveux" || couche==="pilosite") ? _avCoul(cur).slice(1) : "";
+    const src = (f) => c ? `images/avatars/${f}_${c}.png` : `images/avatars/${f}.png`;
+    const repli = (f, cacher) => c ? `if(!this.dataset.r){this.dataset.r='1';this.src='images/avatars/${f}.png';}else{${cacher}}` : cacher;
     // v1.44 : une coiffure en deux morceaux = une seule vignette, les deux calques superposés.
     const img = (couche==="cheveux" && _avDeux(g, i))
-      ? `<img class="av-vig-c" src="images/avatars/${file}_derriere.png" onerror="this.parentElement.style.display='none'"><img class="av-vig-c" src="images/avatars/${file}_devant.png" alt="">`
-      : `<img src="images/avatars/${file}.png" onerror="this.parentElement.style.display='none'">`;
+      ? `<img class="av-vig-c" src="${src(file+"_derriere")}" onerror="${repli(file+"_derriere","this.parentElement.style.display='none'")}"><img class="av-vig-c" src="${src(file+"_devant")}" alt="" onerror="${repli(file+"_devant","this.style.display='none'")}">`
+      : `<img src="${src(file)}" onerror="${repli(file,"this.parentElement.style.display='none'")}">`;
     opts+=`<button class="av-vig${cur[couche]===i?" actif":""}" data-choix="${couche}:${i}">${img}</button>`;
   }
   if(!n) opts+=`<span class="itip-gris" style="align-self:center">à venir</span>`;
@@ -227,6 +257,10 @@ function _avStyle(){
     .av-actions{ display:flex; gap:8px; }
     .av-ok{ border-color:var(--orange); color:var(--orange-hi); }
     .av-tarif{ margin:0 0 10px; }
+    .av-couleurs{ display:flex; gap:8px; flex-wrap:wrap; }
+    .av-coul{ display:flex; align-items:center; gap:6px; padding:5px 10px; border:2px solid var(--line); border-radius:10px; background:#0a1730; color:var(--texte); cursor:pointer; font-size:13px; }
+    .av-coul span{ width:16px; height:16px; border-radius:50%; border:1px solid rgba(255,255,255,.35); }
+    .av-coul.actif{ border-color:var(--orange); color:var(--orange-hi); }
   `;
   document.head.appendChild(st);
 }

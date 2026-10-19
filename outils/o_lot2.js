@@ -244,7 +244,29 @@
     zb.querySelector('[data-boire="eau"]').click(); await att(60);
     r.bar.impute = journaux.some(t => /IMPUTÉE/.test(t));
     etat.surface = { x:1780, y:600, abord:false }; r.bar.horsStation = !barStation();
+    // v1.88b : la ligne de la fiche est stylée même sans passer par le bar, et s'ouvre au toucher.
+    document.querySelector("#bar-style") && document.querySelector("#bar-style").remove();
+    etat.boisson = { id:"eau", nom:"Eau trouble", tirage:"bon", mods:{ energie_cout:1.25 }, fin:new Date(Date.now()+3600e3).toISOString() };
+    majBoissonFiche(); const fb = document.querySelector("#fiche-boisson"), lg = fb.querySelector(".bo-ligne");
+    r.bar.fiche = { style:!!document.querySelector("#bar-style"), nomSeul:lg.childNodes.length && !/—/.test(lg.querySelector("b").parentNode.firstElementChild.nextSibling.textContent || ""),
+      fermee:!lg.classList.contains("ouvert") };
+    lg.click(); r.bar.fiche.ouverteAuToucher = lg.classList.contains("ouvert");
+    majBoissonFiche(); r.bar.fiche.resteOuverteAuRedessin = !!fb.querySelector(".bo-ligne.ouvert");
+    document.body.click(); r.bar.fiche.fermeeAilleurs = !fb.querySelector(".bo-ligne.ouvert");
     sb.rpc = vRpc; etat.boisson = null; }
+
+  // 9 octies. v1.88c — les lignes de quête vont dans « Quêtes » ; le journal se lit au-delà de 80.
+  { journal = jOrig; const av = etat.journal; etat.journal = [];
+    journal("Ta lampe baisse. Tu rebrousses chemin à tâtons, la main sur la paroi. Nouvelle tentative plus tard.", "alerte");
+    journal("Un courant te happe : la coque se tord, et une jointure de Cristal saute.", "alerte");
+    journal(queteData("q16").etapes[6].defi.options[1].journal, "gain");
+    journal("Tu as récolté 3 sporelles.", "gain");
+    r.journalQuetes = etat.journal.map(e => e.cat);
+    etat.journal = Array.from({ length:150 }, (_, k) => ({ t:"ligne " + k, type:"", cat:"systeme", d:Date.now() - k * 1000 }));
+    majJournal(); const jz = document.querySelector("#journal");
+    r.journalPlus = { avant:jz.querySelectorAll(".msg").length, bouton:!!jz.querySelector("#journal-plus") };
+    jz.querySelector("#journal-plus").click(); r.journalPlus.apres = jz.querySelectorAll(".msg").length;
+    etat.journal = av; journal = (t) => { journaux.push(String(t)); }; }
 
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
