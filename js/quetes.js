@@ -1194,7 +1194,7 @@ function _wireOrdre(z,d){
     const chip=document.createElement("span"); chip.className="q-ordre-chip"; chip.innerHTML=picks.length+". "+b.innerHTML; rep.appendChild(chip);   // v1.29 : garde les glyphes (contenu = données du jeu, pas du joueur)
     if(picks.length===n) val.disabled=false; }));
   z.querySelector("#q-ordre-reset").addEventListener("click",()=>{ picks=[]; rep.innerHTML=""; val.disabled=true; z.querySelectorAll(".q-ordre-el").forEach(b=>b.disabled=false); });
-  val.addEventListener("click",()=>{ if(picks.every((v,i)=>v===i)){ journal("Séquence correcte !","gain"); reussirDefi(); } else echouerDefi(`Mauvaise séquence — le nœud se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); });
+  val.addEventListener("click",()=>{ if(picks.every((v,i)=>v===i)){ journal("Séquence correcte !","gain"); reussirDefi(); } else echouerDefi(d.echec || `Mauvaise séquence — le nœud se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); });   // v1.87d : d.echec
 }
 
 /* cadenas (ratable : Mastermind — code de symboles, N essais dans la journée) */

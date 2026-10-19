@@ -2433,14 +2433,20 @@ const QUETES = [
           "Sorn, que Galm a branché sur la même fréquence, souffle : « Lis-moi tout. Même ce que tu comprends pas. »"
         ],
         defi:{ type:"ordre",
-          texte:["Six blocs du registre de la capitainerie. Remets-les dans l'ordre : chaque ligne suit la précédente."],
-          consigne:"Suis l'histoire du vaisseau, du premier jour de l'attente au dernier ordre du port.",
+          /* v1.87d — retour de l'autrice : aucun fil entre les blocs, et la consigne
+             (« du premier jour de l'attente ») faisait croire que l'attente venait
+             en premier. Chaque bloc REPREND maintenant ce sur quoi le précédent
+             s'arrête (attente → confirmation → direction → équipage → route →
+             passage), comme un vrai journal de port. Même histoire, même ordre. */
+          texte:["Six blocs du registre de la capitainerie, mélangés. Remets-les dans l'ordre."],
+          consigne:"Chaque bloc reprend là où le précédent s'arrête : suis le fil, de l'armement du vaisseau jusqu'au passage.",
+          echec:"Le registre ne reconnaît pas la suite : les blocs se brouillent à l'écran et la mémoire se referme. Nouvelle tentative dans 8 h.",
           elements:[
-            "Vaisseau d'évacuation affecté à MAAR-3 : armé, équipage à bord, au ber.",
-            "Attente de la confirmation du quai. Délai dépassé. Relance sans réponse.",
-            "Dossier MAAR-3 classé par la direction. Vaisseau mis en sommeil au ber.",
-            "Ordre de la direction : rappel de l'équipage. Port désarmé à son départ.",
-            "Route assignée à l'équipage : Triptolème-4, puis Relais Triptolème-1, puis passage.",
+            "Vaisseau d'évacuation affecté à MAAR-3 : armé, équipage à bord, au ber. En attente de la confirmation du quai.",
+            "Confirmation du quai : délai dépassé. Relance envoyée, sans réponse. Dossier transmis à la direction.",
+            "Direction : dossier MAAR-3 classé. Vaisseau mis en sommeil au ber. Équipage sans affectation.",
+            "Équipage sans affectation : rappelé par la direction. Route assignée. Port désarmé après son départ.",
+            "Route assignée : Triptolème-4, puis Relais Triptolème-1, puis passage.",
             "Passage : point sans nom. Au-delà : destination de rappel. Retour : non prévu."
           ],
           reussite:[
