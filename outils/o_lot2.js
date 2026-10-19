@@ -290,6 +290,31 @@
     r.des = journaux.find(t => /Dés du fond/.test(t)) || "";
     sb.rpc = vRpc; zb.remove(); zd.remove(); }
 
+  // 9 decies. v1.88e — par le VRAI chemin de l'interface (onglet Bar → Tables de jeu →
+  // S'asseoir → Miser) : la table n'est plus remplacée par le rafraîchissement général.
+  { const vRpc = sb.rpc;
+    sb.rpc = async (nom, args) => {
+      if(nom==="bar_catalogue") return {data:[{id:"eau",nom:"Eau trouble",faction:null,prix:100,texte:""}],error:null};
+      if(nom==="boisson_etat") return {data:{ok:true,active:false},error:null};
+      if(nom==="bar_jeux_etat") return {data:{ok:true,jeux:{des:"ok",cuve:"ok",bonneteau:"ok",puissance4:"ok"},mise_max:500,mise_min:50,joues_aujourdhui:0},error:null};
+      if(nom==="bonneteau_etat" || nom==="cuve_etat") return {data:{ok:true,partie:false},error:null};
+      if(nom==="bonneteau_ouvrir") return {data:{ok:true,mise:100,depart:2,melanges:[[1,2],[2,3]],mult:2,solde:900},error:null};
+      if(nom==="cuve_ouvrir") return {data:{ok:true,mise:100,tirages:0,restants:6,solde:900,prochain_gain:110},error:null};
+      return {data:null,error:null}; };
+    etat.secteur="ancolie"; etat.surface={x:1031,y:880,abord:false}; etat.ancolie=true;
+    majHub(); changerHub("bar"); await att(100);
+    const v=document.querySelector("#bar-vue");
+    const jeuxBtn=[...v.querySelectorAll("button")].find(b=>/Tables de jeu/.test(b.textContent)); jeuxBtn.click(); await att(100);
+    v.querySelector('[data-jeu="bonneteau"]').click(); await att(100);
+    v.querySelector("#bon-go").click(); await att(3800);
+    r.barUI = { bonneteauJoue:!!v.querySelector("#bon-table.choix") };
+    // la cuve, même chemin
+    majBar(v); await att(50); [...v.querySelectorAll("button")].find(b=>/Tables de jeu/.test(b.textContent)).click(); await att(100);
+    v.querySelector('[data-jeu="cuve"]').click(); await att(100);
+    v.querySelector("#cuve-go").click(); await att(200);
+    r.barUI.cuveOuverte = !!v.querySelector("#cuve-tirer");
+    sb.rpc = vRpc; }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");

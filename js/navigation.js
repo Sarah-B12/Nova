@@ -39,7 +39,13 @@ function _boutiqueBanniere(){
   img.onload = () => { ban.hidden = false; }; img.onerror = () => { ban.hidden = true; };
   img.src = voulu;
 }
-function changerHub(h){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="bar" && typeof majBar==="function") majBar(document.querySelector("#bar-vue")); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
+/* ⚠ v1.88e — `rafraichir` : majHub() redessine l'onglet courant à CHAQUE afficher()
+   (crédits, jauges…). Pour le Bar, c'était fatal : le bonneteau et la cuve
+   s'ouvraient dans une table aussitôt remplacée — la mise était prise, rien ne se
+   jouait (retour de l'autrice). Un rafraîchissement ne redessine donc plus le Bar
+   s'il est déjà affiché ; seul un vrai changement d'onglet le reconstruit. */
+function changerHub(h, rafraichir){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub();
+  if(h==="bar" && typeof majBar==="function"){ const bv=document.querySelector("#bar-vue"); if(!(rafraichir && bv && bv.childElementCount)) majBar(bv); } if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -91,7 +97,7 @@ function majHub(){
        qui s'est produit avec Le Gisement resté seul après un atterrissage. */
     if(prem) changerHub(prem); else montrerHub("vide");
   } else {
-    changerHub(cur);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)
+    changerHub(cur, true);   // rafraîchir le contenu de l'onglet courant (ex. Le Centre après un déplacement)
   }
 }
 function montrerBienvenue(){ const m=document.querySelector("#modale-bienvenue"); if(m) m.hidden=false; }
