@@ -2723,6 +2723,7 @@ const QUETES = [
           "L'écran de bord affiche une console de navigation. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper pour que le pilote automatique te rende la main."
         ],
         defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
+          colle:"« Copier-coller ? » Un petit rire enrhumé dans la radio. « Bien tenté. Chez nous aussi c'est interdit. Et chez nous aussi, ça marche pas. »",   // v1.87h
           texte:["Une ligne de commande défile sur l'écran de bord."],
           consigne:"Retape la ligne avant qu'elle ne sorte de l'écran.",
           commentaires:[

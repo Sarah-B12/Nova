@@ -221,7 +221,7 @@ QUETES_JEUX.impossible = {
     const lacher = I.tour >= (d.essais || 2);
     return `<div class="quete-etape">${_par(d.texte)}
       <p class="quete-indice">${d.consigne || "Retape la ligne avant qu'elle ne sorte de l'écran."}</p>
-      <div style="font-family:'Space Mono',monospace;font-size:15px;letter-spacing:.06em;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#060b14;color:#7bc47f;overflow:hidden;white-space:nowrap" id="qj-imp-ligne">${I.ligne}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:15px;letter-spacing:.06em;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#060b14;color:#7bc47f;overflow:hidden;white-space:nowrap;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none" id="qj-imp-ligne">${I.ligne}</div>
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin:6px 0"><div id="qj-imp-barre" style="height:6px;width:100%;background:#ff5257;border-radius:3px"></div></div>
       ${lacher ? "" : `<div class="quete-rep"><input id="qj-imp-champ" autocomplete="off" spellcheck="false" style="font-family:'Space Mono',monospace" placeholder="NAV::…"><button class="mini" id="qj-imp-go">${I.tour ? "Recommencer" : "Reprendre les commandes"}</button></div>`}
       ${com ? `<p class="quete-dial" style="margin-top:8px">${com}</p>` : ""}
@@ -232,6 +232,13 @@ QUETES_JEUX.impossible = {
     const lacher = z.querySelector("#qj-imp-lacher");
     if(lacher) lacher.addEventListener("click", () => { const a = queteActive(); if(a) a._qj = null; reussirDefi(); });
     if(!go || !ch) return;
+    /* v1.87h — retour de l'autrice : on pouvait copier la ligne et la coller, ce qui
+       gâchait la scène. La ligne n'est plus sélectionnable, et le champ refuse le
+       collage et le glisser-déposer (42-U1F le remarque). Il faut taper. */
+    const lgn = z.querySelector("#qj-imp-ligne");
+    if(lgn){ ["copy","cut","contextmenu","selectstart","dragstart"].forEach(t => lgn.addEventListener(t, e => e.preventDefault())); }
+    const refuse = e => { e.preventDefault(); if(!I.colleVu){ I.colleVu = true; sauvegarder(); } journal(d.colle || "Le champ refuse ce que tu essaies d'y coller.", "alerte"); };
+    ch.addEventListener("paste", refuse); ch.addEventListener("drop", refuse);
     const perdre = () => { if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); I.tour++; I.ligne = _impLigne(18 + I.tour * 8); sauvegarder(); _qjRedessiner(z, d); };
     go.addEventListener("click", () => {
       if(_queteTimer) return;

@@ -204,6 +204,16 @@
     r.traversee.erreurEvitablePayee = evitable ? jouerClic(evitable.t, evitable.i) === 2 : "introuvable";
     r.traversee.consigne = /tenter ta chance/.test(_defiHTML(d)); }
 
+  // 9 quinquies. v1.87h — l'épreuve impossible (Q20) refuse le collage, la ligne ne se copie pas.
+  { const d = queteData("q20").etapes[2].defi; a.id = "q20"; a.etape = 2; a._qj = null; journaux = [];
+    const zi = document.createElement("div"); document.body.appendChild(zi); zi.innerHTML = _defiHTML(d); _defiWire(zi, d);
+    zi.querySelector("#qj-imp-go").click(); const ch = zi.querySelector("#qj-imp-champ");
+    const ev = new Event("paste", { bubbles:true, cancelable:true }); ch.dispatchEvent(ev);
+    const cp = new Event("copy", { bubbles:true, cancelable:true }); zi.querySelector("#qj-imp-ligne").dispatchEvent(cp);
+    r.impossibleColle = { collageRefuse:ev.defaultPrevented, copieRefusee:cp.defaultPrevented, asulf:journaux.some(t => /Copier-coller/.test(t)),
+      nonSelectionnable:/user-select:none/.test(zi.innerHTML) };
+    if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); zi.remove(); }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
