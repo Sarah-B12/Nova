@@ -221,9 +221,9 @@ QUETES_JEUX.impossible = {
     const lacher = I.tour >= (d.essais || 2);
     return `<div class="quete-etape">${_par(d.texte)}
       <p class="quete-indice">${d.consigne || "Retape la ligne avant qu'elle ne sorte de l'écran."}</p>
-      <div style="font-family:'Space Mono',monospace;font-size:15px;letter-spacing:.06em;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#060b14;color:#7bc47f;overflow:hidden;white-space:nowrap;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none" id="qj-imp-ligne">${I.ligne}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:15px;letter-spacing:.06em;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:#060b14;color:#7bc47f;overflow:hidden;white-space:nowrap;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;opacity:.55" id="qj-imp-ligne">${"░".repeat(I.ligne.length)}</div>
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin:6px 0"><div id="qj-imp-barre" style="height:6px;width:100%;background:#ff5257;border-radius:3px"></div></div>
-      ${lacher ? "" : `<div class="quete-rep"><input id="qj-imp-champ" autocomplete="off" spellcheck="false" style="font-family:'Space Mono',monospace" placeholder="NAV::…"><button class="mini" id="qj-imp-go">${I.tour ? "Recommencer" : "Reprendre les commandes"}</button></div>`}
+      ${lacher ? "" : `<div class="quete-rep"><input id="qj-imp-champ" autocomplete="off" spellcheck="false" disabled style="font-family:'Space Mono',monospace" placeholder="La ligne s'affichera au départ…"><button class="mini" id="qj-imp-go">${I.tour ? "Recommencer" : "Reprendre les commandes"}</button></div>`}
       ${com ? `<p class="quete-dial" style="margin-top:8px">${com}</p>` : ""}
       ${lacher ? `<div class="quete-rep"><button class="mini" id="qj-imp-lacher">${d.bouton || "Lâcher les commandes"}</button></div>` : ""}</div>`;
   },
@@ -243,8 +243,11 @@ QUETES_JEUX.impossible = {
     go.addEventListener("click", () => {
       if(_queteTimer) return;
       _seqAnim = Date.now();   // v1.86e : un redessin de l'onglet tuerait le minuteur
-      ch.disabled = false; ch.value = ""; ch.focus();
       const duree = Math.max(1800, 6000 - I.tour * 2500), debut = Date.now(), lg = z.querySelector("#qj-imp-ligne"), barre = z.querySelector("#qj-imp-barre");
+      /* v1.87i — la ligne reste masquée (░) et le champ fermé tant qu'on n'a pas cliqué :
+         avant, on la voyait d'avance et on croyait pouvoir la taper avant le départ. */
+      if(lg){ lg.textContent = I.ligne; lg.style.opacity = "1"; }
+      ch.disabled = false; ch.placeholder = "NAV::…"; ch.value = ""; ch.focus();
       _queteTimer = setInterval(() => {
         const r = 1 - (Date.now() - debut) / duree;
         if(barre) barre.style.width = Math.max(0, r * 100) + "%";

@@ -207,7 +207,10 @@
   // 9 quinquies. v1.87h — l'épreuve impossible (Q20) refuse le collage, la ligne ne se copie pas.
   { const d = queteData("q20").etapes[2].defi; a.id = "q20"; a.etape = 2; a._qj = null; journaux = [];
     const zi = document.createElement("div"); document.body.appendChild(zi); zi.innerHTML = _defiHTML(d); _defiWire(zi, d);
+    const chAvant = zi.querySelector("#qj-imp-champ"), lgAvant = zi.querySelector("#qj-imp-ligne").textContent;
+    r.impossibleAvant = { champFerme:chAvant.disabled, ligneMasquee:/^░+$/.test(lgAvant) };
     zi.querySelector("#qj-imp-go").click(); const ch = zi.querySelector("#qj-imp-champ");
+    r.impossibleAvant.apres = { champOuvert:!ch.disabled, ligneVisible:!/░/.test(zi.querySelector("#qj-imp-ligne").textContent) };
     const ev = new Event("paste", { bubbles:true, cancelable:true }); ch.dispatchEvent(ev);
     const cp = new Event("copy", { bubbles:true, cancelable:true }); zi.querySelector("#qj-imp-ligne").dispatchEvent(cp);
     r.impossibleColle = { collageRefuse:ev.defaultPrevented, copieRefusee:cp.defaultPrevented, asulf:journaux.some(t => /Copier-coller/.test(t)),
