@@ -143,7 +143,33 @@ function majBoissonFiche(){
 }
 
 /* ---------- Vue du bar ---------- */
+function _barStyleJeux(){   // v1.88d : dés, cuve, bonneteau
+  if(document.querySelector("#bar-style-jeux")) return;
+  const st=document.createElement("style"); st.id="bar-style-jeux";
+  st.textContent=`
+    .des-piste{ display:flex; gap:14px; justify-content:center; font-size:46px; line-height:1; color:var(--texte); }
+    .des-de{ display:inline-block; }
+    .des-de.roule{ animation:desRoule .18s linear infinite; }
+    @keyframes desRoule{ 0%{ transform:rotate(-14deg) translateY(-3px); } 50%{ transform:rotate(12deg) translateY(2px); } 100%{ transform:rotate(-14deg) translateY(-3px); } }
+    .cuve-rang.secoue{ animation:cuveSecoue .55s ease-in-out; }
+    @keyframes cuveSecoue{ 0%,100%{ transform:none; } 20%{ transform:translateX(-5px) rotate(-2deg); } 40%{ transform:translateX(5px) rotate(2deg); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(3px); } }
+    .bon-table{ position:relative; height:132px; width:100%; max-width:380px; margin:4px auto; border-radius:14px; background:radial-gradient(ellipse at 50% 85%, rgba(255,176,96,.10), rgba(0,0,0,0) 70%); }
+    .bon-gob{ position:absolute; bottom:12px; width:64px; height:96px; }
+    .bon-cloche{ position:absolute; bottom:0; left:4px; width:56px; height:64px; border-radius:26px 26px 6px 6px; background:linear-gradient(160deg,#c48a4c,#7a4a22 70%,#5a3518); box-shadow:inset 0 -6px 0 rgba(0,0,0,.25), 0 6px 10px rgba(0,0,0,.35); transition:transform .32s ease; z-index:2; }
+    .bon-bille{ position:absolute; bottom:3px; left:23px; width:18px; height:18px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fff,#ffd28a 40%,#c7782a); opacity:0; z-index:1; }
+    .bon-gob.a-bille .bon-bille{ opacity:1; }
+    .bon-gob.leve .bon-cloche{ transform:translateY(-42px); }
+    .bon-gob.devant{ transform:translateY(10px) scale(1.06); z-index:3; }
+    .bon-gob.derriere{ transform:translateY(-10px) scale(.94); z-index:1; }
+    .bon-table.choix .bon-gob{ cursor:pointer; }
+    .bon-table.choix .bon-gob:hover .bon-cloche{ filter:brightness(1.18); }
+    .bon-gob.designe .bon-cloche{ box-shadow:0 0 0 3px var(--orange,#ff8a3d), 0 6px 10px rgba(0,0,0,.35); }
+    @media (prefers-reduced-motion: reduce){ .des-de.roule, .cuve-rang.secoue{ animation:none; } }
+  `;
+  document.head.appendChild(st);
+}
 function _barStyle(){
+  _barStyleJeux();
   if(document.querySelector("#bar-style")) return;
   const s=document.createElement("style"); s.id="bar-style";
   s.textContent=`
@@ -270,7 +296,7 @@ const BAR_JEUX = [
     gains:"jusqu'à ×5,4 · le jeton marqué prend tout" },
   { id:"bonneteau",  nom:"Le bonneteau", dispo:true,
     desc:"Trois gobelets, une bille, des mains trop rapides. Personne n'a jamais prouvé qu'il trichait.",
-    gains:"×2,7" },
+    gains:"×2 (si tu suis bien)" },
   { id:"puissance4", nom:"Quatre alignés", dispo:false,
     desc:"Contre la maison, sur une grille rayée par vingt ans de verres.",
     gains:"×2 · nul remboursé" }
@@ -313,6 +339,25 @@ async function majBarJeux(el, fid){
 }
 
 /* ---------- Les dés du fond ---------- */
+const DES_PARIS = { bas:"en dessous de 7", haut:"au-dessus de 7", sept:"pile 7" };
+const DES_FACES = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+/* v1.88d — un peu de mouvement : les faces défilent ~1 s, ralentissent, puis tombent. */
+function _desRouler(z, d1, d2){
+  return new Promise(fin => {
+    const des = z.querySelectorAll(".des-de"); if(des.length < 2){ fin(); return; }
+    des.forEach(x => x.classList.add("roule"));
+    let k = 0, delai = 55;
+    const pas = () => {
+      if(!document.body.contains(z)){ fin(); return; }
+      des[0].textContent = DES_FACES[Math.floor(Math.random()*6)];
+      des[1].textContent = DES_FACES[Math.floor(Math.random()*6)];
+      k++; delai *= 1.09;
+      if(k < 16) setTimeout(pas, delai);
+      else { des[0].textContent = DES_FACES[d1-1]; des[1].textContent = DES_FACES[d2-1]; des.forEach(x => x.classList.remove("roule")); fin(); }
+    };
+    pas();
+  });
+}
 function _tableDes(z){
   if(!z) return;
   const max=(_barJeux&&_barJeux.mise_max)||200, min=(_barJeux&&_barJeux.mise_min)||50;
@@ -328,6 +373,7 @@ function _tableDes(z){
         </select>
         <button class="mini" id="des-lancer">Lancer</button>
       </div>
+      <div class="des-piste" id="des-piste"><span class="des-de">⚀</span><span class="des-de">⚀</span></div>
       <div id="des-res" class="itip-gris"></div>
     </div>`;
   z.querySelector("#des-lancer").addEventListener("click", async()=>{
@@ -350,9 +396,12 @@ function _tableDes(z){
       res.textContent=msg; journal(msg,"alerte"); b.disabled=false; return;
     }
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
+    // v1.88d — les dés roulent un instant avant de tomber (le résultat est déjà tiré par le serveur).
+    await _desRouler(z, d.d1, d.d2);
     res.innerHTML = `Dés : <b>${d.d1}</b> et <b>${d.d2}</b> — total <b>${d.total}</b>. `
       + (d.gagne ? `<span style="color:#8bd450">Gagné : +${d.net} ₡.</span>` : `<span style="color:#ff6b6b">Perdu : −${d.mise} ₡.</span>`);
-    journal(`Dés du fond (${d.total}) : ${d.gagne?`+${d.net}`:`−${d.mise}`} ₡.`, d.gagne?"gain":"alerte", "eco");
+    // v1.88d — retour de l'autrice : la ligne dit le pari, les dés, et l'issue.
+    journal(`Dés du fond : pari « ${DES_PARIS[d.pari]||d.pari} » ; les dés tombent sur ${d.d1} et ${d.d2} (${d.total}). ${d.gagne?`Gagné : +${d.net} ₡.`:`Perdu : −${d.mise} ₡.`}`, d.gagne?"gain":"alerte", "eco");
     if(typeof afficher==="function") afficher();
   });
 }
@@ -416,11 +465,12 @@ function _cuveCadre(z, st){
   const bt=z.querySelector("#cuve-tirer"), be=z.querySelector("#cuve-encaisser");
   if(bt) bt.addEventListener("click", async()=>{
     bt.disabled=true; if(be) be.disabled=true;
+    const rang=z.querySelector(".cuve-rang"); if(rang){ rang.classList.add("secoue"); await new Promise(r=>setTimeout(r,550)); }   // v1.88d
     let d,error; try{ ({data:d,error}=await sb.rpc("cuve_tirer")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#cuve"); }
     if(error||!d||!d.ok){ journal("Tirage impossible.","alerte"); _tableCuve(z); return; }
     if(d.marque){
       if(typeof rechargerCredits==="function") rechargerCredits();
-      journal(`La cuve : jeton marqué au ${d.tours}ᵉ tirage — ${d.perdu} ₡ perdus, et 10 % d'énergie avec.`,"alerte","eco");
+      journal(`La cuve (mise ${st.mise} ₡) : le jeton marqué sort au ${d.tours}ᵉ tirage. Perdu : −${d.perdu} ₡, et 10 % d'énergie avec.`,"alerte","eco");
       z.innerHTML=`<div class="bar-carte" style="flex-direction:column;gap:8px">
         <b>La cuve</b><span style="color:#ff6b6b">Jeton marqué au ${d.tours}ᵉ tirage. ${_barQui()} ramasse tout : −${d.perdu} ₡, et tu sens la soirée dans tes jambes (−10 % d'énergie).</span></div>`;
       if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
@@ -435,7 +485,7 @@ function _cuveCadre(z, st){
     let d,error; try{ ({data:d,error}=await sb.rpc("cuve_encaisser")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#cuve2"); }
     if(error||!d||!d.ok){ journal("Impossible de ramasser.","alerte"); _tableCuve(z); return; }
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
-    journal(`La cuve : ramassé après ${d.tours} tirage${d.tours>1?"s":""} — ${d.net>=0?"+":""}${d.net} ₡.`, d.net>=0?"gain":"alerte","eco");
+    journal(`La cuve (mise ${st.mise} ₡) : tu ramasses après ${d.tours} tirage${d.tours>1?"s":""} et empoches ${d.gain} ₡. ${d.net>=0?`Gagné : +${d.net} ₡.`:`Perdu : ${d.net} ₡.`}`, d.net>=0?"gain":"alerte","eco");
     z.innerHTML=`<div class="bar-carte" style="flex-direction:column;gap:8px"><b>La cuve</b>
       <span style="color:#8bd450">Tu ramasses ${d.gain} ₡ après ${d.tours} tirage${d.tours>1?"s":""} (net ${d.net>=0?"+":""}${d.net} ₡).</span></div>`;
     if(typeof afficher==="function") afficher();
@@ -473,41 +523,94 @@ async function _tableCuve(z){
 }
 
 /* ---------- Le bonneteau ---------- */
-function _tableBonneteau(z){
+/* v1.88d — demande de l'autrice : « faire vraiment un jeu de bonneteau ». Le serveur
+   (bonneteau_ouvrir, v207) tire la place de la bille et 11 à 13 échanges ; le client
+   les MONTRE, de plus en plus vite ; on désigne un gobelet (bonneteau_choisir), le
+   serveur rejoue les échanges et paie ×2. Une partie reprise après un rechargement se
+   joue de mémoire (les échanges ne sont pas renvoyés). */
+const BON_NOMS = { 1:"de gauche", 2:"du milieu", 3:"de droite" };
+const BON_X = { 1:18, 2:50, 3:82 };   // centre de chaque place, en % de la table
+const _bonDort = ms => new Promise(r => setTimeout(r, ms));
+function _bonErreur(d){
+  const er=d&&d.err;
+  return er==="mise" ? `Mise entre ${d.min} et ${d.max} ₡.` : er==="fonds" ? "Crédits insuffisants."
+       : er==="jeu_24h" ? "Tu as déjà joué au bonneteau aujourd'hui." : er==="deux_par_jour" ? "Deux jeux par jour, pas plus."
+       : er==="partie_en_cours" ? "Une partie est déjà ouverte." : er==="prison" ? "Tu es en prison."
+       : `Refusé (${er||"erreur"}).`;
+}
+async function _tableBonneteau(z){
   if(!z) return;
+  let e; try{ ({data:e}=await sb.rpc("bonneteau_etat")); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#bon0"); }
+  if(e && e.ok && e.partie){ _bonPlateau(z, { mise:e.mise, reprise:true }); return; }
   const max=(_barJeux&&_barJeux.mise_max)||200, min=(_barJeux&&_barJeux.mise_min)||50;
   z.innerHTML=`<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:10px">
       <b>Le bonneteau</b>
-      <span class="bar-desc">Trois gobelets, une bille, des mains trop rapides. « Suis bien. »</span>
+      <span class="bar-desc">${barStation() ? "L'automate pose trois gobelets de service et une bille de roulement. Ses pinces vont très vite." : "Trois gobelets, une bille, des mains trop rapides. « Suis bien. »"}</span>
+      <span class="itip-gris">On te montre la bille sous un gobelet. Puis les gobelets s'échangent une douzaine de fois, de plus en plus vite. Suis-la des yeux et désigne son gobelet. Gain ×2. Une fois lancée, la partie ne s'annule pas.</span>
       <div class="actions" style="gap:8px;align-items:center">
         <label class="itip-gris">Mise <input id="bon-mise" type="number" min="${min}" max="${max}" step="10" value="${min}" style="width:90px"></label>
-        <span class="itip-gris">Gain ×2,7</span>
-      </div>
-      <div class="actions" style="gap:10px">
-        <button class="mini" data-gob="1">Gobelet 1</button>
-        <button class="mini" data-gob="2">Gobelet 2</button>
-        <button class="mini" data-gob="3">Gobelet 3</button>
+        <button class="mini" id="bon-go">Miser et regarder</button>
       </div>
       <div id="bon-res" class="itip-gris"></div>
     </div>`;
-  z.querySelectorAll("[data-gob]").forEach(b=>b.addEventListener("click", async()=>{
-    const tous=[...z.querySelectorAll("[data-gob]")];
-    if(tous.some(x=>x.disabled)) return; tous.forEach(x=>x.disabled=true);
-    const res=z.querySelector("#bon-res"); res.textContent="Les gobelets tournent…";
+  z.querySelector("#bon-go").addEventListener("click", async()=>{
+    const b=z.querySelector("#bon-go"); if(b.disabled) return; b.disabled=true;
     const mise=parseInt(z.querySelector("#bon-mise").value,10)||0;
-    let d,error; try{ ({data:d,error}=await sb.rpc("jeu_bonneteau",{p_mise:mise,p_gobelet:parseInt(b.dataset.gob,10)})); }
-    catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#bon"); }
-    if(error||!d||!d.ok){
-      const er=d&&d.err;
-      const msg = er==="mise" ? `Mise entre ${d.min} et ${d.max} ₡.` : er==="fonds" ? "Crédits insuffisants."
-                : er==="jeu_24h" ? "Tu as déjà joué au bonneteau aujourd'hui." : er==="deux_par_jour" ? "Deux jeux par jour, pas plus."
-                : `Refusé (${er||"erreur"}).`;
-      res.textContent=msg; journal(msg,"alerte"); tous.forEach(x=>x.disabled=false); return;
-    }
+    let d,error; try{ ({data:d,error}=await sb.rpc("bonneteau_ouvrir",{p_mise:mise})); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#bon1"); }
+    if(error||!d||!d.ok){ const msg=_bonErreur(d); z.querySelector("#bon-res").textContent=msg; journal(msg,"alerte"); b.disabled=false; return; }
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
-    res.innerHTML = `La bille était sous le <b>gobelet ${d.bon}</b>. `
-      + (d.gagne?`<span style="color:#8bd450">Gagné : +${d.net} ₡.</span>`:`<span style="color:#ff6b6b">Perdu : −${d.mise} ₡.</span>`);
-    journal(`Bonneteau : ${d.gagne?`+${d.net}`:`−${d.mise}`} ₡.`, d.gagne?"gain":"alerte","eco");
+    if(typeof afficher==="function") afficher();
+    _bonPlateau(z, d);
+  });
+}
+async function _bonPlateau(z, d){
+  const reprise = !!d.reprise;
+  z.innerHTML=`<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:8px">
+      <b>Le bonneteau</b>
+      <div class="itip-gris">Mise : <b>${d.mise} ₡</b> · gain ×2</div>
+      <div class="bon-table" id="bon-table">${[1,2,3].map(p=>`<div class="bon-gob" data-gob="${p}" style="left:calc(${BON_X[p]}% - 32px)"><span class="bon-bille"></span><span class="bon-cloche"></span></div>`).join("")}</div>
+      <div id="bon-res" class="itip-gris" style="text-align:center">${reprise?"Tu as quitté la table des yeux. Les gobelets ne bougent plus : choisis de mémoire.":"Regarde bien…"}</div>
+    </div>`;
+  const table=z.querySelector("#bon-table"), res=z.querySelector("#bon-res");
+  const gobs={}; table.querySelectorAll(".bon-gob").forEach(g=>{ gobs[g.dataset.gob]=g; });
+  const place={1:gobs[1],2:gobs[2],3:gobs[3]};        // quelle cloche est à quelle place
+  const enJeu=()=>document.body.contains(table);
+  if(!reprise){
+    gobs[d.depart].classList.add("a-bille");
+    await _bonDort(350); if(!enJeu()) return;
+    gobs[d.depart].classList.add("leve"); await _bonDort(1200); if(!enJeu()) return;
+    gobs[d.depart].classList.remove("leve"); await _bonDort(450);
+    const n=d.melanges.length;
+    for(let i=0;i<n;i++){
+      if(!enJeu()) return;
+      const [a,b]=d.melanges[i], ga=place[a], gb=place[b];
+      const dur=Math.round(470 - (470-210)*(i/(Math.max(1,n-1))));   // de plus en plus vite
+      [ga,gb].forEach(g=>{ g.style.transition=`left ${dur}ms ease-in-out, transform ${dur}ms ease-in-out`; });
+      ga.classList.add("devant"); gb.classList.add("derriere");
+      ga.style.left=`calc(${BON_X[b]}% - 32px)`; gb.style.left=`calc(${BON_X[a]}% - 32px)`;
+      place[a]=gb; place[b]=ga;
+      await _bonDort(dur);
+      ga.classList.remove("devant"); gb.classList.remove("derriere");
+      await _bonDort(40);
+    }
+    res.textContent="Où est la bille ?";
+  }
+  table.classList.add("choix");
+  Object.entries(place).forEach(([pos,g])=>g.addEventListener("click", async()=>{
+    if(table.classList.contains("fini")) return; table.classList.add("fini"); table.classList.remove("choix");
+    const choix=+pos;
+    let r,error; try{ ({data:r,error}=await sb.rpc("bonneteau_choisir",{p_gobelet:choix})); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#bon2"); }
+    if(error||!r||!r.ok){ res.textContent="La main du croupier s'est figée. Réessaie."; table.classList.remove("fini"); table.classList.add("choix"); return; }
+    if(typeof appliquerSoldeServeur==="function" && typeof r.solde==="number") appliquerSoldeServeur(r.solde);
+    // La bille va sous le bon gobelet (ce que le serveur a rejoué), puis on soulève tout.
+    Object.values(gobs).forEach(x=>x.classList.remove("a-bille")); place[r.bon].classList.add("a-bille");
+    g.classList.add("designe");
+    Object.values(place).forEach(x=>x.classList.add("leve"));
+    res.innerHTML = r.gagne ? `<span style="color:#8bd450">La bille est là. Gagné : +${r.net} ₡.</span>`
+                            : `<span style="color:#ff6b6b">Raté : elle était sous le gobelet ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.</span>`;
+    journal(r.gagne ? `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]}, et la bille y est. Gagné : +${r.net} ₡.`
+                    : `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]} ; la bille était sous celui ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.`,
+            r.gagne?"gain":"alerte","eco");
     if(typeof afficher==="function") afficher();
   }));
 }

@@ -167,8 +167,11 @@
   #desc-vue { font-size:15px; margin-bottom:12px; }
   .desc-img { max-width:100%; margin:8px 0; border-radius:var(--r-s); border:1px solid var(--edge); display:block; }
   textarea { width:100%; min-height:120px; background:rgba(16,40,37,.6); color:var(--texte); border:1px solid var(--line); border-radius:var(--r-s); padding:12px; font-family:"Space Mono",monospace; font-size:13px; resize:vertical; }
-  input[type=text], select { background:rgba(16,40,37,.6); color:var(--texte); border:1px solid var(--line); border-radius:12px 5px 12px 5px; padding:9px 12px; font-family:"Exo 2",sans-serif; font-size:15px; }
-  input[type=text]:focus, textarea:focus, select:focus { outline:none; border-color:var(--orange); }
+  /* v1.88d — input[type=number] ajouté : les mises du bar et une vingtaine d'autres
+     champs chiffrés restaient au style du navigateur (blanc, angles droits). */
+  input[type=text], input[type=number], select { background:rgba(16,40,37,.6); color:var(--texte); border:1px solid var(--line); border-radius:12px 5px 12px 5px; padding:9px 12px; font-family:"Exo 2",sans-serif; font-size:15px; }
+  input[type=number] { font-family:"Space Mono",monospace; padding:7px 10px; }
+  input[type=text]:focus, input[type=number]:focus, textarea:focus, select:focus { outline:none; border-color:var(--orange); }
   .mur-reglage { font-family:"Space Mono",monospace; font-size:12px; color:var(--sourdine); margin-bottom:12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .mur-msg { padding:9px 0; border-bottom:1px solid var(--line); font-size:15px; }
   .mur-auteur { color:var(--bleu); font-weight:700; margin-right:6px; }

@@ -268,6 +268,28 @@
     jz.querySelector("#journal-plus").click(); r.journalPlus.apres = jz.querySelectorAll(".msg").length;
     etat.journal = av; journal = (t) => { journaux.push(String(t)); }; }
 
+  // 9 nonies. v1.88d — le vrai bonneteau (animation, choix, journal) et les dés détaillés.
+  { const vRpc = sb.rpc; journaux = []; let choisi = null;
+    sb.rpc = async (nom, args) => {
+      if(nom === "bonneteau_etat") return { data:{ ok:true, partie:false }, error:null };
+      if(nom === "bonneteau_ouvrir") return { data:{ ok:true, mise:args.p_mise, depart:2, melanges:[[1,2],[2,3],[1,3]], mult:2, solde:900 }, error:null };
+      if(nom === "bonneteau_choisir"){ choisi = args.p_gobelet; return { data:{ ok:true, choix:args.p_gobelet, bon:3, gagne:args.p_gobelet === 3, mise:100, gain:200, net:100, solde:1100 }, error:null }; }
+      if(nom === "jeu_des") return { data:{ ok:true, pari:"haut", d1:3, d2:2, total:5, gagne:false, mise:50, gain:0, net:-50, solde:950 }, error:null };
+      return { data:null, error:null }; };
+    const zb = document.createElement("div"); document.body.appendChild(zb);
+    await _tableBonneteau(zb); zb.querySelector("#bon-mise").value = "100"; zb.querySelector("#bon-go").click();
+    await att(6500);
+    // départ 2 → [1,2] : 1 → [2,3] : 1 → [1,3] : 3. La bille est sous le gobelet de droite.
+    const gob = [...zb.querySelectorAll(".bon-gob")].find(g => g.style.left.startsWith("calc(82%"));
+    const choixPret = zb.querySelector("#bon-table").classList.contains("choix");
+    gob.click(); await att(60);
+    r.bonneteau = { choixPret, gobeletDeDroite:choisi === 3, billeDessous:gob.classList.contains("a-bille"),
+      journal:journaux.find(t => /Bonneteau/.test(t)) || "" };
+    const zd = document.createElement("div"); document.body.appendChild(zd); _tableDes(zd);
+    zd.querySelector("#des-lancer").click(); await att(2500);
+    r.des = journaux.find(t => /Dés du fond/.test(t)) || "";
+    sb.rpc = vRpc; zb.remove(); zd.remove(); }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
