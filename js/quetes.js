@@ -494,7 +494,15 @@ function _calqCorrespond(bande, o, pA, M){   // la bande, décalée de o colonne
   return true;
 }
 function _calqSolutions(bande, pA, M){ const s=[]; for(let o=-CALQ_N;o<=CALQ_N;o++) if(_calqCorrespond(bande,o,pA,M)) s.push(o); return s; }
-function _calqGenerer(){
+/* v1.87e — `inverse` : la bande C arrive-t-elle À L'ENVERS (bouton ⇄) ? Oui en Q15,
+   où l'histoire le justifie (les bêtes renvoient la vague). Non ailleurs
+   (`d.inverse:false`). v1.87f : Q18 et Q25 retournent aussi, chacune avec un indice
+   dans son texte d'arrivée (la route lue par son dernier point ; les réponses qui
+   reviennent en écho). La consigne dit seulement que ⇄ retourne : au joueur de
+   deviner s'il le faut. Aucune quête n'utilise `inverse:false` pour l'instant. Une partie
+   commencée avant v1.87e garde son retournement (`invActif` absent = vrai). */
+function _calqGenerer(inverse){
+  if(inverse === undefined) inverse = true;
   const M=_calqMotif(), L=M.length, N=CALQ_N, pA=17, rnd=n=>Math.floor(Math.random()*n);
   const bruit=(dens)=>Array.from({length:N},()=>Math.random()<dens ? 1+rnd(4) : 0);
   const poser=(arr,pos,mot)=>{ for(let j=0;j<mot.length;j++) arr[pos+j]=mot[j]; };
@@ -512,13 +520,14 @@ function _calqGenerer(){
     const pc=placer(Cv, [M, abime(1), abime(2), abime(1).slice().reverse()]); if(!pc) continue;
     const C0=Cv.slice().reverse();       // ce que le joueur voit au départ
     const sB=_calqSolutions(B,pA,M), sCv=_calqSolutions(Cv,pA,M), sC0=_calqSolutions(C0,pA,M);
-    if(sB.length!==1 || sCv.length!==1 || sC0.length!==0) continue;
-    return { A:(()=>{ const a=Array(N).fill(0); poser(a,pA,M); return a; })(), B, C:C0, pA,
-             oB:0, oC:0, inv:false, essais:0, solB:sB[0], solC:sCv[0] };
+    if(sB.length!==1 || sCv.length!==1 || (inverse && sC0.length!==0)) continue;
+    return { A:(()=>{ const a=Array(N).fill(0); poser(a,pA,M); return a; })(), B, C:(inverse ? C0 : Cv), pA,
+             oB:0, oC:0, inv:false, invActif:inverse, essais:0, solB:sB[0], solC:sCv[0] };
   }
   return null;
 }
-function _calqEtat(){ const a=queteActive(); if(!a) return null; if(!a._calq){ a._calq=_calqGenerer(); sauvegarder(); } return a._calq; }
+function _calqEtat(d){ const a=queteActive(); if(!a) return null; if(!a._calq){ a._calq=_calqGenerer(!(d && d.inverse===false)); sauvegarder(); } return a._calq; }
+function _calqInvActif(c){ return c.invActif !== false; }
 function _calqBandeVue(c, quoi){   // tableau de N valeurs tel qu'affiché (décalage, retournement)
   const src = quoi==="A" ? c.A : quoi==="B" ? c.B : (c.inv ? c.C.slice().reverse() : c.C);
   const o = quoi==="A" ? 0 : quoi==="B" ? c.oB : c.oC;
@@ -528,18 +537,18 @@ function _calqLigneHtml(c, quoi){
   return _calqBandeVue(c,quoi).map(v=>`<span class="qc-c${v===null?" qc-hors":""}"><i style="height:${v?v*25:0}%"></i></span>`).join("");
 }
 function _htmlCalques(d){
-  const c=_calqEtat(); if(!c) return `<p class="vide">Le signal est trop brouillé. Reviens plus tard.</p>`;
+  const c=_calqEtat(d); if(!c) return `<p class="vide">Le signal est trop brouillé. Reviens plus tard.</p>`;
   const reste=CALQ_ESSAIS-c.essais;
   const ligne=(quoi, nom, mobile)=>`<div class="qc-bloc"><div class="qc-tete"><span>${nom}</span>${mobile?`<span class="qc-cmd">
-      ${quoi==="C"?`<button class="mini" data-qc-inv>⇄</button>`:""}<button class="mini" data-qc="${quoi}" data-d="-1">◀</button><button class="mini" data-qc="${quoi}" data-d="1">▶</button></span>`:""}</div>
+      ${(quoi==="C" && _calqInvActif(c))?`<button class="mini" data-qc-inv title="Retourner la bande">⇄</button>`:""}<button class="mini" data-qc="${quoi}" data-d="-1">◀</button><button class="mini" data-qc="${quoi}" data-d="1">▶</button></span>`:""}</div>
     <div class="qc-ligne qc-${quoi}" data-qc-ligne="${quoi}">${_calqLigneHtml(c,quoi)}</div></div>`;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Fais glisser les deux bandes du bas (au doigt, ou ◀ ▶ case par case) jusqu'à ce que les trois signaux se superposent exactement. <b>Touche la bande du haut pour poser un repère vertical</b> (encore une fois pour l'enlever) ; à la souris, une colonne suit aussi le pointeur. ${CALQ_ESSAIS} vérifications au plus — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
+    <p class="quete-indice">Fais glisser les deux bandes du bas (au doigt, ou ◀ ▶ case par case) jusqu'à ce que les trois signaux dessinent le même motif, l'un sous l'autre (d'une bande à l'autre, les barres n'ont pas tout à fait la même hauteur).${_calqInvActif(c) ? ` Le bouton ⇄ retourne la dernière bande.` : ""} <b>Touche la bande du haut pour poser un repère vertical</b> (encore une fois pour l'enlever) ; à la souris, une colonne suit aussi le pointeur. ${CALQ_ESSAIS} vérifications au plus — après, tu dois attendre ${VERROU_DEFI_H} h.</p>
     <div class="qc-zone"><div class="qc-regle">${Array.from({length:CALQ_N},(_,i)=>`<span>${(i+1)%5===0?i+1:""}</span>`).join("")}</div>${ligne("A",(d.noms||[])[0]||"Appel du quai",false)}${ligne("B",(d.noms||[])[1]||"Lueur de la silène",true)}${ligne("C",(d.noms||[])[2]||"Marques des bêtes",true)}</div>
     <div class="quete-rep" style="margin-top:10px"><button class="mini" id="q-calq-ok">Superposer (${reste} restante${reste>1?"s":""})</button></div></div>`;
 }
 function _wireCalques(z, d){
-  const c=_calqEtat(); if(!c) return;
+  const c=_calqEtat(d); if(!c) return;
   /* v1.36n — retour testeur (Q15 ét. 4) : sans repère vertical, on se décalait
      d'une case sur la bande du bas (il a collé une règle sur l'écran). Une
      graduation tous les 5 au-dessus des bandes, des séparations plus marquées
@@ -578,7 +587,7 @@ function _wireCalques(z, d){
     if(ok.disabled) return; ok.disabled=true;
     const M=_calqMotif();
     const bonB=_calqCorrespond(c.B, c.oB, c.pA, M);
-    const bonC=c.inv && _calqCorrespond(c.C.slice().reverse(), c.oC, c.pA, M);
+    const bonC=_calqInvActif(c) ? (c.inv && _calqCorrespond(c.C.slice().reverse(), c.oC, c.pA, M)) : _calqCorrespond(c.C, c.oC, c.pA, M);
     if(bonB && bonC){ journal("Les trois signaux n'en font plus qu'un.","gain"); reussirDefi(); return; }
     c.essais++; sauvegarder();
     if(c.essais>=CALQ_ESSAIS){ echouerDefi(`Ça ne coïncide pas. Le signal se brouille, la vague est passée. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
@@ -1288,10 +1297,50 @@ function _travGenerer(C, L, nLave, rnd){
   return { lave:new Array(C*L).fill(false), depart };   // filet : jamais atteint en pratique
 }
 function _travCompte(i, lave, C, L){ return _travVoisins(i,C,L).filter(n=>lave[n]).length; }
+
+/* v1.87g — PAS DE PUNITION POUR UN PARI FORCÉ. Retour de l'autrice (Q19 ét. 2) : « pas
+   tout le temps faisable ». Mesuré (outils, joueur parfaitement logique, 3 plaques) :
+   Q8 85 %, Q11 69 %, Q12 74 %, Q19 48 %, Q22 63 % de réussite, et presque jamais sans
+   devoir parier — la grille avait toujours un chemin, mais le trouver demandait de la
+   chance. Garantir des grilles « sans pari » obligeait à baisser fort la densité et à
+   générer pendant plusieurs secondes. Choix retenu : au moment de sonder, le jeu
+   regarde si UNE case accessible était déductible comme sûre (chiffres seuls, lave
+   déjà vue comprise). Si aucune ne l'était, le joueur était obligé de parier : tomber
+   sur une case brûlante ne coûte pas de plaque. Seules les erreurs évitables coûtent.
+   Recherche bornée (TRAV_NOEUDS) : au-delà, on considère le pari comme forcé
+   (indulgent). Renvoie vrai s'il existait une case sûre jouable. */
+const TRAV_NOEUDS = 20000;
+function _travCaseSureExiste(C, L, lave, vus){
+  const N=C*L, V=[]; for(let i=0;i<N;i++) V.push(_travVoisins(i,C,L));
+  const vu=new Uint8Array(N); vus.forEach(i=>vu[i]=1);
+  const fIdx=new Map(), front=[], cons=[];
+  for(let s=0;s<N;s++){
+    if(!vu[s] || lave[s]) continue;
+    let k=_travCompte(s,lave,C,L); const u=[];
+    for(const n of V[s]){ if(vu[n]){ if(lave[n]) k--; } else { if(!fIdx.has(n)){ fIdx.set(n,front.length); front.push(n); } u.push(fIdx.get(n)); } }
+    if(u.length) cons.push({u,k});
+  }
+  const F=front.length, deVar=Array.from({length:F},()=>[]); cons.forEach((c,ci)=>c.u.forEach(v=>deVar[v].push(ci)));
+  const val=new Int8Array(F).fill(-1), somme=new Int16Array(cons.length), libre=new Int16Array(cons.length); cons.forEach((c,ci)=>libre[ci]=c.u.length);
+  const poser=(v,x)=>{ val[v]=x; for(const ci of deVar[v]){ libre[ci]--; somme[ci]+=x; } };
+  const oter=v=>{ const x=val[v]; val[v]=-1; for(const ci of deVar[v]){ libre[ci]++; somme[ci]-=x; } };
+  const viable=v=>deVar[v].every(ci=>somme[ci]<=cons[ci].k && somme[ci]+libre[ci]>=cons[ci].k);
+  let noeuds=0, trop=false;
+  const cherche=j=>{ if(++noeuds>TRAV_NOEUDS){ trop=true; return true; }
+    while(j<F && val[j]!==-1) j++; if(j===F) return true;
+    for(const x of [0,1]){ poser(j,x); if(viable(j) && cherche(j+1)){ oter(j); return true; } oter(j); } return false; };
+  for(let v=0; v<F; v++){
+    // une case de la frontière est sûre si la supposer brûlante ne laisse aucune configuration possible
+    poser(v,1); const possible = viable(v) && cherche(0); oter(v);
+    if(trop) return false;              // trop long : on ne punit pas
+    if(!possible) return true;
+  }
+  return false;
+}
 function _htmlTraversee(d){
   const C=d.colonnes||6, P=d.plaques||3;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — après, tu rebrousses chemin pour ${VERROU_DEFI_H} h.</p>
+    <p class="quete-indice">Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — après, tu rebrousses chemin pour ${VERROU_DEFI_H} h. Quand rien ne permet de savoir où poser le pied, tu peux tenter ta chance sans perdre de plaque ; mais une erreur que les chiffres permettaient d'éviter en coûte une.</p>
     <div class="quete-rep" style="gap:8px;flex-wrap:wrap">
       <button class="mini" id="q-trav-mode">Mode : 👣 Sonder</button>
       <span class="itip-gris" id="q-trav-pl"></span>
@@ -1316,7 +1365,7 @@ function _wireTraversee(z, d){
     grille.innerHTML = [...Array(C*L).keys()].map(i=>{
       const vu=t.vus.includes(i), lave=t.lave[i], marque=t.marques.includes(i), acc=accessible(i), haut=i<C;
       let fond="#1b1411", txt="", bord="#3a2a22";
-      if(vu && lave){ fond="#c2410c"; txt="🔥"; }
+      if(vu && lave){ fond="#c2410c"; txt=d.icone || "🔥"; }   // v1.87g : d.icone (débris, ponts creux, courants)
       else if(vu){ const n=_travCompte(i,t.lave,C,L); fond="#3b3a36"; txt = n ? String(n) : "·"; bord="#6b6457"; }
       else if(marque){ txt="🚩"; }
       else if(acc){ bord="#f59e0b"; }
@@ -1330,11 +1379,18 @@ function _wireTraversee(z, d){
     if(marquer){ const k=t.marques.indexOf(i); if(k>=0) t.marques.splice(k,1); else t.marques.push(i); sauvegarder(); dessiner(); return; }
     if(t.marques.includes(i)){ journal("Case marquée — repasse en mode Sonder et enlève le drapeau d'abord.","alerte"); return; }
     if(!accessible(i)){ journal("Trop loin : avance de proche en proche, depuis une case déjà franchie.","alerte"); return; }
+    const evitable = t.lave[i] ? _travCaseSureExiste(C, L, t.lave, t.vus) : true;   // v1.87g : calculé AVANT de révéler
     t.vus.push(i);
+    if(t.lave[i] && !evitable){
+      // v1.87g : aucun moyen de savoir — le pari était forcé, la plaque tient.
+      sauvegarder(); dessiner();
+      journal(d.pariForce || "La croûte cède — mais rien ne permettait de le savoir : tu t'y attendais, et tu te rattrapes à temps. Ta plaque tient.","alerte");
+      return;
+    }
     if(t.lave[i]){
       t.plaques--; sauvegarder();
-      if(t.plaques<=0){ dessiner(); echouerDefi(`La croûte cède sous toi, et ta dernière plaque avec. Tu rebrousses chemin — nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
-      journal("La croûte cède — une plaque de protection fond sous tes bottes.","alerte");
+      if(t.plaques<=0){ dessiner(); echouerDefi(d.echec || `La croûte cède sous toi, et ta dernière plaque avec. Tu rebrousses chemin — nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+      journal(d.brulant || "La croûte cède — une plaque de protection fond sous tes bottes.","alerte");   // v1.87g : d.brulant
     } else if(i < C){ sauvegarder(); journal("Tu atteins l'autre bord !","gain"); reussirDefi(); return; }
     sauvegarder(); dessiner();
   });

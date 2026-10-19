@@ -1407,7 +1407,10 @@ const QUETES = [
           "Autour, un anneau de débris tourne lentement : des morceaux de coque, des poutres, des plaques qui se heurtent sans bruit. Certains dérivent, inoffensifs. D'autres tournent encore sur eux-mêmes, assez vite pour trancher une coque.",
           "« Ton capteur de proximité », dit Galm. « Il te dit combien de débris tournent autour de chaque trou que t'as déjà traversé. Faufile-toi. »"
         ],
-        defi:{ type:"traversee", colonnes:6, lignes:8, lave:15, plaques:3,
+        defi:{ type:"traversee", colonnes:6, lignes:8, lave:15, plaques:3, icone:"💥",   // v1.87g : textes propres (débris)
+          brulant:"Un débris en rotation t'accroche de plein fouet : une plaque de blindage s'arrache.",
+          pariForce:"Un débris t'accroche — mais rien sur ton capteur ne permettait de le voir venir : tu l'esquives d'un coup de rein, et ta plaque tient.",
+          echec:"Un dernier débris arrache ta dernière plaque. Tu recules hors de l'anneau — nouvelle tentative dans 8 h.",
           texte:["Traverse l'anneau de débris jusqu'à la fente. Chaque passage franchi t'indique combien de débris en rotation le bordent."],
           reussite:[
             "Tu passes la dernière rangée de débris et la fente s'ouvre devant toi, immense : des centaines de mètres de poutres arrachées, de ponts suspendus dans le vide, de hangars éventrés. Et partout, gravé sur les poutres, le carré.",
@@ -1567,7 +1570,10 @@ const QUETES = [
           "La Grande Crevasse coupe le glacier en deux, d'un horizon à l'autre. Au fond, rien : un bleu qui devient noir. Par-dessus, la neige a jeté des ponts — des langues blanches, lisses, qui ont l'air solides. Certaines le sont.",
           "« Les ponts de neige, ça se voit pas », dit Galm depuis l'orbite. « Ton détecteur te dira combien de ponts creux touchent chaque bloc que t'as franchi. Le reste, c'est tes jambes. »"
         ],
-        defi:{ type:"traversee", colonnes:7, lignes:8, lave:17, plaques:3,
+        defi:{ type:"traversee", colonnes:7, lignes:8, lave:17, plaques:3, icone:"🕳",   // v1.87g : textes propres (ponts creux)
+          brulant:"Le pont de neige s'effondre sous toi ; ton harnais te rattrape, mais une plaque y reste.",
+          pariForce:"Le pont de neige s'effondre — mais rien ne permettait de le deviner : tu t'y attendais, et tu te rattrapes au bord. Ta plaque tient.",
+          echec:"Le dernier pont cède, et ta dernière plaque avec. Tu remontes, les bras tremblants — nouvelle tentative dans 8 h.",
           texte:["Franchis la crevasse de bloc en bloc. Chaque bloc solide t'indique combien de ponts creux le bordent."],
           reussite:[
             "Tu prends pied sur l'autre lèvre de la crevasse, et tu te retournes : le dernier pont que tu as évité vient de s'effondrer dans le vide, sans un bruit.",
@@ -2529,13 +2535,17 @@ const QUETES = [
         cible:{ lieu:"base" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" } ],
         image:"images/quetes/q18/2.png",
         arrivee:[
-          "Le terminal accepte qu'on lui donne des morceaux et qu'on les fasse glisser. Tu lui donnes les tiens. Le code de Chardon. La route de La Cassée. Et la dernière ligne de la table.",
-          "Chacun, seul, ne vaut rien : un code sans lieu, un lieu sans entrée, une entrée sans adresse. Ensemble, ils devraient faire des coordonnées. À condition de les caler exactement.",
+          "Le terminal accepte qu'on lui donne des morceaux et qu'on les fasse glisser. Tu lui donnes les tiens : le code de Chardon, la dernière ligne de la table, et la route de La Cassée. Tu remarques que le relais ne prend pas la route par le début, comme toi tu l'avais lue au port : il la prend par son dernier point.",   // v1.87f : l'indice du retournement
+          "Chacun, seul, ne vaut rien : un code sans lieu, un lieu sans entrée, une entrée sans adresse. Ensemble, ils devraient faire des coordonnées. À condition de les caler l'un sur l'autre.",
           "Sorn s'assied à côté de toi et ne dit plus rien. Il regarde tes mains."
         ],
         defi:{ type:"calques",
-          noms:["Code de Chardon","Route du rappel","Table du relais"],
-          texte:[ "Trois relevés sur trois bandes : le code de Chardon, la route de La Cassée, la table du Perchoir." ],
+          /* v1.87f — choix de l'autrice : un retournement ici aussi, pour la difficulté.
+             Justifié par l'histoire : la table « transmet vers le DERNIER point de la
+             route » (ét. 1) ; le relais lit la route par la fin. La route est donc la
+             3e bande, celle que ⇄ retourne. */
+          noms:["Code de Chardon","Table du relais","Route du rappel"],
+          texte:[ "Trois relevés sur trois bandes : le code de Chardon, la table du Perchoir, la route de La Cassée." ],
           reussite:[
             "Les trois bandes n'en font plus qu'une, et le terminal, pour la première fois, affiche une ligne complète : des coordonnées. Pas un nom, pas un lieu. Des chiffres.",
             "Tu les reportes sur ta carte. Elles traversent la Gorge de part en part, et tombent de l'autre côté, là où la carte n'a plus rien.",
@@ -2609,7 +2619,10 @@ const QUETES = [
           "Au bord de la Gorge, les étoiles glissent. Elles se tordent en arcs, se dédoublent, disparaissent derrière quelque chose qui n'a pas de forme. Ta coque gémit, doucement, comme une charpente dans le vent.",
           "Galm, dans la radio, la voix serrée : « Y a des courants. Des zones où ça tire, d'autres où ça tient. Tes capteurs te diront combien de zones qui tirent touchent chaque endroit que t'as déjà franchi. Avance jusqu'au bout de la route, et reviens. »"
         ],
-        defi:{ type:"traversee", colonnes:7, lignes:9, lave:20, plaques:3,
+        defi:{ type:"traversee", colonnes:7, lignes:9, lave:20, plaques:3, icone:"🌀",   // v1.87g : textes propres (courants)
+          brulant:"Un courant te happe : la coque se tord, et une jointure de Cristal saute.",
+          pariForce:"Un courant te happe — mais rien sur tes capteurs ne l'annonçait : tu redresses à temps, et la coque encaisse sans rien perdre.",
+          echec:"Un dernier courant arrache ta dernière protection. Tu te dégages du bord à pleine poussée — nouvelle tentative dans 8 h.",
           texte:["Traverse le bord de la Gorge jusqu'au dernier point de la route. Chaque zone franchie t'indique combien de courants la touchent."],
           reussite:[
             "Tu touches le dernier point de la route, et tu tiens. La coque grince, les jointures de Cristal chauffent, mais rien ne casse.",
@@ -2931,6 +2944,7 @@ const QUETES = [
           "« Fais attention où tu mets les pieds », dit Asulf. « Je dis ça, j'en sais rien. J'ai jamais mis les pieds nulle part. »"
         ],
         defi:{ type:"traversee", colonnes:7, lignes:9, lave:19, plaques:3,
+          pariForce:"La croûte cède — mais rien ne permettait de le savoir : tu t'y attendais, et tu te rattrapes à temps. Ta plaque tient.",
           texte:["Une coulée dont la croûte cache des poches brûlantes. Chaque case franchie te dit combien de poches la touchent."],
           reussite:[
             "Tu poses la main sur le mât. Il est chaud comme une pierre de four.",
@@ -3249,10 +3263,10 @@ const QUETES = [
         image:"images/quetes/q25/2.png",
         arrivee:[
           "La station a gardé l'appel en trois copies, mal calées : celle du câble, celle de sa mémoire, celle des réponses. Tant qu'elles ne se superposent pas, elle ne sait pas ce qui est en double.",
-          "La cadence est la même dans les trois. La cadence de l'appel, celle de la silène, celle des bêtes. Tu la connais par cœur."
+          "La cadence est la même dans les trois : celle de l'appel, celle de la silène, celle des bêtes. Tu la connais par cœur. Et les réponses reviennent comme est toujours revenu ce qui répond à l'appel, depuis le bout du bras est : en écho."   // v1.87f : l'indice du retournement
         ],
         defi:{ type:"calques",
-          noms:["L'appel","La mémoire de la station","Les réponses"],
+          noms:["L'appel","La mémoire de la station","Les réponses"],   // v1.87f : « Les réponses » reviennent en écho, donc à l'envers (comme en Q15) : ⇄
           texte:["Trois copies de l'appel, sur trois bandes. Cale-les, et les doubles s'effaceront d'eux-mêmes."],
           reussite:[
             "Les trois bandes n'en font plus qu'une. Sur les écrans, les doubles s'éteignent par milliers, ligne après ligne, et la station pousse un long soupir de ventilation. Sa mémoire respire.",

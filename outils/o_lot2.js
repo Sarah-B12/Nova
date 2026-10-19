@@ -169,6 +169,41 @@
     r.redessinLocal = { pas:g.pas, banniereIntacte:hub.querySelector("#banniere-test") === img, redessinsComplets:complets };
     majQueteHub = vMaj; hub.remove(); }
 
+  // 9 ter. v1.87f — calques : la 3e bande arrive à l'envers en Q15, Q18 et Q25 (⇄) ; `inverse:false` reste possible.
+  { r.calques = {};
+    const essai = (id, etape) => { a.id = id; a.etape = etape; a._calq = null; ok = 0;
+      const d = queteData(id).etapes[etape].defi; const zc = document.createElement("div"); document.body.appendChild(zc);
+      zc.innerHTML = _htmlCalques(d); _wireCalques(zc, d); const c = a._calq;
+      const info = { bouton:!!zc.querySelector("[data-qc-inv]"), consigneEnvers:/retourne la dernière bande/.test(zc.innerHTML) };
+      c.oB = c.solB; c.oC = c.solC; if(info.bouton) c.inv = true;     // la bonne position (et retournée si besoin)
+      zc.querySelector("#q-calq-ok").click(); info.gagne = ok === 1; zc.remove(); return info; };
+    r.calques.q15 = essai("q15", 3); r.calques.q18 = essai("q18", 1); r.calques.q25 = essai("q25", 1);
+    a.id = "q18"; a.etape = 1; a._calq = Object.assign(_calqGenerer(true)); delete a._calq.invActif;   // partie commencée avant v1.87e
+    const zc = document.createElement("div"); zc.innerHTML = _htmlCalques(queteData("q18").etapes[1].defi); r.calques.ancienneGardeBouton = !!zc.querySelector("[data-qc-inv]");
+    { a._calq = null; const dSans = Object.assign({}, queteData("q18").etapes[1].defi, { inverse:false }); const zs = document.createElement("div");
+      zs.innerHTML = _htmlCalques(dSans); r.calques.sansRetournement = !zs.querySelector("[data-qc-inv]"); } }
+
+  // 9 quater. v1.87g — traversée : un pari forcé ne coûte pas de plaque, une erreur évitable si.
+  { const d = queteData("q19").etapes[1].defi, C = d.colonnes, L = d.lignes; r.traversee = {};
+    const jouerClic = (etatTrav, i) => { a.id = "q19"; a.etape = 1; a._trav = JSON.parse(JSON.stringify(etatTrav));
+      const zt = document.createElement("div"); document.body.appendChild(zt); zt.innerHTML = _defiHTML(d); _defiWire(zt, d);
+      zt.querySelector(`#q-trav-grille [data-i="${i}"]`).click(); const p = a._trav.plaques; zt.remove(); return p; };
+    const acc = (t, i) => !t.vus.includes(i) && _travVoisins(i, C, L).some(n => t.vus.includes(n) && !t.lave[n]);
+    let force = null, evitable = null;
+    for(let k = 0; k < 400 && !(force && evitable); k++){
+      const g = _travGenerer(C, L, d.lave), t = { lave:g.lave, vus:[g.depart], marques:[], plaques:3 };
+      for(let pas = 0; pas < 40; pas++){
+        const cand = [...Array(C * L).keys()].filter(i => acc(t, i)), laveAcc = cand.filter(i => t.lave[i]), sures = cand.filter(i => !t.lave[i]);
+        if(laveAcc.length){ const existe = _travCaseSureExiste(C, L, t.lave, t.vus);
+          if(!existe && !force) force = { t:JSON.parse(JSON.stringify(t)), i:laveAcc[0] };
+          if(existe && !evitable) evitable = { t:JSON.parse(JSON.stringify(t)), i:laveAcc[0] }; }
+        if(!sures.length) break; const i = sures[Math.floor(Math.random() * sures.length)]; t.vus.push(i); if(i < C) break;
+      }
+    }
+    r.traversee.pariForceGratuit = force ? jouerClic(force.t, force.i) === 3 : "introuvable";
+    r.traversee.erreurEvitablePayee = evitable ? jouerClic(evitable.t, evitable.i) === 2 : "introuvable";
+    r.traversee.consigne = /tenter ta chance/.test(_defiHTML(d)); }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
