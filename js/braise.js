@@ -74,7 +74,10 @@ const SURFACES = {
      un joueur qui suffoque devant une porte que le client croit ouverte. */
   ancolie: {
     nom:"Ancolie", orbite:null, img:"images/carte_ancolie.png", w:2400, h:1600,
-    o2Mult:2, depuisSilene:true, coutMult:1.5,
+    /* v1.87m — retour de l'autrice : 27 L pour Silène ⇄ Ancolie (un saut × 1,5) contre
+       18 L pour monter à Triptolème, c'était à l'envers. C'est un trajet sur la même
+       planète, sans sortir en orbite : la moitié d'un saut. */
+    o2Mult:2, depuisSilene:true, coutMult:0.5,
     abri:{ x:1031, y:880, r:160 },
     /* v1.87j — retour de l'autrice : pas de quai à part. On se pose et on décolle À LA
        STATION (la station EST le quai, K23), où l'on respire. Rayon 120 : couvre aussi
@@ -82,7 +85,7 @@ const SURFACES = {
     vaisseau:{ x:1031, y:880, r:120 },
     zonesTh:{ chaude:{ x:360, y:270, r:540 }, froide:{ x:1910, y:380, r:580 } },
     lieux:[
-      { id:"station",      nom:"La station", x:1031, y:880, r:110, vaisseau:true, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser ; ton vaisseau attend devant la baie." },
+      { id:"station",      nom:"La station", x:1031, y:880, r:110, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser ; ton vaisseau attend devant la baie." },
       { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
       { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
       { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." },
@@ -95,7 +98,7 @@ const SURFACES = {
     couleur:"#8fb8ff"
   }
 };
-/* v1.85 — coût d'un trajet Silène ⇄ Ancolie : un saut × coutMult. */
+/* v1.85 — coût d'un trajet Silène ⇄ Ancolie : un saut × coutMult (0,5 depuis v1.87m). */
 function coutSautSurface(c){
   const cs = (typeof coutSaut==="function") ? coutSaut() : null; if(!cs) return null;
   const m = (c && c.coutMult) || 1;
@@ -349,7 +352,7 @@ function majCarteBraise(){
   let h = `<image href="${cfg.img}" x="0" y="0" width="${cfg.w}" height="${cfg.h}" preserveAspectRatio="none"/>`;
   for(const l of cfg.lieux){
     if(!lieuVisible(l)) continue;   // v1.87 : le gisement de Sélénite, après Q23
-    const vaiss = (l.id === "atterrissage" || l.vaisseau);   // v1.87j : en Ancolie, le vaisseau est à la station
+    const vaiss = (l.id === "atterrissage");   // v1.87k : pas de 🚀 sur la station d'Ancolie (choix de l'autrice)
     h += `<g style="pointer-events:none"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="${vaiss?"#ffffff14":"#00000033"}" stroke="${vaiss?"#f5e9d3":cfg.couleur}" stroke-opacity=".7" stroke-width="3" stroke-dasharray="${vaiss?"":"8 10"}"/>
       <text x="${l.x}" y="${l.y + l.r + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">${vaiss?"🚀 ":""}${l.nom}</text></g>`;
   }
@@ -366,15 +369,19 @@ function majCarteBraise(){
   const info = document.querySelector("#braise-info");
   if(info){
     const ret = coutRetourVaisseau();
+    /* v1.87k — UNE seule ligne sous la carte (retour de l'autrice) : la description du
+       lieu passe en bulle (title, au survol) ; le chiffre utile (retour en O₂) vient
+       juste après le nom ; #braise-info coupe proprement si l'écran est trop étroit. */
+    const nomIci = ici ? `<b title="${ici.desc.replace(/"/g,"&quot;")}">${ici.nom}</b>` : "";
     info.innerHTML = cfg.abri   /* v1.87 — K47 : Ancolie */
-      ? (aLaStation() ? `<b>${abord ? "À la station, à bord de ton vaisseau." : (ici ? ici.nom : "À la station.")}</b> <span class="itip-gris">La station tient l'air au standard : ici, ton O₂ se refait. Dehors, il est mince et chaque pas en coûte le double.</span>`
-                      : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est mince · retour à la station : ${ret} O₂</span>`)
+      ? (aLaStation() ? `<b>${abord ? "À bord de ton vaisseau, devant la station." : "À la station."}</b> <span class="itip-gris">· l'air y est au standard : ton O₂ se refait</span>`
+                      : `${nomIci || "<b>Dans l'ancolie.</b>"} <span class="itip-gris">· retour à la station : ${ret} O₂ · l'air est mince</span>`)
       : cfg.air
-      ? (abord ? `<b>Au quai, à bord de ton vaisseau.</b> <span class="itip-gris">Ici, l'air est bon.</span>`
-               : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:"<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est respirable</span>`)
+      ? (abord ? `<b>À bord de ton vaisseau.</b> <span class="itip-gris">· l'air est bon</span>`
+               : `${nomIci || "<b>Dans l'ancolie.</b>"} <span class="itip-gris">· l'air est respirable</span>`)
       : abord
-      ? `<b>À bord de ton vaisseau.</b> <span class="itip-gris">Ici tu respires. Dehors, chaque pas coûte de l'O₂.</span>`
-      : `${ici?`<b>${ici.nom}</b> — <span class="itip-gris">${ici.desc}</span>`:((typeof missionsLieuIci==="function" && missionsLieuIci()) || "<b>À découvert.</b>")} <span class="itip-gris">· retour au vaisseau : ${ret} O₂</span>`;
+      ? `<b>À bord de ton vaisseau.</b> <span class="itip-gris">· ici tu respires ; dehors, chaque pas coûte de l'O₂</span>`
+      : `${nomIci || ((typeof missionsLieuIci==="function" && missionsLieuIci()) || "<b>À découvert.</b>")} <span class="itip-gris">· retour au vaisseau : ${ret} O₂</span>`;
   }
   const bb = document.querySelector("#braise-bord"), bd = document.querySelector("#braise-decoller");
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }

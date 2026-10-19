@@ -24,7 +24,26 @@ const BAR_NOMS = {
   nomades:      "L'Arrêt",
   rouage:       "La Purge"
 };
-function barNom(fac){ return BAR_NOMS[fac] || "Le Bar"; }
+function barNom(fac){ return barStation() ? "La buvette du personnel" : (BAR_NOMS[fac] || "Le Bar"); }
+
+/* ===========================================================
+   v1.88 — K55 : LE BAR DE LA STATION D'ANCOLIE. Retiré de Silène en v0.91 « pour une
+   carte ultérieure » : c'est elle. Ouvert après Q20 (drapeau `ancolie`), dans la zone
+   de la station. Les automates ne servent que le personnel répertorié (K16) : c'est
+   42-U1F qui a mis « son tournevis » parmi les ayants droit — chaque verre est
+   IMPUTÉ À SON MATRICULE, et il râle. Seules les boissons COMMUNES (faction null)
+   y sont servies ; le serveur (boire, v205) vérifie la même chose. Les tables de jeu
+   sont les mêmes qu'ailleurs, tenues par un automate.
+   =========================================================== */
+function barStation(){ return (typeof aLaStation === "function") && aLaStation() && !!(etat && etat.ancolie === true); }
+function _barQui(){ return barStation() ? "L'automate" : "Le tenancier"; }
+let _barEl = null;   // le conteneur courant (le Centre en ville, l'onglet Bar à la station)
+const BAR_ASULF = [
+  "Dans la radio, un soupir : « Tu bois sur mon matricule, là. Tu sais combien de rations ça me coûte, un verre ? Moi non plus. Mais ça me coûte. »",
+  "« Encore ? » La voix d'Asulf, enrhumée. « Je vais finir avec une note de buvette plus longue que mon dossier. »",
+  "« Santé. » Un temps de radio. « Enfin, la tienne. La mienne, elle est imputée. »",
+  "« Note bien que j'ai rien dit. » Il renifle. « Je note, moi. Tout. Dans ma tête. »"
+];
 
 /* Libellé lisible d'un effet. Renvoie "" si la clé est inconnue (une boisson
    ajoutée en SQL sans passer ici s'affichera sans casser la page). */
@@ -156,10 +175,12 @@ function _barWireOnglets(el){
   el.querySelectorAll("[data-barvue]").forEach(b=>b.addEventListener("click",()=>{ _barVue=b.dataset.barvue; majBar(el); }));
 }
 async function majBar(el){
-  if(!el) el=document.querySelector("#centre-corps"); if(!el) return;
+  if(!el) el=_barEl || document.querySelector("#centre-corps"); if(!el) return;
+  _barEl = el;
   _barStyle();
-  const fid=(typeof villeActuelle==="function")?villeActuelle():null;
-  if(!fid){ el.innerHTML=`<h3 style="margin:2px 0">Le bar</h3><p class="vide">Il n'y a pas de bar en pleine nature. Rejoins une ville.</p>`; return; }
+  const station = barStation();
+  const fid=station ? null : ((typeof villeActuelle==="function")?villeActuelle():null);
+  if(!fid && !station){ el.innerHTML=`<h3 style="margin:2px 0">Le bar</h3><p class="vide">Il n'y a pas de bar ici.</p>`; return; }
   if(_barVue==="jeux"){ await majBarJeux(el, fid); return; }
   el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Chargement…</p>`;
 
@@ -181,7 +202,7 @@ async function majBar(el){
   }
   await boissonCharger();
 
-  const dispo=(_barCatalogue||[]).filter(b=>!b.faction || b.faction===fid);
+  const dispo=(_barCatalogue||[]).filter(b=>station ? !b.faction : (!b.faction || b.faction===fid));   // v1.88 : à la station, les communes seules
   if(!dispo.length){
     el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Aucune boisson au comptoir. Si cela persiste, le catalogue du serveur est vide.</p>`;
     return;
@@ -190,7 +211,9 @@ async function majBar(el){
   let h=`<h3 style="margin:2px 0">${barNom(fid)}</h3>`;
   h+=`<img class="bar-banniere" src="images/bar/bar.png" alt="" onerror="this.remove()">`;   // v1.48 : UN seul bar (prochaine carte), une seule image
   h+=_barOnglets();
-  h+=`<p class="vide">Le tenancier ne demande pas ton nom. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`;
+  h+= station
+    ? `<p class="vide">Dans un coin de la grande salle, un comptoir d'AREPO, propre comme au premier jour. Un automate le tient : il ne te regarde pas, mais il sert, parce qu'Asulf t'a inscrit parmi les ayants droit. Chaque verre est imputé à son matricule. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`
+    : `<p class="vide">Le tenancier ne demande pas ton nom. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`;
 
   if(reste>0 && etat.boisson){
     h+=`<p class="vide" style="border-left:3px solid var(--orange);padding-left:10px">Tu es déjà sous l'effet de <b>${echapper(etat.boisson.nom)}</b> — ${barEffetsTexte(etat.boisson.mods)||"aucun effet"}. Encore ${_barDuree(reste)} avant de pouvoir reboire.</p>`;
@@ -207,7 +230,7 @@ async function majBar(el){
         <span class="bar-desc">${echapper(b.texte||"")}</span>
       </span>
       <span class="bar-prix">${b.prix} ₡</span>
-      <button class="mini" data-boire="${b.id}" ${(reste>0||trop)?"disabled":""} title="${reste>0?"Une seule boisson par 24 h":(trop?"Crédits insuffisants":"Le tenancier sert sans commenter")}">Boire</button>
+      <button class="mini" data-boire="${b.id}" ${(reste>0||trop)?"disabled":""} title="${reste>0?"Une seule boisson par 24 h":(trop?"Crédits insuffisants":`${_barQui()} sert sans commenter`)}">Boire</button>
     </div>`;
   }
   h+=`</div>`;
@@ -234,7 +257,7 @@ const BAR_JEUX = [
     desc:"Trois gobelets, une bille, des mains trop rapides. Personne n'a jamais prouvé qu'il trichait.",
     gains:"×2,7" },
   { id:"puissance4", nom:"Quatre alignés", dispo:false,
-    desc:"Contre le tenancier, sur une grille rayée par vingt ans de verres.",
+    desc:"Contre la maison, sur une grille rayée par vingt ans de verres.",
     gains:"×2 · nul remboursé" }
 ];
 function _barBlocTexte(code){
@@ -280,7 +303,7 @@ function _tableDes(z){
   const max=(_barJeux&&_barJeux.mise_max)||200, min=(_barJeux&&_barJeux.mise_min)||50;
   z.innerHTML=`<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:10px">
       <b>Les dés du fond</b>
-      <span class="bar-desc">Le tenancier pousse deux dés vers toi. « Au-dessus, en dessous, ou pile. À toi de voir. »</span>
+      <span class="bar-desc">${barStation() ? "L'automate pousse deux dés vers toi, sans un mot. Sur son flanc : TABLE DE DÉTENTE — PERSONNEL." : "Le tenancier pousse deux dés vers toi. « Au-dessus, en dessous, ou pile. À toi de voir. »"}</span>
       <div class="actions" style="flex-wrap:wrap;gap:8px;align-items:center">
         <label class="itip-gris">Mise <input id="des-mise" type="number" min="${min}" max="${max}" step="10" value="${min}" style="width:90px"></label>
         <select id="des-pari" class="gouv-textarea" style="padding:6px 8px;width:auto">
@@ -331,7 +354,7 @@ async function boire(id, bouton){
     else if(e==="pas_sur_place")journal("Cette boisson ne se sert que dans son bar : il faut y être.","alerte");
     else if(e==="prison")       journal("Tu es en prison — le bar attendra.","alerte");
     else if(e==="mort")         journal("Impossible pour l'instant.","alerte");
-    else                        journal(`Le tenancier refuse de servir (${e||"erreur"}).`,"alerte");
+    else                        journal(`${_barQui()} refuse de servir (${e||"erreur"}).`,"alerte");
     if(bouton) bouton.disabled=false;
     return;
   }
@@ -343,6 +366,9 @@ async function boire(id, bouton){
   const ton = res.tirage==="bon" ? "gain" : (res.tirage==="mauvais" ? "alerte" : "");
   const intro = res.tirage==="bon" ? "Bonne pioche" : (res.tirage==="mauvais" ? "Mauvaise pioche" : "Les deux à la fois");
   journal(`${res.nom} (−${res.prix} ₡). ${intro} : ${txt||"aucun effet notable"}. 24 h.`, ton);
+  if(barStation()){   // v1.88 : K55 — CONSOMMATION IMPUTÉE, et Asulf râle
+    journal(`CONSOMMATION — OPÉRATEUR 42-U1F — IMPUTÉE. ${BAR_ASULF[Math.floor(Math.random()*BAR_ASULF.length)]}`, "");
+  }
 
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();   // santé/moral/énergie immédiats
   if(typeof afficher==="function") afficher();
@@ -380,7 +406,7 @@ function _cuveCadre(z, st){
       if(typeof rechargerCredits==="function") rechargerCredits();
       journal(`La cuve : jeton marqué au ${d.tours}ᵉ tirage — ${d.perdu} ₡ perdus, et 10 % d'énergie avec.`,"alerte","eco");
       z.innerHTML=`<div class="bar-carte" style="flex-direction:column;gap:8px">
-        <b>La cuve</b><span style="color:#ff6b6b">Jeton marqué au ${d.tours}ᵉ tirage. Le tenancier ramasse tout : −${d.perdu} ₡, et tu sens la soirée dans tes jambes (−10 % d'énergie).</span></div>`;
+        <b>La cuve</b><span style="color:#ff6b6b">Jeton marqué au ${d.tours}ᵉ tirage. ${_barQui()} ramasse tout : −${d.perdu} ₡, et tu sens la soirée dans tes jambes (−10 % d'énergie).</span></div>`;
       if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
       if(typeof afficher==="function") afficher();
       return;

@@ -95,9 +95,7 @@ QUETES_JEUX.ronde = {
     }));
   }
 };
-/* Le redessin « forcé » ignore la suspension (_seqAnim). v1.87c : plus utilisé par
-   la ronde (_qjRedessiner ne regarde pas _seqAnim) ; gardé pour qui en aurait besoin. */
-function majQueteHubForce(){ const s = _seqAnim; _seqAnim = 0; majQueteHub(); _seqAnim = s; }
+/* v1.88 — majQueteHubForce() retirée : plus utilisée depuis v1.87c (_qjRedessiner). */
 
 /* v1.87c — REDESSINER L'ÉPREUVE SEULE. Avant, chaque clic (un pas dans la crevasse,
    un module posé, une impulsion choisie…) appelait majQueteHub() : tout l'onglet

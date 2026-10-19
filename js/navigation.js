@@ -39,7 +39,7 @@ function _boutiqueBanniere(){
   img.onload = () => { ban.hidden = false; }; img.onerror = () => { ban.hidden = true; };
   img.src = voulu;
 }
-function changerHub(h){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
+function changerHub(h){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(); if(h==="bar" && typeof majBar==="function") majBar(document.querySelector("#bar-vue")); if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -63,7 +63,8 @@ function majHub(){
     /* v0.98 : au sol d'une planète, pas de service. v1.87 : en Ancolie, à la station,
        42-U1F donne ses quêtes (lieuPrise:"station") ; au lac gelé, le gisement de Sélénite. */
     ? { ...vide, quete:qEnCours || ((typeof aLaStation==="function") && aLaStation()),
-        gisement:(typeof surSelenite==="function") && surSelenite() }
+        gisement:(typeof surSelenite==="function") && surSelenite(),
+        bar:(typeof barStation==="function") && barStation() }   // v1.88 : K55, la buvette de la station
     : carcasse
     ? { ...vide, garage:true, quete:true }   // v0.97 : Galm donne les quêtes Q6→
     : gravier
@@ -84,7 +85,7 @@ function majHub(){
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","bar","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
     /* ⚠ v0.91 — `montrerHub("vide")` est le vrai filet : si AUCUN onglet n'est
        disponible ici, on n'en laisse surtout pas un périmé affiché. C'est ce
        qui s'est produit avec Le Gisement resté seul après un atterrissage. */

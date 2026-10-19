@@ -82,7 +82,11 @@ function majGisement(){
   const z = document.querySelector("#gisement-vue"); if(!z) return;
   /* v1.87 — K48 : le même onglet sert au gisement de Sélénite, au lac gelé d'Ancolie
      (mécanique à part : selenite.js). */
-  if(typeof surSelenite === "function" && surSelenite()){ majSelenite(z); return; }
+  /* v1.88 — le titre et l'image du Gravier sont fixes dans index.html : on les masque au
+     lac gelé (la vue de la Sélénite a les siens ; avant, les deux s'empilaient). */
+  const sel = (typeof surSelenite === "function" && surSelenite());
+  [document.querySelector("#gisement-titre"), document.querySelector("#gisement-ban")].forEach(e => { if(e) e.style.display = sel ? "none" : ""; });
+  if(sel){ majSelenite(z); return; }
 
   if(typeof surGravier !== "function" || !surGravier()){
     /* ⚠ Ne jamais laisser un panneau VIDE : si cet écran s'ouvre alors qu'on

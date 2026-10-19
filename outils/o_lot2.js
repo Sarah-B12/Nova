@@ -224,6 +224,28 @@
       fuseeStation:/🚀\s*La station/.test(document.querySelector("#carte-braise").innerHTML) };
     etat.surface = { x:1031, y:880, abord:true }; majCarteBraise(); r.ligneCarte.station = inf.textContent; }
 
+  // 9 septies. v1.88 — K55 : le bar de la station, après Q20, à gauche de « Quêtes ».
+  { const vRpc = sb.rpc; let appels = [];
+    sb.rpc = async (nom, args) => { appels.push(nom);
+      if(nom === "bar_catalogue") return { data:[ { id:"eau", nom:"Eau trouble", faction:null, prix:100, texte:"" }, { id:"terreau", nom:"Terreau", faction:"cultivateurs", prix:200, texte:"" } ], error:null };
+      if(nom === "boisson_etat") return { data:{ ok:true, active:false }, error:null };
+      if(nom === "boire") return { data:{ ok:true, id:"eau", nom:"Eau trouble", tirage:"bon", mods:{ moral_immediate:5 }, prix:100, solde:900, fin:new Date(Date.now()+864e5).toISOString() }, error:null };
+      return { data:null, error:null }; };
+    _barCatalogue = null; journaux = [];
+    etat.secteur = "ancolie"; etat.surface = { x:1031, y:880, abord:false };
+    etat.ancolie = false; r.bar = { avantQ20:barStation() };
+    etat.ancolie = true; r.bar.apresQ20 = barStation();
+    majHub(); const onglet = document.querySelector('.hub-lien[data-hub="bar"]');
+    r.bar.ongletVisible = onglet.style.display !== "none";
+    r.bar.avantQuetes = onglet.nextElementSibling && onglet.nextElementSibling.dataset.hub === "quete";
+    const zb = document.querySelector("#bar-vue"); await majBar(zb); await att(30);
+    r.bar.titre = (zb.querySelector("h3") || {}).textContent;
+    r.bar.boissons = [...zb.querySelectorAll("[data-boire]")].map(b => b.dataset.boire);
+    zb.querySelector('[data-boire="eau"]').click(); await att(60);
+    r.bar.impute = journaux.some(t => /IMPUTÉE/.test(t));
+    etat.surface = { x:1780, y:600, abord:false }; r.bar.horsStation = !barStation();
+    sb.rpc = vRpc; etat.boisson = null; }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
