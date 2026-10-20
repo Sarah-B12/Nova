@@ -50,7 +50,15 @@
     .rep-ic{ font-size:22px; line-height:1; }
     .rep-img{ width:34px; height:34px; object-fit:contain; display:block;
       filter:drop-shadow(0 1px 2px rgba(0,0,0,.55)); }
-    .rep-badge{ cursor:default; }
+    .rep-badge{ cursor:pointer; position:relative; }
+    /* v1.88g — le nom du blason : écrit sur la page profil, en bulle ailleurs. */
+    .rep-nom{ display:none; }
+    .rep-badges.grand .rep-nom{ display:block; font-size:11px; line-height:1.2; color:var(--sourdine,#9fb0c4); text-align:center; max-width:78px; }
+    .rep-bulle{ display:none; position:absolute; top:calc(100% + 4px); left:50%; transform:translateX(-50%); z-index:30;
+      white-space:nowrap; font-size:12px; padding:4px 8px; border-radius:8px 3px 8px 3px;
+      background:#0f1830; border:1px solid var(--line); color:var(--texte); box-shadow:0 4px 12px rgba(0,0,0,.4); }
+    .rep-badges:not(.grand) .rep-badge:hover .rep-bulle,
+    .rep-badges:not(.grand) .rep-badge.ouvert .rep-bulle{ display:block; }
     /* v1.11 — SUR LA PAGE PROFIL (la sienne et celle qu'on visite), les blasons
        sont dessinés : 34 px les rendait illisibles. Le bandeau du HUD, lui, ne
        bouge pas — il doit rester compact. La classe "grand" est posée par
@@ -128,9 +136,20 @@ function _badgesReput(repFaction, cercles, faction){
       ? `<img class="rep-img" src="images/blasons/${b.id}.png" alt="" loading="lazy"
              onerror="this.outerHTML='<span class=\'rep-ic\'>${b.ic}</span>'">`
       : `<span class="rep-ic">${b.ic}</span>`;
-    return `<div class="rep-badge" title="${b.nom}">${vis}<span class="rep-n">${b.val}</span></div>`;
+    /* v1.88g — retour des testeurs : sur iPad et téléphone, `title` ne s'affiche jamais,
+       on ne voyait que des icônes. Sur la page profil (.grand), le nom court est écrit
+       sous chaque blason ; ailleurs (bandeau compact), un toucher ou le survol ouvre
+       une bulle avec le nom complet. */
+    const court = b.id === faction || !b.id ? "Réputation" : b.nom.replace(/^Les /, "");
+    return `<div class="rep-badge" tabindex="0" role="button" aria-label="${b.nom} : ${b.val}">${vis}<span class="rep-nom">${court}</span><span class="rep-n">${b.val}</span><span class="rep-bulle">${b.nom} : ${b.val}</span></div>`;
   }).join("");
 }
+/* v1.88g — un toucher sur un blason ouvre sa bulle ; un autre, ou ailleurs, la ferme. */
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest(".rep-badge");
+  document.querySelectorAll(".rep-badge.ouvert").forEach(x => { if(x !== b) x.classList.remove("ouvert"); });
+  if(b) b.classList.toggle("ouvert");
+});
 const GOUV_ROLES = [ {id:"regent",nom:"Régent"}, {id:"architecte",nom:"Architecte"}, {id:"chef_guerre",nom:"Stratège"}, {id:"espion",nom:"Ombre"} ];
 async function _chargerGouvernement(fac){
   try{

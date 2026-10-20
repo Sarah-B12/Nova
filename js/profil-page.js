@@ -52,11 +52,14 @@ function _ppStyle(){
     /* v1.36p — la bête passe À DROITE des informations (retour de l'autrice :
        elle décalait le texte). Sur écran étroit, elle descend sous les infos,
        centrée, au lieu de disparaître. */
-    .pp-bete{ flex:0 0 160px; min-width:110px; text-align:center; align-self:center; }
-    @media(max-width:760px){ .pp-bete{ flex:1 1 100%; max-width:200px; margin:0 auto; } }
+    /* v1.88g — la bête s'assoit au pied du portrait (en bas à droite, en
+       surimpression) ; son nom est une ligne des infos. */
+    .pp-cadre{ position:relative; flex:0 1 200px; min-width:0; }
+    .pp-cadre .pp-portrait{ width:100%; }
+    .pp-compagnon{ position:absolute; right:-10%; bottom:-4%; width:42%; aspect-ratio:1; object-fit:contain;
+      pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(232,240,200,.18)); }
     .pp-conjoint a{ color:var(--orange-hi,#ffb060); cursor:pointer; text-decoration:underline; }
-    .pp-bete img{ width:100%; aspect-ratio:1; object-fit:contain; display:block; filter:drop-shadow(0 0 10px rgba(232,240,200,.25)); }
-    .pp-bete-nom{ font-weight:700; margin-top:4px; }
+
     .pp-info{ flex:1; min-width:220px; }
     .pp-info p{ margin:4px 0; }
     .pp-nom{ font-size:22px; font-weight:700; color:var(--orange-hi,#ffb060); }
@@ -198,19 +201,19 @@ async function ouvrirPageProfil(nom){
   m.innerHTML = `<div class="pp-wrap">
     <div class="pp-tete"><button class="mini" id="pp-retour">← Retour</button><h2>Profil</h2></div>
     <div class="pp-haut">
-      <div class="pp-portraits"><div class="pp-portrait av-portrait">${portrait}</div></div>
+      <div class="pp-portraits"><div class="pp-cadre"><div class="pp-portrait av-portrait">${portrait}</div>${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div></div>
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
         <p>Faction : <b>${_facNomComm(p.faction)}</b></p>
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>
+        ${(bete && typeof beteLigneHtml==="function") ? beteLigneHtml(bete) : ""}
         ${(conjoint && conjoint.nom) ? `<p class="pp-conjoint">Marié·e à <a data-pp-conjoint="${echapper(conjoint.nom)}">${echapper(conjoint.nom)}</a></p>` : ""}
         ${credLigne}
         <div id="pp-jauges"></div>
         <div class="pp-actions">${actions}<button class="mini" data-terrain="${p.id}">Voir son terrain</button>${(typeof estAdmin==="function" && estAdmin()) ? `<button class="mini" data-jrnstaff="${p.id}">Journal du joueur</button><button class="mini" data-mvtstaff="${p.id}">Mouvements</button>` : ""}</div>
       </div>
-      ${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}
     </div>
     <div class="rep-badges grand" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
     <div id="pp-terrain" hidden></div>

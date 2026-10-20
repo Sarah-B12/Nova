@@ -309,10 +309,17 @@ async function chargerBete(){
   etat.bete = await beteDe(s.user.id);
 }
 /* Vignette pour une fiche de profil : image + nom + espèce. */
+/* v1.88g — retour de l'autrice : à droite des infos, la bête chargeait trop l'en-tête
+   du profil. Elle s'assoit désormais AU PIED DU PORTRAIT (petite, en surimpression,
+   comme une bête qui suit son maître), et son nom passe en une ligne dans les infos. */
 function beteVignetteHtml(b){
   const i = b && beteInfo(b.espece); if(!i) return "";
+  return `<img class="pp-compagnon" src="${i.img}" alt="${i.nom}" onerror="this.remove()">`;
+}
+function beteLigneHtml(b){
+  const i = b && beteInfo(b.espece); if(!i) return "";
   const nom = String(b.nom||"").replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
-  return `<div class="pp-bete"><img src="${i.img}" alt="" onerror="this.remove()"><div class="pp-bete-nom">${nom}</div><div class="itip-gris">${i.nom}</div></div>`;
+  return `<p>Compagnon : <b>${nom}</b> <span class="itip-gris">(${i.nom})</span></p>`;
 }
 function imgBouture(){
   // v0.97 — allumée aussi près du Muet (Q7) : le signal ne vient pas que de Silène.

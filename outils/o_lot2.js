@@ -347,6 +347,18 @@
     r.toucher.bureauPerchoir = bb ? bb.style.display !== "none" : "pas de bouton";
     window.surBase = vBase; etat.secteur = "silene"; }
 
+  // 9 duodecies. v1.88g — profil : la bête au pied du portrait, les blasons nommés.
+  { etat.bete = { espece:(typeof BETES!=="undefined" && BETES[0] && BETES[0].id) || "x", nom:"Plume" };
+    await ouvrirPageProfil(etat.nom); await att(150);
+    const pp = document.querySelector("#page-profil");
+    r.profil = { compagnonAuPortrait:!!pp.querySelector(".pp-cadre .pp-compagnon"), ancienneVignette:!!pp.querySelector(".pp-bete"),
+      ligneInfo:/Compagnon : Plume/.test(pp.querySelector(".pp-info").textContent),
+      nomsBlasons:[...pp.querySelectorAll(".rep-badges.grand .rep-nom")].map(x => x.textContent) };
+    if(typeof fermerPageProfil === "function") fermerPageProfil();
+    const hud = document.createElement("div"); hud.className = "rep-badges"; hud.innerHTML = _badgesReput(3, { racines:5 }, etat.faction); document.body.appendChild(hud);
+    const b = hud.querySelectorAll(".rep-badge")[2]; b.click(); r.profil.bulleAuToucher = b.classList.contains("ouvert") && /Racines/.test(b.querySelector(".rep-bulle").textContent);
+    document.body.click(); r.profil.bulleFermee = !b.classList.contains("ouvert"); hud.remove(); }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
