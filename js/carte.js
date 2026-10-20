@@ -502,7 +502,9 @@ function fermerCarte(){ _effacerVisee(); document.querySelector("#modale-carte")
    l'endroit EXACT touché ; plus loin = le cercle se déplace. À la souris :
    un clic = un trajet (inchangé). Avant, au doigt, un toucher partait
    AUSSITÔT, sans voir le coût (au sol, l'O₂ compte double).
-   o = { cout(x,y) → texte du bouton ou null, partir(x,y) }.
+   o = { cout(x,y) → texte du bouton ou null, partir(x,y), nom(x,y) → nom du lieu ou null }.
+   v1.88f — `nom` (facultatif) : au premier toucher, la barre dit OÙ l'on va
+   (« La station — Partir (…) »), comme les étiquettes de Silène (retour des testeurs).
    Les cartes se redessinent en entier (innerHTML) : appeler .redessiner()
    à la fin de leur mise à jour.
    =========================================================== */
@@ -529,12 +531,13 @@ function viseeTactile(svg, o){
     v = { x, y }; dessiner();
     if(!barre){
       barre = document.createElement("div"); barre.className = "visee-barre";
-      barre.innerHTML = `<button class="mini" type="button"></button>`;
+      barre.innerHTML = `<span class="visee-nom"></span><button class="mini" type="button"></button>`;
       barre.querySelector("button").addEventListener("click", partir);
       (svg.parentElement || svg).insertAdjacentElement("afterend", barre);
     }
-    const t = o.cout(x, y);
+    const t = o.cout(x, y), n = o.nom ? o.nom(x, y) : null;
     barre.querySelector("button").textContent = t ? `Partir (${t})` : "Partir";
+    const sn = barre.querySelector(".visee-nom"); if(sn){ sn.textContent = n || ""; sn.hidden = !n; }
     barre.hidden = false;
   };
   return {

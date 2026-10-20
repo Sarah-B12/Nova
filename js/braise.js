@@ -340,7 +340,11 @@ function construireCarteBraise(){
   _viseeSol = viseeTactile(svg, {
     cout: (x, y) => { const k = (typeof coutBraise === "function") ? coutBraise(x, y) : null;
                       return k ? `−${k.coutE} % én. · −${k.coutO} O₂` : null; },
-    partir: (x, y) => voyagerBraise(x, y)
+    partir: (x, y) => voyagerBraise(x, y),
+    /* v1.88f — au doigt, le premier toucher dit quel lieu on vise (s'il y en a un). */
+    nom: (x, y) => { const c = surfaceCfg() || BRAISE;
+      const l = (c.lieux || []).find(l => (typeof lieuVisible !== "function" || lieuVisible(l)) && Math.hypot(x - l.x, y - l.y) <= l.r);
+      return l ? l.nom : null; }
   });
 }
 function majCarteBraise(){

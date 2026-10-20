@@ -121,8 +121,12 @@ function majCentre(){
      d'atelier ni de formations (institutions de faction), pas de bureaux ni
      d'expéditions (on ne commande pas depuis l'orbite), pas de prison ni de
      bar tant qu'il n'a pas été déplacé. */
+  /* v1.88f — retour des testeurs : ne pas pouvoir ouvrir son Bureau au Perchoir était
+     frustrant. Le serveur ne vérifie aucune présence pour le gouvernement : seul ce
+     masque l'interdisait (« on ne commande pas depuis l'orbite », v0.87). Les BUREAUX
+     y sont désormais ouverts aux membres du gouvernement ; le reste ne change pas. */
   const masque = base
-    ? { formations:true, bureau:true, guerres:true, prison:true, bar:true, votes:false, annonce:false, gouvernement:false }
+    ? { formations:true, bureau:false, guerres:true, prison:true, bar:true, votes:false, annonce:false, gouvernement:false }
     : { formations:!chezSoi, votes:!chezSoi, guerres:!chezSoi, bureau:!chezSoi, annonce:!chezSoi };
   // ⚠ Bureau : la vérification des rôles est ASYNCHRONE. Sans le souvenir du
   // dernier résultat, l'onglet s'affichait puis disparaissait — un clignotement
@@ -134,7 +138,7 @@ function majCentre(){
     if(c === "bureau" && !cache) cache = (etat._aRoleGouv === false);   // undefined = on ne sait pas encore
     b.style.display = cache ? "none" : "";
   });
-  if(!base && !masque.bureau && typeof _chargerMesRolesGouv==="function"){
+  if(!masque.bureau && typeof _chargerMesRolesGouv==="function"){   // v1.88f : au Perchoir aussi
     _chargerMesRolesGouv().then(roles=>{
       etat._aRoleGouv = roles.length > 0;
       const b=document.querySelector('#hub-centre [data-centre="bureau"]');

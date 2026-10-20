@@ -300,6 +300,7 @@ async function volVers(l){
 let _orbInfoFige = null;
 
 /* Ligne d'aperçu affichée au survol d'un objet. */
+let _orbSel = null, _orbPointeur = "mouse";   // v1.88f : l'objet touché une première fois, et le type de pointeur
 function _apercuVol(l){
   const nom = espaceNom(l);
   if(surLieuEspace(l)) return `<b>${nom}</b> — <span class="itip-gris">tu y es.</span>`;
@@ -691,8 +692,10 @@ function majOrbite(){
       if(_placementActif || !enEcart()) return;
       if(e.target.closest("[data-lieu]")) return;      // un objet : sa fiche s'ouvre
       const p = _coordEspace(svg, e); if(!p) return;
+      _orbSel = null;             // v1.88f : un toucher dans le vide oublie la planète choisie
       _viseeEsp.clic(p.x, p.y);   // v1.34e : au doigt, visée d'abord
     });
+    svg.addEventListener("pointerdown", e => { _orbPointeur = e.pointerType || "mouse"; });   // v1.88f
     _viseeEsp = viseeTactile(svg, {
       cout: (x, y) => { const k = (typeof coutVol === "function") ? coutVol({ x, y }) : null;
                         return k ? `−${k.energie} % én. · ${k.litres} L` : null; },
@@ -706,7 +709,7 @@ function majOrbite(){
      Chaque rendu de la carte le remet à son texte d'accueil. */
   const zi = document.querySelector("#orbite-info");
   if(zi){
-    _orbInfoFige = null;
+    _orbInfoFige = null; _orbSel = null;   // v1.88f
     zi.innerHTML = `Clique un point de la carte pour t'y rendre. <span class="itip-gris">Rentrée vers Silène : depuis le Perchoir uniquement.</span>`;
   }
   if(zi && !zi.dataset.branche){
@@ -740,6 +743,15 @@ function majOrbite(){
       if(_placementActif) return;                 // en placement, le clic sert à glisser
       const l = espaceLieu(g.dataset.lieu); if(!l) return;
       const z=document.querySelector("#orbite-info"); if(!z) return;
+      /* v1.88f — AU DOIGT (iPad, téléphone), comme sur Silène : le premier toucher sur
+         un objet montre son nom et le coût du vol ; le second, sur le même objet, y
+         emmène. À la souris, rien ne change (le survol montre déjà le nom). */
+      if(_orbPointeur === "touch" && enEcart() && !surLieuEspace(l) && !(l.verrou && !lieuOuvert(l)) && _orbSel !== l.id){
+        _orbSel = l.id; if(_viseeEsp) _viseeEsp.effacer();
+        z.innerHTML = `${_apercuVol(l)}<br><span class="itip-gris">Touche-le encore pour y aller.</span>`;
+        return;
+      }
+      _orbSel = null;
       /* v1.01 — LE DÉCOR SE VISITE. Avant, il répondait « rien qui mérite le
          carburant d'un détour » : on n'y allait jamais, et on n'y dépensait rien.
          Désormais on y vole comme vers un lieu (même coût, mêmes sondes) et on

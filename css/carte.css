@@ -141,7 +141,9 @@
    Le texte complet reste au survol (title) et dans le bandeau du hub. */
 .titre-carte{ min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* v1.34e — bouton « Partir » de la visée au doigt (La Braise, Le Suaire, Triptolème) */
-.visee-barre{ display:flex; justify-content:center; margin:8px 0 0; }
+.visee-barre{ display:flex; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0 0; }
+.visee-nom{ font-weight:700; color:var(--orange-hi,#ffb070); }   /* v1.88f : où l'on va, au premier toucher */
+.visee-nom[hidden]{ display:none; }
 .visee-barre[hidden]{ display:none; }
 
 

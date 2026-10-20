@@ -315,6 +315,38 @@
     r.barUI.cuveOuverte = !!v.querySelector("#cuve-tirer");
     sb.rpc = vRpc; }
 
+  // 9 undecies. v1.88f — au doigt : le nom du lieu au premier toucher (Ancolie,
+  // Triptolème), le départ au second ; les Bureaux au Perchoir.
+  { r.toucher = {};
+    // Ancolie : la barre de visée dit le lieu visé.
+    etat.secteur = "ancolie"; etat.surface = { x:1031, y:880, abord:false };
+    const mb = document.querySelector("#modale-braise"); if(mb) mb.classList.add("ouverte");
+    majCarteBraise();
+    _viseeSol.poser(391, 1250);
+    const barre = document.querySelector(".visee-barre");
+    r.toucher.ancolie = barre ? barre.querySelector(".visee-nom").textContent + " | " + barre.querySelector("button").textContent : "pas de barre";
+    _viseeSol.poser(700, 1100); r.toucher.ancolieVide = barre.querySelector(".visee-nom").hidden;
+    _viseeSol.effacer(); if(mb) mb.classList.remove("ouverte");
+    // Triptolème : premier toucher = nom et coût, second = départ.
+    const vVol = volVers; let vole = null; volVers = (l) => { vole = l.id; };
+    etat.secteur = "ecart"; etat.espace = { x:200, y:200 }; etat.vaisseau = etat.vaisseau || {};
+    const mo = document.querySelector("#modale-orbite"); if(mo) mo.classList.add("ouverte");
+    if(typeof majOrbite === "function") majOrbite();
+    const svgE = document.querySelector("#carte-orbite");
+    const lieuG = svgE ? [...svgE.querySelectorAll("[data-lieu]")].find(g => { const l = espaceLieu(g.dataset.lieu); return l && !(l.verrou && !lieuOuvert(l)) && !surLieuEspace(l); }) : null;
+    if(lieuG){
+      const touche = () => { lieuG.dispatchEvent(new MouseEvent("pointerdown", { bubbles:true })); _orbPointeur = "touch"; lieuG.dispatchEvent(new MouseEvent("click", { bubbles:true })); };
+      touche(); r.toucher.tripPremier = { parti:vole, info:(document.querySelector("#orbite-info")||{}).textContent || "" };
+      touche(); r.toucher.tripSecond = vole === lieuG.dataset.lieu;
+      vole = null; _orbPointeur = "mouse"; _orbSel = null; lieuG.dispatchEvent(new MouseEvent("click", { bubbles:true })); r.toucher.tripSouris = vole === lieuG.dataset.lieu;
+    } else r.toucher.trip = "carte de Triptolème introuvable";
+    volVers = vVol; if(mo) mo.classList.remove("ouverte");
+    // Le Perchoir : l'onglet Bureau n'est plus masqué d'office.
+    const vBase = window.surBase; window.surBase = () => true; etat._aRoleGouv = true;
+    majCentre(); const bb = document.querySelector('#hub-centre [data-centre="bureau"]');
+    r.toucher.bureauPerchoir = bb ? bb.style.display !== "none" : "pas de bouton";
+    window.surBase = vBase; etat.secteur = "silene"; }
+
   // 10. Récompenses (K35, K39) et gains des choix les plus forts : jamais un niveau entier.
   r.recompenses = IDS.map(id => { const k = queteData(id).recompense; return `${id}:${k.credits}₡/${k.xp}xp/${k.pa||0}pa`; }).join(" ");
   r.untry = ["tir","goupilles","reaction","ronde","crevasse"].every(t => DEFIS_UNTRY.has(t)) && !DEFIS_UNTRY.has("rangement");
