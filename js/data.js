@@ -195,6 +195,7 @@ const IMG_ITEM = {
   filaine:"images/items/filaine.png",   sylve:"images/items/sylve.png",
   sporelle:"images/items/sporelle.png", nectine:"images/items/nectine.png", ferragave:"images/items/ferragave.png",
   proteines:"images/items/proteines.png",
+  cuir:"images/items/cuir.png",   // v1.89c : l'image existait, elle n'était pas branchée (marché, sac)
   fab_ration_chaude: "images/items/ration_chaude.png",
   fab_lingot_de_cendrite:"images/items/lingot_cendrite.png",
   fab_lingot_de_voltane: "images/items/lingot_voltane.png",

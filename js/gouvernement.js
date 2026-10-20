@@ -571,12 +571,13 @@ async function majExpeditions(el){
   h+=_htmlExpeditionInfo(exp, enroles);
   h+=await _htmlProtoDef(exp);
   if(info.enResolution){
-    h+=`<div class="gouv-annonce" style="border-color:#ff5257;background:rgba(255,82,87,.08)">⚔️ <b>Ralliement ouvert — l'assaut se résout automatiquement.</b><br><span class="itip-gris">Participants confirmés : ${info.nbParticipants}. Confirme ta présence maintenant : le combat est résolu peu après l'heure annoncée.</span></div>`;
+    h+=`<div class="gouv-annonce" style="border-color:#ff5257;background:rgba(255,82,87,.08)">⚔️ <b>Ralliement ouvert — l'assaut se résout automatiquement.</b><br><span class="itip-gris">Le combat est résolu peu après l'heure annoncée. Tous les enrôlés y prennent part, où qu'ils soient.</span></div>`;   // v1.89 : K56
     if(info.moiEnrole && !info.moiParticipe) h+=`<div style="margin-top:8px"><button class="mini" id="exp-participer">Participer à l'assaut (−15% énergie)</button></div>`;
     else if(info.moiParticipe) h+=`<p class="itip-gris" style="margin-top:6px">✓ Tu participes à cet assaut.</p>`;
   } else {
-    h+=`<p class="itip-gris" style="margin-top:6px">Tu ne participeras que si tu es <b>dans ta faction</b> et as <b>≥15% d'énergie</b> au moment de la résolution.</p>`;
-    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire":"M'enrôler"}</button></div>`;
+    /* v1.89 — K56 : l'énergie se paie à l'enrôlement ; plus besoin d'être chez soi le jour venu. */
+    h+=`<p class="itip-gris" style="margin-top:6px">S'enrôler coûte <b>15 % d'énergie</b> (12 % avec le Fragment de l'Élan), payés <b>tout de suite</b> — rendus si tu te désinscris ou si le Stratège annule. Le jour venu, tu combats <b>où que tu sois</b>.</p>`;
+    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire (énergie rendue)":"M'enrôler (−15 % d'énergie)"}</button></div>`;
   }
   h+=_htmlObjectifsExplication();
   el.innerHTML=h;
@@ -585,8 +586,13 @@ async function majExpeditions(el){
 }
 async function _expEnroler(v){
   const { data:res, error } = await sb.rpc("enroler",{ p_enrole:v });
+  if(!error && res && !res.ok && res.err==="energie"){ journal(`Il te faut ${res.requis} % d'énergie pour t'enrôler (tu en as ${Math.floor(res.energie)} %).`,"alerte"); return; }
   if(error||!res||!res.ok){ journal("Action impossible.","alerte"); return; }
-  journal(v?"Tu es enrôlé pour l'expédition.":"Tu t'es désinscrit.","gain"); if(typeof majCentre==="function") majCentre();
+  // v1.89 — K56 : l'énergie part (ou revient) tout de suite ; le serveur donne le nouveau niveau.
+  if(typeof res.energie==="number"){ etat.energie = res.energie; if(typeof afficher==="function") afficher(); }
+  journal(v ? (res.deja ? "Tu es déjà enrôlé." : `Tu es enrôlé pour l'expédition (−${res.cout} % d'énergie).`)
+            : (res.rendu ? `Tu t'es désinscrit : ${res.rendu} % d'énergie te sont rendus.` : "Tu t'es désinscrit."), "gain");
+  if(typeof majCentre==="function") majCentre();
 }
 async function _rendreBureauStratege(el, fac){
   if(!el) return;
@@ -719,7 +725,7 @@ function _expRapportHtml(row){
     if(r.butin){
       const nbp = Math.max(1, r.nb_att||1);
       d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.butin} ₡</b> — ${r.part_coffre} au coffre, ${r.part_joueurs} partagés entre les <b>${r.nb_att} participant(s)</b>`
-        + `${(r.nb_enroles!=null && r.nb_enroles>r.nb_att)?` (sur ${r.nb_enroles} enrôlés : les absents ne touchent rien)`:""} : <b>${Math.floor(r.part_joueurs/nbp)} ₡ chacun</b>.</p>`;
+        + `${(r.nb_enroles!=null && r.nb_enroles>r.nb_att)?` (sur ${r.nb_enroles} enrôlés : les blessés graves et les prisonniers ne touchent rien)`:""} : <b>${Math.floor(r.part_joueurs/nbp)} ₡ chacun</b>.</p>`;
     }
     if(r.objets_touches||r.objets_detruits) d+=`<p class="itip-gris" style="font-size:12px">Défense adverse : ${r.objets_touches} objet(s) endommagé(s)${r.objets_detruits?`, <b>${r.objets_detruits} détruit(s)</b>`:""}.</p>`;
   }
@@ -917,7 +923,7 @@ async function _rendreBureauRegent(el, fac){
    6 h) et de espionnage.js (_espF1/_espF2) : à tenir à jour si ces règles changent. */
 function _legendeDefense(ouvert){
   return `<details class="leg-def"${ouvert?" open":""}><summary>ℹ️ Comprendre la défense : 🛡️ ⚔️ 👁️ ✦</summary><dl>
-    <dt>🛡️ Défense</dt><dd>C'est le <b>bouclier</b> de la faction : la somme des points de défense des objets mis en défense dans la réserve. Chaque point <b>ajoute 2,5 à la force que les assaillants doivent battre</b> — il ne sert qu'en défense, jamais quand c'est ta faction qui attaque. Il compte à plein avec <b>au moins 3 défenseurs présents</b> en ville, à moitié moins en dessous, et <b>pas du tout si personne n'est là</b> : un bouclier ne tient pas tout seul. +1 point si ta faction détient le Fragment de Rempart.</dd>
+    <dt>🛡️ Défense</dt><dd>C'est le <b>bouclier</b> de la faction : la somme des points de défense des objets mis en défense dans la réserve. Chaque point <b>ajoute 2,5 à la force que les assaillants doivent battre</b> — il ne sert qu'en défense, jamais quand c'est ta faction qui attaque. Il compte à plein avec <b>au moins 3 défenseurs présents</b> en ville, à moitié moins en dessous, et <b>pas du tout si personne n'est là</b> : un bouclier ne tient pas tout seul. +1 point si ta faction détient le Fragment de Rempart. <b>Être là pour défendre rapporte de la réputation de faction</b> : +1 si la défense cède, +2 si elle tient (2 au plus par jour).</dd>
     <dt>⚔️ Riposte</dt><dd>Quand un <b>Assaut</b> ennemi échoue, chaque point donne <b>5 %</b> de chance (50 % au plus) d'envoyer chaque assaillant <b>6 h en prison</b>. +1 avec le fragment de la Riposte.</dd>
     <dt>👁️ Détection</dt><dd>Complique les mini-jeux de l'<b>Ombre</b> adverse qui espionne ta faction : 0 à 2 facile, 3 à 5 moyen, 6 et plus difficile. Le contre-espionnage ajoute +3.</dd>
     <dt>✦ Signature</dt><dd>Objet propre à ta faction : les autres factions ne peuvent pas le fabriquer.</dd>

@@ -253,7 +253,9 @@ function _purgerJournal(){
   if(etat.journal.length>JOURNAL_MAX) etat.journal.length=JOURNAL_MAX;
 }
 function _catNom(id){ const c=JOURNAL_CATS.find(x=>x.id===id); return c?c.nom:id; }
-function _echapJ(t){ return (t||"").replace(/</g,"&lt;"); }
+/* v1.89c — les textes de quête portent parfois <i>…</i> ou <b>…</b> (un titre, une
+   citation) : on les rend, et seulement eux ; tout autre balise reste du texte. */
+function _echapJ(t){ return (t||"").replace(/</g,"&lt;").replace(/&lt;(\/?)(i|b)>/g, "<$1$2>"); }
 function _journalStyle(){
   if(_journalStyleMonte) return; _journalStyleMonte=true;
   const st=document.createElement("style");

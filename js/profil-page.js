@@ -54,7 +54,11 @@ function _ppStyle(){
        centrée, au lieu de disparaître. */
     /* v1.88g — la bête s'assoit au pied du portrait (en bas à droite, en
        surimpression) ; son nom est une ligne des infos. */
-    .pp-cadre{ position:relative; flex:0 1 200px; min-width:0; }
+    /* ⚠ v1.88h — LARGEUR EXPLICITE. Avec seulement « flex:0 1 200px; min-width:0 », le
+       cadre prenait la largeur de son contenu ; or le portrait (100 % du cadre) et la bête
+       (en position absolue) n'en ont pas : tout tombait à 0 px, avatar et bête invisibles
+       (retour de l'autrice). 200 px, réduits seulement si l'écran est plus étroit. */
+    .pp-cadre{ position:relative; flex:0 0 auto; width:200px; max-width:100%; }
     .pp-cadre .pp-portrait{ width:100%; }
     .pp-compagnon{ position:absolute; right:-10%; bottom:-4%; width:42%; aspect-ratio:1; object-fit:contain;
       pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(232,240,200,.18)); }

@@ -309,7 +309,7 @@ function vueMessages(recus, envoyes){
       <input id="msg-dest" placeholder="Destinataire (pseudo)" maxlength="24">
       <input id="msg-obj" placeholder="Objet" maxlength="60">
       <div class="mur-outils" id="msg-outils"></div>
-      <textarea id="msg-texte" placeholder="Ton message…" maxlength="1000" rows="6"></textarea>
+      <textarea id="msg-texte" placeholder="Ton message…" maxlength="4000" rows="8"></textarea>
       <button class="mini" id="msg-envoyer">Envoyer</button></div>`;
   }
   const liste = msgVue==="recus"?recus:envoyes;
@@ -401,7 +401,7 @@ async function envoyerMessage(){
   if(!r || !r.ok){
     const e = r && r.err;
     if(e==="boite_pleine")      journal(`La boîte de ${dest} est pleine (${r.plafond} messages) — il doit faire de la place avant que tu puisses lui écrire.`,"alerte");
-    else if(e==="trop_long")    journal("Message trop long.","alerte");
+    else if(e==="trop_long")    journal(`Message trop long (${(r&&r.max)||4000} caractères au plus, objet 120).`,"alerte");   // v1.89d : 4 000
     else if(e==="vide")         journal("Le message est vide.","alerte");
     else if(e==="destinataire") journal("Destinataire introuvable.","alerte");
     else journal("Envoi refusé.","alerte");
@@ -561,7 +561,7 @@ async function _peuplerPopulation(z){
   if(!_popCache || _popCache.faction !== _popFaction){
     if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ zl.innerHTML = `<p class="vide">Serveur indisponible.</p>`; return; }
     const { data, error } = await sb.from("profils_publics")
-      .select("nom,derniere_activite")          // annuaire : le pseudo suffit, le reste est sur la fiche
+      .select("nom")          // annuaire : le pseudo suffit (v1.89c : plus de présence affichée ici)
       .eq("faction", _popFaction).order("nom", { ascending:true });
     if(error){ console.warn("[population]", error.message); zl.innerHTML = `<p class="vide">Lecture impossible.</p>`; return; }
     _popCache = { faction:_popFaction, liste:(data||[]) };
@@ -576,14 +576,13 @@ async function _peuplerPopulation(z){
     zl.innerHTML = `<p class="vide">${filtre ? "Aucun pseudo ne correspond." : "Personne dans cette faction."}</p>`;
     return;
   }
-  const enL = vus.filter(p => (typeof _presenceEnLigne==="function") && _presenceEnLigne(p.derniere_activite)).length;
-  let h = `<p class="itip-gris" style="margin:0 0 8px"><b>${tous.length}</b> membre${tous.length>1?"s":""}${fac?` — ${echapper(fac.nom)}`:""}${filtre?` (sur ${_popCache.liste.length})`:""}${enL?` · ${enL} en ligne`:""}</p><div class="pop-grille">`;
+  /* v1.89c — demande de l'autrice : la Population ne dit plus qui est en ligne. */
+  let h = `<p class="itip-gris" style="margin:0 0 8px"><b>${tous.length}</b> membre${tous.length>1?"s":""}${fac?` — ${echapper(fac.nom)}`:""}${filtre?` (sur ${_popCache.liste.length})`:""}</p><div class="pop-grille">`;
   /* Grille auto-adaptative : autant de colonnes que la largeur en autorise,
      une seule sur téléphone. Une liste verticale devenait vite interminable. */
   vus.forEach(p => {
-    const enLigne = (typeof _presenceEnLigne==="function") && _presenceEnLigne(p.derniere_activite);
     h += `<button class="pop-item" data-profil="${echapper(p.nom)}" title="${echapper(p.nom)}">
-        <span class="comm-dot ${enLigne?"on":"off"}"></span><span class="pop-nom">${echapper(p.nom)}</span>
+        <span class="pop-nom">${echapper(p.nom)}</span>
       </button>`;
   });
   h += `</div>`;

@@ -325,7 +325,7 @@ function ouvrirVente(){
   const m = document.querySelector("#marche-vente");
   const vendables = TOUS_ITEMS.filter(a=>(etat.sac[a.id]||0)>0 && PRIX_ITEM[a.id]);
   let html = `<div class="picker-cadre"><div class="picker-tete"><b>Mettre en vente — ${FACTIONS.find(f=>f.id===faction).nom}</b><button class="mini" data-fermer="1">Fermer</button></div>`;
-  html += `<p class="vide" style="margin:0 0 8px"><b>Taxe : ${(typeof aptPris==="function" && aptPris("no2")) ? "5 % du prix total (Marchand)" : "10 % du prix total"}</b>, prélevée à la mise en vente (non remboursée). L'objet quitte ton sac.</p>`;
+  html += `<p class="vide" style="margin:0 0 8px"><b>Taxe : ${(typeof aptPris==="function" && aptPris("no2")) ? "5 % du prix total (Marchand)" : "10 % du prix total"}</b>, prélevée à la mise en vente (non remboursée). L'objet quitte ton sac.<br>Chaque tranche de <b>2 500 ₡ vendus</b> à d'autres joueurs, sur n'importe quel marché, te rapporte <b>+1 réputation de faction</b>.</p>`;   // v1.89b : K56
   if(!vendables.length) html += `<p class="vide">Aucun objet vendable dans ton sac.</p>`;
   for(const it of vendables){ const pr=PRIX_ITEM[it.id]; const dispo=etat.sac[it.id];
     html += `<div class="vente-ligne" data-item="${it.id}"><span class="picker-ic">${iconeItem(it.id)}</span>`
