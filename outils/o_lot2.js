@@ -75,6 +75,13 @@
   M = QUETES_JEUX.goupilles._partie; M.etat.pos = 0.5; M.coup(); M.etat.pos = 0.02; M.coup(); r.goupillesUneFelure = ko === 0 && M.etat.k === 0;
   M.etat.pos = 0.02; M.coup(); r.goupillesDeuxFelures = ko === 1;
   _seqFin();
+  // v1.89f — le coup part à l'APPUI (pointerdown), pas au clic ; un clic seul ne frappe pas.
+  ok = 0; ko = 0; z.innerHTML = _defiHTML(dG); _defiWire(z, dG); z.querySelector("#qj-goup-go").click();
+  M = QUETES_JEUX.goupilles._partie;
+  M.etat.pos = 0.5; z.querySelector("[data-gp-coup]").dispatchEvent(new MouseEvent("pointerdown", { bubbles:true, cancelable:true }));
+  r.goupillesAppui = M.etat.k === 1;
+  M.etat.pos = 0.5; z.querySelector("[data-gp-coup]").click(); r.goupillesClicSeulSansEffet = M.etat.k === 1;
+  M.arreter(); _seqFin();
 
   // 6. La réaction en chaîne (Q22) : niveaux tirés, toujours solubles, jamais à n − 1 ; on gagne avec la solution.
   const gen = []; const t0 = Date.now();

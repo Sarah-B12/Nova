@@ -48,11 +48,11 @@
   // 3. Le casse : goupilles (crocheteur).
   await voir({ phase:"casse", cible:fac, meneur:true, mon_poste:"crocheteur", postes_tenus:{}, reperage:rep, casse:{ jour:"2026-12-21", faits:{} } });
   r.goupilles = txt().includes("Goupille 1 sur 5");
-  for(let k = 0; k < 5; k++){ _goup.pos = 0.5; corps().querySelector("[data-gp-bloquer]").click(); }
+  for(let k = 0; k < 5; k++){ _goup.pos = 0.5; corps().querySelector("[data-gp-bloquer]").dispatchEvent(new MouseEvent("pointerdown", { bubbles:true, cancelable:true })); }
   await new Promise(x => setTimeout(x, 80));
   r.appelGoupilles = appels.some(a => a.startsWith("casse_poste"));
   await voir({ phase:"casse", cible:fac, meneur:true, mon_poste:"crocheteur", postes_tenus:{}, reperage:rep, casse:{ jour:"2026-12-21", faits:{} } });
-  _goup.pos = 0.02; corps().querySelector("[data-gp-bloquer]").click();
+  _goup.pos = 0.02; corps().querySelector("[data-gp-bloquer]").dispatchEvent(new MouseEvent("pointerdown", { bubbles:true, cancelable:true }));
   r.goupilleRatee = _goup.k === 0;
   // Brouillage (guetteur) : rendu.
   await voir({ phase:"casse", cible:fac, meneur:false, mon_poste:"guetteur", postes_tenus:{}, reperage:rep, casse:{ jour:"2026-12-21", faits:{ crocheteur:true } } });

@@ -895,6 +895,12 @@ function _mRondeBrancher(z){
 /* ---------- « Les goupilles » (H64) : 5 goupilles, zone de 30 % à 15 % ---------- */
 let _goup = { k:0, pos:0, sens:1, raf:null, actif:false };
 function _goupZone(k){ const w = 0.30 - k * 0.0375; return [0.5 - w / 2, 0.5 + w / 2]; }
+function _goupAvancer(t){   // v1.89f : avance le curseur jusqu'à l'instant t (image ou appui)
+  const dt = Math.min(0.1, Math.max(0, (t - (_goup.der || t)) / 1000)); _goup.der = t;
+  _goup.pos += _goup.sens * dt * (0.55 + _goup.k * 0.18);
+  if(_goup.pos >= 1){ _goup.pos = 2 - _goup.pos; _goup.sens = -1; } if(_goup.pos <= 0){ _goup.pos = -_goup.pos; _goup.sens = 1; }
+  _goup.pos = Math.max(0, Math.min(1, _goup.pos));
+}
 function _mGoupillesHtml(){
   const [a, b] = _goupZone(_goup.k);
   return `<p style="margin:6px 0"><b>Touche quand le curseur passe dans le vert. Goupille ${_goup.k + 1} sur 5.</b></p>
@@ -906,21 +912,27 @@ function _mGoupillesBrancher(z){
   const id = +zone.dataset.miMission;
   if(!_goup.actif){
     _goup.actif = true;
-    let der = performance.now();
+    _goup.der = performance.now();
     const pas = t => {
       const zz = document.querySelector("#mi-goupilles"); if(!zz){ _goup.actif = false; return; }
-      const dt = (t - der) / 1000; der = t;
-      _goup.pos += _goup.sens * dt * (0.55 + _goup.k * 0.18);
-      if(_goup.pos >= 1){ _goup.pos = 1; _goup.sens = -1; } if(_goup.pos <= 0){ _goup.pos = 0; _goup.sens = 1; }
+      _goupAvancer(t);
       const c = zz.querySelector("#mi-gp-cur"); if(c) c.style.left = (_goup.pos * 100) + "%";
       _goup.raf = requestAnimationFrame(pas);
     };
     _goup.raf = requestAnimationFrame(pas);
   }
+  /* v1.89f — même correctif que les goupilles des quêtes (quetes-jeux.js) : le coup part
+     à l'APPUI (pas au relâchement), à la position de cet instant, avec la largeur du
+     curseur en tolérance. */
   const b = zone.querySelector("[data-gp-bloquer]");
-  if(b) b.addEventListener("click", () => {
+  if(b){ b.style.touchAction = "manipulation";
+    b.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); b.dispatchEvent(new Event("pointerdown")); } }); }
+  if(b) b.addEventListener("pointerdown", (ev) => {
+    if(ev && ev.preventDefault) ev.preventDefault();
+    _goupAvancer(performance.now());
     const [a, c] = _goupZone(_goup.k);
-    if(_goup.pos >= a && _goup.pos <= c){
+    const tol = (typeof GOUP_TOL === "number") ? GOUP_TOL : 0.012;
+    if(_goup.pos >= a - tol && _goup.pos <= c + tol){
       _goup.k++;
       if(_goup.k >= 5){
         cancelAnimationFrame(_goup.raf); _goup = { k:0, pos:0, sens:1, raf:null, actif:false };

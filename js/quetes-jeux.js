@@ -362,21 +362,42 @@ QUETES_JEUX.tir = {
    rétrécit et le curseur accélère à chaque goupille. Le moteur est partagé :
    `goupillesMoteur(zone, opts)` sert aussi au gisement (selenite.js). */
 function _goupZoneQ(k, nb){ const w = 0.30 - k * (0.18 / Math.max(1, nb - 1)); return [0.5 - w / 2, 0.5 + w / 2]; }
+/* ⚠ v1.89f — retour de l'autrice (Q23 ét. 2) : « un décalage entre le clic et l'image ».
+   Trois causes, trois remèdes :
+   1. Le coup était lu au CLIC, c.-à-d. au RELÂCHEMENT (~100 ms après l'appui, plus au
+      doigt) : aux dernières goupilles, le curseur ne reste qu'~90 ms dans le vert. Le
+      coup part désormais à l'APPUI (`pointerdown` ; Entrée et Espace au clavier).
+   2. La position testée était celle de la dernière image : on la ramène à l'instant
+      exact de l'appui (`avancer(performance.now())`).
+   3. Le curseur fait 4 px de large : on accepte s'il TOUCHE le vert (tolérance GOUP_TOL).
+   Vaut pour Q23 et pour le gisement de Sélénite (même moteur). */
+const GOUP_TOL = 0.012;
 function goupillesMoteur(zone, o){
   const nb = o.nb || 5;
   const G = { k:0, pos:0, sens:1, actif:true, raf:null };
+  let der = performance.now();
+  const vitesse = () => (o.vitesse || 0.55) + G.k * (o.accel || 0.16);
+  const avancer = t => {
+    const dt = Math.min(0.1, Math.max(0, (t - der) / 1000)); der = t;
+    G.pos += G.sens * dt * vitesse();
+    if(G.pos >= 1){ G.pos = 2 - G.pos; G.sens = -1; } if(G.pos <= 0){ G.pos = -G.pos; G.sens = 1; }
+    G.pos = Math.max(0, Math.min(1, G.pos));
+  };
   const dessiner = () => {
     const [a, b] = _goupZoneQ(G.k, nb);
     zone.innerHTML = `<p style="margin:6px 0"><b>${o.libelle || "Goupille"} ${G.k + 1} sur ${nb}.</b> ${o.aide || "Bloque quand le curseur passe dans le vert."}</p>
       <div class="mi-gp"><div class="mi-gp-zone" style="left:${a * 100}%;width:${(b - a) * 100}%"></div><div class="mi-gp-cur" data-gp-cur style="left:${G.pos * 100}%"></div></div>
-      <div class="mi-btns"><button class="mini" data-gp-coup>${o.bouton || "Bloquer"}</button></div>`;
-    zone.querySelector("[data-gp-coup]").addEventListener("click", coup);
+      <div class="mi-btns"><button class="mini" data-gp-coup style="touch-action:manipulation">${o.bouton || "Bloquer"}</button></div>`;
+    const bt = zone.querySelector("[data-gp-coup]");
+    bt.addEventListener("pointerdown", e => { e.preventDefault(); coup(); });
+    bt.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); coup(); } });
   };
   const arreter = () => { G.actif = false; if(G.raf) cancelAnimationFrame(G.raf); };
   const coup = () => {
     if(!G.actif) return;
+    avancer(performance.now());          // la position à l'instant de l'appui, pas à la dernière image
     const [a, b] = _goupZoneQ(G.k, nb);
-    if(G.pos >= a && G.pos <= b){
+    if(G.pos >= a - GOUP_TOL && G.pos <= b + GOUP_TOL){
       G.k++;
       if(G.k >= nb){ arreter(); o.gagne && o.gagne(); return; }
       dessiner();
@@ -385,13 +406,10 @@ function goupillesMoteur(zone, o){
       if(encore){ G.k = 0; dessiner(); } else arreter();
     }
   };
-  let der = performance.now();
   const pas = t => {
     if(!G.actif) return;
     if(!document.body.contains(zone)){ G.actif = false; o.quitte && o.quitte(); return; }
-    const dt = Math.min(0.1, (t - der) / 1000); der = t;
-    G.pos += G.sens * dt * ((o.vitesse || 0.55) + G.k * (o.accel || 0.16));
-    if(G.pos >= 1){ G.pos = 1; G.sens = -1; } if(G.pos <= 0){ G.pos = 0; G.sens = 1; }
+    avancer(t);
     const c = zone.querySelector("[data-gp-cur]"); if(c) c.style.left = (G.pos * 100) + "%";
     G.raf = requestAnimationFrame(pas);
   };
