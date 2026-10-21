@@ -333,9 +333,10 @@ function majParametres(){
     <div class="reglage"><div><b>Apparence</b><p>${appP}</p></div>${appBtn}</div>
     <div class="reglage"><div><b>E-mail d'inscription</b><p>Rattaché à ton compte (serveur à venir).</p></div><span class="param-inline"><input id="param-email" type="email" placeholder="ton@email" value="${etat.email||""}"><button id="param-email-btn">Enregistrer</button></span></div>
     <div class="reglage"><div><b>Mot de passe</b><p>${mdpP}</p></div>${mdpCtrl}</div>
-    ${mdpForm}`;
+    ${mdpForm}${(typeof estAdmin==="function" && estAdmin()) ? `<div class="reglage"><div><b>Console d'administration</b><p>Sur ordinateur : Ctrl + Maj + D. Ici, d'un toucher.</p></div><button id="param-dev">Ouvrir</button></div>` : ""}`;   // v1.90 : la console au doigt (admins et devs)
 
   const bp=z.querySelector("#param-pause"); if(bp) bp.addEventListener("click", basculerPause);
+  const bd=z.querySelector("#param-dev"); if(bd) bd.addEventListener("click", ()=>{ if(typeof ouvrirDev==="function") ouvrirDev(); });   // v1.90
   const bf=z.querySelector("#param-faction-btn"); if(bf) bf.addEventListener("click", ()=>{ const s=z.querySelector("#param-faction-sel"); if(s) changerFaction(s.value); });
   const be=z.querySelector("#param-email-btn"); if(be) be.addEventListener("click", sauverEmail);
   const ba=z.querySelector("#param-apparence"); if(ba) ba.addEventListener("click", modifierApparence);

@@ -58,12 +58,20 @@ function _selDescription(p){
   return "À peine sortie. Un trait pâle dans la glace bleue, qu'on devine plus qu'on ne le voit.";
 }
 
+/* v1.90 — UNE IMAGE PAR STADE (demande de l'autrice) : quatre stades de pousse, un
+   par jour (0-25 %, 25-50 %, 50-75 %, 75-100 %), puis l'aiguille MÛRE qui brille.
+   images/lieux/selenite_1.png … selenite_4.png, selenite_mure.png ; une image absente
+   retombe sur images/lieux/selenite.png, puis disparaît. */
+function _selImage(p){
+  const stade = p >= 1 ? "mure" : String(Math.min(4, Math.floor(p * 4) + 1));
+  return `images/lieux/selenite_${stade}.png`;
+}
 function majSelenite(z){
   if(!z) return;
   if(!surSelenite()){ z.innerHTML = `<p class="vide">Tu n'es plus au lac gelé.</p>`; if(typeof majHub === "function") majHub(); return; }
   const S = seleniteEtat(), p = selenitePousse(), mure = p >= 1, J = _selJour();
   let h = `<h3 style="margin:2px 0">Le lac gelé</h3>
-    <div class="lieu-banniere"><img src="images/lieux/selenite.png" alt="" onerror="this.parentElement.remove()"></div>
+    <div class="lieu-banniere"><img src="${_selImage(p)}" alt="" onerror="if(!this.dataset.r){this.dataset.r='1';this.src='images/lieux/selenite.png';}else{this.parentElement.remove();}"></div>
     <p class="vide" style="margin:0 0 10px">Au bord du lac, dans la glace bleue, ton aiguille de Sélénite. Elle pousse. Ça se voit à peine, et ça se voit quand même.</p>`;
   if(S.gelLe && S.gelLe > (S.gelVu || 0)){
     h += `<div class="quete-avert">Le gel est passé par là. Ton aiguille était mûre, et personne n'est venu : elle s'est fendue au milieu. Le bout mort est tombé dans la neige. Le reste repousse.</div>`;

@@ -248,8 +248,12 @@
     const zb = document.querySelector("#bar-vue"); await majBar(zb); await att(30);
     r.bar.titre = (zb.querySelector("h3") || {}).textContent;
     r.bar.boissons = [...zb.querySelectorAll("[data-boire]")].map(b => b.dataset.boire);
+    // v1.90b — K57 : la carte du jour ajoute les boissons de faction qu'elle nomme.
+    { const v0 = sb.rpc; sb.rpc = async (n, a) => n === "bar_menu_station" ? { data:["terreau"], error:null } : v0(n, a);
+      await majBar(zb); await att(30); r.bar.carteDuJour = [...zb.querySelectorAll("[data-boire]")].map(b => b.dataset.boire);
+      r.bar.mention = /carte du jour/.test(zb.textContent); sb.rpc = v0; await majBar(zb); await att(30); }
     zb.querySelector('[data-boire="eau"]').click(); await att(60);
-    r.bar.impute = journaux.some(t => /IMPUTÉE/.test(t));
+    r.bar.impute = journaux.some(t => /Imputé au matricule 42-U1F/.test(t));   // v1.88c : une seule ligne
     etat.surface = { x:1780, y:600, abord:false }; r.bar.horsStation = !barStation();
     // v1.88b : la ligne de la fiche est stylée même sans passer par le bar, et s'ouvre au toucher.
     document.querySelector("#bar-style") && document.querySelector("#bar-style").remove();

@@ -1014,15 +1014,11 @@ function _avertCombatQuete(q){
   const combats = (q && q.etapes || []).map(e => e && e.defi).filter(d => d && d.type === "combat");
   if(!combats.length) return "";
   const d = combats.reduce((a, b) => ((b.puissance||30) > (a.puissance||30) ? b : a));
+  /* v1.90 — retour de l'autrice : « trop d'info ». Un mot et un verdict ; les chiffres
+     restent à l'étape du combat (_htmlCombat), au moment de s'engager. */
   const p = d.puissance || 30, seuil = Math.ceil(p * 0.7), st = _combatStats();
-  if(st.val >= p) return "";
-  const noms = { force:"Force", agilite:"Agilité", intelligence:"Intelligence" };
-  const dur = st.val < seuil;
-  return `<div class="quete-avert${dur ? " dur" : ""}">⚠ Cette quête comporte un combat (<b>puissance ${p}</b>).
-    Ton meilleur atout, <b>${noms[st.best]} ${st.val}</b>, ${dur
-      ? `ne suffit pas encore : il te faudrait au moins <b>${seuil}</b> pour l'emporter, <b>${p}</b> pour une victoire nette. À tes risques et périls.`
-      : `te fera gagner, mais tu y laisseras de la santé (<b>${p}</b> pour une victoire nette).`}
-    <span class="itip-gris">Équipement et boissons comptent.</span></div>`;
+  const v = st.val >= p ? { mot:"facile", cls:"" } : st.val >= seuil ? { mot:"faisable", cls:"" } : { mot:"difficile", cls:" dur" };
+  return `<div class="quete-avert${v.cls}">⚠ Attention : cette quête comporte un combat. Pour toi, il s'annonce <b>${v.mot}</b>.</div>`;
 }
 function _htmlCombat(d){
   const st=_combatStats(); const p=d.puissance||30;

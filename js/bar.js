@@ -159,8 +159,8 @@ function _barStyleJeux(){   // v1.88d : dés, cuve, bonneteau
     .bon-bille{ position:absolute; bottom:3px; left:23px; width:18px; height:18px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fff,#ffd28a 40%,#c7782a); opacity:0; z-index:1; }
     .bon-gob.a-bille .bon-bille{ opacity:1; }
     .bon-gob.leve .bon-cloche{ transform:translateY(-42px); }
-    .bon-gob.devant{ transform:translateY(10px) scale(1.06); z-index:3; }
-    .bon-gob.derriere{ transform:translateY(-10px) scale(.94); z-index:1; }
+    .bon-gob.devant{ transform:translateY(5px) scale(1.03); z-index:3; }   /* v1.90 : indices de profondeur plus discrets */
+    .bon-gob.derriere{ transform:translateY(-5px) scale(.97); z-index:1; }
     .bon-table.choix .bon-gob{ cursor:pointer; }
     .bon-table.choix .bon-gob:hover .bon-cloche{ filter:brightness(1.18); }
     .bon-gob.designe .bon-cloche{ box-shadow:0 0 0 3px var(--orange,#ff8a3d), 0 6px 10px rgba(0,0,0,.35); }
@@ -243,7 +243,11 @@ async function majBar(el){
   }
   await boissonCharger();
 
-  const dispo=(_barCatalogue||[]).filter(b=>station ? !b.faction : (!b.faction || b.faction===fid));   // v1.88 : à la station, les communes seules
+  /* v1.90b — K57 : à la station, les 3 communes + la CARTE DU JOUR (2 boissons de
+     faction, les mêmes pour tous, qui changent chaque jour — bar_menu_station, v212). */
+  let carte = [];
+  if(station){ try{ const { data } = await sb.rpc("bar_menu_station"); carte = Array.isArray(data) ? data : []; }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#carte"); } }
+  const dispo=(_barCatalogue||[]).filter(b=>station ? (!b.faction || carte.includes(b.id)) : (!b.faction || b.faction===fid));
   if(!dispo.length){
     el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Aucune boisson au comptoir. Si cela persiste, le catalogue du serveur est vide.</p>`;
     return;
@@ -253,7 +257,7 @@ async function majBar(el){
   h+=`<img class="bar-banniere" src="images/bar/bar.png" alt="" onerror="this.remove()">`;   // v1.48 : UN seul bar (prochaine carte), une seule image
   h+=_barOnglets();
   h+= station
-    ? `<p class="vide">Dans un coin de la grande salle, un comptoir d'AREPO, propre comme au premier jour. Un automate le tient : il ne te regarde pas, mais il sert, parce qu'Asulf t'a inscrit parmi les ayants droit. Chaque verre est imputé à son matricule. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`
+    ? `<p class="vide">Dans un coin de la grande salle, un comptoir d'AREPO, propre comme au premier jour. Un automate le tient : il ne te regarde pas, mais il sert, parce qu'Asulf t'a inscrit parmi les ayants droit. Chaque verre est imputé à son matricule. Trois bouteilles ne bougent jamais ; deux autres changent chaque jour, et Asulf jure qu'il ne sait pas d'où elles arrivent. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`
     : `<p class="vide">Le tenancier ne demande pas ton nom. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`;
 
   if(reste>0 && etat.boisson){
@@ -267,7 +271,7 @@ async function majBar(el){
     h+=`<div class="bar-carte${exclu?" exclu":""}">
       <img class="bar-img" src="images/boissons/${b.id}.png" alt="" onerror="this.outerHTML='<span class=\\'bar-img-vide\\'>▨</span>'">
       <span class="bar-txt">
-        <span class="bar-nom">${echapper(b.nom)}${exclu?` <span class="itip-gris">· maison</span>`:""}</span>
+        <span class="bar-nom">${echapper(b.nom)}${station && b.faction ? ` <span class="itip-gris">· carte du jour</span>` : (exclu?` <span class="itip-gris">· maison</span>`:"")}</span>
         <span class="bar-desc">${echapper(b.texte||"")}</span>
       </span>
       <span class="bar-prix">${b.prix} ₡</span>
@@ -304,6 +308,24 @@ const BAR_JEUX = [
 function _barBlocTexte(code){
   return { ok:"", jeu_24h:"Déjà joué — reviens dans 24 h.",
            deux_par_jour:"Deux jeux par jour, pas plus." }[code] || code;
+}
+/* v1.90 — retour de l'autrice : après une partie, le bouton « S'asseoir » restait actif
+   (la liste n'était lue qu'en ouvrant l'onglet) ; on rouvrait la table, et c'est au
+   moment de miser que le serveur disait « déjà joué ». On relit l'état des tables après
+   chaque partie et on met les boutons et les mentions à jour, sans toucher à la table. */
+async function _barRafraichirTables(){
+  const el = _barEl || document.querySelector("#bar-vue"); if(!el) return;
+  try{ const { data } = await sb.rpc("bar_jeux_etat"); if(data && data.ok) _barJeux = data; }catch(e){ return; }
+  const jx = (_barJeux && _barJeux.jeux) || {};
+  el.querySelectorAll("[data-jeu]").forEach(b => {
+    const j = BAR_JEUX.find(x => x.id === b.dataset.jeu); if(!j) return;
+    const bloc = jx[j.id] || "ok", ko = !j.dispo || bloc !== "ok";
+    b.disabled = ko;
+    const g = b.closest(".bar-carte") && b.closest(".bar-carte").querySelector(".bar-txt .itip-gris");
+    if(g) g.textContent = j.gains + ((j.dispo && bloc !== "ok") ? ` — ${_barBlocTexte(bloc)}` : "");
+  });
+  const p = el.querySelector(".bar-liste") && el.querySelector(".bar-liste").previousElementSibling;
+  if(p && _barJeux && /Déjà joué aujourd'hui/.test(p.textContent)) p.innerHTML = p.innerHTML.replace(/Déjà joué aujourd'hui : \d+\/2/, `Déjà joué aujourd'hui : ${_barJeux.joues_aujourdhui}/2`);
 }
 async function majBarJeux(el, fid){
   el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)} — tables de jeu</h3>${_barOnglets()}<p class="vide">Chargement…</p>`;
@@ -401,6 +423,7 @@ function _tableDes(z){
     res.innerHTML = `Dés : <b>${d.d1}</b> et <b>${d.d2}</b> — total <b>${d.total}</b>. `
       + (d.gagne ? `<span style="color:#8bd450">Gagné : +${d.net} ₡.</span>` : `<span style="color:#ff6b6b">Perdu : −${d.mise} ₡.</span>`);
     // v1.88d — retour de l'autrice : la ligne dit le pari, les dés, et l'issue.
+    _barRafraichirTables();   // v1.90
     journal(`Dés du fond : pari « ${DES_PARIS[d.pari]||d.pari} » ; les dés tombent sur ${d.d1} et ${d.d2} (${d.total}). ${d.gagne?`Gagné : +${d.net} ₡.`:`Perdu : −${d.mise} ₡.`}`, d.gagne?"gain":"alerte", "eco");
     if(typeof afficher==="function") afficher();
   });
@@ -470,6 +493,7 @@ function _cuveCadre(z, st){
     if(error||!d||!d.ok){ journal("Tirage impossible.","alerte"); _tableCuve(z); return; }
     if(d.marque){
       if(typeof rechargerCredits==="function") rechargerCredits();
+      _barRafraichirTables();   // v1.90
       journal(`La cuve (mise ${st.mise} ₡) : le jeton marqué sort au ${d.tours}ᵉ tirage. Perdu : −${d.perdu} ₡, et 10 % d'énergie avec.`,"alerte","eco");
       z.innerHTML=`<div class="bar-carte" style="flex-direction:column;gap:8px">
         <b>La cuve</b><span style="color:#ff6b6b">Jeton marqué au ${d.tours}ᵉ tirage. ${_barQui()} ramasse tout : −${d.perdu} ₡, et tu sens la soirée dans tes jambes (−10 % d'énergie).</span></div>`;
@@ -485,6 +509,7 @@ function _cuveCadre(z, st){
     let d,error; try{ ({data:d,error}=await sb.rpc("cuve_encaisser")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#cuve2"); }
     if(error||!d||!d.ok){ journal("Impossible de ramasser.","alerte"); _tableCuve(z); return; }
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
+    _barRafraichirTables();   // v1.90
     journal(`La cuve (mise ${st.mise} ₡) : tu ramasses après ${d.tours} tirage${d.tours>1?"s":""} et empoches ${d.gain} ₡. ${d.net>=0?`Gagné : +${d.net} ₡.`:`Perdu : ${d.net} ₡.`}`, d.net>=0?"gain":"alerte","eco");
     z.innerHTML=`<div class="bar-carte" style="flex-direction:column;gap:8px"><b>La cuve</b>
       <span style="color:#8bd450">Tu ramasses ${d.gain} ₡ après ${d.tours} tirage${d.tours>1?"s":""} (net ${d.net>=0?"+":""}${d.net} ₡).</span></div>`;
@@ -516,6 +541,7 @@ async function _tableCuve(z){
                 : er==="partie_en_cours" ? "Une partie est déjà ouverte." : `Refusé (${er||"erreur"}).`;
       z.querySelector("#cuve-res").textContent=msg; journal(msg,"alerte"); b.disabled=false; return;
     }
+    _barRafraichirTables();   // v1.90 : la partie compte dès la mise
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
     if(typeof afficher==="function") afficher();
     _cuveCadre(z, { mise:d.mise, tours:0, restants:6, gain_si_arret:0, prochain_gain:d.prochain_gain, risque_suivant:17 });
@@ -560,6 +586,7 @@ async function _tableBonneteau(z){
     if(error||!d||!d.ok){ const msg=_bonErreur(d); z.querySelector("#bon-res").textContent=msg; journal(msg,"alerte"); b.disabled=false; return; }
     if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
     if(typeof afficher==="function") afficher();
+    _barRafraichirTables();   // v1.90 : la partie compte dès la mise
     _bonPlateau(z, d);
   });
 }
@@ -578,20 +605,35 @@ async function _bonPlateau(z, d){
   if(!reprise){
     gobs[d.depart].classList.add("a-bille");
     await _bonDort(350); if(!enJeu()) return;
-    gobs[d.depart].classList.add("leve"); await _bonDort(1200); if(!enJeu()) return;
-    gobs[d.depart].classList.remove("leve"); await _bonDort(450);
+    /* v1.90 — retour de l'autrice : « beaucoup trop facile ». Bille montrée moins
+       longtemps (900 ms), échanges plus rapides (380 → 150 ms, 14 à 17 côté serveur),
+       sans pause entre deux, et des FEINTES : deux gobelets s'élancent l'un vers
+       l'autre puis reviennent — elles ne changent rien à la place de la bille. */
+    gobs[d.depart].classList.add("leve"); await _bonDort(900); if(!enJeu()) return;
+    gobs[d.depart].classList.remove("leve"); await _bonDort(380);
     const n=d.melanges.length;
+    const feinte = async (dur) => {
+      const a = 1 + Math.floor(Math.random()*3), b = 1 + ((a + Math.floor(Math.random()*2)) % 3), ga=place[a], gb=place[b];
+      const mi = (BON_X[a] + BON_X[b]) / 2, va = (mi + BON_X[a]) / 2, vb = (mi + BON_X[b]) / 2;
+      [ga,gb].forEach(g=>{ g.style.transition=`left ${dur}ms ease-in-out, transform ${dur}ms ease-in-out`; });
+      ga.classList.add("devant"); gb.classList.add("derriere");
+      ga.style.left=`calc(${va}% - 32px)`; gb.style.left=`calc(${vb}% - 32px)`;
+      await _bonDort(dur);
+      ga.style.left=`calc(${BON_X[a]}% - 32px)`; gb.style.left=`calc(${BON_X[b]}% - 32px)`;
+      await _bonDort(dur);
+      ga.classList.remove("devant"); gb.classList.remove("derriere");
+    };
     for(let i=0;i<n;i++){
       if(!enJeu()) return;
+      const dur=Math.round(380 - (380-150)*(i/(Math.max(1,n-1))));   // de plus en plus vite
+      if(i > 1 && Math.random() < 0.3){ await feinte(Math.round(dur*0.7)); if(!enJeu()) return; }
       const [a,b]=d.melanges[i], ga=place[a], gb=place[b];
-      const dur=Math.round(470 - (470-210)*(i/(Math.max(1,n-1))));   // de plus en plus vite
       [ga,gb].forEach(g=>{ g.style.transition=`left ${dur}ms ease-in-out, transform ${dur}ms ease-in-out`; });
       ga.classList.add("devant"); gb.classList.add("derriere");
       ga.style.left=`calc(${BON_X[b]}% - 32px)`; gb.style.left=`calc(${BON_X[a]}% - 32px)`;
       place[a]=gb; place[b]=ga;
       await _bonDort(dur);
       ga.classList.remove("devant"); gb.classList.remove("derriere");
-      await _bonDort(40);
     }
     res.textContent="Où est la bille ?";
   }
@@ -608,6 +650,7 @@ async function _bonPlateau(z, d){
     Object.values(place).forEach(x=>x.classList.add("leve"));
     res.innerHTML = r.gagne ? `<span style="color:#8bd450">La bille est là. Gagné : +${r.net} ₡.</span>`
                             : `<span style="color:#ff6b6b">Raté : elle était sous le gobelet ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.</span>`;
+    _barRafraichirTables();   // v1.90
     journal(r.gagne ? `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]}, et la bille y est. Gagné : +${r.net} ₡.`
                     : `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]} ; la bille était sous celui ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.`,
             r.gagne?"gain":"alerte","eco");

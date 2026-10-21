@@ -209,7 +209,8 @@ function _mCarte(m){
       h += `<h4 class="gsec">Groupes</h4>`;
       for(const x of autres){
         const nb = (x.membres || []).filter(y => y.statut === "actif").length;
-        const peut = !m.refus && !m.mon_groupe && x.statut === "formation" && x.ouvert && nb < m.taille_max;
+        const invite = (m.invitations || []).some(i => i.groupe === x.id);   // v1.90 : « Accepter » suffit, pas de doublon
+        const peut = !m.refus && !m.mon_groupe && !invite && x.statut === "formation" && x.ouvert && nb < m.taille_max;
         h += `<div class="mi-ligne"><span>${echapper(x.fondateur || "?")} · ${nb}/${m.taille_max} · ${x.statut === "formation" ? (x.ouvert ? "ouvert" : "fermé") : "parti"}</span>
               ${peut ? `<button class="mini" data-mi-rejoindre="${x.id}">Rejoindre</button>` : ""}</div>`;
       }
