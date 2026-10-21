@@ -341,14 +341,24 @@ function construireCompetences(){
 /* v1.36v — la bête (Q15) sur la fiche du Profil (demande de l'autrice) : sous
    Santé et Moral, dans la même colonne, pour ne décaler aucune jauge. Reflet
    `etat.bete` (chargé à la connexion, data.js#chargerBete). */
+/* v1.91 — retour de l'autrice : sous les jauges, la bête chargeait la fiche. Comme sur
+   le profil visité (v1.88g) : elle s'assoit au pied du portrait, et son nom devient une
+   ligne de l'en-tête (« Compagnon : Ori, la Goupille »). Le cadre d'avatar (K58) se pose
+   ici aussi, entre le portrait et la bête. */
 function majFicheBete(){
-  const z = document.querySelector("#fiche-bete"); if(!z) return;
+  const img = document.querySelector("#fiche-compagnon"), ligne = document.querySelector("#stat-compagnon");
+  const slot = document.querySelector("#fiche-cadre-slot");
+  if(slot && typeof cadreAvatarHtml === "function"){
+    const c = cadreAvatarHtml(etat && etat.avatar);
+    if(slot.dataset.c !== c){ slot.dataset.c = c; slot.innerHTML = c; }
+  }
+  if(!img || !ligne) return;
   const b = etat && etat.bete; const i = (b && typeof beteInfo === "function") ? beteInfo(b.espece) : null;
-  if(!i){ z.hidden = true; z.innerHTML = ""; return; }
+  if(!i){ img.hidden = true; ligne.hidden = true; return; }
   const cle = b.espece + "|" + (b.nom || "");
-  if(z.dataset.cle === cle && !z.hidden) return;      // afficher() tourne souvent : on ne redessine que si ça change
-  z.dataset.cle = cle;
-  z.innerHTML = `<img src="${i.img}" alt="" onerror="this.style.visibility='hidden'">
-    <div><div class="fiche-bete-nom">${echapper(b.nom || "")}</div><div class="itip-gris">${i.nom}</div></div>`;
-  z.hidden = false;
+  if(img.dataset.cle === cle && !img.hidden) return;      // afficher() tourne souvent : on ne redessine que si ça change
+  img.dataset.cle = cle;
+  img.src = i.img; img.alt = i.nom; img.hidden = false;
+  ligne.innerHTML = `Compagnon : <b>${echapper(b.nom || "")}</b>, ${echapper(i.nom)}`;
+  ligne.hidden = false;
 }

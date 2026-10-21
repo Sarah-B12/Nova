@@ -59,9 +59,11 @@ function _ppStyle(){
        (en position absolue) n'en ont pas : tout tombait à 0 px, avatar et bête invisibles
        (retour de l'autrice). 200 px, réduits seulement si l'écran est plus étroit. */
     .pp-cadre{ position:relative; flex:0 0 auto; width:200px; max-width:100%; }
-    .pp-cadre .pp-portrait{ width:100%; }
+    .pp-cadre .pp-portrait{ width:100%; -webkit-mask-image:none; mask-image:none; }   /* v1.91 : plus de fondu en bas (retour de l'autrice) */
+    /* v1.91 — K58 : le cadre déborde un peu du portrait, au-dessus des calques, sous la bête. */
+    .av-cadre{ position:absolute; left:-5%; top:-3.5%; width:110%; height:107%; object-fit:fill; pointer-events:none; z-index:2; }
     .pp-compagnon{ position:absolute; right:-10%; bottom:-4%; width:42%; aspect-ratio:1; object-fit:contain;
-      pointer-events:none; filter:drop-shadow(0 4px 8px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(232,240,200,.18)); }
+      pointer-events:none; z-index:3; filter:drop-shadow(0 4px 8px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(232,240,200,.18)); }
     .pp-conjoint a{ color:var(--orange-hi,#ffb060); cursor:pointer; text-decoration:underline; }
 
     .pp-info{ flex:1; min-width:220px; }
@@ -205,7 +207,7 @@ async function ouvrirPageProfil(nom){
   m.innerHTML = `<div class="pp-wrap">
     <div class="pp-tete"><button class="mini" id="pp-retour">← Retour</button><h2>Profil</h2></div>
     <div class="pp-haut">
-      <div class="pp-portraits"><div class="pp-cadre"><div class="pp-portrait av-portrait">${portrait}</div>${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div></div>
+      <div class="pp-portraits"><div class="pp-cadre"><div class="pp-portrait av-portrait">${portrait}</div>${(typeof cadreAvatarHtml==="function") ? cadreAvatarHtml(p.avatar) : ""}${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div></div>
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>

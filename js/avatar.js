@@ -58,6 +58,25 @@ function _avImg(couche, cls){
   if(!coul) return `<img class="${cls}" src="images/avatars/${base}.png" alt="" onerror="this.style.display='none'">`;
   return `<img class="${cls}" src="images/avatars/${base}_${coul}.png" alt="" onerror="if(!this.dataset.r){this.dataset.r='1';this.src='images/avatars/${base}.png';}else{this.style.display='none';}">`;
 }
+/* ===========================================================
+   v1.91 — K58 : LES CADRES D'AVATAR (admins, modérateurs, bêta-testeurs).
+   ⚠ BRANCHÉS MAIS INVISIBLES : CADRES_VISIBLES = false. Tant qu'il l'est, seuls les
+   devs les voient (pour vérifier le rendu) ; les joueurs, eux compris, ne voient rien.
+   Le jour de la surprise : passer CADRES_VISIBLES à true.
+   - Qui a quel cadre : `avatar.cadre` (« admins », « testeurs »…), posé à la main
+     dans la base (voir BACKEND_PLAN §110). changer_apparence (v213) le CONSERVE : un
+     joueur ne peut ni le retirer ni se l'attribuer en changeant d'apparence.
+   - Image : images/cadres/cadre_<id>.png, fond transparent, même rapport que le
+     portrait. Posé AU-DESSUS des calques de l'avatar, SOUS la bête.
+   =========================================================== */
+const CADRES_VISIBLES = false;
+const AV_CADRES = { admins:"Admins et modérateurs", testeurs:"Bêta-testeurs" };
+function cadreAvatarHtml(a){
+  const id = a && a.cadre;
+  if(!id || !Object.prototype.hasOwnProperty.call(AV_CADRES, id)) return "";
+  if(!CADRES_VISIBLES && !(typeof estDev === "function" && estDev())) return "";
+  return `<img class="av-cadre" src="images/cadres/cadre_${id}.png" alt="" title="${AV_CADRES[id]}" onerror="this.remove()">`;
+}
 function _avCoul(a){ const c = a && a.couleur; return (c && c !== "brun" && AV_COULEURS.some(x => x.id === c)) ? "@" + c : ""; }
 function _avDeux(g, n){ return !!n && (AV_CHEVEUX_DEUX[g] || []).includes(n); }
 function _avCouches(a){
