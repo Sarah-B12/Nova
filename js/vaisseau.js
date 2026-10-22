@@ -347,6 +347,7 @@ function _vaisMonterStyle(){
   `;
   document.head.appendChild(st); _vaisStyle=true;
 }
+/* v1.93 — Q28 : l'indicatif MAAR-12/42 (etat.immatricule) s'affiche sous le nom du vaisseau. */
 function majVaisseau(){
   const z=document.querySelector("#vaisseau-vue"); if(!z) return;
   _vaisMonterStyle();
@@ -367,6 +368,7 @@ function majVaisseau(){
       <div class="vais-vis"><img src="${v.img}" alt="${v.nom}"></div>
       <div class="vais-infos">
         <h3 style="margin:0 0 8px">${v.nom}</h3>
+        ${etat.immatricule ? `<p class="itip-gris" style="margin:-4px 0 8px">Indicatif <b>${etat.immatricule}</b> · connu d'AREPO</p>` : ""}
         <div class="vais-stats">
           <div><span>Soute</span><b>${itemsSoute()}/${v.soute}</b></div>
           <div><span>PV (coque)</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>

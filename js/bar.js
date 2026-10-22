@@ -44,6 +44,15 @@ const BAR_ASULF = [
   "« Santé. » Un temps de radio. « Enfin, la tienne. La mienne, elle est imputée. »",
   "« Note bien que j'ai rien dit. » Il renifle. « Je note, moi. Tout. Dans ma tête. »"
 ];
+/* v1.93 — K61 : après Q30, Asulf vit à La Toundra. Les verres sont toujours imputés à son
+   matricule (l'habilitation de Q29 est sous ce matricule) : la note le suit jusque dans la neige. */
+const BAR_ASULF_TOUNDRA = [
+  "Ta radio grésille, depuis La Toundra. Asulf claque des dents. « On vient de me transmettre ta note. Ici. Dans la neige. Ils retrouvent toujours tout le monde, pour les notes. »",
+  "« Encore un verre sur mon matricule ? » Un bruit de vent dans la radio. « Bois-en un pour moi. Ici, tout gèle, même la sporelle. C'est génial. »",
+  "« Je suis évacué, tu sais. » Un reniflement glacé. « Évacué, mais facturé. C'est ça, la liberté ? »",
+  "« Santé. » Il souffle sur ses doigts, ça s'entend. « Pose-moi un transat de côté, si t'en vois un. Non, pour rien. Pour rien. »"
+];
+function _barAsulfLigne(){ const L = (etat && etat.asulfToundra) ? BAR_ASULF_TOUNDRA : BAR_ASULF; return L[Math.floor(Math.random()*L.length)]; }
 
 /* Libellé lisible d'un effet. Renvoie "" si la clé est inconnue (une boisson
    ajoutée en SQL sans passer ici s'affichera sans casser la page). */
@@ -210,6 +219,7 @@ function _barOnglets(){
   return `<div class="sous-menu">
     <button class="sous-lien${_barVue==="boissons"?" actif":""}" data-barvue="boissons">Comptoir</button>
     <button class="sous-lien${_barVue==="jeux"?" actif":""}" data-barvue="jeux">Tables de jeu</button>
+    ${(barStation() && etat.habilitation) ? `<button class="sous-lien${_barVue==="reserves"?" actif":""}" data-barvue="reserves">Réserves</button>` : ""}
   </div>`;
 }
 function _barWireOnglets(el){
@@ -222,7 +232,9 @@ async function majBar(el){
   const station = barStation();
   const fid=station ? null : ((typeof villeActuelle==="function")?villeActuelle():null);
   if(!fid && !station){ el.innerHTML=`<h3 style="margin:2px 0">Le bar</h3><p class="vide">Il n'y a pas de bar ici.</p>`; return; }
+  if(_barVue==="reserves" && !(station && etat.habilitation)) _barVue = "boissons";   // v1.93 : hors de la station, pas de réserves
   if(_barVue==="jeux"){ await majBarJeux(el, fid); return; }
+  if(_barVue==="reserves"){ await majReserves(el); return; }
   el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Chargement…</p>`;
 
   /* ⚠ v0.78 — le catalogue passe par une RPC. La lecture directe de la table
@@ -257,7 +269,7 @@ async function majBar(el){
   h+=`<img class="bar-banniere" src="images/bar/bar.png" alt="" onerror="this.remove()">`;   // v1.48 : UN seul bar (prochaine carte), une seule image
   h+=_barOnglets();
   h+= station
-    ? `<p class="vide">Dans un coin de la grande salle, un comptoir d'AREPO, propre comme au premier jour. Un automate le tient : il ne te regarde pas, mais il sert, parce qu'Asulf t'a inscrit parmi les ayants droit. Chaque verre est imputé à son matricule. Trois bouteilles ne bougent jamais ; deux autres changent chaque jour, et Asulf jure qu'il ne sait pas d'où elles arrivent. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`
+    ? `<p class="vide">Dans un coin de la grande salle, un comptoir d'AREPO, propre comme au premier jour. Un automate le tient : il ne te regarde pas, mais il sert, parce qu'${etat.habilitation ? "tu es habilité sous le matricule d'Asulf" : "Asulf t'a inscrit parmi les ayants droit"}. Chaque verre est imputé à son matricule. Trois bouteilles ne bougent jamais ; deux autres changent chaque jour, et Asulf jure qu'il ne sait pas d'où elles arrivent. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`
     : `<p class="vide">Le tenancier ne demande pas ton nom. <b>Une seule boisson par 24 h</b>, et l'effet dure aussi longtemps. Ce qu'on te sert est tiré au sort : le plus souvent, ça se paie.</p>`;
 
   if(reste>0 && etat.boisson){
@@ -455,7 +467,7 @@ async function boire(id, bouton){
   /* v1.88c — retour de l'autrice : trois lignes pour un seul verre (la boisson, la
      réplique d'Asulf, puis l'événement du serveur). UNE ligne, dans « Économie » ;
      le serveur n'écrit plus d'événement (v206). */
-  const asulf = barStation() ? ` Imputé au matricule 42-U1F. ${BAR_ASULF[Math.floor(Math.random()*BAR_ASULF.length)]}` : "";
+  const asulf = barStation() ? ` Imputé au matricule 42-U1F. ${_barAsulfLigne()}` : "";   // v1.93 : K61
   journal(`${res.nom} (−${res.prix} ₡). ${intro} : ${txt||"aucun effet notable"}. 24 h.${asulf}`, ton, "eco");
 
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();   // santé/moral/énergie immédiats
@@ -656,4 +668,78 @@ async function _bonPlateau(z, d){
             r.gagne?"gain":"alerte","eco");
     if(typeof afficher==="function") afficher();
   }));
+}
+
+
+/* ===========================================================
+   v1.93 — K62 : LES RÉSERVES DE LA STATION (onglet du bar, à la station, habilité).
+   Le SERVEUR décide de tout (reserves_lire / reserves_acheter, v214) : habilitation,
+   présence à la station, stock du jour (3 de chaque, par joueur), prix, place au sac.
+   Le client ne fait qu'afficher et griser. Manger : reserves_manger (énergie, santé,
+   moral), appelé depuis utiliser() (actions.js).
+   =========================================================== */
+const RESERVES_ERREURS = {
+  non_habilite:"Les automates ne te reconnaissent pas : il faut l'habilitation de la station.",
+  pas_sur_place:"Les réserves sont à la station d'Ancolie. Il faut y être.",
+  stock:"Plus rien de ça aujourd'hui : trois par jour, c'est le règlement. Reviens demain.",
+  credits:"Crédits insuffisants.", item:"Les réserves n'ont pas ça.",
+  sac_plein:"Sac plein : fais de la place d'abord.", manque:"Tu n'en as plus.", prison:"Impossible depuis la prison."
+};
+async function majReserves(el){
+  if(!el) el = _barEl; if(!el) return;
+  let h = `<h3 style="margin:2px 0">Les réserves de la station</h3>` + _barOnglets();
+  el.innerHTML = h + `<p class="vide">Chargement…</p>`; _barWireOnglets(el);
+  let st = null;
+  try{ if(typeof sauverMaintenant === "function") await sauverMaintenant(); const { data } = await sb.rpc("reserves_lire"); st = data; }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "bar.js#reserves"); }
+  if(!st || !st.ok){
+    el.innerHTML = h + `<p class="vide">${(st && RESERVES_ERREURS[st.err]) || "Les réserves ne répondent pas. Réessaie dans un instant."}</p>`; _barWireOnglets(el); return;
+  }
+  h += `<p class="vide">Derrière une porte de service, des étagères d'AREPO rangées au carré : les vivres du personnel, sous vide depuis trois siècles. Un automate te tend ce que tu demandes et note, sans te regarder : HABILITATION 42-U1F/1. <b>Trois de chaque par jour</b>, pas un de plus : c'est le règlement. Ça rend de l'énergie, et ça coûte du moral.</p><div class="bar-liste">`;
+  for(const id of Object.keys(VIVRES_STATION)){
+    const v = VIVRES_STATION[id], it = item(id), reste = (st.stock && typeof st.stock[id] === "number") ? st.stock[id] : v.stock;
+    const eff = (typeof effetConso === "function") ? effetConso(id) : null;
+    const effTxt = eff ? Object.entries(eff).map(([g, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${labelJauge(g)}`).join(", ") : "";
+    const trop = (etat.credits || 0) < v.prix;
+    h += `<div class="bar-carte">
+      <span class="bar-img-vide">${iconeItem(id)}</span>
+      <span class="bar-txt"><span class="bar-nom">${echapper(it ? it.nom : id)} <span class="itip-gris">· reste ${reste}/${v.stock} aujourd'hui</span></span>
+        <span class="bar-desc">${effTxt}</span></span>
+      <span class="bar-prix">${v.prix.toLocaleString("fr-FR")} ₡</span>
+      <button class="mini" data-reserve="${id}" ${(reste <= 0 || trop) ? "disabled" : ""} title="${reste <= 0 ? "Plus de stock aujourd'hui" : (trop ? "Crédits insuffisants" : "L'automate sert sans commenter")}">Prendre</button>
+    </div>`;
+  }
+  h += `</div>`;
+  el.innerHTML = h; _barWireOnglets(el);
+  el.querySelectorAll("[data-reserve]").forEach(b => b.addEventListener("click", () => acheterReserve(b.dataset.reserve, b)));
+}
+async function acheterReserve(id, bouton){
+  if(bouton) bouton.disabled = true;
+  let data = null;
+  try{ if(typeof sauverMaintenant === "function") await sauverMaintenant(); ({ data } = await sb.rpc("reserves_acheter", { p_item:id })); }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "bar.js#reserves-achat"); }
+  if(!data || !data.ok){ journal((data && RESERVES_ERREURS[data.err]) || "Les réserves ne répondent pas. Réessaie dans un instant.", "alerte"); majReserves(); return; }
+  if(typeof data.credits === "number") etat.credits = data.credits;
+  if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+  const it = item(id);
+  journal(`L'automate te tend : ${it ? it.nom : id} (−${VIVRES_STATION[id].prix.toLocaleString("fr-FR")} ₡). Imputé à l'habilitation 42-U1F/1.`, "eco");
+  if(typeof sauvegarder === "function") sauvegarder();
+  if(typeof afficher === "function") afficher();
+  majReserves();
+}
+async function mangerVivre(id){
+  if(!(etat.sac && etat.sac[id] > 0)) return;
+  let data = null;
+  try{ ({ data } = await sb.rpc("reserves_manger", { p_item:id })); }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "bar.js#reserves-manger"); }
+  if(!data || !data.ok){ journal((data && RESERVES_ERREURS[data.err]) || "Le serveur n'a pas répondu — réessaie.", "alerte"); return; }
+  const avant = { energie:Math.round(etat.energie || 0), sante:Math.round((etat.jauges && etat.jauges.sante) || 0), moral:Math.round((etat.jauges && etat.jauges.moral) || 0) };
+  if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+  if(typeof data.energie === "number"){ etat.energie = data.energie; etat.energieMaj = Date.now(); }
+  if(data.jauges){ etat.jauges = etat.jauges || {}; ["o2","sante","moral"].forEach(g => { if(typeof data.jauges[g] === "number") etat.jauges[g] = data.jauges[g]; }); }
+  const apres = { energie:Math.round(etat.energie || 0), sante:Math.round(etat.jauges.sante || 0), moral:Math.round(etat.jauges.moral || 0) };
+  const parts = Object.keys(apres).filter(g => apres[g] !== avant[g]).map(g => `${apres[g] > avant[g] ? "+" : "−"}${Math.abs(apres[g] - avant[g])} ${labelJauge(g)}`);
+  const it = item(id);
+  journal(`${it ? it.nom : id} : ${parts.length ? parts.join(", ") : "rien n'a bougé"}. ${id === "barre_proteinee" ? "Elle a le goût de l'emballage." : "Froide, comme promis."}`, "gain");
+  if(typeof apresAction === "function") apresAction(); else { if(typeof afficher === "function") afficher(); if(typeof sauvegarder === "function") sauvegarder(); }
 }

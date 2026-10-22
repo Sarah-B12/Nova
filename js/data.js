@@ -88,7 +88,11 @@ const EFFET_CONSO = {
   fab_boite_de_soin:      { sante:45, moral:30 },    // gros kit
   fab_ration_chaude:      { moral:25, sante:5 },
   fab_stimulant:          { moral:20, sante:10 },
-  fab_antidote:           { sante:20 }
+  fab_antidote:           { sante:20 },
+  // v1.93 — K62 : les vivres des réserves de la station d'Ancolie. ⚠ Appliqués par le
+  // SERVEUR (reserves_manger, v214 : énergie comprise), jamais par agir/p_jauges.
+  barre_proteinee:        { energie:20, moral:-10 },
+  ration_reglementaire:   { energie:40, sante:10, moral:-15 }
   // Biocarburant / Biocarburant raffiné = carburant de vaisseau (pas un soin joueur).
 };
 function labelJauge(g){ return { o2:"O₂", sante:"santé", moral:"moral", energie:"énergie" }[g] || g; }
@@ -173,9 +177,25 @@ const OBJETS_MISSION = [
    `objets_personnels` (v185), lue par deposer_offre, poste_envoyer,
    reserve_deposer. Ce Set n'en est que le REFLET, pour masquer les boutons
    (BACKEND_PLAN §6). La cape du casse (C8) s'y ajoutera. */
-const OBJETS_PERSONNELS = new Set(["mousse_amie", "regulateur_arepo", "cape_voleur", "module_arepo", "caisse_arepo_3", "caisse_arepo_4", "caisse_arepo_5", "caisse_arepo_6"]);
+/* v1.93 — K62 : LES RÉSERVES DE LA STATION D'ANCOLIE (ouvertes par l'habilitation de Q29).
+   Les vivres du personnel d'AREPO : ils rendent de l'ÉNERGIE (aucun objet acheté n'en
+   rendait) et coûtent du moral. Très chers, 3 de chaque par jour de jeu et PAR JOUEUR.
+   Objets personnels (ni vente, ni don, ni Poste) : la rareté ne se revend pas.
+   ⚠ Barème DUPLIQUÉ côté serveur : _reserves_catalogue() (v214). Changer l'un = changer l'autre. */
+const VIVRES_STATION = {
+  barre_proteinee:      { prix:1500, stock:3 },
+  ration_reglementaire: { prix:2900, stock:3 }
+};
+const OBJETS_VIVRES = [
+  { id:"barre_proteinee", nom:"Barre protéinée « goût nature »", type:"vivre", cat:"conso", poids:1,
+    desc:"Une barre sèche et beige, sous vide depuis trois siècles. Elle a le goût de l'emballage. Rend 20 d'énergie, coûte 10 de moral. Elle ne se vend pas et ne se donne pas." },
+  { id:"ration_reglementaire", nom:"Ration réglementaire", type:"vivre", cat:"conso", poids:1,
+    desc:"Le repas complet du personnel, servi froid, à dix-neuf degrés comme tout le reste. Rend 40 d'énergie et 10 de santé, coûte 15 de moral. Elle ne se vend pas et ne se donne pas." }
+];
+const OBJETS_PERSONNELS = new Set(["mousse_amie", "regulateur_arepo", "cape_voleur", "module_arepo", "caisse_arepo_3", "caisse_arepo_4", "caisse_arepo_5", "caisse_arepo_6",
+  "barre_proteinee", "ration_reglementaire"]);   // v1.93 : + les vivres (table objets_personnels, v214)
 function estObjetPersonnel(id){ return OBJETS_PERSONNELS.has(id); }
-const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS, ...OBJETS_QUETE, ...OBJETS_MISSION];
+const TOUS_ITEMS = [...CONSOMMABLES, ...MATIERES, ...PLANTES, ...GRAINES, ...BEBES, ...OUTILS, ...OBJETS_QUETE, ...OBJETS_MISSION, ...OBJETS_VIVRES];   // v1.93 : + vivres
 function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 
 // --- Icônes-images : remplacent le SVG quand une image existe (sinon fallback SVG).
@@ -335,6 +355,7 @@ function iconeItem(id){
   if(id.indexOf("graine_")===0){ const j=imgPlanteJeune(id.slice(7)); return j ? `<img src="${j}" alt="">` : ICONE_GRAINE; }
   if(id.indexOf("bebe_")===0){ const j=imgAnimal(id.slice(5), false); return j ? `<img src="${j}" alt="">` : ICONE_BEBE; }
   if(id==="fab_ration_chaude")      return SVG.ration;
+  if(id==="barre_proteinee" || id==="ration_reglementaire") return SVG.ration;   // v1.93 : en attendant leurs images
   if(id==="fab_biocarburant")       return ICONE_BIOCARB;
   return "";
 }

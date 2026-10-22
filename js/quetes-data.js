@@ -2378,7 +2378,10 @@ const QUETES = [
     recompense:{ credits:1900, xp:340, flags:{} }   // K35, K39 : pas de PA
   },
 
-  /* ---------------- Q17 — Le rappel ---------------- */
+  /* ---------------- Q17 — Le rappel (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, blocs de l'ordre (v1.87d), récompense :
+     inchangés (vérifié par outils/o_texteseul.js). Un seul « Un temps » : la réplique
+     de Galm qui tombe à l'étape 3. */
   {
     id:"q17",
     nom:"Le rappel",
@@ -2386,10 +2389,9 @@ const QUETES = [
     donneurLieu:"La Carcasse",
     lieuPrise:"carcasse",
     intro:[
-      "Galm a un écouteur dans une oreille et une clé à molette dans la main. Elle ne lève pas la tête. « Le vieux m'a appelée. Il m'a lu un code. Quatre sons. » Elle serre un boulon. « Il m'a demandé si un port, ça sait où partent ses équipages. »",
-      "« Ça sait. » Elle pose la clé. « Un port qui rappelle un équipage, il lui donne une route. Et une route, ça s'écrit quelque part : dans la capitainerie. Pas dans le vaisseau. Le vaisseau, lui, il dort. »",
-      "Elle montre du menton, par le hublot, la tache sombre de La Cassée. « Le ber, tu connais. La capitainerie est derrière, au fond des coursives. Plus de courant depuis le désarmement. Le réacteur brûle encore, mais il est branché sur rien. »",
-      "« Tu tires un câble du réacteur jusqu'aux registres, tu les rallumes, tu lis l'ordre de rappel. » Elle se remet au boulon. « Et tu me dis où ils sont allés. J'aime pas les endroits où des gens vont et d'où personne revient. »"
+      "Galm est à plat ventre sous un carter, un écouteur vissé dans l'oreille ; on ne voit d'elle que ses bottes et la main qui manie la clé à molette. Elle ne sort pas pour toi. C'est au boulon, plutôt qu'à toi, qu'elle raconte que le vieux l'a appelée : il lui a lu un code de quatre sons, et il lui a demandé si un port, ça savait où partaient ses équipages.",
+      "« Ça sait. » Elle se tortille hors du carter et s'essuie les mains sur sa cuisse, ce qui ne les rend pas plus propres. « Un port qui rappelle un équipage, il lui donne une route. Une route, ça s'écrit, et ça s'écrit à la capitainerie, pas dans le vaisseau. Le vaisseau, lui, il dort. » Du menton, elle te montre par le hublot la tache sombre de La Cassée et la lueur rouge au fond de sa fente. La capitainerie est derrière le ber, au fond des coursives, sans une lampe depuis le désarmement ; le réacteur brûle encore, mais il n'est plus branché sur rien.",
+      "« Tu tires un câble du réacteur jusqu'aux registres, tu les rallumes, et tu lis l'ordre de rappel. » Elle se recouche déjà sous le carter, et la suite te parvient étouffée, entre deux grincements : « Et tu me dis où ils sont allés. J'aime pas les endroits où des gens vont et d'où personne revient. »"
     ],
     etapes:[
 
@@ -2398,18 +2400,16 @@ const QUETES = [
         cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" }, { lieu:"base" } ],
         image:"images/quetes/q17/1.png",
         arrivee:[
-          "Le ber est comme tu l'as laissé : le vaisseau d'évacuation de MAAR-3, en sommeil, et sa case vide qui attend une confirmation. Tu passes à côté sans t'arrêter. Il dort ; ce n'est pas lui que tu viens voir.",
-          "Derrière, les coursives du port. Le noir est total. Ta lampe de casque éclaire un pas devant toi, pas deux.",
-          "Galm, dans la radio : « Garde la main sur la paroi et compte tes pas. Ta lampe tiendra pas toute la nuit. »"
+          "Le ber est comme tu l'as laissé. Le vaisseau d'évacuation de MAAR-3 dort entre ses poutres, et sa case vide attend toujours la confirmation qui n'est jamais venue. Tu passes à côté sans ralentir : il n'a rien de plus à te dire, et ce n'est pas lui que tu viens voir.",
+          "Derrière, les coursives du port s'enfoncent dans un noir de cave, si épais que ta lampe de casque n'éclaire qu'un pas devant toi, jamais deux. « Garde la main sur la paroi, et compte tes pas », grésille Galm dans la radio, avant d'ajouter, comme on rappelle une évidence : « Ta lampe tiendra pas toute la nuit. »"
         ],
         defi:{ type:"crevasse", n:9, rayon:1, marge:1.6,
           texte:["Des coursives effondrées, des portes soudées, des couloirs qui ne mènent nulle part. Quelque part en bas : la capitainerie."],
           consigne:"Trouve la sortie, en bas de la grille, avant que ta lampe ne faiblisse.",
-          fini:"Une porte, au bout du couloir. Gravée du carré : CAPITAINERIE.",
-          echec:"Ta lampe baisse. Tu rebrousses chemin à tâtons, la main sur la paroi. Nouvelle tentative plus tard.",
+          fini:"Au bout du couloir, une porte gravée du carré : CAPITAINERIE.",
+          echec:"Ta lampe jaunit, puis rougit. Tu rebrousses chemin à tâtons, la main sur la paroi, en recomptant tes pas à l'envers. Nouvelle tentative dans 8 h.",   // K52 : le verrou de 8 h s'applique
           reussite:[
-            "La capitainerie est une salle basse, en demi-cercle, face à une baie qui donne sur les bers vides. Des pupitres, des registres, des sièges encore tournés vers la baie, comme si quelqu'un venait de se lever.",
-            "Tout est éteint. Sous tes pieds, très loin, tu sens battre le réacteur."
+            "La capitainerie est une salle basse en demi-cercle, ouverte par une grande baie sur les bers vides. Des pupitres, des registres, des sièges encore tournés vers la vitre, comme si l'équipe de quart venait de se lever pour aller voir partir quelqu'un. Tout est éteint. Mais sous tes pieds, très loin, à travers le plancher et tes semelles, tu sens battre le réacteur."
           ] } },
 
       /* ---- 2. Le câble — NŒUD (non ratable) ---- */
@@ -2417,17 +2417,16 @@ const QUETES = [
         cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" } ],
         image:"images/quetes/q17/2.png",
         arrivee:[
-          "Une gaine de câbles sort du plancher, arrachée net le jour du désarmement. De l'autre côté de la salle, la prise des registres. Entre les deux, des passages encombrés de pupitres, de poutres tombées, d'armatures tordues.",
-          "« Le câble doit rien toucher », dit Galm. « Une paroi, une poutre, et il crame. Et toi avec, peut-être. Fais ça doucement. »"
+          "Une gaine de câbles sort du plancher, arrachée net le jour du désarmement, ses fils à vif comme des racines au bord d'un talus. La prise des registres est de l'autre côté de la salle, et entre les deux s'entasse tout ce qui est tombé en trois siècles : des pupitres renversés, des poutres, des armatures tordues qui ne laissent qu'un passage de plus en plus étroit.",
+          "« Ton câble touche rien », prévient Galm, du ton de quelqu'un qui en a déjà vu cramer plus d'un. « Une paroi, une poutre, et il crame. Et toi avec, peut-être. Alors doucement. »"
         ],
         defi:{ type:"noeud",
           texte:["Trois tronçons, du réacteur jusqu'aux registres. Le passage se resserre à chaque fois."],
           consigne:"Guide le câble du doigt ou de la souris, du point plein au cercle, sans lever ni sortir du couloir.",
-          glisse:"Le câble frôle une poutre : une gerbe d'étincelles. Tu recommences ce tronçon.",
+          glisse:"Le câble frôle une poutre : une gerbe d'étincelles, une odeur de gaine brûlée. Tu recommences ce tronçon.",
           fini:"Le dernier tronçon claque dans sa prise.",
           reussite:[
-            "Un bourdonnement monte du plancher. Les pupitres s'allument un à un, d'abord en rouge, puis en ambre. Sur la baie, une ligne de texte se dessine, en ancien : les sons que tu connais, les formes que Sorn récite.",
-            "Les registres du port se réveillent. Ils ont gardé tout ce qu'on leur a confié. Jusqu'à la dernière ligne."
+            "Un bourdonnement monte du plancher. Les pupitres s'allument un à un, rouges d'abord, puis ambre, comme des yeux qui s'habituent à la lumière, et sur la baie se dessine une ligne de texte en ancien : des sons que tu connais, des formes que Sorn récite depuis toujours. Les registres du port se réveillent, et ils n'ont rien oublié de ce qu'on leur a confié, jusqu'à la dernière ligne."
           ] } },
 
       /* ---- 3. L'ordre de rappel — ORDRE (ratable) ---- */
@@ -2435,8 +2434,8 @@ const QUETES = [
         cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" } ],
         image:"images/quetes/q17/3.png",
         arrivee:[
-          "Le dernier registre ouvert le jour du désarmement est en lambeaux : la mémoire s'est effritée en blocs, et les blocs se sont mélangés. Ils sont tous là. Plus dans l'ordre.",
-          "Sorn, que Galm a branché sur la même fréquence, souffle : « Lis-moi tout. Même ce que tu comprends pas. »"
+          "Le dernier registre ouvert le jour du désarmement est en lambeaux. Sa mémoire s'est effritée en blocs, et les blocs se sont mélangés comme les pages d'un carnet qu'on aurait laissé tomber dans un escalier : ils sont tous là, mais plus dans l'ordre.",
+          "Un déclic dans la radio : Galm a branché Sorn sur la même fréquence. Tu l'entends respirer avant de l'entendre parler, et quand il parle, c'est presque un murmure. « Lis-moi tout. Même ce que tu piges pas. Surtout ce que tu piges pas : c'est toujours là-dedans que ça se cache. »"
         ],
         defi:{ type:"ordre",
           /* v1.87d — retour de l'autrice : aucun fil entre les blocs, et la consigne
@@ -2456,11 +2455,10 @@ const QUETES = [
             "Passage : point sans nom. Au-delà : destination de rappel. Retour : non prévu."
           ],
           reussite:[
-            "Tu lis l'histoire d'un trait, à voix haute, pour Sorn. Le vaisseau attend. Personne ne confirme. On classe. On endort le vaisseau. On rappelle l'équipage. On éteint le port derrière lui.",
-            "Puis la route. La Cassée, le Perchoir, et un « passage » sans nom, avec des coordonnées. Tu les reportes sur ta carte de Triptolème.",
-            "Elles tombent au milieu de la Gorge.",
-            "Galm ne dit rien pendant longtemps. Puis : « On m'a toujours dit que personne en revenait. » Un temps. « Eux, ils y allaient. »",
-            "« Retour : non prévu », relit Sorn. « C'est pas pareil que \"personne en revient\". C'est pire, ou c'est mieux. Je sais pas encore. »"
+            "Tu lis tout d'un trait, pour Sorn, et une fois remise dans l'ordre l'histoire tient en peu de chose : le vaisseau attend, personne ne confirme, on classe le dossier, on endort le vaisseau, on rappelle l'équipage, et on éteint le port derrière lui comme on souffle la lampe en quittant une pièce.",
+            "Reste la route. La Cassée, le Perchoir, puis un « passage » sans nom, suivi de coordonnées. Tu les reportes sur ta carte de Triptolème, chiffre après chiffre, en vérifiant deux fois. Elles tombent au milieu de la Gorge.",
+            "Dans la radio, plus personne ne dit rien. C'est Galm qui parle la première, très bas, comme pour elle-même : « On m'a toujours dit que personne en revenait. » Un temps. « Eux, ils y allaient. »",
+            "Sorn relit la dernière ligne, « retour : non prévu », et il la mâchonne un bon moment avant de grogner que c'est pas pareil. « Personne en revient, c'est un trou qui mange les gens. Retour non prévu, c'est des gens qui savaient très bien où ils allaient, et qui comptaient pas rentrer. » Puis, plus bas : « C'est pire, ou c'est mieux. Je sais pas encore. »"
           ] } },
 
       /* ---- 4. Ce qu'on fait du port — CHOIX de Cercle ---- */
@@ -2468,8 +2466,7 @@ const QUETES = [
         cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"epave" } ],
         image:"images/quetes/q17/4.png",
         arrivee:[
-          "Le port bourdonne autour de toi pour la première fois depuis trois siècles. Sur la baie, la route clignote : Triptolème-4 — Relais Triptolème-1 — passage.",
-          "« À toi de voir », dit Galm. « Moi, j'ai ce que je voulais : je sais où ils sont passés. »"
+          "Pour la première fois depuis trois siècles, le port bourdonne autour de toi. Les pupitres ronronnent, l'air sent la poussière qui chauffe, et sur la baie la route clignote patiemment : Triptolème-4 — Relais Triptolème-1 — passage. Galm, elle, a eu ce qu'elle voulait : « À toi de voir. Moi, je sais où ils sont passés. »"
         ],
         defi:{ type:"choix",
           texte:["Les registres de La Cassée tournent sur le réacteur. Tu peux les laisser vivre, les rendormir, ou en emporter un morceau."],
@@ -2482,18 +2479,20 @@ const QUETES = [
               journal:"Tu as rendormi le port de La Cassée. La route est dans ton carnet, et nulle part ailleurs." },
             { texte:"Démonter le lecteur du registre et le rapporter à Galm. Elle saura en tirer quelque chose.",
               cercles:{ assembleurs:5 },
-              journal:"Tu as rapporté à Galm le lecteur de la capitainerie. Elle l'a posé sur son établi sans un mot, et l'a démonté jusqu'à la dernière vis." }
+              journal:"Tu as rapporté à Galm le lecteur de la capitainerie. Elle l'a posé sur son établi sans un mot, puis elle l'a démonté jusqu'à la dernière vis, et elle a aligné les vis par taille." }
           ],
           reussite:[
-            "Sur le chemin du retour, tu repasses devant le ber. Le vaisseau d'évacuation dort toujours, sa case vide tournée vers MAAR-3.",
-            "Dans la radio, Sorn réfléchit tout haut : « Un code d'adresse, une route qui finit dans un trou. Il manque le morceau du milieu : comment on va de l'un à l'autre. » Un temps. « Le Perchoir. Tout passait par là. Il doit avoir une table, pour savoir où envoyer ce qu'on lui confie. »",
-            "Galm : « Je te le remonte, ton vieux. Il commence à aimer ça, je crois. »"
+            "Sur le chemin du retour, tu repasses devant le ber. Le vaisseau d'évacuation dort toujours, sa case vide tournée vers MAAR-3, et tu ralentis malgré toi, comme on ralentit devant une maison où quelqu'un attend derrière les volets.",
+            "Dans la radio, Sorn réfléchit tout haut, à sa manière, en posant les questions et en y répondant lui-même. Un code d'adresse d'un côté, une route qui finit dans un trou de l'autre, et entre les deux il manque le morceau qui dit comment on passe de l'un à l'autre. « Le Perchoir. Dans le temps, tout passait par lui. Il doit bien avoir une table, quelque part, pour savoir où envoyer ce qu'on lui confie. »",
+            "Galm coupe court : elle va te le remonter, ton vieux. Puis, après un raclement de gorge qui ressemble presque à un rire : « Il commence à aimer ça, je crois. »"
           ] } }
     ],
     recompense:{ credits:2000, xp:350, flags:{} }
   },
 
-  /* ---------------- Q18 — La table ---------------- */
+  /* ---------------- Q18 — La table (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
   {
     id:"q18",
     nom:"La table",
@@ -2502,10 +2501,9 @@ const QUETES = [
     donneurLieu:"La Carcasse",
     lieuPrise:"carcasse",
     intro:[
-      "Sorn est assis sur la caisse à boulons, le casque de vol sur la tête cette fois, la sangle mal attachée. Il a un carnet sur les genoux, couvert de sa petite écriture : le code de Chardon, la route de La Cassée.",
-      "« Deux morceaux », dit-il. « Une adresse qui dit rien, et une route qui finit dans le noir. Il manque ce qui les relie. »",
-      "« Un relais, ça reçoit un message, ça regarde l'adresse, et ça sait à qui le passer. Pour ça, il a une table. Le Perchoir en a forcément une : tout le secteur passait par lui. » Il tapote le carnet. « Si on lui demande où il enverrait un message pour TURE-PART-LAI-ME, il va nous le dire. »",
-      "Il se lève, et ses genoux craquent. « Toi devant. Moi je sais toujours pas marcher dans ces trucs. »"
+      "Sorn est assis sur la caisse à boulons de Galm, le casque de vol sur la tête cette fois, la sangle mal attachée qui lui pend sous le menton comme une barbe de plus. Il a un carnet sur les genoux, couvert de sa petite écriture serrée : le code de Chardon sur une page, la route de La Cassée sur l'autre, et entre les deux une page blanche qu'il tapote du bout du crayon depuis un bon moment.",
+      "« Deux morceaux, et rien pour les recoller. Une adresse qui dit rien, une route qui finit dans le noir. » Il se gratte la barbe. « Un relais, tu vois, c'est bête comme une boîte aux lettres : ça reçoit un message, ça regarde l'adresse, et ça sait à qui le refiler. Pour ça, faut une table. Le Perchoir en a forcément une, tout le secteur passait par lui, dans le temps. Alors on va lui demander où il enverrait un message pour TURE-PART-LAI-ME, et il va nous le dire, parce qu'un relais, ça sait pas mentir. »",
+      "Il se lève, et ses genoux craquent si fort que Galm relève la tête de son établi. « Toi devant. Moi, je sais toujours pas marcher dans ces trucs. »"
     ],
     etapes:[
 
@@ -2514,11 +2512,9 @@ const QUETES = [
         cible:{ lieu:"base" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" }, { lieu:"asteroides" } ],
         image:"images/quetes/q18/1.png",
         arrivee:[
-          "La salle ronde du relais bourdonne comme la dernière fois. Sorn va droit au terminal central, sans toucher le lecteur de la porte. Il a retenu la leçon.",
-          "La table d'acheminement s'affiche en colonnes, en ancien. Sorn lit les formes, toi les sons. À gauche, des adresses ; à droite, à qui passer le message. Des dizaines de lignes : les sondes, les relais de surface, La Cassée, le Muet.",
-          "TURE-PART-LAI-ME n'y est pas.",
-          "Tout en bas, une dernière ligne, plus ancienne que les autres : ADRESSE NON RÉPERTORIÉE — transmettre vers le dernier point de la route assignée.",
-          "« Assignée », répète Sorn. « La route du rappel. Celle de La Cassée. »"
+          "La salle ronde du relais bourdonne comme la dernière fois, baies de mémoire du sol au plafond. Sorn file droit vers le terminal central en faisant un large détour autour du lecteur de la porte, celui qui l'avait refusé : il a retenu la leçon, et il n'a pas envie de s'entendre dire une deuxième fois qu'il n'existe pas.",
+          "La table d'acheminement s'affiche en colonnes ambre, en ancien. Sorn lit les formes, toi les sons, et à vous deux vous en tirez quelque chose : à gauche des adresses, à droite à qui passer le message. Il y en a des dizaines, les sondes, les relais de surface, La Cassée, le Muet. Vous les descendez toutes du doigt, deux fois. TURE-PART-LAI-ME n'y est pas.",
+          "Tout en bas, une dernière ligne, plus ancienne que les autres, attend qu'on la trouve : ADRESSE NON RÉPERTORIÉE — transmettre vers le dernier point de la route assignée. Sorn la relit en remuant les lèvres. « Assignée… » Il se tape le carnet dans la paume. « La route du rappel. Celle de La Cassée, pardi. »"
         ],
         defi:{ type:"enigme",
           texte:"Le relais ne connaît pas l'adresse de Chardon. Il applique sa dernière ligne.",
@@ -2526,8 +2522,8 @@ const QUETES = [
           reponses:["la gorge","gorge","dans la gorge","vers la gorge","le passage","passage","le passage sans nom","au passage","le point sans nom","point sans nom","le dernier point","dernier point de la route"],
           indice:"La route du rappel, à La Cassée : son dernier point n'avait pas de nom. Où tombaient ses coordonnées ?",
           reussite:[
-            "« Dans la Gorge. » Sorn le dit doucement, comme s'il avait peur de la réveiller.",
-            "« Trois cents ans que les sondes émettent, et trois cents ans que le Perchoir envoie tout ça dans un trou. » Il se gratte la tête. « Et personne a jamais répondu, sauf une fois, il y a 109 573 nuits. Faut bien que quelqu'un tienne l'adresse ouverte, de l'autre côté. »"
+            "« Dans la Gorge. » Sorn le dit tout doucement, comme s'il avait peur de la réveiller.",
+            "Puis il se met à compter sur ses doigts, et ses doigts n'y suffisent pas. « Trois cents ans que les sondes émettent, et trois cents ans que ce relais-là balance tout dans un trou, consciencieux comme un facteur. Et personne a jamais répondu, sauf une fois, il y a 109 573 nuits. » Il se gratte la tête sous le casque. « Faut bien que quelqu'un tienne l'adresse ouverte, de l'autre côté. Une boîte aux lettres, on la décroche, quand plus personne habite là. »"
           ] } },
 
       /* ---- 2. Les trois morceaux — CALQUES (ratable) ---- */
@@ -2535,9 +2531,8 @@ const QUETES = [
         cible:{ lieu:"base" }, leurres:[ { lieu:"epave" }, { lieu:"antenne" } ],
         image:"images/quetes/q18/2.png",
         arrivee:[
-          "Le terminal accepte qu'on lui donne des morceaux et qu'on les fasse glisser. Tu lui donnes les tiens : le code de Chardon, la dernière ligne de la table, et la route de La Cassée. Tu remarques que le relais ne prend pas la route par le début, comme toi tu l'avais lue au port : il la prend par son dernier point.",   // v1.87f : l'indice du retournement
-          "Chacun, seul, ne vaut rien : un code sans lieu, un lieu sans entrée, une entrée sans adresse. Ensemble, ils devraient faire des coordonnées. À condition de les caler l'un sur l'autre.",
-          "Sorn s'assied à côté de toi et ne dit plus rien. Il regarde tes mains."
+          "Le terminal accepte qu'on lui donne des morceaux et qu'on les fasse glisser l'un sur l'autre. Tu lui donnes les tiens : le code de Chardon, la dernière ligne de la table, et la route de La Cassée. Tu remarques que le relais ne prend pas la route par le début, comme toi tu l'avais lue au port : il la prend par son dernier point.",   // v1.87f : l'indice du retournement (gardé tel quel en v1.92)
+          "Chacun, seul, ne vaut rien : un code sans lieu, un lieu sans entrée, une entrée sans adresse. Ensemble, ils devraient faire des coordonnées, à condition de les caler l'un sur l'autre. Sorn s'est assis à côté de toi et, pour une fois, il ne dit plus rien du tout. Il regarde tes mains."
         ],
         defi:{ type:"calques",
           /* v1.87f — choix de l'autrice : un retournement ici aussi, pour la difficulté.
@@ -2547,9 +2542,8 @@ const QUETES = [
           noms:["Code de Chardon","Table du relais","Route du rappel"],
           texte:[ "Trois relevés sur trois bandes : le code de Chardon, la table du Perchoir, la route de La Cassée." ],
           reussite:[
-            "Les trois bandes n'en font plus qu'une, et le terminal, pour la première fois, affiche une ligne complète : des coordonnées. Pas un nom, pas un lieu. Des chiffres.",
-            "Tu les reportes sur ta carte. Elles traversent la Gorge de part en part, et tombent de l'autre côté, là où la carte n'a plus rien.",
-            "« Le Bureau des Cultures », dit Sorn. « Il est là. Derrière. » Il rit, d'un rire bizarre. « Toute ma vie j'ai cru qu'AREPO était loin. Il était juste derrière un trou. »"
+            "Les trois bandes n'en font plus qu'une, et le terminal affiche pour la première fois une ligne complète : des coordonnées. Pas un nom, pas un lieu, rien que des chiffres. Tu les reportes sur ta carte ; elles traversent la Gorge de part en part et tombent de l'autre côté, là où la carte n'a plus rien à dire.",
+            "« Le Bureau des Cultures. Il est là, derrière. » Sorn rit, d'un drôle de rire qui ne sait pas où se mettre. « Toute ma vie, j'ai cru qu'AREPO était loin, loin comme les étoiles qu'on voit pas. Il était juste derrière un trou. »"
           ] } },
 
       /* ---- 3. Ce qu'on fait des coordonnées — CHOIX de Cercle ---- */
@@ -2557,8 +2551,7 @@ const QUETES = [
         cible:{ lieu:"base" }, leurres:[ { lieu:"epave" } ],
         image:"images/quetes/q18/3.png",
         arrivee:[
-          "Les coordonnées brillent sur l'écran. Sorn a recopié chaque chiffre trois fois dans son carnet, en tirant la langue.",
-          "« Bon », dit-il. « Maintenant on sait où. La question, c'est qui le sait. »"
+          "Les coordonnées brillent sur l'écran. Sorn a recopié chaque chiffre trois fois dans son carnet, en tirant la langue comme un écolier, et il vérifie encore la troisième copie contre la première avant de refermer le carnet sur son pouce. « Bon. Maintenant on sait où. La question, c'est qui le sait. »"
         ],
         defi:{ type:"choix",
           texte:["Les coordonnées du Bureau des Cultures sont dans ta mémoire, et dans le carnet de Sorn. À qui les confier ?"],
@@ -2568,20 +2561,22 @@ const QUETES = [
               journal:"Tu as donné les coordonnées à Galm. Elle a passé la nuit sur ses calculs, et le matin, elle avait l'air de quelqu'un qui n'aime pas ce qu'elle a trouvé." },
             { texte:"Les traduire en clair et les lire à Adaya, par radio. C'est elle qui avait peur ; c'est à elle de savoir la première.",
               cercles:{ langues:5 },
-              journal:"Tu as lu les coordonnées à Adaya. Elle n'a rien dit. Puis : « Derrière un trou. Bien sûr. » Et elle a raccroché." },
+              journal:"Tu as lu les coordonnées à Adaya, par radio. Elle a écouté jusqu'au bout sans rien dire, puis elle a soupiré : « Derrière un trou. Bien sûr. » Et elle a coupé." },
             { texte:"Ne rien dire encore. Effacer l'écran du relais, et garder le carnet de Sorn fermé.",
               cercles:{ veilleurs:5 },
               journal:"Tu as effacé l'écran du relais. Les coordonnées existent en deux endroits : ta mémoire, et le carnet de Sorn, qu'il garde dans sa poche de poitrine." }
           ],
           reussite:[
-            "Galm vient rechercher Sorn. Sur la passerelle, il s'arrête et te regarde, longtemps.",
-            "« T'y vas, hein. » Ce n'est pas une question. « Je te dirais bien de pas y aller. Mais moi, toute ma vie, on m'a dit de pas aller au bout du bras est. » Il hausse les épaules. « Va voir Galm. Avant de sauter dans un trou, on vérifie ses rivets. »"
+            "Galm vient rechercher Sorn. Sur la passerelle, il s'arrête, se retourne, et te regarde longtemps, le casque de travers.",
+            "« T'y vas, hein. » Ce n'est pas une question. « Je te dirais bien de pas y aller. Mais moi, toute ma vie, on m'a dit de pas aller au bout du bras est, et t'as vu ce qu'il y avait au bout. » Il hausse les épaules, ce qui fait glisser le casque un peu plus. « Va voir Galm. Avant de sauter dans un trou, on vérifie ses rivets. »"
           ] } }
     ],
     recompense:{ credits:2100, xp:360, flags:{} }
   },
 
-  /* ---------------- Q19 — Ce que la coque encaisse ---------------- */
+  /* ---------------- Q19 — Ce que la coque encaisse (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
   {
     id:"q19",
     nom:"Ce que la coque encaisse",
@@ -2589,10 +2584,9 @@ const QUETES = [
     donneurLieu:"La Carcasse",
     lieuPrise:"carcasse",
     intro:[
-      "Galm a étalé ses calculs sur l'établi, entre deux carters. Des courbes, des chiffres, des ratures. Elle a les yeux rouges.",
-      "« J'ai fait les comptes. La Gorge, elle avale la lumière : elle avale le reste aussi. Un vaisseau qui entre comme ça, il ressort en petits morceaux, ou il ressort pas. » Elle tapote une courbe. « Sauf s'il entre exactement sur la route. Et s'il a une coque qui tient la torsion. »",
-      "« Ta coque, elle tient pas. Je peux la doubler. Il me faut du câblage, des cellules, et du Cristal de Nyx pour les jointures : c'est la seule chose qui plie sans casser. » Elle repousse les papiers. « Et après, tu iras au bord, voir ce que ça donne. Pas dedans. Au bord. »",
-      "Elle te regarde enfin. « Je te le dirai qu'une fois, alors écoute. Je sais pas ce qu'il y a derrière. Personne sait. Les registres s'arrêtent là. Si tu y vas, je peux pas venir te chercher. »"
+      "Galm a étalé ses calculs sur l'établi, entre deux carters : des courbes, des colonnes de chiffres, des ratures par-dessus les ratures. Elle a les yeux rouges de quelqu'un qui n'a pas dormi, et elle ne fait rien pour le cacher.",
+      "« J'ai fait les comptes. La Gorge, elle avale la lumière, alors le reste, tu penses. Un vaisseau qui entre comme ça, il ressort en petits morceaux, ou il ressort pas. » Son doigt suit une courbe jusqu'à un point qu'elle a entouré trois fois. « Sauf s'il entre exactement sur la route, et s'il a une coque qui tient la torsion. La tienne tient pas. Je peux la doubler : il me faut du câblage, des cellules, et du Cristal de Nyx pour les jointures, parce que c'est la seule chose que je connaisse qui plie sans casser. Après, tu iras au bord voir ce que ça donne. Pas dedans. Au bord. »",
+      "Elle repousse les papiers et te regarde enfin en face. « Je te le dirai qu'une fois, alors écoute. Je sais pas ce qu'il y a derrière. Personne sait, les registres s'arrêtent là. Si tu y vas, je peux pas venir te chercher. »"
     ],
     etapes:[
 
@@ -2601,14 +2595,14 @@ const QUETES = [
         cible:{ lieu:"epave" }, leurres:[ { lieu:"base" }, { lieu:"planete_cassee" } ],
         image:"images/quetes/q19/1.png",
         arrivee:[
-          "Galm a déjà démonté deux panneaux de ta coque. Ils sont posés contre la paroi comme des pages arrachées. « J'attends ton matériel. Moi je fournis la sueur. »"
+          "Galm a déjà démonté deux panneaux de ta coque et les a posés contre la paroi, comme les pages arrachées d'un livre qu'elle compte bien recoudre. Elle s'essuie le front du dos du poignet. « J'attends ton matériel. Moi, je fournis la sueur. »"
         ],
         defi:{ type:"livraison",
           objets:{ fab_cablage:3, fab_cellule_d_energie:2, cristal:2 },
           texte:["Trois câblages, deux cellules d'énergie et deux Cristaux de Nyx. Le Cristal se trouve au Gravier, le reste se fabrique ou s'achète."],
           reussite:[
-            "Galm travaille toute la nuit. Elle soude, elle gaine, elle jure. Elle glisse le Cristal dans les jointures, éclat par éclat, comme on sertit une bague.",
-            "Au matin, ta coque a l'air d'un vieux manteau rapiécé. « C'est pas beau », dit Galm. « Mais ça plie. »"
+            "Galm travaille toute la nuit. Elle soude, elle gaine, elle jure entre ses dents, et elle glisse le Cristal dans les jointures éclat par éclat, avec des gestes de bijoutière qui sertit une bague.",
+            "Au matin, ta coque a l'air d'un vieux manteau rapiécé. Galm recule d'un pas pour la regarder, pas spécialement fière. « C'est pas beau. Mais ça plie. »"
           ] } },
 
       /* ---- 2. Le bord de la Gorge — TRAVERSÉE (ratable) ---- */
@@ -2616,8 +2610,8 @@ const QUETES = [
         cible:{ carte:"espace", x:1440, y:824, r:130 }, leurres:[ { lieu:"epave" }, { lieu:"base" } ],
         image:"images/quetes/q19/2.png",
         arrivee:[
-          "Au bord de la Gorge, les étoiles glissent. Elles se tordent en arcs, se dédoublent, disparaissent derrière quelque chose qui n'a pas de forme. Ta coque gémit, doucement, comme une charpente dans le vent.",
-          "Galm, dans la radio, la voix serrée : « Y a des courants. Des zones où ça tire, d'autres où ça tient. Tes capteurs te diront combien de zones qui tirent touchent chaque endroit que t'as déjà franchi. Avance jusqu'au bout de la route, et reviens. »"
+          "Au bord de la Gorge, les étoiles glissent. Elles se tordent en arcs, se dédoublent, puis disparaissent derrière quelque chose qui n'a pas de forme. Ta coque gémit doucement, comme une charpente dans le vent, et les jointures de Cristal se mettent à luire.",
+          "Dans la radio, la voix de Galm est plus serrée que d'habitude. « Y a des courants. Des zones où ça tire, d'autres où ça tient. Tes capteurs te diront combien de zones qui tirent touchent chaque endroit que t'as déjà franchi. Tu avances jusqu'au bout de la route, et tu reviens. Tu reviens, t'entends ? »"
         ],
         defi:{ type:"traversee", colonnes:7, lignes:9, lave:20, plaques:3, icone:"🌀",   // v1.87g : textes propres (courants)
           brulant:"Un courant te happe : la coque se tord, et une jointure de Cristal saute.",
@@ -2625,9 +2619,8 @@ const QUETES = [
           echec:"Un dernier courant arrache ta dernière protection. Tu te dégages du bord à pleine poussée — nouvelle tentative dans 8 h.",
           texte:["Traverse le bord de la Gorge jusqu'au dernier point de la route. Chaque zone franchie t'indique combien de courants la touchent."],
           reussite:[
-            "Tu touches le dernier point de la route, et tu tiens. La coque grince, les jointures de Cristal chauffent, mais rien ne casse.",
-            "Devant toi, la Gorge. Pas un trou : une absence. Tu as l'impression qu'elle te regarde aussi.",
-            "Tu fais demi-tour, lentement. Dans la radio, Galm respire de nouveau."
+            "Tu touches le dernier point de la route, et tu tiens. La coque grince, les jointures chauffent, mais rien ne casse. Devant toi s'ouvre la Gorge : pas un trou, une absence, et tu as la sale impression qu'elle te regarde aussi.",
+            "Tu fais demi-tour lentement, sans la quitter des yeux. Dans la radio, Galm se remet à respirer."
           ] } },
 
       /* ---- 3. Avant de sauter — CHOIX de Cercle ---- */
@@ -2635,9 +2628,8 @@ const QUETES = [
         cible:{ lieu:"epave" }, leurres:[ { lieu:"base" } ],
         image:"images/quetes/q19/3.png",
         arrivee:[
-          "Galm vérifie chaque jointure, une à une, la joue contre la coque, comme on écoute un cœur. Puis elle se redresse.",
-          "« Elle tiendra. » Un temps. « Toi, je sais pas. »",
-          "« Quand tu seras prêt, tu me le dis, et je te donne la route. Pas avant. Une fois là-dedans, tu reviens pas comme tu veux. Peut-être que tu reviens pas du tout. Fais ce que t'as à faire avant. »"
+          "Galm vérifie chaque jointure, une à une, la joue contre la coque et les yeux fermés, comme on écoute un cœur. Puis elle se redresse et s'essuie les mains, lentement, sans te regarder. « Elle tiendra. » Un temps. « Toi, je sais pas. »",
+          "« Quand tu seras prêt, tu me le dis, et je te donne la route. Pas avant. Une fois là-dedans, tu reviens pas comme tu veux, et peut-être que tu reviens pas du tout. Alors fais ce que t'as à faire avant. »"
         ],
         defi:{ type:"choix",
           texte:["Avant de sauter, il reste une chose à faire."],
@@ -2653,14 +2645,17 @@ const QUETES = [
               journal:"Tu as passé la nuit avec Galm sur ta coque. Au matin, il y avait un éclat de Cristal de plus à chaque jointure, et vous n'aviez dormi ni l'un ni l'autre." }
           ],
           reussite:[
-            "Galm te tend un bout de papier : la route, recopiée à la main. Les coordonnées de Chardon, de La Cassée et du Perchoir, mises bout à bout.",
-            "« Le saut, c'est quand tu veux. Mais quand tu entres, tu sors pas. Pas tout de suite. » Elle hésite. « Reviens me voir avant. Que je te le redise. »"
+            "Galm tire de sa poche un bout de papier plié : la route, recopiée à la main, les coordonnées de Chardon, de La Cassée et du Perchoir mises bout à bout dans son écriture carrée. « Le saut, c'est quand tu veux. Mais quand t'entres, tu sors pas. Pas tout de suite. »",
+            "Elle hésite, ce qui ne lui ressemble pas. « Reviens me voir avant. Que je te le redise. »"
           ] } }
     ],
     recompense:{ credits:2200, xp:370, flags:{} }
   },
 
-  /* ---------------- Q20 — La Gorge ---------------- */
+  /* ---------------- Q20 — La Gorge (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
+  /* ⚠ Gardés : le calculateur en panne (K54, ét. 2, 3, 5) et la grande salle décrite à l'entrée (v1.91b, ét. 5). */
   {
     id:"q20",
     nom:"La Gorge",
@@ -2670,10 +2665,9 @@ const QUETES = [
     /* K19 + l'avertissement explicite (Q19, dossier §7) : affiché AVANT d'accepter. */
     avert:"⚠ <b>Point de non-retour, pour un temps.</b> Après cette quête, tu ne pourras plus voler hors de la planète Maar (Triptolème, La Braise, Le Suaire, La Carcasse, le Perchoir…) tant que tu n'auras pas réglé ce qui t'attend de l'autre côté. Tu pourras toujours revenir sur Silène. Emporte du carburant, des vivres, et de quoi te soigner.",
     intro:[
-      "Galm ne dit pas bonjour. Elle fait le tour de ton vaisseau une dernière fois, en passant la main sur la coque comme sur l'encolure d'un animal.",
-      "« Je te le redis, comme promis. Personne en est revenu pour le raconter. Peut-être parce que personne y est allé. Peut-être pas. » Elle te tend la route, recopiée à la main. « Tu entres sur la ligne, pas à côté. Tu tiens le cap. Tu lâches rien. »",
-      "« Et si tu trouves le Bureau… » Elle cherche ses mots, et pour une fois, elle les trouve. « Dis-leur qu'ils ont oublié du monde, ici. Dis-leur qu'on les a pas oubliés, nous. »",
-      "Elle recule de deux pas. « Va. »"
+      "Galm ne dit pas bonjour. Elle fait le tour de ton vaisseau une dernière fois en passant la main sur la coque, comme sur l'encolure d'une bête qu'on va lâcher dans un pré inconnu.",
+      "« Je te le redis, comme promis. Personne en est revenu pour le raconter. Peut-être parce que personne y est allé, peut-être pas. » Elle te tend la route, recopiée à la main, et garde un coin du papier entre ses doigts une seconde de trop avant de le lâcher. « Tu entres sur la ligne, pas à côté. Tu tiens le cap. Tu lâches rien. »",
+      "« Et si tu trouves le Bureau… » Elle cherche ses mots, et pour une fois, elle les trouve. « Dis-leur qu'ils ont oublié du monde, ici. Dis-leur qu'on les a pas oubliés, nous. » Puis elle recule de deux pas, croise les bras, et c'est tout ce qu'elle t'accorde : « Va. »"
     ],
     etapes:[
 
@@ -2682,19 +2676,15 @@ const QUETES = [
         cible:{ lieu:"trou_noir" }, leurres:[ { lieu:"portail" }, { lieu:"base" } ],
         image:"images/quetes/q20/1.png",
         arrivee:[
-          "La Gorge remplit tout le hublot. Il n'y a plus d'étoiles devant, seulement derrière, et elles glissent vers le bord comme de l'eau vers une bonde.",
-          "Tu entres la route de Galm. Le vaisseau s'aligne. La coque se met à chanter, une note grave, continue, que tu sens dans les dents.",
-          "Dans la radio, Galm, très loin : « … ligne… bien… tiens… » Puis plus rien."
+          "La Gorge remplit tout le hublot. Il n'y a plus d'étoiles devant toi, seulement derrière, et elles glissent vers le bord comme de l'eau vers une bonde. Tu entres la route de Galm ; le vaisseau s'aligne, et la coque se met à chanter, une note grave et continue que tu sens jusque dans les dents.",
+          "Dans la radio, la voix de Galm arrive en miettes, de plus en plus loin, « … ligne… bien… tiens… », puis plus rien du tout."
         ],
         defi:{ type:"saut", carte:"ancolie", lieu:"chute", bouton:"Entrer dans la Gorge",
           texte:["Le dernier point de la route est devant toi."],
           reussite:[
-            "Tu entres.",
-            "Le noir. Une pression énorme, partout à la fois. Les chiffres de la route défilent sur l'écran de bord, un par un, comme prévu.",
-            "Puis ils changent.",
-            "Pas tous. Quelques chiffres, à la fin. Ils se réécrivent d'eux-mêmes, calmement, comme si quelqu'un tapait. Tu n'as rien touché. Le vaisseau vire. Tu tires sur les commandes : elles ne répondent plus.",
-            "La pression lâche d'un coup. Une lumière bleue. Un sol qui monte beaucoup trop vite. Une fleur, une seule, très nette, contre le hublot.",
-            "Le choc."
+            "Tu entres. Le noir, et une pression énorme, partout à la fois. Les chiffres de la route défilent sur l'écran de bord, un par un, comme prévu.",
+            "Puis ils changent. Pas tous : quelques chiffres, à la fin, qui se réécrivent d'eux-mêmes, calmement, comme si quelqu'un tapait. Tu n'as rien touché. Le vaisseau vire, tu tires sur les commandes, et elles ne répondent plus.",
+            "La pression lâche d'un coup. Une lumière bleue, un sol qui monte beaucoup trop vite, une fleur, une seule, très nette contre le hublot. Et le choc."
           ] } },
 
       /* ---- 2. La voix — SCÈNE ---- */
@@ -2702,15 +2692,11 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"chute" },
         image:"images/quetes/q20/2.png",
         arrivee:[
-          "Tu te réveilles la joue contre le tableau de bord. Le vaisseau est couché sur le flanc, au bout d'un long sillon de fleurs arrachées. Dehors, du bleu à perte de vue : des fleurs en cloche, bleu nuit, bleu glacier, qui se balancent au vent comme si de rien n'était.",
-          "L'air entre par une fissure de la verrière. Tu respires. Il est bon, mais mince : tu as le souffle court avant même d'avoir bougé.",   // v1.87 : K47
-          "Au loin, au milieu de la plaine, un bâtiment rond. Une seule lumière, qui clignote.",
-          "Silence. Puis la radio de bord grésille.",
-          "« … allô ? Ça marche, ce truc ? Attends. » Une toux. « Bonjour. Non. Bonsoir ? C'est quelle heure, chez vous ? Bon, peu importe. »",
-          "La voix est jeune, enrhumée, et parle ta langue avec des cailloux dedans, comme quelqu'un qui l'a apprise à la radio. « Je me présente. 42-U1F. Maintenance. Enfin, je maintiens. Quand j'ai le temps. J'ai rarement le temps. »",
-          "42-U1F. Tu as déjà lu ce matricule. Au Perchoir, au bas de l'accusé de réception de l'émission de Sorn, E. : OPÉRATEUR : 42-U1F. Quelqu'un avait entendu. Il t'a entendu.",
-          "« Alors voilà. T'es en Ancolie. MAAR-12. Le coin le plus calme de Maar : y a personne. C'est moi qui t'ai posé là. Bon, posé… J'avais visé la station, hein. J'ai eu la plaine. À quelques kilomètres près, c'est pareil. »",   // v1.87l : K54
-          "« Et ton calculateur de saut… bon. Il a pris un peu cher. J'ai réécrit ta route en plein saut, et j'ai pas tout remis comme c'était. Maintenant il connaît plus que Maar : Silène, Ancolie, et c'est tout. » Il renifle. « C'était pas prévu. Mais je vais pas te mentir, ça m'arrange. Moi, j'ai des trucs à faire et pas le temps. Toi, t'as un calculateur que je suis le seul à savoir réécrire. Donc on s'arrange : tu fais mes trucs, je te répare ton calculateur. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
+          "Tu te réveilles la joue contre le tableau de bord. Le vaisseau est couché sur le flanc au bout d'un long sillon de fleurs arrachées, et dehors, c'est du bleu à perte de vue : des fleurs en cloche, bleu nuit, bleu glacier, qui se balancent au vent comme si de rien n'était. L'air entre par une fissure de la verrière. Tu respires ; il est bon, mais mince, et tu as le souffle court avant même d'avoir bougé. Au loin, au milieu de la plaine, un bâtiment rond, avec une seule lumière qui clignote.",   // v1.87 : K47
+          "Puis la radio de bord grésille. « … allô ? Ça marche, ce truc ? Attends. » Une toux. « Bonjour. Non. Bonsoir ? C'est quelle heure, chez vous ? Bon, peu importe. » La voix est jeune, enrhumée, et elle parle ta langue avec des cailloux dedans, comme quelqu'un qui l'aurait apprise en écoutant la radio des autres. « Je me présente : 42-U1F. Maintenance. Enfin, je maintiens. Quand j'ai le temps. J'ai rarement le temps. »",
+          "42-U1F. Tu as déjà lu ce matricule, au Perchoir, au bas de l'accusé de réception de l'émission de Sorn, E. : OPÉRATEUR : 42-U1F. Quelqu'un avait entendu. Il t'a entendu.",
+          "« Alors voilà. T'es en Ancolie, MAAR-12, le coin le plus calme de Maar, vu qu'y a personne. C'est moi qui t'ai posé là. Bon, posé… j'avais visé la station, hein, j'ai eu la plaine, mais à quelques kilomètres près c'est pareil. » Il renifle. « Et ton calculateur de saut… bon. Il a pris un peu cher. J'ai réécrit ta route en plein saut, et j'ai pas tout remis comme c'était : maintenant il connaît plus que Maar, Silène, Ancolie, et c'est tout. C'était pas prévu. Mais je vais pas te mentir, ça m'arrange. »",   // v1.87l : K54
+          "« Moi, j'ai des trucs à faire et pas le temps. Toi, t'as un calculateur que je suis le seul à savoir réécrire. Donc on s'arrange : tu fais mes trucs, je te répare ton calculateur. Échange de bons procédés. C'est comme ça qu'on dit ? J'ai entendu ça dans une émission sur les semences. »"
         ],
         defi:{ type:"scene", bouton:"Ne rien répondre, et poser la main sur les commandes" } },
 
@@ -2719,8 +2705,8 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"chute" },
         image:"images/quetes/q20/3.png",
         arrivee:[
-          "Tu ne dis rien. Ta main se pose sur les commandes. Un silence, à l'autre bout. Puis : « Ah. Ça, c'est un non. Tu dis rien, mais j'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
-          "L'écran de bord affiche la console du calculateur de saut. Une ligne de commande défile, en caractères que tu sais lire : il suffirait de la retaper proprement pour que le calculateur retrouve ses routes, et toi les tiennes."
+          "Tu ne dis rien. Ta main se pose sur les commandes, et à l'autre bout il y a un silence, puis : « Ah. Ça, c'est un non. Tu dis rien, mais j'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
+          "L'écran de bord affiche la console du calculateur de saut. Une ligne de commande y défile, en caractères que tu sais lire : il suffirait de la retaper proprement pour que le calculateur retrouve ses routes, et toi les tiennes. Par la verrière fêlée, des fleurs bleues se pressent contre la vitre."
         ],
         defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
           colle:"« Copier-coller ? » Un petit rire enrhumé dans la radio. « Bien tenté. Chez nous aussi c'est interdit. Et chez nous aussi, ça marche pas. »",   // v1.87h
@@ -2732,11 +2718,9 @@ const QUETES = [
             "« Écoute, c'est pas contre toi. Moi-même j'y arrive pas comme ça, et c'est moi qui l'ai cassé. Faut le reprendre par le réseau, morceau par morceau. Rien n'est bien fait, ici. Rien. »"
           ],
           reussite:[
-            "Tu lâches les commandes. L'écran s'éteint, poliment.",
-            "« Voilà. Ça, c'est raisonnable. » Il a l'air sincèrement soulagé. « Bon. Tu vas faire quoi, maintenant ? »",
-            "Tu détaches ton harnais, tu pousses la porte du sas à l'épaule, et tu sors dans les fleurs. Au loin, le bâtiment rond clignote.",
-            "« Attends, tu pars ? Hé. Tu pars où ? Je te suis comment, moi ? » Un bruit de chaise qui recule. « Ils ont pas prévu de portage sur tablette, je fais comment, je transporte le terminal ?! »",
-            "La radio grésille dans ton dos, de plus en plus faible. Tu marches."
+            "Tu lâches les commandes. L'écran s'éteint, poliment. « Voilà. Ça, c'est raisonnable. » Il a l'air sincèrement soulagé. « Bon. Tu vas faire quoi, maintenant ? »",
+            "Tu détaches ton harnais, tu pousses la porte du sas à l'épaule, et tu sors dans les fleurs. Au loin, le bâtiment rond clignote toujours.",
+            "« Attends, tu pars ? Hé. Tu pars où ? Je te suis comment, moi ? » Un bruit de chaise qui recule, de câbles qu'on tire. « Ils ont pas prévu de portage sur tablette, je fais comment, je transporte le terminal ?! » La radio grésille dans ton dos, de plus en plus faible, et tu marches."
           ] } },
 
       /* ---- 4. La station — SCÈNE : les automates (K16) ---- */
@@ -2744,13 +2728,10 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station" },
         image:"images/quetes/q20/4.png",
         arrivee:[
-          "La marche est longue, et l'air est mince : tu t'arrêtes souvent pour reprendre ton souffle. L'ancolie t'arrive aux genoux, et chaque pas fait trembler des milliers de clochettes bleues. Rien ne bouge d'autre. Pas une bête, pas un oiseau. Personne.",
-          "Le bâtiment est rond, bas, intact, comme neuf. Autour, des machines vont et viennent sans se presser : des caissons sur pattes, des bras sur rails, des disques qui roulent. Elles taillent l'ancolie le long des allées, frottent une vitre, redressent une balise. Elles ne te regardent pas.",
-          "Sur le linteau de l'entrée, une plaque à demi couverte de pétales. Tu ne lis que la fin : … MAAR-12.",
-          "Tu poses la main sur la porte. Un caisson pivote vers toi, un œil rouge s'allume. Une voix plate, sans souffle : PERSONNEL NON RÉPERTORIÉ — MAAR-12. ACCÈS : AUCUN.",
-          "Tu essaies la porte de service. PERSONNEL NON RÉPERTORIÉ. Le panneau des réserves. ACCÈS : AUCUN. Une borne d'appel, au mur. Elle ne s'allume même pas.",
-          "Puis, d'un haut-parleur au-dessus de la porte, une voix que tu connais : « Ah. Te revoilà. Ils ont des haut-parleurs, ici. Personne s'en sert jamais. »",
-          "« Bouge pas. » Un cliquetis. Sur l'écran de la porte : OPÉRATEUR 42-U1F — AUTORISÉ. La porte s'ouvre. Le caisson éteint son œil rouge, et retourne tailler ses fleurs.",
+          "La marche est longue, et l'air est mince : tu t'arrêtes souvent pour reprendre ton souffle. L'ancolie t'arrive aux genoux, et chaque pas fait trembler des milliers de clochettes bleues. Rien d'autre ne bouge, pas une bête, pas un oiseau. Personne.",
+          "Le bâtiment est rond, bas, intact, comme neuf. Autour, des machines vont et viennent sans se presser, des caissons sur pattes, des bras sur rails, des disques qui roulent : elles taillent l'ancolie le long des allées, frottent une vitre, redressent une balise, et pas une ne te regarde. Sur le linteau de l'entrée, une plaque à demi couverte de pétales ; tu n'en lis que la fin, … MAAR-12.",
+          "Tu poses la main sur la porte. Un caisson pivote vers toi et allume un œil rouge, et une voix plate, sans souffle, tombe de quelque part : PERSONNEL NON RÉPERTORIÉ — MAAR-12. ACCÈS : AUCUN. Tu essaies la porte de service : PERSONNEL NON RÉPERTORIÉ. Le panneau des réserves : ACCÈS : AUCUN. La borne d'appel, au mur, ne s'allume même pas.",
+          "Puis, du haut-parleur au-dessus de la porte, une voix que tu connais déjà : « Ah, te revoilà. Ils ont des haut-parleurs, ici, personne s'en sert jamais. Bouge pas. » Un cliquetis. Sur l'écran de la porte s'affiche OPÉRATEUR 42-U1F — AUTORISÉ ; la porte s'ouvre, et le caisson éteint son œil rouge pour retourner tailler ses fleurs.",
           "« Tu vois ? Ici, ils m'écoutent. Toi, pour eux, t'existes pas. Moi, j'existe. Un peu. » Un temps. « J'essaie pas d'être méchant, hein. Je constate. »"
         ],
         defi:{ type:"scene", bouton:"Entrer" } },
@@ -2760,10 +2741,10 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station" },
         image:"images/quetes/q20/5.png",
         arrivee:[
-          "Dedans, une grande salle ronde, propre, vide. Des bancs alignés face à une baie qui donne sur une aire lisse, balisée. Des écrans éteints. Tout attend quelque chose, et ça fait longtemps.",
-          "« Bon. Récapitulons. » Il a l'air de lire une fiche. « Toi : un vaisseau qui sait plus sortir de Maar, et c'est un peu ma faute. Pas d'accès, personne à des jours de vol. Moi : des corvées en retard depuis… longtemps, et pas le droit de sortir. Procédure 7-B, sous-alinéa… euh. Ça se dit pas, chez vous. Disons : je peux pas. »",
-          "« Alors tu fais mes trucs. Pas tous les jours, je suis pas un monstre. Et moi, à la fin, je te répare ton calculateur. En attendant, Silène, Ancolie, tu vas, tu viens, tu fais ta vie : ça, il sait encore faire. Le reste — Triptolème, ta ferrailleuse, ton trou noir — il sait plus. C'est la panne. » Un reniflement. « Et c'est aussi le prix. »",
-          "Tu regardes les automates tailler l'ancolie, dehors, et le bouton éteint de la borne d'appel. Personne ne viendra. Tu le sais."
+          "Dedans, une grande salle ronde, haute, propre, vide. Des rangées de bancs tournées vers une baie qui donne sur une aire lisse, balisée, et sur l'ancolie au-delà. Au-dessus des bancs, un grand écran éteint ; d'autres, plus petits, le long des murs. Dans le sol, entre deux rangées, le couvercle rond d'une trappe de visite. Tout attend quelque chose, et ça fait longtemps. Un haut-parleur grésille au plafond.",   // v1.91b : l'écran et la trappe que Q21 utilise
+          "« Bon. Récapitulons. » Il a l'air de lire une fiche, et de la découvrir en même temps que toi. « Toi : un vaisseau qui sait plus sortir de Maar, et c'est un peu ma faute. Pas d'accès, personne à des jours de vol. Moi : des corvées en retard depuis… longtemps, et pas le droit de sortir. Procédure 7-B, sous-alinéa… euh. Ça se dit pas, chez vous. Disons : je peux pas. »",
+          "« Alors tu fais mes trucs. Pas tous les jours, je suis pas un monstre. Et moi, à la fin, je te répare ton calculateur. En attendant, Silène, Ancolie, tu vas, tu viens, tu fais ta vie : ça, il sait encore faire. Le reste, Triptolème, ta ferrailleuse, ton trou noir, il sait plus. C'est la panne. » Un reniflement. « Et c'est aussi le prix. »",
+          "Tu regardes les automates tailler l'ancolie, dehors, et le bouton éteint de la borne d'appel. Personne ne viendra, et tu le sais."
         ],
         defi:{ type:"choix",
           texte:["Tu n'as pas vraiment le choix. Mais tu peux choisir comment tu acceptes."],
@@ -2779,10 +2760,9 @@ const QUETES = [
               journal:"Tu as accepté le marché de 42-U1F sans discuter. Il a eu l'air méfiant. « T'acceptes vite, toi. Ça me plaît pas. Enfin si. Mais non. »" }
           ],
           reussite:[
-            "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé devant la station, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. »",
-            "Par la baie, tu le vois en effet se poser tout seul sur l'aire balisée, avec une délicatesse que tu ne lui as jamais connue. Les automates s'écartent pour le laisser passer.",
-            "« Pour la première corvée, on verra demain. Enfin, demain chez toi. Moi, ici, c'est toujours un peu la même heure. » Un silence. Puis, plus bas, presque timide : « Merci, hein. Personne m'avait jamais dit oui. »",
-            "La radio se coupe. Tu restes seul dans la grande salle ronde, au milieu des bancs vides tournés vers la baie."
+            "« Parfait. Super. Génial. » Un bruit de clavier. « Ton vaisseau, je te l'ai rangé devant la station, juste devant la baie. Gratuitement. Tu peux rentrer sur Silène quand tu veux. » Par la baie, tu le vois en effet se poser tout seul sur l'aire balisée, avec une délicatesse que tu ne lui as jamais connue, pendant que les automates s'écartent pour le laisser passer.",
+            "« Pour la première corvée, on verra demain. Enfin, demain chez toi ; moi, ici, c'est toujours un peu la même heure. » Il se tait, et tu crois qu'il a coupé. Puis, plus bas, presque timide : « Merci, hein. Personne m'avait jamais dit oui. »",
+            "La radio se coupe pour de bon. Tu restes seul dans la grande salle ronde, au milieu des bancs vides tournés vers la baie."
           ] } }
     ],
     /* K12 : le cadeau du bloc, c'est Ancolie. K16 : vol sur Maar seulement (verrouMaar,
@@ -2806,7 +2786,9 @@ const QUETES = [
      type dans deux quêtes qui se suivent (hors choix, attente).
      =========================================================== */
 
-  /* ---------------- Q21 — C-409 ---------------- */
+  /* ---------------- Q21 — C-409 (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
   {
     id:"q21",
     nom:"C-409",
@@ -2815,11 +2797,10 @@ const QUETES = [
     donneurLieu:"La station d'Ancolie",
     lieuPrise:"station",
     intro:[
-      "Sur l'écran au-dessus des bancs, une tache noire grésille, s'étire, prend forme : des épaules, une tête, rien de plus. Une combinaison close, vue à travers trois siècles de câbles. La silhouette te fait un petit signe de la main, avec un temps de retard sur le son.",
-      "« Ah. T'es là. Bonjour. Bonsoir. J'ai toujours pas compris votre heure. » Il mâche. « Barre protéinée. Goût <i>nature</i>. Je sais pas ce que c'est, la nature, mais si c'est ça, vous avez pas de chance. »",
-      "« Bon. Première corvée. Le conduit MAAR-12-C-409. Il passe sous la station, il porte le câble du réseau, et il est bouché. Je devais le nettoyer… » Il compte sur ses doigts. Il manque de doigts. « … depuis un certain temps. J'avais la flemme. J'ai toujours la flemme, remarque. C'est pour ça que t'es là. »",
-      "« Tu le nettoies, je m'occupe de ton calculateur. Tu le nettoies pas, tu gardes… » Il cherche. « … les fleurs. Elles sont jolies, non ? Moi je les vois en gris. L'écran est en monochrome. Rien n'est bien fait. »",
-      "« Les automates t'ouvriront la trappe de visite. Je leur ai dit que t'étais mon tournevis. Un tournevis autorisé. Enfin, presque. Leur parle pas, ils sont susceptibles. »"
+      "Sur l'écran au-dessus des bancs, une tache noire grésille, s'étire, prend forme : des épaules, une tête, rien de plus, une combinaison close vue à travers trois siècles de câbles. La silhouette te fait un petit signe de la main, avec un temps de retard sur le son.",
+      "« Ah, t'es là. Bonjour. Bonsoir. J'ai toujours pas compris votre heure. » Il mâche quelque chose. « Barre protéinée, goût <i>nature</i>. Je sais pas ce que c'est, la nature, mais si c'est ça, vous avez pas de chance. »",
+      "« Bon. Première corvée : le conduit MAAR-12-C-409. Il passe sous la station, il porte le câble du réseau, et il est bouché. Je devais le nettoyer depuis… » Il compte sur ses doigts, et il manque de doigts. « … depuis un certain temps. J'avais la flemme. J'ai toujours la flemme, remarque, c'est pour ça que t'es là. Tu le nettoies, je m'occupe de ton calculateur. Tu le nettoies pas, tu gardes… » Il cherche. « … les fleurs. Elles sont jolies, non ? Moi je les vois en gris, l'écran est en monochrome. Rien n'est bien fait. »",
+      "« Les automates t'ouvriront la trappe de visite : je leur ai dit que t'étais mon tournevis. Un tournevis autorisé. Enfin, presque. Leur parle pas, ils sont susceptibles. »"
     ],
     etapes:[
 
@@ -2828,9 +2809,8 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q21/1.png",
         arrivee:[
-          "Une trappe ronde s'ouvre dans le sol, entre deux bancs, avec un soupir de joint sec. Un caisson sur pattes recule d'un pas pour te laisser passer, son œil rouge éteint, l'air vaguement vexé.",
-          "En dessous, il fait noir et sec. Des conduits partout, gros comme des troncs, qui se croisent, plongent, remontent. Sur chacun, un matricule peint au pochoir sous la poussière bleue : C-401, C-402, C-407…",
-          "« C-409, c'est celui qui siffle », dit 42-U1F. « Enfin, qui sifflait. Il siffle plus, c'est pour ça qu'il est bouché. C'est logique, si tu y penses. J'y pense souvent. »"
+          "Une trappe ronde s'ouvre dans le sol, entre deux bancs, avec un soupir de joint sec, et un caisson sur pattes recule d'un pas pour te laisser passer, l'œil éteint et l'air vaguement vexé. En dessous, il fait noir et sec. Des conduits partout, gros comme des troncs, qui se croisent, plongent, remontent, chacun marqué d'un matricule au pochoir sous la poussière bleue : C-401, C-402, C-407…",
+          "« C-409, c'est celui qui siffle. Enfin, qui sifflait. Il siffle plus, c'est pour ça qu'il est bouché. C'est logique, si tu y penses. » Un silence pensif dans la radio. « J'y pense souvent. »"
         ],
         defi:{ type:"labyrinthe", colonnes:7, lignes:8,
           texte:["Sous la station, un dédale de conduits dans le noir, et de la poussière de pétales jusqu'aux chevilles."],
@@ -2838,9 +2818,8 @@ const QUETES = [
           bloque:"Un conduit te barre le passage : faut passer dessous, ou faire le tour. Avance case par case.",
           fini:"Une plaque, sous la poussière : MAAR-12-C-409.",
           reussite:[
-            "Le C-409 est plus petit que les autres, et plus vieux. Une trappe de visite tous les dix pas, et derrière chaque trappe, le silence.",
-            "Tu colles l'oreille contre le métal. Rien. Pas un souffle. Tu ouvres la première trappe.",
-            "Le conduit est plein. Plein à ras bord, d'un bout à l'autre, de quelque chose de bleu."
+            "Le C-409 est plus petit que les autres, et plus vieux, avec une trappe de visite tous les dix pas et, derrière chaque trappe, le silence. Tu colles l'oreille contre le métal : rien, pas un souffle. Tu ouvres la première trappe.",
+            "Le conduit est plein, à ras bord, d'un bout à l'autre, de quelque chose de bleu."
           ] } },
 
       /* ---- 2. Le bouchon — TIR (ratable) ---- */
@@ -2848,10 +2827,9 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q21/2.png",
         arrivee:[
-          "De l'ancolie. Le conduit est plein d'ancolie. Des graines, montées avec l'air de la ventilation, ont germé dans le noir : trois siècles de tiges pâles, de racines en pelote, de pétales fanés tassés comme du feutre.",
-          "« Oh. » Un silence. « Ah oui. Je comprends mieux pourquoi ça siffle plus. »",
-          "Un automate t'a suivi jusqu'à la trappe. Au bout de son bras, un souffleur. Il te le tend sans te regarder, comme on tend un outil à quelqu'un qui n'est pas là.",
-          "« Eux, ils nettoient pas les conduits. Les conduits, c'est le réseau. Le réseau, c'est la maintenance. La maintenance, c'est moi. » Un bruit de chaise. « Bon, maintenant c'est toi. Mets le souffleur en marche : la ventilation va pousser les pelotes vers toi. Éclate-les avant qu'elles se recollent. Elles se recollent. Je sais pas comment, mais elles se recollent. »"
+          "De l'ancolie. Le conduit est plein d'ancolie : des graines montées avec l'air de la ventilation ont germé dans le noir, et ça fait trois siècles de tiges pâles, de racines en pelote et de pétales fanés tassés comme du feutre. « Oh. » Un silence. « Ah oui. Je comprends mieux pourquoi ça siffle plus. »",
+          "Un automate t'a suivi jusqu'à la trappe. Au bout de son bras, un souffleur, qu'il te tend sans te regarder, comme on tend un outil à quelqu'un qui n'est pas là.",
+          "« Eux, ils nettoient pas les conduits. Les conduits, c'est le réseau ; le réseau, c'est la maintenance ; la maintenance, c'est moi. » Un bruit de chaise. « Bon, maintenant c'est toi. Mets le souffleur en marche : la ventilation va pousser les pelotes vers toi, et tu les éclates avant qu'elles se recollent. Elles se recollent. Je sais pas comment, mais elles se recollent. »"
         ],
         defi:{ type:"tir", cible:12, tirs:17, duree:30, couleur:"#8fb8ff",
           texte:["La ventilation pousse les pelotes de racines dans le conduit, une à une, de plus en plus vite."],
@@ -2860,9 +2838,8 @@ const QUETES = [
           fini:"La dernière pelote éclate en pluie de pétales.",
           echec:"Les pelotes se recollent au fond du conduit, en un seul bouchon, plus serré qu'avant. Tu ressors couvert de bleu. Nouvelle tentative dans 8 h.",
           reussite:[
-            "La dernière pelote éclate. Pendant une seconde, il ne se passe rien.",
-            "Puis un souffle froid remonte le conduit d'un coup, comme si la station reprenait sa respiration, et le C-409 se met à siffler. Une note longue, un peu fausse.",
-            "« Il siffle. » La voix de 42-U1F monte d'un ton. « Il siffle ! T'entends ? C'est beau. Enfin, c'est un sifflement. Mais c'est beau. »"
+            "La dernière pelote éclate. Pendant une seconde, il ne se passe rien ; puis un souffle froid remonte le conduit d'un coup, comme si la station reprenait sa respiration, et le C-409 se met à siffler, une note longue, un peu fausse.",
+            "« Il siffle. » La voix monte d'un ton. « Il siffle ! T'entends ? C'est beau. Enfin, c'est un sifflement. Mais c'est beau. »"
           ] } },
 
       /* ---- 3. Ce qui circule — ATTENTE (3 h) : la station est branchée au réseau (K23) ---- */
@@ -2870,18 +2847,15 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q21/3.png",
         arrivee:[
-          "La ventilation tourne à plein et chasse ce qui reste vers les grilles du fond. Au milieu du conduit, maintenant propre, apparaît ce que l'ancolie cachait : un câble gainé de verre, qui court le long de la paroi.",
-          "Dedans, de la lumière passe. Par paquets. Régulière.",
-          "« Tu peux remonter, hein », dit 42-U1F. « La purge, elle se fait toute seule. » Tu ne remontes pas."
+          "La ventilation tourne à plein et chasse ce qui reste vers les grilles du fond. Au milieu du conduit, maintenant propre, apparaît ce que l'ancolie cachait : un câble gainé de verre qui court le long de la paroi, et dedans, de la lumière qui passe, par paquets, régulière.",
+          "« Tu peux remonter, hein. La purge, elle se fait toute seule. » Tu ne remontes pas."
         ],
         defi:{ type:"attente", duree:3*3600*1000,
           texte:["La purge vide le conduit, mètre après mètre. Le câble, lui, ne s'arrête jamais."],
           reussite:[
-            "Tu as regardé passer la lumière pendant des heures. À la fin, tu ne la regardes plus : tu la lis.",
-            "Chaque paquet porte une ligne en ancien, qui s'affiche une seconde sur le petit écran de la trappe de visite. APPEL. RELÈVE. RATIONS. APPEL. ACCUSÉ DE RÉCEPTION. Et en tête de chaque ligne, toujours la même adresse : QUAI MAAR-3.",
-            "Le quai de Silène. Celui qui est sous l'anneau. Il parle jusqu'ici, à des jours de chez toi, par ce câble que l'ancolie étouffait.",
-            "Les paquets vont et viennent à la même cadence que les vagues de la silène. La cadence de l'appel. Tu la connais par cœur.",
-            "« Bah oui », dit 42-U1F, comme si tu avais posé une question. « Tout est branché. Les quais, les relais, les sondes. Ancolie aussi. C'est pour ça que c'était ma corvée : tout ce qui passe dans un câble, c'est à moi de l'entretenir. » Un temps. « Tout seul. Depuis… » Il cherche. « Depuis toujours, en fait. »"
+            "Tu as regardé passer la lumière pendant des heures, et à la fin, tu ne la regardes plus : tu la lis. Chaque paquet porte une ligne en ancien qui s'affiche une seconde sur le petit écran de la trappe de visite, APPEL, RELÈVE, RATIONS, APPEL, ACCUSÉ DE RÉCEPTION, et en tête de chaque ligne, toujours la même adresse : QUAI MAAR-3.",
+            "Le quai de Silène, celui qui est sous l'anneau. Il parle jusqu'ici, à des jours de chez toi, par ce câble que l'ancolie étouffait, et les paquets vont et viennent à la même cadence que les vagues de la silène. La cadence de l'appel. Tu la connais par cœur.",
+            "« Bah oui », fait la radio, comme si tu avais posé une question. « Tout est branché, les quais, les relais, les sondes, Ancolie aussi. C'est pour ça que c'était ma corvée : tout ce qui passe dans un câble, c'est à moi de l'entretenir. » Un temps. « Tout seul. Depuis… » Il cherche. « Depuis toujours, en fait. »"
           ] } },
 
       /* ---- 4. Un nom — CHOIX de Cercle (K25 : « Asulf ») ---- */
@@ -2889,12 +2863,9 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q21/4.png",
         arrivee:[
-          "Quand tu remontes, la silhouette t'attend sur l'écran, les bras croisés. Elle a l'air contente d'elle, autant qu'une tache noire peut l'être.",
-          "Sur ta radio, le canal par lequel il te parle depuis la Gorge porte toujours le nom que l'appareil lui a donné : SOURCE INCONNUE — 42-U1F. Tu le regardes un moment. Quatre-deux-U-un-F. Ça ne se dit pas. Ça s'épelle.",
-          "Tu effaces la ligne, et tu tapes à la place : ASULF.",
-          "Un silence. Puis, à l'autre bout : « … Attends. Mon canal a changé de nom. » Une pause. « A. S. U. L. F. » Il le lit lettre par lettre, puis d'un coup : « Asulf. »",
-          "« C'est moi, ça ? Quatre-deux… A. U, un… SUL. F. Oh. Oh, c'est malin. » Il le répète sur plusieurs tons, comme on essaie une veste. « Asulf. ASULF. Asulf ? »",
-          "« Ça se prononce, au moins. Personne m'a jamais prononcé. » Puis, très vite : « C'est pas réglementaire, hein. Je le garde quand même. Le dis à personne. »"
+          "Quand tu remontes, la silhouette t'attend sur l'écran, les bras croisés, aussi contente d'elle qu'une tache noire peut l'être. Tu poses ta radio sur un banc. Le canal par lequel il te parle depuis la Gorge porte toujours le nom que l'appareil lui a donné : SOURCE INCONNUE — 42-U1F. Tu le regardes un moment. Quatre-deux-U-un-F : ça ne se dit pas, ça s'épelle. Tu effaces la ligne, et tu tapes à la place : ASULF.",
+          "À l'autre bout, un silence. « … Attends. Mon canal a changé de nom. » Il le lit lettre par lettre, « A. S. U. L. F. », puis d'un coup : « Asulf. » Et il refait le chemin à voix haute, lentement, comme on démonte un réveil pour voir : « Quatre-deux… A. U, un… SUL. F. Oh. Oh, c'est malin. »",
+          "Il le répète sur plusieurs tons, comme on essaie une veste devant une glace. « Asulf. ASULF. Asulf ? Ça se prononce, au moins. Personne m'a jamais prononcé. » Puis, très vite, comme pour rattraper quelque chose qui lui aurait échappé : « C'est pas réglementaire, hein. Je le garde quand même. Le dis à personne. »"
         ],
         defi:{ type:"choix",
           texte:["Le C-409 siffle sous tes pieds. Il te reste des racines plein les poches, le souffleur de l'automate dans les mains, et trois heures de trafic dans la tête."],
@@ -2910,15 +2881,17 @@ const QUETES = [
               journal:"Tu as démonté le souffleur de l'automate, puis tu l'as remonté. Il te reste une vis. Asulf : « Il en reste toujours une. C'est la règle. Personne sait d'où elle vient. »" }
           ],
           reussite:[
-            "« Bon. » Asulf a repris sa voix de fiche. « Corvée numéro un : faite. Ton calculateur : toujours en panne, mais c'est noté. Silène, Ancolie, tu vas, tu viens. Le reste, quand j'aurai réparé. Le marché tient. »",
-            "« Demain, je te trouve autre chose. J'ai une liste. » Un bruit de papier qu'il n'a sûrement pas. « Elle est longue. Elle est très longue. Tu vas adorer. »",
-            "Sous tes pieds, le C-409 siffle sa note fausse. Dehors, les automates taillent l'ancolie le long des allées. Ta bête s'est couchée sous un banc, ses marques éteintes. Elle a l'air de bouder."
+            "« Bon. » Asulf a repris sa voix de fiche. « Corvée numéro un : faite. Ton calculateur : toujours en panne, mais c'est noté. Silène, Ancolie, tu vas, tu viens ; le reste, quand j'aurai réparé. Le marché tient. Demain, je te trouve autre chose, j'ai une liste. » Un bruit de papier qu'il n'a sûrement pas. « Elle est longue. Elle est très longue. Tu vas adorer. »",
+            "Sous tes pieds, le C-409 siffle sa note fausse. Dehors, les automates taillent l'ancolie le long des allées. Ta bête s'est couchée sous un banc, ses marques éteintes ; elle a l'air de bouder."
           ] } }
     ],
     recompense:{ credits:2400, xp:420, flags:{} }   // K35, K39 : pas de PA
   },
 
-  /* ---------------- Q22 — La zone chaude ---------------- */
+  /* ---------------- Q22 — La zone chaude (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
+  /* ⚠ Gardé : « Sinon, pas de calculateur » (K54). */
   {
     id:"q22",
     nom:"La zone chaude",
@@ -2927,12 +2900,10 @@ const QUETES = [
     donneurLieu:"La station d'Ancolie",
     lieuPrise:"station",
     intro:[
-      "« Asulf, au rapport. » Il a l'air très content de le dire. Il le redit. « Asulf, au rapport. Ça sonne bien. On dirait quelqu'un. »",
-      "« Deuxième corvée. Il y a un relais de surface au pied du volcan, au nord-ouest. C'est lui qui porte la station jusqu'au réseau. Tous les après-midi, quand la roche chauffe, il décroche. Et quand il décroche, je perds la station. Les portes, les automates, les haut-parleurs. Tout. »",
-      "Un temps. « Et ça, ça fait un rapport. <i>Relais MAAR-12, coupure, opérateur de maintenance : 42-U1F.</i> Avec mon matricule dessus. Et un rapport avec mon matricule dessus, quelqu'un pourrait le lire. Il pourrait se demander pourquoi la maintenance s'occupe d'un relais d'Ancolie. Il pourrait poser des questions. Je déteste les questions. »",
-      "« Donc tu le répares. Sinon… » Il cherche une menace. Il la trouve. « Sinon, pas de calculateur. Toi tu restes coincé sur Maar, et moi je reste coincé avec mes rapports. Voilà. C'est du chantage. Je préfère le dire, comme ça on perd pas de temps. »",
-      "Puis, beaucoup plus bas : « Et en rentrant… tu passes par chez toi ? Sur Silène ? J'ai entendu des trucs, à la radio. Des gens qui parlent de <i>rations chaudes</i>. Chaudes. » Un silence. « Exprès ? »",
-      "« Au dos de l'anneau, côté mer, il y a une trappe de conduit. Personne passe jamais par là. Moi, j'y passe. Enfin, mes mains y passent. Trois rations chaudes, et je te pose plus jamais de question. » Un temps. « C'est faux. Je vais t'en poser plein. »"
+      "« Asulf, au rapport. » Il a l'air très content de le dire, alors il le redit, pour voir : « Asulf, au rapport. Ça sonne bien. On dirait quelqu'un. »",
+      "« Deuxième corvée. Y a un relais de surface au pied du volcan, au nord-ouest : c'est lui qui porte la station jusqu'au réseau. Tous les après-midi, quand la roche chauffe, il décroche, et quand il décroche, je perds la station, les portes, les automates, les haut-parleurs, tout. Et ça, ça fait un rapport. » Sa voix baisse d'un cran, comme s'il récitait une malédiction. « <i>Relais MAAR-12, coupure, opérateur de maintenance : 42-U1F.</i> Avec mon matricule dessus. Un rapport avec mon matricule dessus, quelqu'un pourrait le lire, se demander pourquoi la maintenance s'occupe d'un relais d'Ancolie, et poser des questions. Je déteste les questions. »",
+      "« Donc tu le répares. Sinon… » Il cherche une menace, et il la trouve. « Sinon, pas de calculateur. Toi tu restes coincé sur Maar, et moi je reste coincé avec mes rapports. Voilà, c'est du chantage. Je préfère le dire, comme ça on perd pas de temps. »",
+      "Puis, beaucoup plus bas : « Et en rentrant… tu passes par chez toi ? Sur Silène ? J'ai entendu des trucs, à la radio, des gens qui parlent de <i>rations chaudes</i>. Chaudes. Exprès ? » Il n'attend pas la réponse. « Au dos de l'anneau, côté mer, y a une trappe de conduit. Personne passe jamais par là, sauf moi. Enfin, mes mains. Trois rations chaudes, et je te pose plus jamais de question. » Il réfléchit. « C'est faux. Je vais t'en poser plein. »"
     ],
     etapes:[
 
@@ -2941,17 +2912,14 @@ const QUETES = [
         cible:{ carte:"ancolie", x:640, y:520, r:120 }, leurres:[ { carte:"ancolie", lieu:"cratere" }, { carte:"ancolie", x:820, y:250, r:100 } ],
         image:"images/quetes/q22/1.png",
         arrivee:[
-          "Au nord-ouest, l'ancolie s'éclaircit, roussit, puis cède. Le sol devient noir, fendu de veines orange qui battent doucement, comme un pouls. L'air tremble, et il est encore plus mince qu'en bas. Ta bête marche dans tes pas, ses marques éteintes.",
-          "Le relais est là-haut, sur une crête : un mât planté dans la roche, à moitié couché, et un boîtier gravé du carré qui fume un peu.",
-          "Entre lui et toi, une coulée refroidie. Refroidie dessus, en tout cas.",
-          "« Fais attention où tu mets les pieds », dit Asulf. « Je dis ça, j'en sais rien. J'ai jamais mis les pieds nulle part. »"
+          "Au nord-ouest, l'ancolie s'éclaircit, roussit, puis cède. Le sol devient noir, fendu de veines orange qui battent doucement, comme un pouls, et l'air tremble, encore plus mince qu'en bas. Ta bête marche dans tes pas, ses marques éteintes. Là-haut, sur une crête, le relais : un mât planté dans la roche, à moitié couché, et un boîtier gravé du carré qui fume un peu.",
+          "Entre lui et toi, une coulée refroidie. Refroidie dessus, en tout cas. « Fais attention où tu mets les pieds », te conseille Asulf, avant d'avouer : « Je dis ça, j'en sais rien. J'ai jamais mis les pieds nulle part. »"
         ],
         defi:{ type:"traversee", colonnes:7, lignes:9, lave:19, plaques:3,
           pariForce:"La croûte cède — mais rien ne permettait de le savoir : tu t'y attendais, et tu te rattrapes à temps. Ta plaque tient.",
           texte:["Une coulée dont la croûte cache des poches brûlantes. Chaque case franchie te dit combien de poches la touchent."],
           reussite:[
-            "Tu poses la main sur le mât. Il est chaud comme une pierre de four.",
-            "Sur le boîtier, une plaque : RELAIS DE SURFACE — MAAR-12/2. Sous elle, une petite lampe d'état, rouge, qui hésite."
+            "Tu poses la main sur le mât ; il est chaud comme une pierre de four. Sur le boîtier, une plaque, RELAIS DE SURFACE — MAAR-12/2, et sous elle une petite lampe d'état, rouge, qui hésite."
           ] } },
 
       /* ---- 2. Le relais — RÉACTION EN CHAÎNE (ratable) ---- */
@@ -2959,9 +2927,8 @@ const QUETES = [
         cible:{ carte:"ancolie", x:640, y:520, r:120 },
         image:"images/quetes/q22/2.png",
         arrivee:[
-          "Le boîtier s'ouvre sur une grille de cellules reliées par des pistes de cuivre. La chaleur a cuit les soudures : par endroits, le cuivre a bleui ; ailleurs, il a fondu en perles.",
-          "« Il faut relancer les bornes », dit Asulf. « Toutes. La notice dit : <i>Réamorçage par impulsion, propagation sur deux segments, au-delà perte de charge.</i> » Un temps. « Ça veut dire… tu donnes un coup de jus, et ça passe aux voisins. Pas trop loin. Deux voisins. Ou deux pistes. C'est pareil ? » Un temps. « C'est pas pareil. »",
-          "« Et t'en as pas beaucoup, des coups de jus. Le relais a plus beaucoup de jus. C'est pour ça qu'il est en panne. Tout se tient. »"
+          "Le boîtier s'ouvre sur une grille de cellules reliées par des pistes de cuivre. La chaleur a cuit les soudures : par endroits le cuivre a bleui, ailleurs il a fondu en perles.",
+          "« Faut relancer les bornes. Toutes. » Asulf lit sa notice à voix haute, en détachant chaque mot : « <i>Réamorçage par impulsion, propagation sur deux segments, au-delà perte de charge.</i> Ça veut dire… tu donnes un coup de jus, et ça passe aux voisins. Pas trop loin. Deux voisins. Ou deux pistes, c'est pareil ? » Il réfléchit, et ça s'entend. « C'est pas pareil. Et t'en as pas beaucoup, des coups de jus : le relais a plus beaucoup de jus, c'est pour ça qu'il est en panne. Tout se tient. »"
         ],
         defi:{ type:"reaction", colonnes:7, lignes:5, impulsions:3, bornes:8, portee:2, essais:2,
           texte:["Des bornes à relancer, des pistes à moitié fondues, et à peine de quoi donner trois impulsions."],
@@ -2970,11 +2937,9 @@ const QUETES = [
           fini:"Toutes les bornes s'allument.",
           echec:"Les pistes crachent une gerbe d'étincelles, puis se taisent. Le cuivre a trop chauffé : il faut le laisser refroidir. Nouvelle tentative dans 8 h.",
           reussite:[
-            "Les bornes s'allument une à une, ambre, puis vert. Le mât se redresse d'un cran en grinçant. La petite lampe d'état passe au vert, et ne bouge plus.",
-            "Au centre de la plaine, très loin, une lumière de la station cesse de clignoter. Elle devient fixe.",
-            "« Ah ! J'ai la station. J'ai tout. Les portes, les automates. J'ai même une caméra que je savais pas que j'avais. » Un temps. « Oh, c'est toi ? T'es tout petit, vu d'en haut. Et tout rouge. C'est normal, le rouge ? Vous êtes rouges, chez vous ? »",
-            "Tu regardes tes mains. Elles sont noires de suie, et rouges de chaleur.",
-            "« Bon. Maintenant… » Il a l'air de se tortiller sur sa chaise. « Les rations. »"
+            "Les bornes s'allument une à une, ambre, puis vert. Le mât se redresse d'un cran en grinçant, et la petite lampe d'état passe au vert pour ne plus bouger. Au centre de la plaine, très loin, une lumière de la station cesse de clignoter et devient fixe.",
+            "« Ah ! J'ai la station. J'ai tout, les portes, les automates, j'ai même une caméra que je savais pas que j'avais. Oh, c'est toi ? T'es tout petit, vu d'en haut. Et tout rouge. C'est normal, le rouge ? Vous êtes rouges, chez vous ? » Tu regardes tes mains : elles sont noires de suie, et rouges de chaleur.",
+            "« Bon. Maintenant… » Tu l'entends se tortiller sur sa chaise. « Les rations. »"
           ] } },
 
       /* ---- 3. Chaud — LIVRAISON à la trappe (K46) ---- */
@@ -2982,19 +2947,15 @@ const QUETES = [
         cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
         image:"images/quetes/q22/3.png",
         arrivee:[
-          "Le dos de l'anneau. Personne ne vient jamais de ce côté : le rempart d'un côté, la mer de l'autre, et entre les deux la bande de terre nue, entretenue au cordeau.",
-          "Ta bête lève la tête. Ses marques se rallument, une à une, comme si elle rentrait chez elle.",
-          "Au pied du mur, à moitié enfouie dans le talus, une trappe ronde, grande comme une assiette, gravée du carré. Ni poignée, ni serrure. Un déclic : elle s'entrouvre d'un doigt, de l'intérieur.",
-          "« C'est moi », dit Asulf, très bas. « Enfin, c'est ma main. Enfin, c'est un bras de maintenance que je pilote. Il passe par les conduits. Moi je bouge pas, hein. Moi je suis à mon poste. » Un temps. « Mets-les là. Doucement. »"
+          "Le dos de l'anneau. Personne ne vient jamais de ce côté : le rempart d'un côté, la mer de l'autre, et entre les deux la bande de terre nue, entretenue au cordeau. Ta bête lève la tête, et ses marques se rallument une à une, comme si elle rentrait chez elle.",
+          "Au pied du mur, à moitié enfouie dans le talus, une trappe ronde, grande comme une assiette, gravée du carré. Ni poignée, ni serrure. Un déclic, et elle s'entrouvre d'un doigt, de l'intérieur.",
+          "« C'est moi », chuchote Asulf, avant de se reprendre aussitôt. « Enfin, c'est ma main. Enfin, c'est un bras de maintenance que je pilote, qui passe par les conduits. Moi je bouge pas, hein, moi je suis à mon poste. Mets-les là. Doucement. »"
         ],
         defi:{ type:"livraison", objets:{ fab_ration_chaude:3 },
           texte:["Trois rations chaudes. Les Biotech en fabriquent ; la Boutique en vend."],
           reussite:[
-            "Un bras articulé, fin comme une patte d'insecte, sort de la trappe. Il prend les rations une à une, avec une délicatesse infinie, et la trappe se referme.",
-            "Un long silence. Puis, dans la radio, un bruit d'emballage qu'on déchire.",
-            "« … »",
-            "« C'est chaud. »",
-            "« C'est CHAUD. Ça brûle la langue. Pourquoi ça brûle la langue ? C'est voulu ? C'est complètement irresponsable. C'est génial. » Bruit de mastication. « Je vais en manger une autre. Juste pour vérifier. »"
+            "Un bras articulé, fin comme une patte d'insecte, sort de la trappe. Il prend les rations une à une, avec une délicatesse infinie, et la trappe se referme. Long silence. Puis, dans la radio, un bruit d'emballage qu'on déchire, et un autre silence, plus long encore.",
+            "« C'est chaud. » Il le redit plus fort, scandalisé : « C'est CHAUD. Ça brûle la langue. Pourquoi ça brûle la langue ? C'est voulu ? C'est complètement irresponsable. C'est génial. » La mastication reprend. « Je vais en manger une autre. Juste pour vérifier. »"
           ] } },
 
       /* ---- 4. Pourquoi — CHOIX de Cercle ---- */
@@ -3002,8 +2963,7 @@ const QUETES = [
         cible:{ x:322, y:1050, r:80 },
         image:"images/quetes/q22/4.png",
         arrivee:[
-          "Il a mangé les trois. D'affilée. Après avoir juré qu'il en garderait pour demain.",
-          "Puis il se tait longtemps. Quand il reparle, ce n'est plus sa voix de fiche.",
+          "Il a mangé les trois, d'affilée, après avoir juré qu'il en garderait pour demain. Puis il se tait longtemps, et quand il reparle, ce n'est plus sa voix de fiche.",
           "« Dis. Je te fais du chantage, et toi tu m'apportes à manger chaud. C'est pas logique. Chez nous, quand c'est pas logique, on ouvre un dossier. » Un temps. « J'ouvre pas de dossier. Je demande, c'est tout. »"
         ],
         defi:{ type:"choix",
@@ -3027,7 +2987,9 @@ const QUETES = [
     recompense:{ credits:2500, xp:440, flags:{} }
   },
 
-  /* ---------------- Q23 — Ce qui brille sous la glace ---------------- */
+  /* ---------------- Q23 — Ce qui brille sous la glace (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
   {
     id:"q23",
     nom:"Ce qui brille sous la glace",
@@ -3036,11 +2998,10 @@ const QUETES = [
     donneurLieu:"La station d'Ancolie",
     lieuPrise:"station",
     intro:[
-      "« Problème. » Asulf a sa voix de fiche, mais la fiche tremble un peu. « J'ai un automate en moins. »",
-      "« Le numéro 7. Il entretient les balises d'approche, le long des allées, jusqu'au nord-est. Il y a trois jours, il est parti redresser la balise du bord des Glaces. Il est jamais revenu. Il émet encore, mais il dit n'importe quoi. Comme moi le matin. »",
-      "« Moi, l'automate, je m'en fiche. Mais à l'inventaire, il en manque un. Et l'inventaire, c'est comme l'appel : on compte les machines, comme on se compte, nous. Si le compte est faux, quelqu'un recompte. Et si quelqu'un recompte… » Il ne finit pas.",
-      "« Va me le chercher. Il fait froid, là-bas, paraît-il. Je sais pas ce que c'est, froid. Ici c'est toujours dix-neuf degrés. Réglementaire. »",
-      "Puis, l'air de rien : « Et… sur Silène, ils parlent tout le temps d'un truc. La sporelle. C'est quoi, la sporelle ? Ça se mange ? Ça se boit ? » Un temps. « Chez nous, c'est interdit. Je viens de vérifier. Ça donne envie. »"
+      "« Problème. » Asulf a sa voix de fiche, mais la fiche tremble un peu. « J'ai un automate en moins. Le numéro 7. Il entretient les balises d'approche le long des allées, jusqu'au nord-est, et y a trois jours il est parti redresser la balise du bord des Glaces. Il est jamais revenu. Il émet encore, mais il dit n'importe quoi. Comme moi le matin. »",
+      "« Moi, l'automate, je m'en fiche. Mais à l'inventaire, il en manque un, et l'inventaire, c'est comme l'appel : on compte les machines comme on se compte, nous. Si le compte est faux, quelqu'un recompte. Et si quelqu'un recompte… » Il ne finit pas.",
+      "« Va me le chercher. Il fait froid, là-bas, paraît-il. Je sais pas ce que c'est, froid : ici c'est toujours dix-neuf degrés. Réglementaire. »",
+      "Puis, l'air de rien, beaucoup trop l'air de rien : « Et… sur Silène, ils parlent tout le temps d'un truc. La sporelle. C'est quoi, la sporelle ? Ça se mange ? Ça se boit ? » Un bruit de clavier. « Chez nous, c'est interdit. Je viens de vérifier. Ça donne envie. »"
     ],
     etapes:[
 
@@ -3049,15 +3010,15 @@ const QUETES = [
         cible:{ carte:"ancolie", x:1850, y:480, r:300 },
         image:"images/quetes/q23/1.png",
         arrivee:[
-          "Au nord-est, l'ancolie se fait rare, puis blanche de givre. Le vent descend des Glaces sans jamais s'arrêter. Ta bête se colle à tes jambes.",
-          "« Il émet sur une fréquence de service », dit Asulf. « Je te la passe. Plus c'est fort, plus t'es près. C'est comme un jeu. Vous avez des jeux, chez vous ? Nous, on a l'appel. C'est pas un jeu. »"
+          "Au nord-est, l'ancolie se fait rare, puis blanche de givre, et le vent descend des Glaces sans jamais s'arrêter. Ta bête se colle à tes jambes. Plus loin gît une balise d'approche, couchée dans la neige : celle que le 7 était parti redresser.",
+          "« Il émet sur une fréquence de service, je te la passe. Plus c'est fort, plus t'es près. C'est comme un jeu. » Une pause, le temps d'un doute. « Vous avez des jeux, chez vous ? Nous, on a l'appel. C'est pas un jeu. »"
         ],
         defi:{ type:"triangulation", source:{ x:1780, y:600 }, minReleves:3, fouilles:3, precision:70,
           texte:["L'automate émet, faiblement, quelque part sous la neige. Son signal se lit sur ta radio."],
           trouve:"Sous une croûte de neige, une patte de métal. Puis une autre.",
           echec:"Le vent a tout recouvert, et ton souffle est trop court pour chercher encore. Tu rentres. Nouvelle tentative dans 8 h.",
           reussite:[
-            "L'automate n°7 est là, au bord d'un lac gelé, à demi enseveli. Un caisson sur six pattes, deux bras repliés, un œil rouge qui clignote faiblement. Ses pattes sont prises dans la glace jusqu'aux genoux.",
+            "L'automate n°7 est là, au bord d'un lac gelé, à demi enseveli : un caisson sur six pattes, deux bras repliés, un œil rouge qui clignote faiblement, les pattes prises dans la glace jusqu'aux genoux.",
             "« Le 7 ! » Asulf a presque l'air ému. « Il est entier ? Dis-moi qu'il est entier. Il est inventorié. »"
           ] } },
 
@@ -3066,10 +3027,9 @@ const QUETES = [
         cible:{ carte:"ancolie", x:1780, y:600, r:90 },
         image:"images/quetes/q23/2.png",
         arrivee:[
-          "Il n'est pas tombé. Il travaillait. Autour de lui, la glace est taillée en marches, nettes, au millimètre, comme il taille l'ancolie le long des allées.",
-          "Mais ce qu'il a dégagé, ce n'est pas une balise. Dans la glace bleue, des aiguilles pâles, laiteuses, fines comme des cheveux et longues comme la main, poussent en bouquets vers la surface. Quand le vent passe, elles brillent.",
-          "Un automate entretient ce qui brille. C'est sa fonction. Il a creusé pour les atteindre, et la glace s'est refermée sur ses pattes.",
-          "« Des cailloux qui brillent », dit Asulf. « Super. Passionnant. Moi je veux mon automate. Sors-le de là. Et casse rien, je te rappelle qu'il est inventorié. »"
+          "Il n'est pas tombé : il travaillait. Autour de lui, la glace est taillée en marches nettes, au millimètre, comme il taille l'ancolie le long des allées. Mais ce qu'il a dégagé, ce n'est pas une balise. Dans la glace bleue, des aiguilles pâles, laiteuses, fines comme des cheveux et longues comme la main, poussent en bouquets vers la surface, et quand le vent passe, elles brillent.",
+          "Un automate entretient ce qui brille : c'est sa fonction. Il a creusé pour les atteindre, et la glace s'est refermée sur ses pattes.",
+          "« Des cailloux qui brillent. Super. Passionnant. » Asulf n'a pas l'air passionné. « Moi, je veux mon automate. Sors-le de là, et casse rien : je te rappelle qu'il est inventorié. »"
         ],
         defi:{ type:"goupilles", nb:6, felures:2,
           texte:["Six pattes prises dans la glace, et des aiguilles tout autour, qui cassent pour un rien."],
@@ -3079,12 +3039,10 @@ const QUETES = [
           echec:"Un coup de trop : la glace se fend en étoile et se referme plus serrée. Laisse le froid la ressouder. Nouvelle tentative dans 8 h.",
           fini:"La dernière patte se libère.",
           reussite:[
-            "La sixième patte se libère d'un coup. L'automate se redresse, chancelle, et… se remet aussitôt à tailler la glace, là où il en était.",
-            "« Non non non non. Rentre. RENTRE. » Un bruit de clavier frénétique. L'automate s'arrête, pivote, et repart vers la station sans se presser, en boitant d'une patte.",
-            "Tu restes au bord du lac. Les aiguilles sont toujours là. Tu en touches une du bout du gant : elle ploie, puis se fend d'un coup, en deux morceaux mats. Toute sa lumière est partie.",
-            "Elles sont trop jeunes. Elles poussent : à la base des plus grandes, la glace s'écarte, couche après couche, comme une porte qu'on pousse très lentement.",
-            "Tu sais ce que c'est. Du Cristal de Sélénite. Celui que les ateliers réclament pour leurs plus beaux ouvrages, et que personne, nulle part, n'a jamais trouvé.",
-            "« Laisse tes cailloux », dit Asulf. « Les automates disent qu'ils poussent. Ils disent ça en code d'entretien : ça veut dire <i>pousse</i>, ou <i>fuite</i>, ou <i>joint de dilatation</i>. Je penche pour pousse. Quatre jours, à peu près. » Un temps. « Je suis pas jardinier. »"
+            "La sixième patte se libère d'un coup. L'automate se redresse, chancelle… et se remet aussitôt à tailler la glace, là où il en était. « Non non non non. Rentre. RENTRE. » Un bruit de clavier frénétique : l'automate s'arrête, pivote, et repart vers la station sans se presser, en boitant d'une patte.",
+            "Tu restes au bord du lac. Les aiguilles sont toujours là ; tu en touches une du bout du gant, elle ploie, puis se fend d'un coup en deux morceaux mats, et toute sa lumière est partie. Elles sont trop jeunes. Elles poussent : à la base des plus grandes, la glace s'écarte couche après couche, comme une porte qu'on pousserait très lentement.",
+            "Tu sais ce que c'est. Du Cristal de Sélénite, celui que les ateliers réclament pour leurs plus beaux ouvrages, et que personne, nulle part, n'a jamais trouvé.",
+            "« Laisse tes cailloux. Les automates disent qu'ils poussent. Enfin, ils disent ça en code d'entretien, et ça veut dire <i>pousse</i>, ou <i>fuite</i>, ou <i>joint de dilatation</i>. Je penche pour pousse. Quatre jours, à peu près. » Il renifle. « Je suis pas jardinier. »"
           ] } },
 
       /* ---- 3. La sporelle — CHOIX de Cercle, payé en sporelle (fil comique, K1) ---- */
@@ -3092,8 +3050,8 @@ const QUETES = [
         cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
         image:"images/quetes/q23/3.png",
         arrivee:[
-          "Ta bête se rallume dès que tu poses le pied sur Silène. Au pied de l'anneau, la trappe est déjà entrouverte. Il guettait.",
-          "« T'en as ? De la sporelle ? Montre. » Le bras de maintenance sort à moitié, puis rentre, puis ressort. « Je suis pas pressé. Je demande. »"
+          "Ta bête se rallume dès que tu poses le pied sur Silène. Au pied de l'anneau, la trappe est déjà entrouverte : il guettait.",
+          "« T'en as ? De la sporelle ? Montre. » Le bras de maintenance sort à moitié, rentre, ressort. « Je suis pas pressé. Je demande. »"
         ],
         defi:{ type:"choix",
           texte:["Trois brins de sporelle. Comment les lui donner ?"],
@@ -3109,19 +3067,18 @@ const QUETES = [
               journal:"Tu as glissé l'aiguille cassée avec la sporelle. Asulf : « Un caillou mort ? Merci. » Le lendemain, il l'avait posée sur son écran. « Pour caler. Il est bancal, mon écran. Rien n'est bien fait. »" }
           ],
           reussite:[
-            "Le bras attrape la sporelle et disparaît. Bruit de mastication. Long.",
-            "« C'est… amer. » Un temps. « Non. C'est… » Un temps plus long. « Oh. Oh là. »",
-            "Silence. Tu crois qu'il a coupé. Puis, d'une voix que tu ne lui connais pas, plus lente, presque rêveuse :",
-            "« Dis. Dehors. Quand il pleut. Ça mouille partout ? Même sur la tête ? Même quand on veut pas ? »",
-            "Tu lèves les yeux. Il ne pleut pas. Tu ne réponds rien, et il n'a pas l'air d'attendre de réponse.",
-            "« … Oublie. Je demandais pour un ami. » Un temps. « J'ai pas d'ami. Bon. Demain, l'automate. Il boite. »"
+            "Le bras attrape la sporelle et disparaît. Une mastication, longue. « C'est… amer. » Il mâche encore. « Non. C'est… Oh. Oh là. »",
+            "Puis plus rien. Tu crois qu'il a coupé, mais au bout d'un moment sa voix revient, plus lente, presque rêveuse, une voix que tu ne lui connais pas : « Dis. Dehors. Quand il pleut, ça mouille partout ? Même sur la tête ? Même quand on veut pas ? »",
+            "Tu lèves les yeux. Il ne pleut pas, et tu ne réponds rien ; il n'a pas l'air d'attendre de réponse. « … Oublie. Je demandais pour un ami. » Un temps. « J'ai pas d'ami. Bon. Demain, l'automate. Il boite. »"
           ] } }
     ],
     /* K48 : le gisement de Sélénite (au lac gelé) devient visible ; l'aiguille pousse (selenite.js). */
     recompense:{ credits:2600, xp:460, flags:{ seleniteConnue:true } }
   },
 
-  /* ---------------- Q24 — Les automates ---------------- */
+  /* ---------------- Q24 — Les automates (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
   {
     id:"q24",
     nom:"Les automates",
@@ -3131,8 +3088,8 @@ const QUETES = [
     lieuPrise:"station",
     intro:[
       "« Le 7 boite. » Asulf a la voix de quelqu'un qui n'a pas dormi. « Il est rentré, il s'est mis dans un coin, et depuis hier il taille le même brin d'ancolie. Le même. Il en reste rien, du brin. Il taille l'air. »",
-      "« Faut l'ouvrir et le remonter. Je te guide. J'ai la notice. » Bruit de pages. « Elle est en procédure. Je vais traduire. Je traduis bien. » Un temps. « Je traduis. »",
-      "« Et après… » Plus bas. « … tu repasses par la trappe ? Avec… tu sais. La chose amère. Pour le moral de l'équipe. » Un temps. « L'équipe, c'est moi. »"
+      "« Faut l'ouvrir et le remonter. Je te guide, j'ai la notice. » Bruit de pages. « Elle est en procédure, je vais traduire. Je traduis bien. » Il se racle la gorge, déjà moins sûr de lui. « Je traduis. »",
+      "Puis, plus bas : « Et après… tu repasses par la trappe ? Avec… tu sais. La chose amère. Pour le moral de l'équipe. » Une pause, honnête. « L'équipe, c'est moi. »"
     ],
     etapes:[
 
@@ -3141,9 +3098,8 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q24/1.png",
         arrivee:[
-          "Dans un coin de la grande salle, l'automate n°7 taille le vide, patiemment, de la pointe de sa pince. Tu le couches sur le flanc. Il se laisse faire. Il continue de tailler, couché.",
-          "Son capot s'ouvre sur un caisson presque vide. La moitié de ce qu'il avait dans le ventre est restée au lac ; les autres automates l'ont ramassée, et l'ont posée à côté de lui, en vrac, dans un bac.",
-          "« La notice dit », lit Asulf, « <i>Réintégration des sous-ensembles selon gabarit, tolérance nulle, contrôle par la fonction.</i> » Un silence. « C'est-à-dire : tu mets tout dedans. Tout. Et si ça bouge, ça boite. »"
+          "Dans un coin de la grande salle, l'automate n°7 taille le vide, patiemment, de la pointe de sa pince. Tu le couches sur le flanc ; il se laisse faire, et il continue de tailler, couché. Son capot s'ouvre sur un caisson presque vide : la moitié de ce qu'il avait dans le ventre est restée au lac, et les autres automates l'ont ramassée pour la poser à côté de lui, en vrac, dans un bac.",
+          "« La notice dit », lit Asulf, « <i>Réintégration des sous-ensembles selon gabarit, tolérance nulle, contrôle par la fonction.</i> » Il réfléchit, et ça s'entend. « C'est-à-dire : tu mets tout dedans. Tout. Et si ça bouge, ça boite. »"
         ],
         defi:{ type:"rangement", colonnes:6, lignes:5, min:3, max:6,
           texte:["Des modules de toutes les formes, et un caisson qui n'a pas une case de trop."],
@@ -3151,8 +3107,7 @@ const QUETES = [
           bute:"Ça ne rentre pas là : le module dépasse, ou il en chevauche un autre.",
           fini:"Le dernier module claque dans son logement.",
           reussite:[
-            "Le dernier module claque dans son logement. Le capot se referme tout seul. L'automate cesse de tailler, d'un coup, comme on arrête de parler quand quelqu'un entre.",
-            "Sur son flanc, un petit écran s'allume : REPRISE — CODE OPÉRATEUR REQUIS."
+            "Le dernier module claque dans son logement, et le capot se referme tout seul. L'automate cesse de tailler d'un coup, comme on arrête de parler quand quelqu'un entre, et sur son flanc un petit écran s'allume : REPRISE — CODE OPÉRATEUR REQUIS."
           ] } },
 
       /* ---- 2. Comment ils lisent — MÉMOIRE (ratable) : les matricules (K16 approfondi) ---- */
@@ -3160,9 +3115,8 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q24/2.png",
         arrivee:[
-          "« Ah. Il veut le code. Je te le dicte. » Asulf se racle la gorge. « Mémo-Reprise-Unité-Sept, Opérateur-Maintenance, Bloc-B, Alinéa-Douze… » Il s'arrête. « Non. Ça, c'est le nom de la procédure. Le code, il est sur son écran. Il te le montrera une fois. Une seule. Il est comme ça. »",
-          "« Et t'inquiète pas s'il te regarde pas. Il te voit pas. Ils lisent pas les têtes, eux. Ils lisent le réseau. Chez nous, chaque combinaison dit qui elle est, tout le temps, à toutes les machines. Le relais du volcan porte ça jusqu'ici. Moi, je suis dans ma combinaison, à des jours d'ici, et pour lui, je suis là, juste à côté. »",
-          "Un temps. « Toi, t'as pas de combinaison qui parle. Pour eux, t'es du décor. Un décor qui bouge. »"
+          "« Ah, il veut le code. Je te le dicte. » Asulf se racle la gorge. « Mémo-Reprise-Unité-Sept, Opérateur-Maintenance, Bloc-B, Alinéa-Douze… » Il s'arrête net. « Non. Ça, c'est le nom de la procédure. Le code, il est sur son écran. Il te le montrera une fois, une seule : il est comme ça. »",
+          "« Et t'inquiète pas s'il te regarde pas. Il te voit pas. Ils lisent pas les têtes, eux, ils lisent le réseau. Chez nous, chaque combinaison dit qui elle est, tout le temps, à toutes les machines, et le relais du volcan porte ça jusqu'ici. Moi, je suis dans ma combinaison, à des jours d'ici, et pour lui je suis là, juste à côté. Toi, t'as pas de combinaison qui parle. Pour eux, t'es du décor. » Il cherche le mot juste, et il a l'air content de lui quand il le trouve. « Un décor qui bouge. »"
         ],
         defi:{ type:"memoire", duree:7000, compacte:true,
           texte:["L'écran de l'automate va afficher sa fiche, et son code de reprise. Une fois."],
@@ -3177,11 +3131,9 @@ const QUETES = [
           fini:"L'automate accepte le code.",
           echec:"Le code ne passe pas. L'écran s'éteint, et l'automate se remet à tailler l'air. Il faudra qu'il se rendorme pour recommencer. Nouvelle tentative dans 8 h.",
           reussite:[
-            "Le code passe. L'automate se redresse sur ses six pattes, sans boiter. Il fait un pas, deux, pivote… et s'arrête face au vide, juste à côté de toi, à hauteur d'homme.",
-            "Son œil rouge s'allume, puis passe au vert. Une voix plate, sans souffle : OPÉRATEUR 42-U1F — PRÉSENT.",
+            "Le code passe. L'automate se redresse sur ses six pattes, sans boiter, fait un pas, deux, pivote… et s'arrête face au vide, juste à côté de toi, à hauteur d'homme. Son œil rouge s'allume, puis passe au vert, et une voix plate, sans souffle, annonce : OPÉRATEUR 42-U1F — PRÉSENT.",
             "Il salue l'air. L'endroit exact où, pour lui, Asulf est debout.",
-            "Un long silence dans la radio.",
-            "« Il croit que je suis là », dit Asulf. « À côté de toi. » Un temps. « C'est bête. Ça me fait plaisir. »"
+            "La radio reste muette un long moment. « Il croit que je suis là. À côté de toi. » Un temps. « C'est bête. Ça me fait plaisir. »"
           ] } },
 
       /* ---- 3. Encore — LIVRAISON à la trappe (fil comique) ---- */
@@ -3189,15 +3141,14 @@ const QUETES = [
         cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
         image:"images/quetes/q24/3.png",
         arrivee:[
-          "La trappe s'ouvre avant même que tu arrives au pied du mur. Le bras de maintenance est déjà dehors, la pince ouverte, qui attend. Ta bête s'est rallumée ; elle le regarde de travers.",
+          "La trappe s'ouvre avant même que tu arrives au pied du mur : le bras de maintenance est déjà dehors, la pince ouverte, qui attend. Ta bête s'est rallumée, et elle le regarde de travers.",
           "« T'en as ? Pose. Pose-les. »"
         ],
         defi:{ type:"livraison", objets:{ sporelle:4 },
           texte:["Quatre brins de sporelle."],
           reussite:[
-            "La pince se referme sur la sporelle, et la trappe claque si vite qu'elle te pince presque les doigts.",
-            "Mastication. Soupir. « Ça, c'est le dehors. » Un temps. « Enfin, je crois. J'y suis jamais allé, dehors. »",
-            "« Dis. La prochaine fois, au lieu d'une corvée… tu me racontes un truc ? Un truc de dehors. N'importe quoi. Ce que t'as mangé. La couleur du ciel. Ici, le ciel, c'est un plafond. Il est beige. »"
+            "La pince se referme sur la sporelle, et la trappe claque si vite qu'elle te pince presque les doigts. Mastication, soupir. « Ça, c'est le dehors. Enfin, je crois. J'y suis jamais allé, dehors. »",
+            "« Dis. La prochaine fois, au lieu d'une corvée… tu me racontes un truc ? Un truc de dehors, n'importe quoi. Ce que t'as mangé. La couleur du ciel. Ici, le ciel, c'est un plafond. Il est beige. »"
           ] } },
 
       /* ---- 4. Des nouvelles du dehors — CHOIX : la quête « compétence » du lot (K35) ---- */
@@ -3206,7 +3157,7 @@ const QUETES = [
         image:"images/quetes/q24/4.png",
         arrivee:[
           "« Alors ? » Le bras ressort, lentement. Au bout, à côté de la pince, il y a un œil de caméra, tout petit, qui fait le point sur toi. « Vas-y. Raconte. »",
-          "Tu ne racontes pas. Tu n'as jamais été doué pour ça. Mais tu peux montrer."
+          "Tu ne racontes pas : tu n'as jamais été doué pour ça. Mais tu peux montrer."
         ],
         defi:{ type:"choix",
           texte:["Qu'est-ce que tu lui montres du dehors ?"],
@@ -3222,14 +3173,17 @@ const QUETES = [
               journal:"Tu as montré ta bête à Asulf, ses marques allumées. Il a mis longtemps à parler. « Elle brille. Pourquoi elle brille ? Elle est inventoriée ? » Tu n'as rien répondu. « Elle est pas inventoriée. Tant mieux. »" }
           ],
           reussite:[
-            "« Bon. » Le bras rentre. « Tu sais quoi ? Moins de corvées. Plus de… ça. » Un temps. « J'ai dit ça ? J'ai pas dit ça. La corvée de demain est très importante. Elle est très longue. »",
-            "Puis, plus bas : « Le réseau rame, depuis qu'on a débouché le C-409. Il passe plus de choses par la station. Faudra trier. » Un temps. « Pendant l'appel. Je pourrai pas t'aider, pendant l'appel. »"
+            "« Bon. » Le bras rentre. « Tu sais quoi ? Moins de corvées. Plus de… ça. » Il s'entend, et se rattrape aussitôt : « J'ai dit ça ? J'ai pas dit ça. La corvée de demain est très importante. Elle est très longue. »",
+            "Puis, plus bas : « Le réseau rame, depuis qu'on a débouché le C-409. Il passe plus de choses par la station, faudra trier. Pendant l'appel. » Il hésite. « Je pourrai pas t'aider, pendant l'appel. »"
           ] } }
     ],
     recompense:{ credits:2700, xp:480, flags:{} }
   },
 
-  /* ---------------- Q25 — Radié (couche 2, K31) ---------------- */
+  /* ---------------- Q25 — Radié (couche 2, K31) (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
+     Épreuves, cibles, choix, ordre des options, récompense : inchangés (vérifié par
+     outils/o_texteseul.js) ; les bannières de PROMPTS_IMAGES_QUETES.md restent justes. */
+  /* ⚠ Gardé : l'indice du retournement des calques (« en écho », ét. 2, v1.87f). */
   {
     id:"q25",
     nom:"Radié",
@@ -3238,9 +3192,9 @@ const QUETES = [
     donneurLieu:"La station d'Ancolie",
     lieuPrise:"station",
     intro:[
-      "« Petite corvée, aujourd'hui. Toute petite. » Asulf parle trop vite. « Depuis qu'on a débouché le C-409, il passe deux fois plus de trafic par la station. Et la station, elle garde tout ce qui passe, au cas où. Sa mémoire est pleine. Faut faire le tri. »",
-      "« Ce soir, il y a l'appel. Pendant l'appel, tout le registre passe dans le câble, ligne par ligne, et la station en fait une copie. Et une copie de la copie. Tu regardes, tu repères les doubles, je les efface. Facile. »",
-      "« Moi, pendant l'appel, je peux pas. Pendant l'appel, on répond. Tout le monde répond. On dit… » Un bruit, comme un sigle avalé. « … ça se dit pas chez vous. Disons qu'on dit : je suis là. Toutes les relèves. Toute ma vie. » Un temps. « Je serai occupé à exister. »"
+      "« Petite corvée, aujourd'hui. Toute petite. » Asulf parle trop vite. « Depuis qu'on a débouché le C-409, il passe deux fois plus de trafic par la station, et la station, elle garde tout ce qui passe, au cas où. Sa mémoire est pleine. Faut faire le tri. »",
+      "« Ce soir, y a l'appel. Pendant l'appel, tout le registre passe dans le câble, ligne par ligne, et la station en fait une copie, et une copie de la copie. Tu regardes, tu repères les doubles, je les efface. Facile. »",
+      "« Moi, pendant l'appel, je peux pas. Pendant l'appel, on répond, tout le monde répond. On dit… » Un bruit, comme un sigle avalé de travers. « … ça se dit pas chez vous. Disons qu'on dit : je suis là. Toutes les relèves, toute ma vie. » Il essaie de rire, et ça marche à moitié. « Je serai occupé à exister. »"
     ],
     etapes:[
 
@@ -3249,15 +3203,14 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q25/1.png",
         arrivee:[
-          "La grande salle bourdonne. Sur tous les écrans à la fois, des lignes se mettent à défiler en ancien, plus vite que tu ne peux les lire : l'appel.",
+          "La grande salle bourdonne. Sur tous les écrans à la fois, des lignes se mettent à défiler en ancien, bleu glacier, plus vite que tu ne peux les lire : l'appel. Tu t'assieds sur un banc.",
           "Dans la radio, Asulf ne dit plus rien. Tu entends seulement, très loin derrière lui, d'autres voix, des centaines, qui répondent toutes la même chose, chacune à son tour."
         ],
         defi:{ type:"attente", duree:2*3600*1000,
           texte:["L'appel passe. Il prend son temps : il a trois siècles d'avance."],
           reussite:[
-            "Ça ne s'arrête pas. Des milliers de lignes : des matricules, des relèves, des postes. Chaque ligne appelée, chaque ligne qui répond.",
-            "Puis, après le dernier matricule, une autre liste commence, en caractères plus serrés. PERSONNEL NON ÉVACUÉ. Pas des matricules : des lignées. Des noms qui ont trois cents ans, et pour chacun, au bout, la même mention : À EMBARQUER.",
-            "Ce sont les quatre-vingts. Et tous ceux qui sont nés d'eux. Quelque part dans ces lignes, il y a la tienne."
+            "Ça ne s'arrête pas. Des milliers de lignes, des matricules, des relèves, des postes : chaque ligne appelée, chaque ligne qui répond. Puis, après le dernier matricule, une autre liste commence, en caractères plus serrés. PERSONNEL NON ÉVACUÉ. Pas des matricules : des lignées. Des noms qui ont trois cents ans, et pour chacun, au bout, la même mention : À EMBARQUER.",
+            "Ce sont les quatre-vingts, et tous ceux qui sont nés d'eux. Quelque part dans ces lignes, il y a la tienne."
           ] } },
 
       /* ---- 2. Les doubles — CALQUES (ratable) : la cadence de l'appel ---- */
@@ -3265,16 +3218,15 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q25/2.png",
         arrivee:[
-          "La station a gardé l'appel en trois copies, mal calées : celle du câble, celle de sa mémoire, celle des réponses. Tant qu'elles ne se superposent pas, elle ne sait pas ce qui est en double.",
-          "La cadence est la même dans les trois : celle de l'appel, celle de la silène, celle des bêtes. Tu la connais par cœur. Et les réponses reviennent comme est toujours revenu ce qui répond à l'appel, depuis le bout du bras est : en écho."   // v1.87f : l'indice du retournement
+          "La station a gardé l'appel en trois copies, mal calées l'une sur l'autre : celle du câble, celle de sa mémoire, celle des réponses. Tant qu'elles ne se superposent pas, elle ne sait pas ce qui est en double.",
+          "La cadence est la même dans les trois : celle de l'appel, celle de la silène, celle des bêtes. Tu la connais par cœur. Et les réponses reviennent comme est toujours revenu ce qui répond à l'appel, depuis le bout du bras est : en écho."   // v1.87f : l'indice du retournement (gardé tel quel en v1.92)
         ],
         defi:{ type:"calques",
           noms:["L'appel","La mémoire de la station","Les réponses"],   // v1.87f : « Les réponses » reviennent en écho, donc à l'envers (comme en Q15) : ⇄
           texte:["Trois copies de l'appel, sur trois bandes. Cale-les, et les doubles s'effaceront d'eux-mêmes."],
           reussite:[
-            "Les trois bandes n'en font plus qu'une. Sur les écrans, les doubles s'éteignent par milliers, ligne après ligne, et la station pousse un long soupir de ventilation. Sa mémoire respire.",
-            "Il ne reste qu'une ligne qui ne s'aligne avec rien.",
-            "Elle est appelée à chaque cycle, dans la première liste. Elle ne répond jamais. Et pourtant, depuis trois cents ans, personne ne l'a effacée."
+            "Les trois bandes n'en font plus qu'une. Sur les écrans, les doubles s'éteignent par milliers, ligne après ligne, et la station pousse un long soupir de ventilation : sa mémoire respire.",
+            "Il ne reste qu'une ligne qui ne s'aligne avec rien. Elle est appelée à chaque cycle, dans la première liste, et elle ne répond jamais. Pourtant, depuis trois cents ans, personne ne l'a effacée."
           ] } },
 
       /* ---- 3. Sorn, E. — ÉNIGME : la trace (R2, K31) ---- */
@@ -3282,12 +3234,10 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q25/3.png",
         arrivee:[
-          "Tu l'ouvres. Elle est vieille. Plus vieille que les autres : elle a encore un nom.",
-          "SORN, E. — TECHNICIEN RELAIS — DÉSERTION — IDENTITÉ RADIÉE — NE PAS RÉINTÉGRER.",
-          "Tu connais ce nom. Tu l'as lu sur le registre du poste, au tout début. Le sas l'a refusé. Le lecteur du Perchoir aussi. Il est rayé partout.",
-          "Mais au bout de la ligne, il y a un dernier champ, et celui-là n'est pas rayé. LIGNÉE : À EMBARQUER.",
-          "Le nom ne compte plus, pour personne. Mais tout ce qui est né de lui est toujours sur la liste, comme tout le monde dehors. On ne l'appelle pas pour qu'il réponde. On l'appelle pour savoir qu'il manque.",
-          "Dans la radio, l'appel est fini. Asulf est revenu. Il ne dit rien. Il regarde la même ligne que toi, sur son écran."
+          "Tu l'ouvres. Elle est plus vieille que les autres, assez vieille pour avoir encore un nom. SORN, E. — TECHNICIEN RELAIS — DÉSERTION — IDENTITÉ RADIÉE — NE PAS RÉINTÉGRER.",
+          "Tu connais ce nom. Tu l'as lu sur le registre du poste, au tout début ; le sas l'a refusé, le lecteur du Perchoir aussi. Il est rayé partout. Mais au bout de la ligne, il y a un dernier champ, et celui-là n'est pas rayé : LIGNÉE : À EMBARQUER.",
+          "Le nom ne compte plus, pour personne. Mais tout ce qui est né de lui est toujours sur la liste, comme tout le monde dehors. On ne l'appelle pas pour qu'il réponde ; on l'appelle pour savoir qu'il manque.",
+          "Dans la radio, l'appel est fini. Asulf est revenu, et il ne dit rien. Il regarde la même ligne que toi, sur son écran."
         ],
         defi:{ type:"enigme",
           texte:"Sorn, E. était du dedans, de garde au quai. Il est sorti sans embarquer.",
@@ -3296,12 +3246,10 @@ const QUETES = [
           reponses:["comme sorn","comme lui","comme sorn e","la meme chose","pareil","comme sorn, e"],
           indice:"Relis la ligne de Sorn, E. Ce qu'on a écrit sur lui, on l'écrirait sur n'importe qui.",
           reussite:[
-            "Radié. Comme lui. Sans nom, en plus : au-dedans, il n'y a plus de noms, rien que des matricules. Quatre signes, et trois mots derrière.",
-            "Plus de porte, plus de ration, plus de relève. Et dehors, pour ce registre, rien qu'un non-évacué de plus : les machines qu'il entretient lui-même viendraient le chercher, comme elles cherchent tout le monde. Tu viens de le lire.",
-            "Asulf ne dit rien pendant très longtemps.",
-            "« Je savais », dit-il enfin. Sa voix n'a plus de cailloux dedans. « Enfin. Je savais pas que je savais. On le sait tous, je crois. On le dit pas. »",
-            "« Lui, au moins, il a un nom. On le lui a laissé pour pouvoir le rayer. » Un temps. « Moi, ce serait juste quatre signes. »",
-            "« J'allais faire une blague, là. » Un silence. « J'en ai pas. »"
+            "Radié. Comme lui, et sans nom, en plus : au-dedans, il n'y a plus de noms, rien que des matricules. Quatre signes, et trois mots derrière. Plus de porte, plus de ration, plus de relève ; et dehors, pour ce registre, rien qu'un non-évacué de plus, que les machines qu'il entretient lui-même viendraient chercher, comme elles cherchent tout le monde. Tu viens de le lire.",
+            "Asulf ne dit rien pendant très longtemps. Quand il parle enfin, sa voix n'a plus de cailloux dedans. « Je savais. Enfin… je savais pas que je savais. On le sait tous, je crois. On le dit pas. »",
+            "« Lui, au moins, il a un nom. On le lui a laissé pour pouvoir le rayer. Moi, ce serait juste quatre signes. »",
+            "« J'allais faire une blague, là. » Un temps. « J'en ai pas. »"
           ] } },
 
       /* ---- 4. Ce qu'on en fait — CHOIX de Cercle ---- */
@@ -3309,15 +3257,15 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"station", r:160 },
         image:"images/quetes/q25/4.png",
         arrivee:[
-          "La ligne de Sorn, E. reste affichée sur l'écran du milieu. Les autres se sont éteints. Dans la grande salle, il n'y a plus que le bruit de la ventilation, et celui d'Asulf qui respire, très loin.",
-          "Ta bête est venue se coucher contre tes pieds. Ses marques sont éteintes, comme toujours ici. Elle garde les yeux ouverts."
+          "La ligne de Sorn, E. reste affichée sur l'écran du milieu ; les autres se sont éteints. Dans la grande salle, il n'y a plus que le bruit de la ventilation, et celui d'Asulf qui respire, très loin.",
+          "Ta bête est venue se coucher contre tes pieds, ses marques éteintes comme toujours ici. Elle garde les yeux ouverts."
         ],
         defi:{ type:"choix",
           texte:["Que fais-tu de cette ligne ?"],
           options:[
             { texte:"La traduire en clair dans ton carnet, mot par mot, pour la porter un jour au vieux Sorn.",
               cercles:{ langues:5 },
-              journal:"Tu as recopié en clair la ligne de Sorn, E. Asulf t'a regardé faire, puis : « Tu vas la lui donner ? Au vieux ? » Un temps. « T'as raison. Il a le droit de savoir qu'on l'appelle encore. »" },
+              journal:"Tu as recopié en clair la ligne de Sorn, E. Asulf t'a regardé faire, puis il a demandé si tu allais la donner au vieux, et sans attendre : « T'as raison. Il a le droit de savoir qu'on l'appelle encore. »" },
             { texte:"Remonter la ligne dans la mémoire de la station, champ par champ, pour voir comment on raye un nom.",
               cercles:{ assembleurs:5 },
               journal:"Tu as démonté la ligne de Sorn, E. champ par champ. Une radiation, c'est trois mots et une date. Asulf : « C'est tout ? Trois siècles, pour trois mots ? Rien n'est bien fait. » Pour une fois, ça ne l'a pas fait rire." },
@@ -3326,11 +3274,489 @@ const QUETES = [
               journal:"Tu es resté dans la grande salle de la station jusqu'au matin. Asulf n'a presque rien dit. Vers l'aube, il a demandé : « T'es encore là ? » Tu as frappé deux fois sur le banc. « D'accord. »" }
           ],
           reussite:[
-            "« Va voir tes vieux », dit Asulf au bout d'un moment. « Sur Silène. Celui qui porte le nom, et celle de la serre. Ils voudront savoir. »",
-            "Un temps. « Moi, je bouge pas. » Un temps encore. « Je peux pas. Maintenant, tu sais. »"
+            "Au bout d'un moment, Asulf parle, tout bas. « Va voir tes vieux. Sur Silène. Celui qui porte le nom, et celle de la serre. Ils voudront savoir. »",
+            "Il se tait encore, puis : « Moi, je bouge pas. » Et, comme si ça lui coûtait de l'ajouter : « Je peux pas. Maintenant, tu sais. »"
           ] } }
     ],
     recompense:{ credits:2800, xp:500, flags:{} }   // K39 : pas de PA avant Q30
+  },
+  /* ===========================================================
+     v1.93 — LOT 3 (Q26 → Q30). K33, K53 ; K59 → K62 (22/10).
+     =========================================================== */
+  /* ---------------- Q26 — Pas aujourd'hui (Silène, la serre) ----------------
+     Retour de K17 : Sorn et Adaya, à la serre. Le joueur raconte sans parler (il pose,
+     il dessine, il recopie). Fragments (R1) : Sorn apporte le SECOND VERROU de K32 (K60 :
+     un registre lit des cases, pas des gens — tous embarqués, pour de vrai ou sur le
+     papier, la case se coche et l'on ferme) ; Adaya donne de sa sporelle à quelqu'un du
+     Protocole. Fil comique : Asulf demande, pour la première fois, des nouvelles d'un
+     autre que lui (la bête). Graine K59 : la chaise longue d'Adaya (Asulf la verra en Q30).
+     Épreuves : ordre · scène · séquence (la plus dure : la cadence deux fois) · choix.
+     Prise au comptoir de la ville de faction, comme Q16 ; tout se joue à la serre. */
+  {
+    id:"q26",
+    nom:"Pas aujourd'hui",
+    donneur:"Vieux Sorn",
+    donneurImg:"images/quetes/vieux_sorn.png",
+    intro:[
+      "Sorn est derrière son comptoir, pour une fois, et il te voit arriver de loin. Il ne dit rien. Il te regarde marcher, il regarde ta bête qui traîne derrière toi, ses marques rallumées depuis que tu as reposé le pied sur Silène, et quelque chose dans ta façon d'avancer lui fait reposer le relais qu'il était en train de souder.",
+      "« T'en fais une tête. » Il retourne la pancarte du comptoir côté fermé, sans même regarder ce qui est écrit dessus. « Non. Me raconte pas ici. Ce que t'as à dire, tu le diras qu'une fois, et devant elle. Sinon elle va me le faire répéter trois fois, et je vais le raconter mal. »",
+      "Il décroche sa veste, cherche ses clés dans la mauvaise poche, puis dans l'autre. « À la serre. Et marche pas trop vite : j'ai plus tes jambes. »"
+    ],
+    etapes:[
+
+      /* ---- 1. Ce que tu rapportes — ORDRE (ratable) ----
+         Chaque bloc reprend ce sur quoi le précédent s'arrête (règle d'équité, Q17) :
+         conduit → relais → automates → le n°7 → son opérateur → les lignées. */
+      { indice:"La serre d'Adaya, au Rhizome. Sorn et elle t'y attendent.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q26/1.png",
+        arrivee:[
+            "Adaya a fait du thé, et elle n'en boit pas. Elle est installée sur sa chaise longue, au bout du rang, à côté du bocal où la bouture bat doucement, une couverture sur les genoux et sa tasse posée par terre. Ta bête file se coucher contre le bocal ; ses marques s'allument au rythme de la lueur, comme chaque fois qu'elle rentre ici.",
+            "Sorn s'assoit sur un sac de terreau, Adaya repousse sa couverture, et tous les deux te regardent. Tu n'as jamais su raconter. Alors tu fais ce que tu sais faire : tu vides tes poches sur la paillasse, un emballage de ration, ta radio, ton carnet, et pour tout le reste tu dessines. Une chose après l'autre, dans l'ordre, pour qu'ils comprennent sans que tu aies à parler.",
+            "« Prends ton temps, petit. » Adaya a sa voix des jours de récolte, celle qui ne presse personne. « On a toute la nuit. Lui, il a toute la vie, et il dit jamais rien d'intéressant. » Sorn grogne, pour la forme."
+          ],
+        defi:{ type:"ordre",
+          texte:["Ce que tu rapportes d'Ancolie, en vrac sur la paillasse. Pose-le dans l'ordre."],
+          consigne:"Chaque chose mène à la suivante : pars du conduit de la première corvée, et suis le fil jusqu'à la dernière ligne.",
+          echec:"Sorn se gratte la tête, Adaya fronce les sourcils : ça ne se suit pas, et ils perdent le fil. Tu ramasses tout. Nouvelle tentative dans 8 h.",
+          elements:[
+              "Le conduit C-409, sous la station, bouché d'ancolie depuis trois siècles. Débouché, il porte le câble du réseau, jusqu'au relais du volcan.",
+              "Le relais du volcan, qui décrochait tous les après-midi à cause de la chaleur. Relancé, il rend à la station ses portes et ses automates.",
+              "Les automates de la station, tous sauf un : le n°7, parti redresser une balise, et pris dans la glace d'un lac.",
+              "Le n°7, sorti de la glace et remonté pièce par pièce. Debout, il salue l'air à côté de toi, là où il croit voir son opérateur.",
+              "Son opérateur, pendant l'appel, occupé à répondre comme tout le monde. Sur les écrans, tout le registre défile, puis la liste des lignées à embarquer.",
+              "Les lignées à embarquer, et parmi elles, une ligne appelée à chaque cycle, qui ne répond jamais."
+            ],
+          reussite:[
+              "Ça leur prend du temps. Adaya pose ses questions avec les sourcils, Sorn avec les mains, et tu réponds en montrant, en redessinant, en tapant du doigt sur la paillasse. Quand tu arrives à l'automate qui salue l'air, Sorn éclate d'un rire qu'il ravale aussitôt. Quand tu arrives à l'appel, plus personne ne rit.",
+              "Il reste une chose, et celle-là, tu ne la poses pas. Tu prends le crayon de Sorn, tu retournes un sachet de graines vide, et tu recopies la ligne au dos, de mémoire, en clair, mot après mot, comme elle s'affichait sur l'écran du milieu."
+            ] } },
+
+      /* ---- 2. À embarquer — SCÈNE : le second verrou (K32, K60) ---- */
+      { indice:"Reste avec eux. Sorn lit.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q26/2.png",
+        arrivee:[
+            "Sorn approche le sachet de la lampe et lit, en remuant les lèvres. SORN, E. — TECHNICIEN RELAIS — DÉSERTION — IDENTITÉ RADIÉE — NE PAS RÉINTÉGRER. Rien de neuf : le sas du quai le lui avait déjà dit, à sa façon, en refusant son nom. Puis il arrive au dernier champ, LIGNÉE : À EMBARQUER, et il s'arrête.",
+            "« À embarquer. » Il le répète plus fort, et sa voix monte d'un coup, comme celle d'un gamin qui vient de trouver une porte ouverte. « Ils l'ont rayé, lui, d'accord. Mais tout ce qui est né de lui, ils l'attendent ! Moi ! Et vous autres, tous, les quatre-vingts et leurs petits : trois cents ans qu'ils nous gardent une place ! » Il se lève, il tourne entre les rangs en faisant de grands gestes. « On va au quai, on se présente, on monte, et c'est fini. Les anneaux, les enlèvements, tout ! »",
+            "Puis il s'arrête au milieu d'un geste, la main encore en l'air, et tu le vois compter sur ses doigts, comme au Perchoir. « <i>Fermeture planifiée, en attente de confirmation.</i> Tu l'as lu comme moi. Ils ferment quand l'embarquement est fini. Et l'embarquement, c'est nous. » Sa main redescend. « Un registre, ça regarde pas les gens, petit, ça regarde les cases. Le jour où le dernier d'entre nous monte, ou le jour où quelqu'un écrit qu'il est monté, pour la machine c'est pareil : la case se coche. Et derrière, ils ferment. »",
+            "Adaya n'a pas bougé de sa chaise longue. Elle regarde ta bête, couchée contre la bouture, puis le rang de silène derrière la vitre, et elle parle si bas qu'il faut tendre l'oreille : « C'est pour ça que les nôtres ont dit non. »",
+            "Sorn plie le sachet en quatre, très soigneusement, et le range dans la poche de sa chemise, du côté du cœur, sans y penser. « Ils nous attendent. » Un temps. « Eh ben, pas aujourd'hui. »"
+          ],
+        defi:{ type:"scene", bouton:"Rester encore un peu →" } },
+
+      /* ---- 3. Des nouvelles — SÉQUENCE (ratable ; la plus dure du lot) ----
+         Les marques de la bête battent la cadence de l'appel (Q25 : « celle de l'appel,
+         celle de la silène, celle des bêtes ») : CADENCE_PERIMETRE, deux fois (10). */
+      { indice:"Ta radio grésille. Asulf veut des nouvelles.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q26/3.png",
+        arrivee:[
+            "Ta radio grésille dans ta poche, au pire moment, comme toujours. « Allô ? C'est moi. Asulf. Enfin, tu sais que c'est moi, y a que moi sur ce canal. » Il a retrouvé un peu de ses cailloux depuis l'autre nuit, pas tous. « Je dérange pas ? Je dérange. Bon. C'est rapide. »",
+            "Sorn lève un sourcil vers ta poche. Adaya pose un doigt sur ses lèvres pour le faire taire, et lui, pour une fois, se tait.",
+            "« Ta bête. » Un silence gêné, des câbles qu'on tripote. « Elle va bien ? Je demande pas pour moi, hein. Je demande pour elle. Enfin, je demande pour savoir. C'est bizarre : je demande jamais rien pour les autres. J'ai même pas de formulaire pour ça. »",
+            "Tu ne sais pas comment on dit qu'une bête va bien. Mais la tienne est couchée contre la bouture, et ses marques battent, lentes, régulières. Tu approches la radio, et du bout du doigt, tu tapes sur le micro ce qu'elle fait."
+          ],
+        defi:{ type:"sequence", longueur:10, cadence:CADENCE_PERIMETRE,
+          texte:["Les marques de ta bête s'allument l'une après l'autre, puis s'éteignent. Tape-les sur le micro, jusqu'au bout, deux fois de suite."],
+          echec:"Tu te trompes de marque. Dans la radio, Asulf demande si c'est grave ; ta bête, elle, s'est rendormie. Nouvelle tentative dans 8 h.",
+          reussite:[
+              "Tu tapes la dernière marque, et dans la radio il n'y a plus un bruit, pas même un reniflement.",
+              "« C'est l'appel. » Il le dit tout bas, comme on reconnaît une voix dans une foule. « La cadence de l'appel, ça. Je la connais par cœur, je la fais tous les soirs. Ta bête… » Il cherche ses mots, et ils mettent du temps à venir. « Ta bête, elle répond à l'appel. Elle dit qu'elle est là. »",
+              "Puis les cailloux reviennent d'un coup : « Elle va bien, donc ! Elle va très bien. Elle est même réglementaire, c'est plus que moi. » Adaya sourit dans sa tasse. Sorn, lui, regarde la bête comme s'il la voyait pour la première fois."
+            ] } },
+
+      /* ---- 4. Ce qui pousse ici — CHOIX de Cercle ---- */
+      { indice:"Adaya a quelque chose à te donner.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q26/4.png",
+        arrivee:[
+            "Quand la radio s'est tue, Adaya se lève de sa chaise longue, lentement, une main sur le dossier. Elle va jusqu'au rang du fond, celui de la sporelle, et elle reste un moment devant, les bras croisés, comme devant quelqu'un avec qui elle aurait une vieille dispute.",
+            "« Il est du Protocole, ce petit. » Ce n'est pas une question, ni un reproche : elle le pose là, pour le regarder en face. « Trois cents ans qu'ils nous prennent les nôtres. Et moi, je vais lui donner ce qui pousse dans ma serre. » Elle coupe trois brins, d'un coup de sécateur sec, et les enveloppe dans un torchon propre. « Parce qu'il a demandé des nouvelles d'une bête. Les leurs, ils en demandent jamais. »",
+            "Elle te met le paquet dans les mains, et garde les siennes dessus une seconde. « C'est toi qui portes. Fais-en ce que tu veux, mais fais-en quelque chose de bien. »"
+          ],
+        defi:{ type:"choix",
+          texte:["Le paquet d'Adaya entre tes mains. Ce que tu en fais."],
+          options:[
+            { texte:"Le porter tel quel à la trappe, dans le torchon d'Adaya, pour qu'il sache que ça vient de quelqu'un.",
+              cercles:{ langues:5 },
+              journal:"Tu as porté le paquet d'Adaya à la trappe, dans son torchon. Le bras l'a pris avec une délicatesse infinie. Le lendemain, le torchon est ressorti, plié en quatre, sans les brins." },
+            { texte:"Garder un des trois brins et le planter au pied du rempart, près de la trappe : un jour, il pourra le cueillir lui-même.",
+              cercles:{ racines:5 },
+              journal:"Tu as planté un brin de sporelle au pied du rempart, à côté de la trappe. Asulf demande des nouvelles du brin tous les soirs. Il pousse, lentement." },
+            { texte:"Demander à Sorn d'y joindre un mot de sa main, et le glisser dans le torchon sans le lire.",
+              cercles:{ veilleurs:5 },
+              journal:"Sorn a écrit trois lignes, en a rayé deux, et a plié la dernière dans le torchon, avec les brins. Tu ne l'as pas lue. Asulf non plus n'en a rien dit ; mais il l'a gardée." }
+          ],
+          reussite:[
+              "Sorn te raccompagne jusqu'à la porte de la serre, ce qu'il ne fait jamais. Sur le seuil, il te tape deux fois sur l'épaule, maladroitement, comme on vérifie qu'un mur est solide.",
+              "« Ce gamin, là-bas. » Il regarde vers l'ouest, vers l'anneau, ou plus loin. « Il est coincé dedans comme nous on est coincés dehors. Va voir ce qu'il veut, vraiment. Pas ses corvées. Ce qu'il veut. »"
+            ] } }
+    ],
+    recompense:{ credits:2900, xp:520, flags:{} }   // K35, K39 : pas de PA avant Q30
+  },
+  /* ---------------- Q27 — Le dernier manifeste ----------------
+     Couche 3 (K22, K23) : au fond de la station, les archives et le DERNIER MANIFESTE de
+     MAAR-12, réel et accepté (noms, matricules, appareil, quai, sceau). Asulf dit ce qu'il
+     veut : embarquer, sur le vaisseau du joueur. La trappe le fait sortir, le manifeste le
+     fait partir (K31 : la ligne de Sorn, E.). Rappel de Q5 : la navette, « une personne
+     évacuée ». Fil comique : il ne réclame RIEN — c'est le signal.
+     Épreuves : cadenas (la plus dure : 5 pictogrammes, 8 essais) · glyphes · scène · choix. */
+  {
+    id:"q27",
+    nom:"Le dernier manifeste",
+    donneur:"Asulf",
+    donneurImg:"images/quetes/asulf.png",
+    donneurLieu:"La station d'Ancolie",
+    lieuPrise:"station",
+    intro:[
+      "Asulf est là, sur l'écran au-dessus des bancs, et pour une fois il ne fait pas de signe de la main. La silhouette ne bouge presque pas ; elle grésille, c'est tout.",
+      "« Salut. » Un silence. « J'ai rien pour toi, aujourd'hui. Pas de corvée. Rien. » Tu attends la suite, la liste très longue, la blague. Elle ne vient pas. « Tu peux t'asseoir, si tu veux. Ou repartir. Comme tu veux. »",
+      "Tu ne repars pas. Tu repenses à Sorn, sur le seuil de la serre : va voir ce qu'il veut, vraiment. Alors tu fais le tour de la grande salle, lentement, comme quelqu'un qui cherche ce qu'on ne lui dit pas. Au fond, derrière la dernière rangée de bancs, il y a une porte que tu n'as jamais vue ouverte. « Pas là », fait la radio, trop vite. Puis, plus bas : « Bon. Si. »"
+    ],
+    etapes:[
+      /* ---- 1. Les archives — CADENAS (ratable ; la plus dure) ---- */
+      { indice:"Au fond de la grande salle, derrière la dernière rangée de bancs : la porte des archives.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q27/1.png",
+        arrivee:[
+            "La porte est arrondie aux angles, comme tout ici, et gravée en ancien. Le mot du haut, tu ne sais pas le lire ; celui du bas, si, depuis longtemps : AC·CÈS RESTREINT. Dessous, une serrure à quatre logements, chacun marqué d'un pictogramme. Un automate passe à côté sans s'arrêter : pour lui, il n'y a pas de porte, il n'y a que du mur à frotter.",
+            "« Les archives, c'est pas de la maintenance. Moi, j'ai pas le droit d'y entrer. » Il renifle. « Mais la serrure, elle, c'est de la maintenance. Et une serrure qu'on a pas graissée depuis trois siècles, c'est plus une serrure, c'est une suggestion. Elle te dira combien de pictogrammes sont à la bonne place, et combien sont juste dans le code. Moi, je regarde ailleurs. Je regarde très fort ailleurs. »"
+          ],
+        defi:{ type:"cadenas", longueur:4, symboles:["▲","✓","⇪","◎","✦"], essais:8,
+          texte:["Quatre logements, cinq pictogrammes possibles. La serrure dit combien sont à la bonne place, et combien sont seulement dans la combinaison."],
+          reussite:[
+            "La serrure cède avec un claquement sec, et la porte glisse dans le mur. Derrière, une pièce étroite et froide, où rien n'a bougé depuis le dernier jour : des rangées de casiers fermés, et sur un pupitre, au milieu, un écran resté allumé depuis trois siècles sur une seule page, comme on laisse sur la table le dernier dossier traité avant de partir."
+          ] } },
+      /* ---- 2. Le manifeste — GLYPHES (ratable) ---- */
+      { indice:"Dans les archives de la station : la page restée allumée.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q27/2.png",
+        arrivee:[
+            "La page a un en-tête, comme les panneaux du quai : quatre lignes en ancien, chacune précédée de son pictogramme. Dessous, des colonnes, des centaines de lignes serrées, et tout en bas, un sceau qui ressemble au carré gravé sur les plaques d'AREPO.",
+            "Asulf ne dit rien. Tu l'entends seulement respirer près du micro, comme quelqu'un qui lit par-dessus ton épaule et qui n'ose pas te demander de tourner la page."
+          ],
+        defi:{ type:"glyphes",
+          texte:["Quatre lignes d'en-tête, quatre pictogrammes. Rends à chacune son sens."],
+          consigne:"Associe chaque ligne à sa signification. Tous ces sons, tu les as déjà lus quelque part.",
+          paires:[
+            /* LORE §11 bis : aucun son nouveau. EM·BARQUE·MENT et DÉ·PART sont des pistes de
+               réemploi du LORE ; CON·FIRM·ATION (Q9) ; DES·TIN·ATION (Q16). « Évacuation »
+               (ÉVA·CU·ATION) en leurre : elle se départage par ses sons. */
+            { picto:"⇪", sons:["EM","BARQUE","MENT"],    sens:"Embarquement" },
+            { picto:"✓", sons:["CON","FIRM","ATION"],    sens:"Confirmation" },
+            { picto:"➚", sons:["DE","PART"],             sens:"Départ" },
+            { picto:"➹", sons:["DES","TIN","ATION"],     sens:"Destination" }
+          ],
+          distracteurs:["Évacuation","Ravitaillement","Inventaire"],
+          reussite:[
+            "Embarquement. Confirmation. Départ. Destination. C'est un manifeste, le dernier : celui du vaisseau qui est venu ici, à ce quai, et qui est reparti plein. Le sceau, en bas, dit qu'il a été accepté.",
+            "Dessous, les colonnes : un matricule, un poste, un appareil, un quai, et devant chaque matricule, ce que tu n'as encore jamais vu sur aucune ligne du Protocole. Un nom. Des centaines de noms, propres, entiers, que personne n'a jamais rayés."
+          ] } },
+      /* ---- 3. Ce qu'il veut — SCÈNE ---- */
+      { indice:"Dans les archives. Asulf ne dit toujours rien.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q27/3.png",
+        arrivee:[
+            "Tu fais défiler les noms. Il y en a des pages et des pages. Dans la radio, le silence dure si longtemps que tu vérifies deux fois que le canal est toujours ouvert.",
+            "« Ils avaient des noms, eux. » Sa voix est toute petite. « Ils ont embarqué normalement, au bon quai, sur le bon vaisseau, avec un nom chacun. C'est pour ça qu'il y a personne en Ancolie : pas de Protocole, pas d'appel, rien. Juste les automates, qui gardent le quai propre au cas où ils reviendraient. »",
+            "Puis il le dit, d'un coup, comme on saute dans l'eau froide : « Moi, je veux embarquer. Pas sur <i>le</i> vaisseau, celui qu'on attend depuis trois cents ans : il viendra pas, je le sais, j'entretiens les relais. Sur le tien. »",
+            "Tu montres le sol, là où s'ouvre la trappe de visite, puis la direction de Silène : les conduits, la trappe au dos de l'anneau, le bras qui sort. Il comprend tout de suite. « Sortir par la trappe ? Ça, je sais faire. Mais sortir, c'est pas partir. » Sur l'écran du pupitre, il fait apparaître une autre page, que tu connais déjà : SORN, E. — DÉSERTION — IDENTITÉ RADIÉE. « Sans manifeste, je suis lui. Un nom qu'on raye, et des machines qui me cherchent. Les miennes. »",
+            "Et puis les cailloux reviennent d'un coup, et toute l'excitation avec : « Sauf que ! Un jour, un civil est parti avec la navette du quai, sur Silène. Le registre a même pas crié à la désertion : il a coché une case. <i>Une personne évacuée.</i> J'ai toujours trouvé ça absurde. » Un silence. « Attends. C'était toi ? » Tu hoches la tête. « C'était toi. Bon. Ben voilà. Une personne évacuée, sur un appareil, avec un manifeste. C'est tout ce qu'il me faut. »"
+          ],
+        defi:{ type:"scene", bouton:"Rester avec lui →" } },
+      /* ---- 4. Ce que tu en fais — CHOIX de Cercle ---- */
+      { indice:"Dans la grande salle. Asulf attend.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q27/4.png",
+        arrivee:[
+            "Vous ressortez des archives, toi à pied, lui sur l'écran au-dessus des bancs. La silhouette s'est remise à bouger, à se tortiller, à se gratter la tête de sa main qui grésille. « Il faut un appareil connu d'AREPO, un quai, un matricule, et un nom. Le quai, on l'a, c'est ici. Le matricule, c'est le mien. Le nom… » Il s'arrête net. « On verra pour le nom. Et ton vaisseau, AREPO le connaît pas. Ça, c'est un problème. »",
+            "Il te regarde, ou plutôt il regarde la caméra qui te regarde. « Je te demande rien, hein. C'est pas une corvée. Pour une fois, c'est pas une corvée. » Un temps. « Tu peux dire non. »"
+          ],
+        defi:{ type:"choix",
+          texte:["Asulf attend. Pour une fois, il ne demande rien."],
+          options:[
+            { texte:"Poser la main à plat sur l'écran, sur la silhouette, et la laisser là.",
+              cercles:{ langues:5 },
+              journal:"Tu as posé la main sur l'écran. Asulf n'a rien dit pendant un long moment, puis : « C'est froid, de ton côté ? De mon côté, c'est froid. » Il n'avait pas l'air de s'en plaindre." },
+            { texte:"Sortir sur l'aire balisée, et faire le tour de ton vaisseau comme on fait le tour d'une maison qu'on va prêter.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as fait le tour de ton vaisseau, lentement. Asulf t'a suivi d'une caméra à l'autre. « Il est plus petit que dans les manuels. C'est pas grave. Moi aussi, je suis plus petit que dans les manuels. »" },
+            { texte:"Recopier dans ton carnet la dernière page du manifeste, nom après nom, pour que quelqu'un, dehors, les ait lus.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as recopié des noms jusqu'à la nuit. Quand tu fatiguais, Asulf te les lisait, en ancien puis en clair, en les écorchant tous. Il n'en a sauté aucun." }
+          ],
+          reussite:[
+            "« Bon. » Il renifle, et c'est un reniflement de soulagement. « Alors demain, on présente ton vaisseau à AREPO. Faut qu'il ait un indicatif, comme un vrai appareil, avec un vrai numéro. » Il réfléchit. « Il va falloir de la peinture. »"
+          ] } }
+    ],
+    recompense:{ credits:3000, xp:540, flags:{} }   // K35, K39 : pas de PA avant Q30
+  },
+  /* ---------------- Q28 — Immatriculé ----------------
+     Un manifeste exige un appareil connu d'AREPO : le vaisseau, posé devant la station (le
+     quai, K23), est immatriculé sous le matricule de 42-U1F, indicatif MAAR-12/42.
+     Dernière corvée, absurde, pour la forme. Quête « compétence » du lot (K63).
+     Épreuves : nœud (le pochoir ; la plus dure) · énigme (le quai d'attache) · choix.
+     Récompense : etat.immatricule (affiché sur la fiche du vaisseau). */
+  {
+    id:"q28",
+    nom:"Immatriculé",
+    donneur:"Asulf",
+    donneurImg:"images/quetes/asulf.png",
+    donneurLieu:"La station d'Ancolie",
+    lieuPrise:"station",
+    intro:[
+      "« Bonjour bonsoir ! » Asulf a retrouvé tous ses cailloux, et quelques-uns en plus. « Grande nouvelle : j'ai lu la procédure. Toute. Deux fois. Pour qu'un appareil soit connu d'AREPO, faut qu'il soit immatriculé. Pour qu'il soit immatriculé, faut qu'il porte son indicatif. Et pour qu'il porte son indicatif, faut qu'un automate le peigne. »",
+      "« Sauf que les automates peignent pas un appareil qui est pas immatriculé. » Il laisse passer une seconde, ravi. « C'est beau, hein ? C'est une boucle. Chez nous, on adore les boucles. Personne en sort jamais. »",
+      "« Alors c'est toi qui peins. Je l'ai immatriculé sous mon matricule, ça se fait, c'est un appareil de service. Il s'appelle <b>MAAR-12/42</b> : j'ai mis mes deux premiers chiffres, j'avais que ça. Dernière corvée, promis. Pour la forme. » Un reniflement. « Chez nous, la forme, c'est le fond. »"
+    ],
+    etapes:[
+      /* ---- 1. Le pochoir — NŒUD (la plus dure) ---- */
+      { indice:"Sur l'aire balisée, devant la station : ton vaisseau, et un automate qui tient un pochoir.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q28/1.png",
+        arrivee:[
+            "Ton vaisseau attend sur l'aire balisée, posé de travers comme toujours. Un automate sur rail s'est approché de la coque avec un grand pochoir de métal, qu'il tient bien droit contre le flanc sans rien faire d'autre : il tient, c'est sa fonction. À ses pieds, un pot de peinture et un pinceau, posés au millimètre.",
+            "« Tu suis les découpes. Sans déborder, hein : un indicatif qui bave, c'est un autre indicatif, et un autre indicatif, c'est un autre appareil, et un autre appareil, c'est… » Il cherche. « C'est une autre corvée. Trois signes. Ils sont de plus en plus petits, je sais pas pourquoi. C'est le règlement qui veut ça. »"
+          ],
+        defi:{ type:"noeud",
+          texte:["Trois signes à peindre au pochoir, de plus en plus fins."],
+          consigne:"Guide le pinceau du doigt ou de la souris, du point plein au cercle, sans lever ni sortir de la découpe.",
+          glisse:"Le pinceau déborde : une coulure sur la coque. L'automate attend, impassible, que tu recommences ce signe.",
+          fini:"Le dernier signe sèche déjà, au soleil d'Ancolie.",
+          reussite:[
+            "Tu recules de trois pas. Sur le flanc de ton vaisseau, en lettres nettes, un peu tremblées à la fin : MAAR-12/42. L'automate retire son pochoir, le range et s'en va. Au bout de dix mètres, il s'arrête, pivote, revient, et passe un chiffon sur une coulure que tu n'avais pas vue.",
+            "« Il te félicite », traduit Asulf. « Enfin, je crois. Chez eux, finir le travail de quelqu'un, c'est une marque de respect. Ou de mépris. J'ai jamais su. »"
+          ] } },
+      /* ---- 2. Le formulaire — ÉNIGME (le quai d'attache) ---- */
+      { indice:"Dans la grande salle : le formulaire d'immatriculation, sur l'écran du milieu.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q28/2.png",
+        arrivee:[
+            "Le formulaire s'affiche sur l'écran du milieu, en ancien, avec ses cases. APPAREIL : MAAR-12/42. MATRICULE DU RESPONSABLE : 42-U1F. NATURE : SERVICE. Asulf les a remplies à l'avance, très fier, en s'appliquant. Il en reste une.",
+            "« Celle-là, je sais pas. » Il a l'air vexé contre lui-même. « QUAI D'ATTACHE. Faut mettre le quai où l'appareil est rattaché. Moi, je connais les conduits, les relais, les automates ; les quais, c'est pas mon service. Toi, tu sais lire. Regarde autour : un quai, ça dit toujours son nom quelque part. »"
+          ],
+        defi:{ type:"enigme",
+          texte:"Un appareil s'immatricule au quai où il est rattaché. Et un quai porte toujours son nom quelque part, gravé ou écrit.",
+          question:"Quel quai écris-tu dans la case ?",
+          motsCles:["maar-12","maar 12","maar12","ancolie","d'ancolie","l'ancolie"],
+          reponses:["quai maar-12","maar-12","quai maar 12","le quai maar-12","ancolie","quai d'ancolie","la station","celui-ci","ici"],
+          indice:"Le jour de ton arrivée, une plaque à demi couverte de pétales, sur le linteau de l'entrée. Et ce que tu as lu dans le manifeste, aux archives : ce vaisseau-là était venu à ce quai.",
+          reussite:[
+            "Tu tapes QUAI MAAR-12. Le formulaire réfléchit un long moment, comme s'il relisait tout depuis le début ; puis il se ferme, et à sa place s'affiche une seule ligne : APPAREIL MAAR-12/42 — CONNU.",
+            "« Connu. » Asulf le répète, et il a l'air presque jaloux. « Ton vaisseau est connu d'AREPO. Il a un indicatif, un quai, un responsable. Il est plus en règle que moi. »"
+          ] } },
+      /* ---- 3. L'appareil — CHOIX (quête « compétence » du lot, K63) ---- */
+      { indice:"Sur l'aire balisée : MAAR-12/42.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q28/3.png",
+        arrivee:[
+            "Tu ressors. Le soleil d'Ancolie tape sur l'indicatif tout frais, et les automates passent à côté de ton vaisseau en ralentissant, comme on ralentit devant une maison du quartier qui a changé de propriétaire. Ta bête renifle la peinture, éternue, et se couche à l'ombre de la coque, ses marques éteintes.",
+            "« Bon. Le nom, maintenant. » Il le dit vite, comme on arrache un pansement, puis il recule aussitôt : « Demain. Je dois… réfléchir. J'ai jamais rempli une case de nom. Personne a jamais rempli une case de nom, chez nous. » Un temps. « Ça me fait peur, une case vide. »"
+          ],
+        defi:{ type:"choix",
+          texte:["MAAR-12/42, connu d'AREPO. Avant de repartir, tu…"],
+          options:[
+            { texte:"Graver à côté de l'indicatif, à la pointe du couteau, un petit signe à toi, que les automates ne verront pas.",
+              cercles:{ eclats:5 },
+              journal:"Tu as gravé ton signe à côté de l'indicatif. Le lendemain, un automate l'avait poli, soigneusement, sans l'effacer." },
+            { texte:"Aider l'automate à porter son pochoir et son pot jusqu'au bout de l'allée, pour qu'il ne fasse pas deux voyages.",
+              cercles:{ racines:5 },
+              journal:"Tu as porté le pochoir jusqu'au bout de l'allée. L'automate t'a laissé faire, puis il a refait le trajet tout seul, à vide, pour que ce soit dans son registre." },
+            { texte:"Relire tout le formulaire en ancien avec Asulf, case par case, pour qu'il n'y manque rien.",
+              cercles:{ assembleurs:5 },
+              journal:"Vous avez relu le formulaire jusqu'à la dernière case. Il n'y manquait rien. Asulf a quand même voulu le relire une troisième fois, « pour la forme »." }
+          ],
+          reussite:[
+            "Dans la radio, Asulf s'entraîne à prononcer l'indicatif comme un contrôleur, en se trompant de mots et en se reprenant. « MAAR-12/42, autorisé à… euh. À partir. Voilà. Autorisé à partir. » Il répète la phrase pour lui, tout bas, une fois de plus."
+          ] } }
+    ],
+    recompense:{ credits:3100, xp:560, flags:{ immatricule:"MAAR-12/42" } }   // K35, K39 : pas de PA avant Q30
+  },
+  /* ---------------- Q29 — Une ligne de registre ----------------
+     Le nom (K25) : la case est vide, « Mets celui que tu dis » → ASULF devient une ligne de
+     registre. Le verrou (K32) : pour rire, il essaie d'ajouter le joueur, MATRICULE REQUIS.
+     L'émission : le manifeste entre par l'appel, réémis en phase avec la cadence comme en
+     Q14 (épreuve BROUILLAGE, gardée pour ici). L'habilitation du joueur (K26, K32) :
+     flag `habilitation` → les réserves de la station s'ouvrent (K62).
+     Épreuves : scène · brouillage (la plus dure) · attente · choix. */
+  {
+    id:"q29",
+    nom:"Une ligne de registre",
+    donneur:"Asulf",
+    donneurImg:"images/quetes/asulf.png",
+    donneurLieu:"La station d'Ancolie",
+    lieuPrise:"station",
+    intro:[
+      "« J'ai réfléchi. » Asulf a la voix de quelqu'un qui a réfléchi toute la nuit, et qui ne s'en remet pas. « Le manifeste, il passera pas par la porte. Un manifeste, ça entre dans le registre par l'appel, comme tout le reste : à la cadence, au bon moment, entre deux réponses. Sinon il est rejeté. »",
+      "« Moi, pendant l'appel, je peux rien faire : je réponds. Donc c'est toi qui émettras. Comme au Perchoir, le jour où t'as relancé le message de ton vieux. » Il hésite. « Oui. C'est moi qui avais répondu, ce jour-là. <i>Reçu.</i> À la main. J'aurais pas dû. Je regrette pas. »",
+      "« Et avant l'appel, le nom. » Sa voix flanche. « On fait le nom ce soir, avant que je change d'avis. Je change pas d'avis. Mais avant. »"
+    ],
+    etapes:[
+      /* ---- 1. La case vide — SCÈNE : le nom (K25) et MATRICULE REQUIS (K32) ---- */
+      { indice:"Dans la grande salle de la station : le manifeste, sur l'écran du milieu.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q29/1.png",
+        arrivee:[
+            "Le manifeste s'affiche sur l'écran du milieu, presque rempli, dans le même ordre que celui des archives. MATRICULE : 42-U1F. APPAREIL : MAAR-12/42. QUAI : MAAR-12. Et une case, tout au début de la ligne, que personne n'a remplie depuis que ce formulaire existe : NOM.",
+            "« Je sais pas quoi mettre. » La silhouette se tortille. « Chez nous, la case, elle est vide. Toujours. On a des matricules, c'est suffisant, c'est même mieux, ça se trompe pas. » Il se tait. Puis, très vite, sans respirer : « Mets celui que tu dis. »",
+            "Tu t'approches du clavier, et tu tapes cinq lettres, les mêmes qu'un jour sur ta radio pour renommer un canal : A, S, U, L, F. La case les prend, les garde, et pour la première fois depuis trois siècles, une ligne du Protocole commence par un nom.",
+            "Il ne dit rien. Puis, d'un coup, les cailloux : « Et toi ! On t'ajoute, toi ! Deux passagers, c'est pas interdit, j'ai vérifié, y a même une ligne prévue en dessous. » Il tape, ravi. La ligne du dessous clignote en rouge : MATRICULE REQUIS. Il tape encore. MATRICULE REQUIS. « Ah. » Il se gratte la tête. « T'as pas de matricule. Évidemment. T'es… dehors, toi. »",
+            "Tu repenses à Sorn, au sachet de graines plié dans sa poche : une case qui se coche, et derrière, ils ferment. Tu poses la main sur l'écran, sur la sienne, pour qu'il arrête de taper. Il arrête. « Je sais. » Sa voix est toute basse. « Je disais ça pour rire. Un peu pour rire. »"
+          ],
+        defi:{ type:"scene", bouton:"Attendre l'appel →" } },
+      /* ---- 2. L'émission — BROUILLAGE (ratable ; la plus dure). Porté des missions (H64). ---- */
+      { indice:"Dans la grande salle, pendant l'appel : émets le manifeste en phase avec la cadence.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q29/2.png",
+        arrivee:[
+            "L'appel commence. Les écrans se couvrent de lignes bleu glacier, et dans la radio, très loin, des centaines de voix répondent chacune à son tour. Asulf aussi : tu l'entends dire, d'une voix plate de procédure que tu ne lui connais pas, le mot qui ne se dit pas chez vous. Puis il se tait. Pendant l'appel, il n'a le droit de rien faire d'autre.",
+            "Avant d'aller répondre, il t'a tout préparé, et tout expliqué deux fois. L'appel est une onde : elle a sa fréquence et son décalage, et elle dérive un peu, comme une vague. Ton émission doit se caler dessus, exactement, et tenir assez longtemps pour que le manifeste glisse entre deux réponses. Comme au Perchoir : en phase, ou rien.",
+            "Au bord de l'écran, il a laissé un mot, en clair, dans son orthographe à lui : « Moi g répondu reçu ce jour-là. Fai pareil. »"
+          ],
+        defi:{ type:"brouillage", tenir:6, duree:60,
+          texte:["L'onde de l'appel, en rouge, et la tienne, en vert. Cale-toi dessus, et tiens."],
+          consigne:"Règle ta fréquence et ton décalage jusqu'à ce que les deux ondes se superposent, puis tiens-les ensemble six secondes d'affilée, avant la fin de l'appel.",
+          echec:"L'appel se termine avant que le manifeste soit passé. Il faudra attendre une autre relève. Nouvelle tentative dans 8 h.",
+          fini:"Le manifeste est parti, entre deux réponses.",
+          reussite:[
+            "Les deux ondes n'en font plus qu'une pendant six secondes, et sur l'écran du milieu, entre deux réponses, passe une ligne que personne n'attendait : MANIFESTE MAAR-12/42 — ÉMIS.",
+            "Personne ne s'arrête de répondre. L'appel continue, régulier, comme si rien ne s'était passé. C'est exactement ce qu'il fallait."
+          ] } },
+      /* ---- 3. L'accusé — ATTENTE (le cycle suivant) ---- */
+      { indice:"Dans la grande salle : le manifeste doit revenir accepté, au cycle suivant de l'appel.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q29/3.png",
+        arrivee:[
+            "L'appel est fini. Asulf revient sur l'écran, essoufflé comme s'il avait couru, alors qu'il n'a pas bougé de sa chaise. « Ça part, ça fait le tour du réseau, et ça revient au prochain cycle. Accepté, ou rejeté. » Il essaie de rire. « J'aime pas attendre. Je fais que ça depuis que je suis né, et j'aime toujours pas ça. »",
+            "Vous attendez ensemble, toi sur un banc, lui sur son écran. Il parle pour ne pas entendre le silence : de la pluie, des rations chaudes, de la sporelle, de la pluie encore. Ta bête s'est endormie sous le banc, ses marques éteintes."
+          ],
+        defi:{ type:"attente", duree:2*3600*1000,
+          texte:["Le manifeste fait le tour du réseau. Il reviendra avec le cycle suivant."],
+          reussite:[
+            "Au cycle suivant, une ligne revient, en ancien, et tu la lis avant lui : EM·BARQUE·MENT — CON·FIRM·ATION. Et dessous, en clair : MANIFESTE MAAR-12/42 — ACCEPTÉ. UN PASSAGER : ASULF. DÉPART : PROCHAINE RELÈVE.",
+            "Asulf ne dit rien du tout. Sur l'écran, la silhouette s'est assise par terre."
+          ] } },
+      /* ---- 4. Habilité — CHOIX de Cercle (K26, K32 ; les réserves, K62) ---- */
+      { indice:"Dans la grande salle. Asulf a une dernière procédure.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q29/4.png",
+        arrivee:[
+            "Quand il se relève, il a repris sa voix de fiche, mais la fiche tremble. « Dernière procédure. Après, je serai plus là pour leur dire qui tu es, aux automates. Alors je te mets sur ma ligne. Pas comme matricule, t'en as pas : comme habilité. Une habilitation sous mon matricule, valable ici, à la station. Ils te serviront comme ils me servaient. »",
+            "Un caisson sur pattes traverse la grande salle, s'arrête devant toi et allume son œil, vert cette fois. HABILITATION 42-U1F/1 — RECONNUE. Puis il repart tailler ses fleurs, comme si de rien n'était.",
+            "« Les réserves aussi, elles t'ouvrent, maintenant. Y a des barres protéinées, goût <i>nature</i>, et des rations réglementaires. » Il renifle. « Je te les déconseille. Mais elles sont à toi. »",
+            "« Demain soir, je sors. » Un temps. « Tu viendras ? »"
+          ],
+        defi:{ type:"choix",
+          texte:["Il attend une réponse que tu ne sais pas dire."],
+          options:[
+            { texte:"Taper deux coups sur le banc, comme la nuit de l'appel.",
+              cercles:{ racines:5 },
+              journal:"Tu as frappé deux coups sur le banc. « D'accord », a dit Asulf. « D'accord. Alors je viendrai aussi. » Il avait l'air de trouver ça parfaitement logique." },
+            { texte:"Lui montrer sur ta carte de Silène le dos de l'anneau, et le chemin de la trappe jusqu'aux cités.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu lui as montré le chemin sur ta carte. Il l'a appris par cœur en trois minutes, puis il a demandé ce que voulaient dire les petits arbres dessinés. « Des arbres ? Des vrais ? Combien ? »" },
+            { texte:"Commander au bar de la station deux verres, et poser le second devant l'écran.",
+              cercles:{ langues:5 },
+              journal:"Tu as commandé deux verres. « Tu les as mis sur ma note, ça aussi ? » Un reniflement. « Bon. Pour une fois. Santé. Enfin, la tienne. »" }
+          ],
+          reussite:[
+            "« Bon. » La silhouette se tortille, se gratte la tête, cherche quelque chose à dire, et trouve : « Prends un pull. »",
+            "Puis l'écran s'éteint, doucement, comme on éteint la lampe d'une pièce qu'on va quitter."
+          ] } }
+    ],
+    recompense:{ credits:3200, xp:580, flags:{ habilitation:true } }   // K35, K39 : pas de PA avant Q30 ; K62 : les réserves
+  },
+  /* ---------------- Q30 — Une personne évacuée ----------------
+     Fin de l'arc (K18, K24, K54, K59). Asulf répare le calculateur (sa part du marché, K54) ;
+     à la relève, la case se coche ; il sort par les conduits sous l'anneau, guidé par le
+     joueur (épreuve CREVASSE : sa lampe de casque), et par une trappe de visite à hauteur
+     d'homme, à trois pas de la petite trappe du bras ; premiers pas dehors ; la serre, Sorn
+     et Adaya ; la chaise longue (K59 : il la remarque sans rien dire) ; il choisit La
+     Toundra, pour savoir ce que c'est, le froid (Q23). Récompense : verrouMaar = false,
+     asulfToundra = true, 1 PA (K39). La Gorge reste fermée : lieuOuvert() ne l'ouvre que
+     pendant l'étape 1 de Q20 (K27, rien à changer).
+     Épreuves : scène · crevasse (la plus dure) · scène · choix. */
+  {
+    id:"q30",
+    nom:"Une personne évacuée",
+    donneur:"Asulf",
+    donneurImg:"images/quetes/asulf.png",
+    donneurLieu:"La station d'Ancolie",
+    lieuPrise:"station",
+    intro:[
+      "« Accepté. » Asulf le dit en arrivant, sans bonjour, sans bonsoir. « Le manifeste est accepté. MAAR-12/42, un passager, quai MAAR-12, départ à la prochaine relève. Ça veut dire ce soir. Ça veut dire… » Il compte. « Ça veut dire ce soir. »",
+      "« Avant, je dois faire ma part. Le marché, tu te rappelles ? Tu faisais mes trucs, je réparais ton calculateur. T'as fait mes trucs. Plus que mes trucs. » Il renifle. « Alors je répare. C'est la dernière fois que je touche au réseau. Après, je serai plus de la maintenance. Je serai… » Il cherche le mot. « Un passager. »"
+    ],
+    etapes:[
+      /* ---- 1. Sa part du marché — SCÈNE (K54 : la réparation) ---- */
+      { indice:"Dans la grande salle de la station : Asulf répare ton calculateur.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q30/1.png",
+        arrivee:[
+            "Sur l'écran au-dessus des bancs, la silhouette s'est penchée sur un clavier qu'on ne voit pas. Sur ta radio s'ouvre toute seule une fenêtre que tu reconnais : la console de ton calculateur de saut, la même qu'au jour de la chute, avec sa ligne de commande qui défile.",
+            "Cette fois, c'est lui qui tape. Les caractères filent, trop vite pour toi, exactement comme ce jour-là, sauf qu'ils ne se réécrivent plus d'eux-mêmes : ils se posent, un par un, à leur place. « Tu vois, c'était pas impossible. C'était juste pas pour toi. » Il tape encore. « Moi, je m'entraîne depuis le jour où je t'ai posé dans les fleurs. »",
+            "Sur la console, les routes reviennent une à une : Silène, Ancolie, puis Triptolème, La Carcasse, le Perchoir, La Cassée. La Gorge reste grise. « Celle-là, je peux pas. Elle se ferme de l'autre côté, et je sais pas qui tient la poignée. » Il retire ses mains du clavier, et la silhouette regarde ses mains.",
+            "« Voilà. T'es libre. » Il renifle. « Moi aussi, bientôt. Ce soir, à la relève, la case se coche. Rendez-vous à la trappe. Viens pas en avance : je vais avoir peur, et si t'es là en avance, tu vas me voir avoir peur. »"
+          ],
+        defi:{ type:"scene", bouton:"Rentrer sur Silène →" } },
+      /* ---- 2. La relève — CREVASSE (ratable ; la plus dure) : le guider dans les conduits ---- */
+      { indice:"Sur Silène, au dos de l'anneau, côté mer : la trappe. Ce soir, à la relève.",
+        cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
+        image:"images/quetes/q30/2.png",
+        arrivee:[
+            "Le soir tombe sur le dos de l'anneau. Ta bête s'est rallumée dès que tu as posé le pied sur Silène, et elle s'est couchée devant la trappe sans que tu lui demandes rien, comme on attend devant une porte. Sur la crête, les balises s'allument une à une, violettes. De l'autre côté du mur, quelque part, l'appel commence.",
+            "Ta radio grésille, et la voix d'Asulf arrive en chuchotant, entre deux réponses. « Ça y est. Ça vient de passer. MAAR-12/42, un passager : <i>une personne évacuée</i>. La case est cochée. » Un souffle. « Pour le registre, je suis parti. Maintenant, faut que je parte pour de vrai. »",
+            "« Je suis dans les conduits, et il fait noir. J'y suis jamais allé, dans les conduits : j'y envoie mes bras, d'habitude. » Sur ta radio s'affiche l'image de sa lampe de casque, un pas devant lui, pas deux. « Tu vois ce que je vois ? Guide-moi. Je connais les plans par cœur, et j'arrive à rien. C'est pas pareil, un plan et un couloir. »"
+          ],
+        defi:{ type:"crevasse", n:11, rayon:1, marge:1.5,
+          texte:["Les conduits sous l'anneau, à travers la lampe de casque d'Asulf. Un pas devant lui, jamais deux."],
+          consigne:"Guide-le jusqu'à la sortie, en bas. Chaque pas compte : il n'a pas l'habitude de marcher.",
+          echec:"« J'ai plus de lampe. » Il rebrousse chemin à tâtons jusqu'à son poste, en s'excusant auprès de chaque mur. La case est cochée, rien ne presse : il réessaiera à une autre relève. Nouvelle tentative dans 8 h.",
+          fini:"Au bout du conduit, une lueur, et une échelle.",
+          reussite:[
+            "À trois pas de la petite trappe, le talus se soulève. Une plaque ronde, plus large, couverte d'herbe, que tu n'avais jamais remarquée : une trappe de visite faite pour un homme, que personne n'a ouverte depuis trois siècles. Une main en sort, gantée, et tâtonne dans l'herbe comme si elle cherchait une marche.",
+            "Puis un casque, des épaules, une combinaison close qui se tortille pour passer, et qui reste là, à genoux sur la terre nue, les deux mains à plat sur le sol, sans bouger. Ta bête s'approche et le renifle. Il ne bouge toujours pas."
+          ] } },
+      /* ---- 3. Dehors — SCÈNE ---- */
+      { indice:"Au pied du rempart. Il est dehors.",
+        cible:{ x:322, y:1050, r:80 },
+        image:"images/quetes/q30/3.png",
+        arrivee:[
+            "Il enlève son casque. C'est la première fois que tu le vois sans écran : un jeune homme propre sur lui, la coupe réglementaire, une barbichette taillée au millimètre, et des cernes comme des puits. Il respire, fort, trop fort, et il tousse. « Ça sent. Pourquoi ça sent ? Tout sent ! C'est la mer, ça ? Elle fait du bruit tout le temps ? Elle s'arrête jamais ? »",
+            "Une vague passe sur la silène, au loin, et les marques de ta bête s'allument avec elle. Il sursaute si fort qu'il manque de retomber dans le trou. Sur la crête, une balise pivote vers vous ; il se plaque contre le rempart, les yeux fermés. « Elle me voit. Ma combinaison lui dit qui je suis. » Il ouvre un œil. « Elle me voit, et elle s'en fiche. Je suis évacué. »",
+            "Puis il se met à parler, et il ne s'arrête plus : la terre est molle, le ciel est trop grand, est-ce que ça mouille vraiment, la pluie, ah oui, il avait déjà demandé, et la sporelle, elle pousse où, on peut aller voir, on peut y aller maintenant ? Il parle en marchant, il marche en se retournant, il se retourne en trébuchant. Tu le prends par le coude. Il se tait une seconde, surpris, regarde ta main sur son bras, puis repart de plus belle.",
+            "Au bout du talus, il s'arrête, et regarde derrière lui le rempart tout entier, qu'il n'avait jamais vu que de l'intérieur. « C'est petit, vu d'ici. » Un temps. « De dedans, c'était le monde. »"
+          ],
+        defi:{ type:"scene", bouton:"L'emmener à la serre →" } },
+      /* ---- 4. La chaise longue — CHOIX de Cercle (K59) ---- */
+      { indice:"La serre d'Adaya, au Rhizome. Il veut voir la sporelle.",
+        cible:{ x:1250, y:770, r:90 },
+        image:"images/quetes/q30/4.png",
+        arrivee:[
+            "À la serre, Adaya a refait du thé, et cette fois elle en boit. Sorn est là aussi, sur son sac de terreau ; il se lève quand vous entrez, ce qu'il ne fait pour personne. Les deux hommes se regardent un long moment, le radié et l'évacué, chacun d'un côté de la même ligne. « Alors c'est toi, le gamin qui répond <i>reçu</i> », finit par grogner Sorn. Asulf hoche la tête, trop vite. Sorn lui tend la main ; Asulf la regarde, puis la serre, maladroitement, comme on fait une chose qu'on a seulement lue dans un manuel.",
+            "Mais Asulf ne tient pas en place. Il fait le tour des rangs, il touche tout, il goûte une feuille que personne ne lui a proposée, et puis il s'arrête net devant la chaise longue d'Adaya, au bout du rang. Il la regarde longtemps. Il s'assoit dessus, très droit, les genoux serrés, les mains sur les cuisses, comme sur un banc de la grande salle, et il ne comprend pas pourquoi le dossier part en arrière. Il ne demande rien. Il se relève tout doucement, passe la main sur la toile, une fois, et revient vers vous.",
+            "Adaya lui met dans les mains trois brins de sporelle et un bol de ration chaude. Il pleure un peu ; il dit que c'est la vapeur. Puis il annonce qu'il a choisi où il va vivre : à La Toundra. Sorn hausse un sourcil ; Asulf a déjà toutes ses raisons. « C'est là qu'il fait le plus froid, non ? Moi, j'ai toujours eu dix-neuf degrés. Je veux savoir ce que c'est, froid. » Il renifle. « Et puis, ils ont l'air d'avoir de la place. »"
+          ],
+        defi:{ type:"choix",
+          texte:["Il part demain pour La Toundra. Avant, tu…"],
+          options:[
+            { texte:"T'asseoir avec lui par terre, le dos contre le rang, et lui montrer comment on mâche la sporelle : lentement, un brin à la fois.",
+              cercles:{ langues:5 },
+              journal:"Vous avez mâché la sporelle par terre, le dos contre le rang, jusqu'à la nuit. Asulf a essayé de te dire quelque chose de l'intérieur, et c'est sorti en sigles. Il a ri si fort qu'Adaya est venue voir." },
+            { texte:"Lui apprendre à allumer un feu avec ce qu'on trouve par terre : à La Toundra, il en aura besoin.",
+              cercles:{ racines:5 },
+              journal:"Tu lui as appris le feu. Il a brûlé deux allumettes, un gant et presque un sourcil, puis la flamme a pris, et il l'a regardée longtemps sans rien dire, comme on regarde un écran." },
+            { texte:"L'emmener voir ton vaisseau, et lui montrer l'indicatif sur le flanc : MAAR-12/42, son nom de famille, en quelque sorte.",
+              cercles:{ veilleurs:5 },
+              journal:"Il a lu l'indicatif du bout du doigt, chiffre par chiffre. « MAAR-12/42. Ça fait un nom de famille, ça ? » Tu as hoché la tête. Il a eu l'air de trouver que c'était une très bonne famille." }
+          ],
+          reussite:[
+            "Le lendemain, tu l'accompagnes jusqu'à La Toundra. Il fait trois pas dans la neige, s'arrête, ouvre la bouche et la referme. Puis il se tourne vers toi, les joues rouges et les cils déjà blancs, avec l'air de quelqu'un à qui l'on vient d'offrir quelque chose d'énorme. « C'est ça, froid ? » Il respire un grand coup, et tousse. « C'est complètement irresponsable. C'est génial. »",
+            "Le soir, en remontant à bord, tu essaies une route au hasard : Triptolème. Le calculateur l'accepte sans un mot. Silène, Ancolie, et maintenant tout le reste, sauf la Gorge, qui reste grise. Tu as ton ciel. Il a son froid."
+          ] } }
+    ],
+    recompense:{ credits:3300, xp:600, pa:1, flags:{ verrouMaar:false, asulfToundra:true } }   // K39 : le PA de l'arc ; K54 : la réparation ; K59
   }
 
 

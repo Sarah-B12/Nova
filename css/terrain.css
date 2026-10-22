@@ -72,7 +72,10 @@
   .garage-etat div { display:flex; gap:8px; align-items:baseline; }
   .garage-etat span { color:var(--sourdine); }
   .maison-vis { display:flex; justify-content:center; margin:0 0 10px; }
-  .maison-vis img { max-height:150px; max-width:100%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+  /* v1.93b — onglet Terrain → Maison SEULEMENT (les cases du terrain et les profils visités
+     ont leurs propres règles) : l'image s'affiche à sa taille réelle, jusqu'à 512 px, pour
+     qu'on voie les détails de sa maison ; elle rétrécit sur un écran plus étroit. */
+  .maison-vis img { max-width:min(256px, 100%); height:auto; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
   .plot .vide-plot { color:rgba(180,200,230,.4); font-size:26px; font-weight:300; }
   /* v0.91 — intégrité : une pastille de couleur dans le coin, et le détail
      dans une bulle au survol. Le badge « à l'arrêt » est EN HAUT pour ne pas

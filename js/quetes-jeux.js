@@ -10,6 +10,7 @@
    · crevasse   (Q17) coursives dans le noir, une lampe, un nombre de pas compté
    · impossible (Q20) reprendre les commandes : on ne peut pas gagner (K15)
    · saut       (Q20) la Gorge : le saut détourné, le joueur arrive en Ancolie
+   · brouillage (Q29) caler son onde sur celle de l'appel et la tenir (v1.93, porté de H64)
    =========================================================== */
 const QUETES_JEUX = {};
 
@@ -606,5 +607,60 @@ QUETES_JEUX.rangement = {
       const libre = R.pieces.findIndex((_, k) => !R.pose.some(p => p.p === k)); if(libre >= 0){ R.sel = libre; R.rot = 0; }
       sauvegarder(); _qjRedessiner(z, d);
     }));
+  }
+};
+
+/* ---------- Le brouillage (Q29) — porté des missions (H64, missions.js) ----------
+   v1.93 — L'onde de l'appel dérive lentement (fréquence et décalage) ; le joueur règle
+   la sienne avec deux curseurs et doit la TENIR calée `tenir` secondes d'affilée avant
+   la fin de l'appel (`duree` secondes). Mêmes tolérances que les missions
+   (fréquence ± 0,12, décalage ± 0,45 rad). Joué côté client, comme toutes les épreuves
+   de quête ; ratable (DEFIS_UNTRY) : l'appel fini, verrou de 8 h.
+   Le redessin de l'onglet est suspendu pendant la partie (_seqAnim). */
+function _brouOnde(fr, ph){ let p = ""; for(let x = 0; x <= 300; x += 6){ const y = 50 + 35 * Math.sin(x / 300 * Math.PI * 2 * fr + ph); p += (x ? " L" : "M") + x + " " + y.toFixed(1); } return p; }
+function _brouCible(s){ return { f:1.6 + 0.5 * Math.sin(s / 7), d:(s * 0.35) % (2 * Math.PI) }; }   // = missions.js
+function _brouCale(f, d, c){ const dp = Math.abs(((d - c.d) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI); return Math.abs(f - c.f) < 0.12 && dp < 0.45; }
+QUETES_JEUX.brouillage = {
+  html(d){
+    const T = d.tenir || 6, D = d.duree || 60;
+    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} <b>${D} s d'appel, ${T} s calé d'affilée.</b></p>
+      <div id="qj-brou">
+        <svg id="qj-br-svg" viewBox="0 0 300 100" style="width:100%;max-width:340px;background:rgba(90,168,230,.06);border:1px solid var(--line);border-radius:8px">
+          <path id="qj-br-appel" stroke="#ff5257" stroke-width="3" fill="none"/><path id="qj-br-moi" stroke="#7bc47f" stroke-width="3" fill="none"/></svg>
+        <div class="mi-ligne"><span>Fréquence</span><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="1" disabled></div>
+        <div class="mi-ligne"><span>Décalage</span><input type="range" id="qj-br-d" min="0" max="6.28" step="0.01" value="0" disabled></div>
+        <p class="vide" id="qj-br-etat">Calé : 0,0 s / ${T} s · appel : ${D} s</p>
+        <div class="quete-rep"><button class="mini" id="qj-br-go">${d.bouton || "Commencer l'émission"}</button></div>
+      </div></div>`;
+  },
+  wire(z, d){
+    const go = z.querySelector("#qj-br-go"); if(!go) return;
+    const T = d.tenir || 6, D = d.duree || 60;
+    const f = z.querySelector("#qj-br-f"), dd = z.querySelector("#qj-br-d"), svg = z.querySelector("#qj-br-svg");
+    const appel = z.querySelector("#qj-br-appel"), moi = z.querySelector("#qj-br-moi"), et = z.querySelector("#qj-br-etat");
+    const P = { f:1, d:0, tenu:0, s:0, fini:false };
+    QUETES_JEUX.brouillage._partie = P;            // pour le banc d'essai
+    f.addEventListener("input", () => { P.f = +f.value; });
+    dd.addEventListener("input", () => { P.d = +dd.value; });
+    const dessiner = () => { const c = _brouCible(P.s); appel.setAttribute("d", _brouOnde(c.f, c.d)); moi.setAttribute("d", _brouOnde(P.f, P.d)); };
+    dessiner();
+    go.addEventListener("click", () => {
+      go.disabled = true; f.disabled = false; dd.disabled = false;
+      const t0 = Date.now(); let der = t0;
+      const pas = () => {
+        if(P.fini) return;
+        if(!document.body.contains(svg)){ P.fini = true; _seqFin(); return; }   // l'onglet a changé : la partie s'arrête
+        const t = Date.now(), dt = (t - der) / 1000; der = t; P.s = (t - t0) / 1000;
+        _seqAnim = t;
+        const c = _brouCible(P.s); P.cible = c;
+        P.tenu = _brouCale(P.f, P.d, c) ? P.tenu + dt : 0;
+        dessiner();
+        et.textContent = `Calé : ${P.tenu.toFixed(1).replace(".", ",")} s / ${T} s · appel : ${Math.max(0, D - P.s).toFixed(0)} s`;
+        if(P.tenu >= T){ P.fini = true; _seqFin(); journal(d.fini || "C'est passé.", "gain"); reussirDefi(); return; }
+        if(P.s >= D){ P.fini = true; _seqFin(); echouerDefi(d.echec || `L'appel est fini. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+        const id = setTimeout(pas, 40); if(typeof _queteTO !== "undefined") _queteTO.push(id);
+      };
+      pas();
+    });
   }
 };

@@ -116,7 +116,7 @@ function _fmtDuree(ms){
 
 // Mini-jeux ratables : un essai par jour.
 const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup",
-  "ronde","crevasse","tir","goupilles","reaction"]);   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
+  "ronde","crevasse","tir","goupilles","reaction","brouillage"]);   // v1.93 : + brouillage (Q29)   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
 /* ⚠ Le verrou ne dure plus 24 h glissantes mais jusqu'au PROCHAIN MINUIT
    PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
    23 h ne bloque donc plus toute la journée du lendemain. Repli sur l'ancien
@@ -1735,7 +1735,7 @@ function _wireSequence(z,d){
        appellent `rafraichirQuetes()`, donc `majQueteHub()`. Le drapeau encore
        levé, le panneau refuserait de se redessiner et le joueur resterait
        devant l'écran du défi qu'il vient de terminer. */
-    if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi(`Séquence ratée — la console se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+    if(i!==seq[pos]){ jouable=false; _seqFin(); echouerDefi(d.echec || `Séquence ratée — la console se verrouille. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }   // v1.93 : d.echec (Q26 : pas de console, une radio)
     pos++;
     if(pos>=seq.length){ if(seq.length>=L){ jouable=false; _seqFin(); journal("Séquence maîtrisée !","gain"); reussirDefi(); } else { jouable=false; etat.textContent="Bien ! Regarde la suite…"; tour(PAUSE_VAGUE); } }
   }));

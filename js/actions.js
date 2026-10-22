@@ -97,6 +97,8 @@ async function resoudreCombat(opts){
 /* acheter() supprimée (v0.58) : ancienne boutique mobile, jamais appelée. Voir boutique.js. */
 async function utiliser(art){
   const id = (typeof art==="string") ? art : art.id;
+  /* v1.93 — K62 : les vivres des réserves (énergie) passent par le serveur (reserves_manger). */
+  if(typeof VIVRES_STATION!=="undefined" && VIVRES_STATION[id] && typeof mangerVivre==="function"){ await mangerVivre(id); return; }
   const eff = (typeof effetConso==="function") ? effetConso(id) : null;
   if(!eff || !etat.sac[id]) return;
   /* ⚠ Les jauges appartiennent au SERVEUR (colonnes o2/sante/moral). L'objet
