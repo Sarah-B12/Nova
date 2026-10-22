@@ -75,7 +75,13 @@
   /* v1.93b — onglet Terrain → Maison SEULEMENT (les cases du terrain et les profils visités
      ont leurs propres règles) : l'image s'affiche à sa taille réelle, jusqu'à 512 px, pour
      qu'on voie les détails de sa maison ; elle rétrécit sur un écran plus étroit. */
-  .maison-vis img { max-width:min(256px, 100%); height:auto; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+  .maison-vis img { max-width:min(512px, 100%); height:auto; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.5)); }
+  /* v1.93g — la BANNIÈRE du logement (2172 × 724, comme les quêtes), onglet Maison
+     seulement. Même cadre que les bannières de quête (.quete-img). Si elle manque, le jeu
+     revient à l'image carrée (règle juste au-dessus). */
+  .maison-vis-ban { display:block; }
+  .maison-vis img.maison-ban { display:block; width:100%; max-width:100%; aspect-ratio:3/1; max-height:300px; height:auto;
+    object-fit:cover; border-radius:8px; filter:none; }
   .plot .vide-plot { color:rgba(180,200,230,.4); font-size:26px; font-weight:300; }
   /* v0.91 — intégrité : une pastille de couleur dans le coin, et le détail
      dans une bulle au survol. Le badge « à l'arrêt » est EN HAUT pour ne pas

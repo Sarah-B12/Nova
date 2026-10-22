@@ -9,10 +9,15 @@
      vaisseau (comme la maison ou le sac) — à venir aussi.
    =========================================================== */
 const VAISSEAUX = {
-  // carb = type de carburant · reservoir = litres max · conso = L par unité de vol (à venir) · pv = coque
+  // carb = type de carburant · reservoir = litres max · conso = L par unité de vol · pv = coque
+  /* v1.93d — décision de l'autrice (choix A) : le cargo consommait 6 L/u d'un carburant
+     presque deux fois plus cher au litre — 11 fois le coût d'une navette par trajet, pour
+     4 fois sa soute, et moins d'autonomie qu'elle. Désormais 2 L/u : ~4 fois le coût
+     d'une navette pour 4 fois sa soute (même prix par objet transporté), autonomie 100.
+     Le maître passe aussi à 2 L/u (~4 fois, autonomie 50) : il se paie en énergie (3/u). */
   fab_navette_legere:  { nom:"Navette légère",  soute:5,  img:"images/vaisseaux/navette_legere.png",  carb:"fab_biocarburant",         reservoir:40,  conso:1, energie:1, pv:120 },
-  fab_vaisseau_cargo:  { nom:"Vaisseau Cargo",  soute:20, img:"images/vaisseaux/vaisseau_cargo.png",  carb:"fab_biocarburant_raffine", reservoir:200, conso:6, energie:2, pv:260 },
-  fab_vaisseau_maitre: { nom:"Vaisseau maître", soute:10, img:"images/vaisseaux/vaisseau_maitre.png", carb:"fab_biocarburant_raffine", reservoir:100, conso:3, energie:3, pv:340 }
+  fab_vaisseau_cargo:  { nom:"Vaisseau Cargo",  soute:20, img:"images/vaisseaux/vaisseau_cargo.png",  carb:"fab_biocarburant_raffine", reservoir:200, conso:2, energie:2, pv:260 },   // v1.93d : conso 6 → 2 (autrice, choix A)
+  fab_vaisseau_maitre: { nom:"Vaisseau maître", soute:10, img:"images/vaisseaux/vaisseau_maitre.png", carb:"fab_biocarburant_raffine", reservoir:100, conso:2, energie:3, pv:340, canon:1 }    // v1.93d : conso 3 → 2 · v1.93e : canon de bord (+1 salve contre les sondes)
 };
 /* ===========================================================
    NAVETTE DE RÉSERVE — cadeau de fin de Q5 (v0.91)
@@ -347,6 +352,10 @@ function _vaisMonterStyle(){
   `;
   document.head.appendChild(st); _vaisStyle=true;
 }
+/* v1.93e — LE CANON DE BORD (choix A de l'autrice) : `canon` = salves EN PLUS dans le duel
+   contre une sonde (sonde.js, _tirSalves). Seul le Vaisseau maître en a un (1). Les combats
+   de vaisseaux de la carte d'après la Gorge devront le réutiliser (K64). */
+function canonVaisseau(){ const v = etat && etat.vaisseau && VAISSEAUX[etat.vaisseau]; return (v && v.canon) || 0; }
 /* v1.93 — Q28 : l'indicatif MAAR-12/42 (etat.immatricule) s'affiche sous le nom du vaisseau. */
 function majVaisseau(){
   const z=document.querySelector("#vaisseau-vue"); if(!z) return;
@@ -375,6 +384,7 @@ function majVaisseau(){
           <div><span>Conso carburant</span><b>${v.conso} L/u${vaisseauAvarie()?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}${regulateurActif()?` <span style="color:var(--ok,#7bc47f)">−20 %</span>`:""}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
+          ${v.canon ? `<div><span>Armement</span><b>Canon de bord · +${v.canon} salve contre les sondes</b></div>` : ""}
         </div>
         <div class="jauge" style="margin:12px 0 4px">
           <div class="jauge-tete"><span>Carburant · ${item(v.carb).nom}</span><span class="val">${Math.round(carb)} / ${v.reservoir} L</span></div>

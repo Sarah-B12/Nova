@@ -31,7 +31,6 @@ const DEV_ONGLETS = [
     { id:"etat", titre:"❤️ État", note:"Tests sur <b>ce personnage</b> seulement.", items:[
       { sel:"#dev-energie", bouton:true }, { sel:"#dev-pause", bouton:true }, { sel:"#dev-prison", bouton:true },
       { sel:"#dev-recaler-comp", bouton:true }, { sel:"#dev-journal-vider", bouton:true } ] },
-    { id:"tranq", titre:"🌙 Mode tranquillité", items:[ { sel:"#dev-tranq", bloc:true, titre:false } ] },
     { id:"acces", titre:"🔑 Accès", items:[
       { sel:"#dev-permis", bouton:true }, { sel:"#dev-espace1", bouton:true }, { sel:"#dev-facbloc", bouton:true } ] },
     { id:"vaisseau", titre:"🚀 Vaisseau", items:[
@@ -51,6 +50,12 @@ const DEV_ONGLETS = [
     { id:"roles", titre:"👑 Nommer / démettre un rôle", items:[ { sel:"#dev-nom-btn", bloc:true, titre:false } ] },
     { id:"election", titre:"🗳️ Phase d'élection (test)", items:[ { sel:"#dev-reset-elec", bloc:true, titre:false } ] },
     { id:"cand", titre:"📜 Candidatures — élection en cours", items:[ { sel:"#dev-cand-go", bloc:true, titre:false } ] } ] },
+  /* v1.93c — demande de l'autrice : le mode tranquillité dans son PROPRE onglet, visible
+     des DEUX consoles (dev et admin). Il était rangé dans « Mon perso », réservé au dev :
+     les admins ne le voyaient pas, alors que le serveur les y autorise déjà
+     (tranquillite_etat / admin_tranquillite vérifient est_admin()). */
+  { id:"tranquillite", nom:"Tranquillité", sections:[
+    { id:"tranq", titre:"🌙 Mode tranquillité", items:[ { sel:"#dev-tranq", bloc:true, titre:false } ] } ] },
   { id:"staff", nom:"Staff", devSeul:true, sections:[
     { id:"staff", titre:"👥 Staff actuel", items:[ { sel:"#dev-staff", bloc:true, titre:false } ] },
     { id:"admin", titre:"🔐 Définir un admin", items:[ { sel:"#dev-adm-btn", bloc:true, titre:false } ] } ] },
@@ -147,7 +152,7 @@ function ouvrirDev(){
   monterDev();
   const m = document.querySelector("#dev-modale");
   const dev = (typeof estDev==="function" && estDev());
-  // v1.34 : les admin (modérateurs) ne voient que Joueurs et Gouvernement.
+  // v1.34 : les admin (modérateurs) ne voient que Joueurs et Gouvernement ; v1.93c : + Tranquillité.
   DEV_ONGLETS.forEach(o=>{ const b=m.querySelector(`[data-dev="${o.id}"]`); if(b) b.style.display = (dev || !o.devSeul) ? "" : "none"; });
   m.querySelector(".dev-tete b").textContent = dev ? "CONSOLE DEV" : "CONSOLE ADMIN";
   m.hidden = false;
@@ -260,8 +265,8 @@ function devResetQuete(id){ if(!id) return; const q=etat.quetes||(etat.quetes={d
 function devResetQuetes(){ const pr=(etat.quetes&&etat.quetes.paRecu)||[]; etat.quetes={done:[],active:null,paRecu:pr}; journal("[DEV] toutes les quêtes réinitialisées.","gain"); sauvegarder(); _devRafraichirQuetes(); majDev(); }
 
 /* ---------- Rendu ---------- */
-/* Mode tranquillité — onglet Recherche, donc accessible aux DEUX consoles
-   (dev et admin), comme la fiche joueur. L'état vit dans profils.tranquillite,
+/* Mode tranquillité — construit avec la recherche (pour les DEUX consoles) et
+   rangé dans son propre onglet « Tranquillité » (v1.93c), visible du dev et de l'admin. L'état vit dans profils.tranquillite,
    colonne protégée par le trigger : un joueur ne peut pas se l'accorder. */
 /* Candidatures : lecture modération, toutes factions confondues.
    La RLS de `candidatures` cloisonne par faction — d'où la RPC

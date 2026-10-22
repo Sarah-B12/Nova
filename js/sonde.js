@@ -256,8 +256,19 @@ async function sondeBrouiller(){
    📌 À revoir avec l'arène : compétences et aptitudes seront rééquilibrées
    d'un bloc à ce moment-là, ces seuils avec. */
 const TIR_SALVES  = 5;   // tirs disponibles, quelle que soit la grille
+/* v1.93f — LES ASTÉROÏDES (demande de l'autrice ; grille, salves et gains inchangés).
+   Autant d'astéroïdes que de lignes (5 à 7), CACHÉS, jamais sur le cœur. Un tir qui en
+   touche un : la salve est perdue, aucun écho, la case se marque ☄, et les éclats rayent
+   la coque de 5 à 10 PV (réduits comme un tir de sonde par _degatsSonde). Un astéroïde ne
+   CLOUE jamais le vaisseau en plein duel : la coque garde au moins 1 PV.
+   Simulé (joueur qui joue bien, 5 salves) : ~98 à 100 % de victoires, un astéroïde touché
+   environ un duel sur cinq. La vraie difficulté (la sonde qui glisse) est gardée pour la
+   carte qu'ouvre la Gorge (K65). */
+const TIR_ASTEROIDES_PV = [5, 10];
+let _tirAst = new Set();
 /* v1.25 — Instinct de combat (tr1) : +1 salve (décision de l'autrice). */
-function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0); }
+/* v1.93e — le canon de bord du Vaisseau maître : +1 salve (canonVaisseau, vaisseau.js). */
+function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0) + ((typeof canonVaisseau==="function") ? canonVaisseau() : 0); }
 function _tirTaille(){
   const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
   if(i >= 55) return 5;
@@ -289,6 +300,7 @@ function _tirStyle(){
     .sd-case.p3{ color:#ffc061; }
     .sd-case.loin{ color:var(--sourdine,#7f93a8); }
     .sd-case.touche{ background:rgba(139,212,80,.25); border-color:#8bd450; color:#8bd450; }
+    .sd-case.ast{ background:rgba(120,96,72,.35); border-color:rgba(176,140,100,.6); color:#c9a77c; }   /* v1.93f : astéroïde */
     #tir-modale .mini{ background:rgba(16,41,78,.7); border:1px solid var(--line,#243a52); color:var(--texte,#dfe8f2); border-radius:8px; padding:8px 14px; font-family:inherit; font-size:13px; cursor:pointer; margin-top:12px; }
     #tir-modale .mini:hover{ border-color:var(--orange,#ff8a3d); }
   `;
@@ -305,14 +317,22 @@ function lancerTirSonde(onWin, onLose){
   _tirN = _tirTaille();
   _tirCoeur = { x:Math.floor(Math.random()*_tirN), y:Math.floor(Math.random()*_tirN) };
   _tirRestant = _tirSalves(); _tirVus = {};
+  _tirAst = new Set();
+  while(_tirAst.size < _tirN){
+    const ax = Math.floor(Math.random()*_tirN), ay = Math.floor(Math.random()*_tirN);
+    if(ax === _tirCoeur.x && ay === _tirCoeur.y) continue;
+    _tirAst.add(ax + "," + ay);
+  }
   const m=_tirModal();
   m.innerHTML = `<div class="sd-cadre">
     <div class="sd-tete"><b>🎯 Tir de sondage</b></div>
     <p class="sd-sous">La coque de la sonde tient dans une grille de ${_tirN} × ${_tirN}.
       Son <b>cœur</b> est dans une case, et une seule.<br><br>
-      Tu as <b>${_tirSalves()} salves</b>. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
+      Tu as <b>${_tirSalves()} salves</b>${(typeof canonVaisseau==="function" && canonVaisseau()) ? `, dont ${canonVaisseau()} de ton canon de bord` : ""}. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
       qui te séparent du cœur, en comptant tout droit puis de côté.<br>
       <b>1</b> = juste à côté. Recoupe deux échos et tu le tiens.<br><br>
+      ☄ <b>${_tirN} astéroïdes</b> dérivent dans la grille, invisibles à tes capteurs. Une salve qui en touche un
+      éclate contre lui : pas d'écho, et les éclats rayent ta coque (${TIR_ASTEROIDES_PV[0]} à ${TIR_ASTEROIDES_PV[1]} PV). Le cœur n'est jamais derrière un astéroïde.<br><br>
       <span class="itip-gris">Aucun réflexe : prends ton temps, la sonde ne bouge pas.
       ${_tirN>5?`Une meilleure <b>Intelligence</b> resserrera la grille — ${_tirN} × ${_tirN} pour l'instant.`:"Tes capteurs sont au mieux : grille resserrée au minimum."}</span></p>
     <div><button class="mini" id="sd-jouer">▶ Commencer</button>
@@ -328,18 +348,30 @@ function _tirRendre(){
   let cases = "";
   for(let y=0;y<_tirN;y++) for(let x=0;x<_tirN;x++){
     const v = _tirVus[x+","+y];
-    const cls = v==null ? "" : ` joue ${v===0?"touche":(v===1?"p1":(v===2?"p2":(v===3?"p3":"loin")))}`;
-    cases += `<div class="sd-case${cls}" data-x="${x}" data-y="${y}">${v==null?"":(v===0?"✷":v)}</div>`;
+    const cls = v==null ? "" : ` joue ${v==="ast"?"ast":(v===0?"touche":(v===1?"p1":(v===2?"p2":(v===3?"p3":"loin"))))}`;
+    cases += `<div class="sd-case${cls}" data-x="${x}" data-y="${y}">${v==null?"":(v==="ast"?"☄":(v===0?"✷":v))}</div>`;
   }
   m.innerHTML = `<div class="sd-cadre">
     <div class="sd-tete"><b>🎯 Tir de sondage</b><span class="sd-salves">${_tirRestant} salve(s)</span></div>
-    <p class="sd-sous">Tire sur une case. L'écho te dira à combien de cases se trouve le cœur.</p>
+    <p class="sd-sous">Tire sur une case. L'écho te dira à combien de cases se trouve le cœur. ☄ = astéroïde.</p>
     <div class="sd-grille" style="grid-template-columns:repeat(${_tirN},1fr)">${cases}</div>
   </div>`;
   m.querySelectorAll(".sd-case:not(.joue)").forEach(c=>c.addEventListener("click", ()=>_tirSalve(+c.dataset.x, +c.dataset.y)));
 }
 
 function _tirSalve(x, y){
+  if(_tirAst.has(x + "," + y)){                                  // v1.93f : un astéroïde
+    _tirVus[x+","+y] = "ast"; _tirRestant--;
+    if(typeof abimerVaisseau === "function" && typeof pvVaisseau === "function" && etat.vaisseau){
+      const pv = pvVaisseau(etat.vaisseau);
+      const n = Math.min(_degatsSonde(alea(TIR_ASTEROIDES_PV[0], TIR_ASTEROIDES_PV[1])), Math.max(0, pv - 1));
+      if(n > 0) abimerVaisseau(n, "éclats d'astéroïde");
+      journal(`☄ Ta salve éclate contre un astéroïde. Des éclats rayent la coque${n > 0 ? ` (−${n} PV)` : ""}.`, "alerte");
+    }
+    _tirRendre();
+    if(_tirRestant <= 0){ setTimeout(()=>{ _tirFermer(); if(_tirLose) _tirLose(); }, 900); }
+    return;
+  }
   const d = Math.abs(x-_tirCoeur.x) + Math.abs(y-_tirCoeur.y);
   _tirVus[x+","+y] = d;
   _tirRestant--;
