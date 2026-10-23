@@ -2255,7 +2255,10 @@ const QUETES = [
       /* ---- 0. La serre — SCÈNE : la dispute reprend ---- */
       { indice:"La serre d'Adaya, au Rhizome. Sorn y est. Ils t'attendent tous les deux.",
         cible:{ x:1250, y:770, r:90 },
-        image:"images/quetes/q16/1.png",
+        image:{ selon:"bete.espece", defaut:"aucune", valeurs:{   /* v1.93j : la bête apparaît sur la bannière */
+          chaume:"images/quetes/q16/1_chaume.png", braisillon:"images/quetes/q16/1_braisillon.png",
+          sentinelle:"images/quetes/q16/1_sentinelle.png", goupille:"images/quetes/q16/1_goupille.png",
+          iris:"images/quetes/q16/1_iris.png", aucune:"images/quetes/q16/1.png" } },
         arrivee:[
           "La serre sent le thé froid et la terre mouillée. Ta bête file droit au bout du rang et se couche contre la bouture comme si elle rentrait chez elle ; ses marques se mettent à battre au rythme de la lueur du bocal. Sorn et Adaya ne t'ont pas entendu entrer. Ils se disputent, et pour une fois, ils ne prennent pas la peine de baisser la voix.",
           "« Trois cents ans qu'elles émettent, ces sondes », lance Sorn en tapant du plat de la main sur la paillasse. « <i>Émission maintenue</i>, que ça disait sur l'Ortie. Maintenue pour qui, hein ? S'il y a quelqu'un qui lit, là-haut, il sait ce qu'il y a au bout du bras. Il le sait depuis le début. »",
@@ -2861,7 +2864,10 @@ const QUETES = [
       /* ---- 4. Un nom — CHOIX de Cercle (K25 : « Asulf ») ---- */
       { indice:"Remonte dans la grande salle de la station.",
         cible:{ carte:"ancolie", lieu:"station", r:160 },
-        image:"images/quetes/q21/4.png",
+        image:{ selon:"bete.espece", defaut:"aucune", valeurs:{   /* v1.93j : la bête apparaît sur la bannière */
+          chaume:"images/quetes/q21/4_chaume.png", braisillon:"images/quetes/q21/4_braisillon.png",
+          sentinelle:"images/quetes/q21/4_sentinelle.png", goupille:"images/quetes/q21/4_goupille.png",
+          iris:"images/quetes/q21/4_iris.png", aucune:"images/quetes/q21/4.png" } },
         arrivee:[
           "Quand tu remontes, la silhouette t'attend sur l'écran, les bras croisés, aussi contente d'elle qu'une tache noire peut l'être. Tu poses ta radio sur un banc. Le canal par lequel il te parle depuis la Gorge porte toujours le nom que l'appareil lui a donné : SOURCE INCONNUE — 42-U1F. Tu le regardes un moment. Quatre-deux-U-un-F : ça ne se dit pas, ça s'épelle. Tu effaces la ligne, et tu tapes à la place : ASULF.",
           "À l'autre bout, un silence. « … Attends. Mon canal a changé de nom. » Il le lit lettre par lettre, « A. S. U. L. F. », puis d'un coup : « Asulf. » Et il refait le chemin à voix haute, lentement, comme on démonte un réveil pour voir : « Quatre-deux… A. U, un… SUL. F. Oh. Oh, c'est malin. »",

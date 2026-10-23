@@ -544,7 +544,7 @@ async function _ppTerrain(profilId){
         dedans = (pal >= 1 && pal <= 5)
           ? `<img src="${cheminMaison(data.faction, pal)}" alt="${nomPalierFaction(data.faction, pal)}" data-repli="images/maisons/${(data.faction==="nomades"?nom5:std)[pal-1]}.png" onerror="_maisonRepli(this, i => i.replaceWith(document.createTextNode('🏠')))">`   // v1.73
           : (enChantier
-              ? `<img src="images/maisons/chantier.png" alt="Chantier" onerror="this.replaceWith(document.createTextNode('🏗'))">`
+              ? `<img src="${(typeof cheminChantier==="function") ? cheminChantier(data.faction) : "images/maisons/chantier.png"}" alt="Chantier" data-repli="images/maisons/chantier.png" onerror="_maisonRepli(this, i => i.replaceWith(document.createTextNode('🏗')))">`   // v1.93i : chantier de sa faction
               : `<span class="ppt-glyphe">🏠</span>`);
       } else if(p.type === "mousse"){   // v1.86 : la Mousse-amie (elle n'a pas d'entrée dans IMG)
         dedans = `<img src="${(typeof MOUSSE_IMG!=="undefined") ? MOUSSE_IMG : "images/items/mousse_amie.png"}" alt="Mousse-amie" onerror="this.replaceWith(document.createTextNode('🌿'))">`;

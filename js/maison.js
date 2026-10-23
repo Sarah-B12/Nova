@@ -47,11 +47,19 @@ function _maisonRepli(img, sinon){
   if(typeof sinon === "function") sinon(img);
 }
 window._maisonRepli = _maisonRepli;   // appelée depuis les `onerror` en ligne (maison, terrain, vitrine)
+/* v1.93i — LE CHANTIER PAR FACTION (demande de l'autrice) : `images/maisons/chantier_<clé>.png`
+   (cases du terrain, profils visités, repli de l'onglet Maison) et
+   `images/maisons/bannieres/chantier_<clé>.png` (bannière de l'onglet Maison). Clés de
+   MAISON_CLE_FACTION : ignis, rhizome, toundra, rouage, nomades. Repli, dans l'ordre :
+   l'image de la faction, puis l'ancien `chantier.png` commun, puis le glyphe. */
+const CHANTIER_REPLI = "images/maisons/chantier.png";
+function cheminChantier(faction){ const k = MAISON_CLE_FACTION[faction]; return k ? `images/maisons/chantier_${k}.png` : CHANTIER_REPLI; }
+function cheminBanniereChantier(faction){ const k = MAISON_CLE_FACTION[faction]; return k ? `images/maisons/bannieres/chantier_${k}.png` : "images/maisons/bannieres/chantier.png"; }
 /* v1.93g — BANNIÈRES DE LOGEMENT (demande de l'autrice). Dans l'onglet Terrain → Maison
    SEULEMENT, le logement s'affiche en bannière 2172 × 724 (comme les quêtes), une par
    palier et par faction : `images/maisons/bannieres/<clé>_<palier>.png` (clés de
    MAISON_CLE_FACTION : ignis, rhizome, toundra, rouage, nomades), et
-   `images/maisons/bannieres/chantier.png` pendant la toute première construction.
+   `images/maisons/bannieres/chantier_<clé>.png` pendant la toute première construction (v1.93i).
    Les cases du terrain, les profils visités et la vitrine gardent les images carrées.
    Tant qu'une bannière manque, REPLI sur l'image carrée d'aujourd'hui (puis sur son
    propre repli) : on peut les déposer une par une, rien ne casse. */
@@ -257,10 +265,12 @@ function majMaison(){
      chantier. Aux paliers suivants, c'est le logement ACTUEL qui reste affiché
      (on vit dedans pendant qu'on bâtit le suivant). Si le fichier n'existe pas,
      le cadre disparaît tout seul : rien ne casse. */
-  const vimg = imgMaison(m.palier) || (m.chantier ? "images/maisons/chantier.png" : null);
-  const vban = cheminBanniereMaison(etat.faction, m.palier) || (m.chantier ? "images/maisons/bannieres/chantier.png" : null);   // v1.93g
-  if(vban) html += `<div class="maison-vis maison-vis-ban"><img class="maison-ban" src="${vban}" alt="" data-carre="${vimg || ""}" data-repli="${cheminMaisonRepli(etat.faction, m.palier) || ""}" onerror="_maisonBanRepli(this)"></div>`;
-  else if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt="" data-repli="${cheminMaisonRepli(etat.faction, m.palier) || ""}" onerror="_maisonRepli(this, i => i.parentNode.remove())"></div>`;   // v1.73
+  const chantier0 = !imgMaison(m.palier) && !!m.chantier;   // v1.93i : la toute première construction
+  const vimg = imgMaison(m.palier) || (chantier0 ? cheminChantier(etat.faction) : null);
+  const vrep = chantier0 ? CHANTIER_REPLI : (cheminMaisonRepli(etat.faction, m.palier) || "");
+  const vban = cheminBanniereMaison(etat.faction, m.palier) || (chantier0 ? cheminBanniereChantier(etat.faction) : null);   // v1.93g, v1.93i
+  if(vban) html += `<div class="maison-vis maison-vis-ban"><img class="maison-ban" src="${vban}" alt="" data-carre="${vimg || ""}" data-repli="${vrep}" onerror="_maisonBanRepli(this)"></div>`;
+  else if(vimg) html += `<div class="maison-vis"><img src="${vimg}" alt="" data-repli="${vrep}" onerror="_maisonRepli(this, i => i.parentNode.remove())"></div>`;   // v1.73
   if(m.chantier){
     const c=m.chantier, r=recetteMaison(c.cible), total=travailTotal(c.cible);
     html += `<h3>Chantier : ${nomPalier(c.cible)}</h3>`;

@@ -60,6 +60,14 @@ function _varie(v){
   for(const part of String(v.selon).split(".")){ k = (k!=null && typeof k==="object") ? k[part] : undefined; }
   return (k!=null && Object.prototype.hasOwnProperty.call(v.valeurs, k)) ? v.valeurs[k] : v.valeurs[v.defaut];
 }
+/* v1.93j — Une bannière qui VARIE (selon la bête…) garde l'image commune en repli :
+   si l'image de la variante n'existe pas encore, on affiche `valeurs[defaut]` au lieu
+   de rien. Q15 ét. 7, Q16 ét. 1, Q21 ét. 4 (images « X_<bête>.png »). */
+function _imgQueteHTML(v){
+  const src = _varie(v); if(!src) return "";
+  const rep = (v && typeof v === "object" && v.valeurs && v.valeurs[v.defaut] !== src) ? v.valeurs[v.defaut] : "";
+  return `<img class="quete-img" src="${src}" alt=""${rep ? ` data-repli="${rep}"` : ""} onerror="if(this.dataset.repli&&this.getAttribute('src')!==this.dataset.repli){this.src=this.dataset.repli}else{this.remove()}">`;
+}
 /* ===========================================================
    v0.97 — CIBLES MULTI-CARTES. Une cible (ou un leurre) peut viser :
      · Silène (défaut) ........ { x, y, r }            (= { carte:"silene", … })
@@ -2030,8 +2038,7 @@ function majQueteHub(){
 
   if(a._resolu){
     let html=entete;
-    const _img=_varie(e.image);
-    if(_img) html+=`<img class="quete-img" src="${_img}" alt="" onerror="this.remove()">`;
+    html+=_imgQueteHTML(e.image);   // v1.93j : repli sur l'image commune
     html+=`<div class="quete-etape" style="border-left-color:var(--bleu)">${_par((e.defi&&_varie(e.defi.reussite))||["La voie s'ouvre."])}</div>`;
     const dernier=(a.etape>=q.etapes.length-1);
     html+=`<button class="mini" id="quete-continuer" style="margin-top:6px">${dernier?"Terminer la quête":"Continuer →"}</button>`;
@@ -2043,8 +2050,7 @@ function majQueteHub(){
   if(surSiteQuete()){
     const verrou=queteVerrou();
     let html=entete+`<div class="quete-etape" style="border-left-color:var(--bleu)">`;
-    const _img=_varie(e.image);
-    if(_img) html+=`<img class="quete-img" src="${_img}" alt="" onerror="this.remove()">`;
+    html+=_imgQueteHTML(e.image);   // v1.93j : repli sur l'image commune
     html+=_par(_varie(e.arrivee))+`</div>`;
     if(verrou>0) html+=`<div class="quete-etape"><p class="quete-indice">🔒 Échec — le mécanisme s'est verrouillé.</p><p class="vide">Reviens tenter à nouveau dans <b id="q-verrou">${_fmtDuree(verrou)}</b> (délai de ${VERROU_DEFI_H} h).</p></div>`;
     else html+=_defiHTML(e.defi);

@@ -21,7 +21,8 @@
       try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi);
            if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${id}/${i} : épreuve inconnue ${e.defi.type}`);
            if(!_cibleResolue(e.cible)) r.erreurs.push(`${id}/${i} : cible introuvable`);
-           if(e.image !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${e.image}`);
+           const im = (e.image && typeof e.image === "object") ? e.image.valeurs[e.image.defaut] : e.image;   // v1.93j : bannière selon la bête
+           if(im !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${im}`);
       }catch(err){ r.erreurs.push(`${id}/${i} : ${err.message}`); } });
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; }
     _seqFin();

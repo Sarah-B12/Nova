@@ -20,7 +20,8 @@
       try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi);
            if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${id}/${i} : épreuve inconnue ${e.defi.type}`);
            if(!_cibleResolue(e.cible)) r.erreurs.push(`${id}/${i} : cible introuvable`);
-           if(e.image !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${e.image}`);
+           const im = (e.image && typeof e.image === "object") ? e.image.valeurs[e.image.defaut] : e.image;   // v1.93j : bannière selon la bête
+           if(im !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${im}`);
       }catch(err){ r.erreurs.push(`${id}/${i} : ${err.message}`); } });
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; }
     _seqFin();
@@ -376,5 +377,11 @@
   r.flagsQ23 = queteData("q23").recompense.flags;
   r.journauxAir = journaux.filter(t => /auvent/.test(t)).length;
   journal = jOrig;
+  // v1.93j — Q21 ét. 4 (et Q16 ét. 1) : la bannière suit la bête, l'image commune en repli.
+  const imQ = (q, i) => queteData(q).etapes[i].image;
+  etat.bete = { espece:"sentinelle", nom:"Bip" };
+  r.beteBanniere = { q21:_varie(imQ("q21", 3)), q16:_varie(imQ("q16", 0)), html:/data-repli="images\/quetes\/q21\/4\.png"/.test(_imgQueteHTML(imQ("q21", 3))) };
+  etat.bete = null; r.beteBanniere.sansBete = _varie(imQ("q21", 3));
+  r.beteBanniere.htmlSimple = !/data-repli/.test(_imgQueteHTML(imQ("q21", 0)));
   return r;
 })();

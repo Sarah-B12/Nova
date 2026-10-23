@@ -456,13 +456,15 @@ function majRecolte(){
       /* v1.11 — MÊME IMAGE DE CHANTIER QUE L'ÉCRAN LOGEMENT. `imgMaison(0)`
          vaut null tant que la Cabane n'est pas debout : la case affichait le
          glyphe ⌂ même si `images/maisons/chantier.png` existait. */
-      const img = ((typeof imgMaison==="function") ? imgMaison(etat.maison.palier) : null)
-                || (etat.maison.chantier ? "images/maisons/chantier.png" : null);
+      const imgPal = (typeof imgMaison==="function") ? imgMaison(etat.maison.palier) : null;
+      const chantier0 = !imgPal && !!etat.maison.chantier;   // v1.93i : le chantier de SA faction
+      const img = imgPal || (chantier0 ? ((typeof cheminChantier==="function") ? cheminChantier(etat.faction) : "images/maisons/chantier.png") : null);
+      const repli = chantier0 ? "images/maisons/chantier.png" : ((typeof cheminMaisonRepli==="function" && cheminMaisonRepli(etat.faction, etat.maison.palier)) || "");
       const lbl = etat.maison.chantier ? "Chantier" : nomPalier(etat.maison.palier);
       // Le nom du palier est déjà lisible dans l'infobulle et dans la maison :
       // l'étiquette par-dessus l'image alourdissait le terrain pour rien.
       /* Si le fichier manque, on retombe sur le glyphe au lieu d'une image cassée. */
-      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}" data-repli="${(typeof cheminMaisonRepli==="function" && cheminMaisonRepli(etat.faction, etat.maison.palier)) || ""}" onerror="_maisonRepli(this, i => { i.parentNode.classList.add('plot-maison'); i.parentNode.innerHTML='&lt;span class=\'maison-glyphe\'&gt;⌂&lt;/span&gt;&lt;span class=\'badge-plot\'&gt;${lbl}&lt;/span&gt;'; })">`; }   // v1.73 : image de faction, puis l'ancienne
+      if(img){ cell.innerHTML = `<img src="${img}" alt="${lbl}" title="${lbl}" data-repli="${repli}" onerror="_maisonRepli(this, i => { i.parentNode.classList.add('plot-maison'); i.parentNode.innerHTML='&lt;span class=\'maison-glyphe\'&gt;⌂&lt;/span&gt;&lt;span class=\'badge-plot\'&gt;${lbl}&lt;/span&gt;'; })">`; }   // v1.73 : image de faction, puis l'ancienne
       else { cell.classList.add("plot-maison"); cell.innerHTML = `<span class="maison-glyphe">⌂</span><span class="badge-plot">${lbl}</span>`; }
       cell.addEventListener("click", ()=>{ plotSel=i; majRecolte(); const sl=document.querySelector('.sous-lien[data-sous="maison"]'); if(sl) sl.click(); });
     } else {
