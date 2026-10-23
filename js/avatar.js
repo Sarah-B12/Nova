@@ -22,7 +22,7 @@ const AV_VISAGE     = { h:7, f:7 };   // visages disponibles par genre (compté 
 const AV_CHEVEUX    = { h:7,  f:13 };   // coiffures disponibles par genre
 const AV_CHEVEUX_DEUX = { h:[7], f:[] }; // v1.44 : coiffures en deux morceaux (_derriere / _devant)
 const AV_PILOSITE   = 7;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
-const AV_ACCESSOIRE = { h:0, f:0 };    // accessoires par genre (morphologies différentes)
+const AV_ACCESSOIRE = { h:0, f:1 };    // accessoires par genre (morphologies différentes)
 const AV_COULEURS = [                  // v1.88c : la première est celle des fichiers sans suffixe
   { id:"brun",  nom:"Brun",           teinte:"#5b3a24" },
   { id:"blond", nom:"Blond",          teinte:"#d9b46a" },
@@ -103,6 +103,23 @@ function majAvatar(){
 }
 
 /* ---------- Sélecteur ---------- */
+/* v1.93l — BUG « la fenêtre part à gauche » (retour de l'autrice, capture à l'appui) : avec
+   un ZOOM (pincement sur téléphone/tablette, ou zoom du navigateur), `position:fixed; inset:0`
+   se cale sur la page entière (layout viewport) et non sur la partie visible (visual
+   viewport) : la fenêtre était centrée hors de l'écran. On la cale sur `visualViewport`
+   (position et taille de la partie visible) à l'ouverture, et tant qu'elle reste ouverte
+   (le zoom ou le défilement peuvent changer). Sans zoom : exactement comme avant. */
+function _avCalerVue(){
+  const m = document.querySelector("#avatar-modale"), vv = window.visualViewport;
+  if(!m || m.hidden || !vv) return;
+  m.style.boxSizing = "border-box"; m.style.inset = "auto"; m.style.left = vv.offsetLeft + "px"; m.style.top = vv.offsetTop + "px";
+  m.style.width = vv.width + "px"; m.style.height = vv.height + "px";
+}
+function _avSuivreVue(oui){
+  const vv = window.visualViewport; if(!vv) return;
+  vv.removeEventListener("resize", _avCalerVue); vv.removeEventListener("scroll", _avCalerVue);
+  if(oui){ vv.addEventListener("resize", _avCalerVue); vv.addEventListener("scroll", _avCalerVue); _avCalerVue(); }
+}
 function _avModal(){
   let m=document.querySelector("#avatar-modale");
   if(!m){ m=document.createElement("div"); m.id="avatar-modale"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m && !_avObligatoire) _fermerAvatar(); }); }
@@ -122,12 +139,12 @@ async function ouvrirAvatar(opts){
     return;
   }
   _avBrouillon = Object.assign({}, _AV_VIDE, etat.avatar || data.avatar || {});
-  _renderAvModal(); _avModal().hidden=false;
+  _renderAvModal(); _avModal().hidden=false; _avSuivreVue(true);   // v1.93l : centrée sur la partie visible
 }
 /* Fermeture SANS validation : on jette le brouillon, rien n'est débité. */
 function _fermerAvatar(){
   if(_avObligatoire){ journal("Choisis ton apparence pour continuer — elle sera figée ensuite.","alerte"); return; }
-  _avModal().hidden=true; _avBrouillon=null; if(typeof afficher==="function") afficher();
+  _avModal().hidden=true; _avSuivreVue(false); _avBrouillon=null; if(typeof afficher==="function") afficher();
 }
 
 /* Validation : c'est le serveur qui décide, débite et fige le genre. */
@@ -161,7 +178,7 @@ async function _validerAvatar(){
   etat.avatar = a;
   if(typeof data.credits==="number" && typeof appliquerSoldeServeur==="function") appliquerSoldeServeur(data.credits);
   journal(data.gratuit ? "Apparence enregistrée." : `Apparence modifiée pour ${data.cout} ₡.`, "gain");
-  _avModal().hidden=true; _avBrouillon=null; _avObligatoire=false;
+  _avModal().hidden=true; _avSuivreVue(false); _avBrouillon=null; _avObligatoire=false;
   if(typeof majAvatar==="function") majAvatar();
   if(typeof afficher==="function") afficher();
   if(typeof majParametres==="function") majParametres();

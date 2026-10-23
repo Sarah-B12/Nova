@@ -611,23 +611,26 @@ QUETES_JEUX.rangement = {
 };
 
 /* ---------- Le brouillage (Q29) — porté des missions (H64, missions.js) ----------
-   v1.93 — L'onde de l'appel dérive lentement (fréquence et décalage) ; le joueur règle
-   la sienne avec deux curseurs et doit la TENIR calée `tenir` secondes d'affilée avant
-   la fin de l'appel (`duree` secondes). Mêmes tolérances que les missions
-   (fréquence ± 0,12, décalage ± 0,45 rad). Joué côté client, comme toutes les épreuves
-   de quête ; ratable (DEFIS_UNTRY) : l'appel fini, verrou de 8 h.
-   Le redessin de l'onglet est suspendu pendant la partie (_seqAnim). */
+   v1.93 — Caler son onde sur celle de l'appel, avant la fin de l'appel (`duree` s).
+   v1.93k — RETOUR DE JEU (l'autrice : « impossible, il faut bouger les deux à la fois ») :
+   · la FRÉQUENCE de l'appel est FIXE (tirée au début, 1,2 → 2,4) ; dès que le joueur l'a
+     trouvée (± 0,12), son curseur se cale dessus et se verrouille : on la règle UNE fois ;
+   · seul le DÉCALAGE dérive (0,35 rad/s, comme les missions) : on le suit (± 0,45 rad) ;
+   · les secondes calées se CUMULENT (elles ne retombent plus à zéro) : `tenir` s au total.
+   Le brouillage des missions (missions.js) n'est pas touché. Ratable (DEFIS_UNTRY) :
+   l'appel fini, verrou de 8 h. Redessin de l'onglet suspendu pendant la partie (_seqAnim). */
 function _brouOnde(fr, ph){ let p = ""; for(let x = 0; x <= 300; x += 6){ const y = 50 + 35 * Math.sin(x / 300 * Math.PI * 2 * fr + ph); p += (x ? " L" : "M") + x + " " + y.toFixed(1); } return p; }
-function _brouCible(s){ return { f:1.6 + 0.5 * Math.sin(s / 7), d:(s * 0.35) % (2 * Math.PI) }; }   // = missions.js
-function _brouCale(f, d, c){ const dp = Math.abs(((d - c.d) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI); return Math.abs(f - c.f) < 0.12 && dp < 0.45; }
+function _brouDecalage(s){ return (s * 0.35) % (2 * Math.PI); }
+function _brouPhaseOk(d, cd){ return Math.abs(((d - cd) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0.45; }
 QUETES_JEUX.brouillage = {
   html(d){
     const T = d.tenir || 6, D = d.duree || 60;
-    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} <b>${D} s d'appel, ${T} s calé d'affilée.</b></p>
+    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} <b>${D} s d'appel, ${T} s calé en tout.</b></p>
       <div id="qj-brou">
         <svg id="qj-br-svg" viewBox="0 0 300 100" style="width:100%;max-width:340px;background:rgba(90,168,230,.06);border:1px solid var(--line);border-radius:8px">
           <path id="qj-br-appel" stroke="#ff5257" stroke-width="3" fill="none"/><path id="qj-br-moi" stroke="#7bc47f" stroke-width="3" fill="none"/></svg>
-        <div class="mi-ligne"><span>Fréquence</span><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="1" disabled></div>
+        <div class="mi-ligne"><span>Fréquence</span><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="0.6" disabled></div>
+        <p class="vide" id="qj-br-fetat" style="margin:2px 0 6px">Fréquence : à caler.</p>
         <div class="mi-ligne"><span>Décalage</span><input type="range" id="qj-br-d" min="0" max="6.28" step="0.01" value="0" disabled></div>
         <p class="vide" id="qj-br-etat">Calé : 0,0 s / ${T} s · appel : ${D} s</p>
         <div class="quete-rep"><button class="mini" id="qj-br-go">${d.bouton || "Commencer l'émission"}</button></div>
@@ -637,12 +640,20 @@ QUETES_JEUX.brouillage = {
     const go = z.querySelector("#qj-br-go"); if(!go) return;
     const T = d.tenir || 6, D = d.duree || 60;
     const f = z.querySelector("#qj-br-f"), dd = z.querySelector("#qj-br-d"), svg = z.querySelector("#qj-br-svg");
-    const appel = z.querySelector("#qj-br-appel"), moi = z.querySelector("#qj-br-moi"), et = z.querySelector("#qj-br-etat");
-    const P = { f:1, d:0, tenu:0, s:0, fini:false };
+    const appel = z.querySelector("#qj-br-appel"), moi = z.querySelector("#qj-br-moi");
+    const et = z.querySelector("#qj-br-etat"), fet = z.querySelector("#qj-br-fetat");
+    const fc = Math.round((1.2 + Math.random() * 1.2) * 100) / 100;      // la fréquence de l'appel : FIXE
+    const P = { f:+f.value, d:0, tenu:0, s:0, fini:false, fc, fCalee:false, cible:{ f:fc, d:0 } };
     QUETES_JEUX.brouillage._partie = P;            // pour le banc d'essai
-    f.addEventListener("input", () => { P.f = +f.value; });
+    const caler = () => {                           // trouvée une fois = verrouillée
+      if(P.fCalee || Math.abs(P.f - P.fc) >= 0.12) return;
+      P.fCalee = true; P.f = P.fc; f.value = String(P.fc); f.disabled = true;
+      fet.textContent = "Fréquence calée ✓ — elle ne bougera plus. Suis le décalage.";
+    };
+    f.addEventListener("input", () => { P.f = +f.value; caler(); });
     dd.addEventListener("input", () => { P.d = +dd.value; });
-    const dessiner = () => { const c = _brouCible(P.s); appel.setAttribute("d", _brouOnde(c.f, c.d)); moi.setAttribute("d", _brouOnde(P.f, P.d)); };
+    P.regler = (fr, dc) => { if(fr != null && !P.fCalee){ P.f = fr; f.value = String(fr); caler(); } if(dc != null){ P.d = dc; dd.value = String(dc); } };   // banc
+    const dessiner = () => { appel.setAttribute("d", _brouOnde(P.fc, P.cible.d)); moi.setAttribute("d", _brouOnde(P.f, P.d)); };
     dessiner();
     go.addEventListener("click", () => {
       go.disabled = true; f.disabled = false; dd.disabled = false;
@@ -652,8 +663,8 @@ QUETES_JEUX.brouillage = {
         if(!document.body.contains(svg)){ P.fini = true; _seqFin(); return; }   // l'onglet a changé : la partie s'arrête
         const t = Date.now(), dt = (t - der) / 1000; der = t; P.s = (t - t0) / 1000;
         _seqAnim = t;
-        const c = _brouCible(P.s); P.cible = c;
-        P.tenu = _brouCale(P.f, P.d, c) ? P.tenu + dt : 0;
+        P.cible = { f:P.fc, d:_brouDecalage(P.s) };
+        if(P.fCalee && _brouPhaseOk(P.d, P.cible.d)) P.tenu += dt;     // v1.93k : cumulé, jamais remis à zéro
         dessiner();
         et.textContent = `Calé : ${P.tenu.toFixed(1).replace(".", ",")} s / ${T} s · appel : ${Math.max(0, D - P.s).toFixed(0)} s`;
         if(P.tenu >= T){ P.fini = true; _seqFin(); journal(d.fini || "C'est passé.", "gain"); reussirDefi(); return; }

@@ -184,9 +184,19 @@ function _seqEnCours(){ return _seqAnim > 0 && (Date.now() - _seqAnim) < 60000; 
 function _seqFin(){ _seqAnim = 0; }
 
 /* ---------- Progression ---------- */
+/* v1.93l — UNE QUÊTE QUI SE PREND LE LENDEMAIN. `lendemain:{ apres:"q27", texte }` : la
+   quête n'est disponible qu'à partir du jour de jeu (minuit, heure de Paris) qui SUIT celui
+   où `apres` a été terminée (etat.quetes.finJour, posé par terminerQuete). Une quête finie
+   avant cette version n'a pas de date : rien n'est bloqué. Q28 (après Q27, « Alors demain »). */
+function queteAttendLendemain(q){
+  if(!q || !q.lendemain || typeof jourDeJeu !== "function") return false;
+  const f = queteEtat().finJour && queteEtat().finJour[q.lendemain.apres];
+  return !!f && f >= jourDeJeu();
+}
 function accepterQuete(id){
   if(queteActive()){ journal("Termine ta quête en cours d'abord.","alerte"); return; }
   const q=queteData(id); if(!q || queteEtat().done.includes(id)) return;
+  if(queteAttendLendemain(q)){ journal("Cette quête ne commence que demain (jour de jeu suivant).","alerte"); return; }   // v1.93l
   queteEtat().active={ id, etape:0, _sur:false, _resolu:false, _echecLe:0, _attenteLe:0, _memVue:false };
   journal(`Quête acceptée : ${q.nom}. Onglet Quêtes → suis l'objectif.`,"gain");
   /* v1.17 — part TOUT DE SUITE au serveur, comme une étape franchie : avec la
@@ -262,6 +272,7 @@ async function terminerQuete(){
   if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
   queteEtat().done.push(a.id); queteEtat().active=null;
+  if(typeof jourDeJeu==="function"){ const qe=queteEtat(); if(!qe.finJour || typeof qe.finJour!=="object") qe.finJour={}; qe.finJour[a.id]=jourDeJeu(); }   // v1.93l : pour `lendemain`
   if(typeof sauverMaintenant==="function") sauverMaintenant();   // v0.65 : une quête terminée part TOUT DE SUITE au serveur
   const parts=[]; if(gainQ) parts.push(`+${gainQ} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(paDonne) parts.push(`+${paDonne} PA`);
   if(r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
@@ -1228,8 +1239,12 @@ function _wireCadenas(z,d){
      changer d'onglet ou recharger donnait un nouveau code et 8 essais neufs
      (verrou journalier contournable), et un rafraîchissement accidentel
      effaçait la progression. Tout vit désormais dans la quête active. */
-  if(!Array.isArray(a._cadSecret) || a._cadSecret.length!==L){
-    a._cadSecret = Array.from({length:L},()=>syms[Math.floor(Math.random()*syms.length)]);
+  /* v1.93m — `distincts` (Q27 : 3) : le code contient au moins autant de pictogrammes
+     DIFFÉRENTS (retour de l'autrice : un code « ▲ ▲ ▲ ▲ » se trouve en un essai). Un code
+     déjà tiré qui ne respecte pas la règle (ou dont un pictogramme n'existe plus) est retiré. */
+  const _cadOk = (c) => Array.isArray(c) && c.length===L && c.every(x=>syms.includes(x)) && (!d.distincts || new Set(c).size >= Math.min(d.distincts, syms.length, L));
+  if(!_cadOk(a._cadSecret)){
+    do { a._cadSecret = Array.from({length:L},()=>syms[Math.floor(Math.random()*syms.length)]); } while(!_cadOk(a._cadSecret));
     a._cadEssais = 0; a._cadHist = []; sauvegarder();
   }
   const secret=a._cadSecret; if(!Array.isArray(a._cadHist)) a._cadHist=[];
@@ -2026,7 +2041,8 @@ function majQueteHub(){
       return;
     }
     const q=queteProchaine(); let html=banniere;
-    if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}${q.avert?`<div class="quete-avert dur">${q.avert}</div>`:""}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
+    if(q && queteAttendLendemain(q)) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.lendemain.texte)}<p class="vide">⏳ Disponible <b>demain</b>, à partir de minuit (heure de Paris).</p>`;   // v1.93l
+    else if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}${q.avert?`<div class="quete-avert dur">${q.avert}</div>`:""}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
     else html+=`<p class="vide">Toutes les quêtes disponibles sont accomplies. Le Vieux Sorn n'a rien de plus pour l'instant.</p>`;
     z.innerHTML=html;
     const acc=z.querySelector("#quete-accepter"); if(acc) acc.addEventListener("click",()=>{ const nx=queteProchaine(); if(nx) accepterQuete(nx.id); });

@@ -3054,7 +3054,10 @@ const QUETES = [
       /* ---- 3. La sporelle — CHOIX de Cercle, payé en sporelle (fil comique, K1) ---- */
       { indice:"Sur Silène, la trappe au dos de l'anneau. Apporte trois brins de sporelle : Asulf veut goûter.",
         cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
-        image:"images/quetes/q23/3.png",
+        image:{ selon:"bete.espece", defaut:"aucune", valeurs:{   /* v1.93l : la bête apparaît sur la bannière */
+          chaume:"images/quetes/q23/3_chaume.png", braisillon:"images/quetes/q23/3_braisillon.png",
+          sentinelle:"images/quetes/q23/3_sentinelle.png", goupille:"images/quetes/q23/3_goupille.png",
+          iris:"images/quetes/q23/3_iris.png", aucune:"images/quetes/q23/3.png" } },
         arrivee:[
           "Ta bête se rallume dès que tu poses le pied sur Silène. Au pied de l'anneau, la trappe est déjà entrouverte : il guettait.",
           "« T'en as ? De la sporelle ? Montre. » Le bras de maintenance sort à moitié, rentre, ressort. « Je suis pas pressé. Je demande. »"
@@ -3429,7 +3432,7 @@ const QUETES = [
             "La porte est arrondie aux angles, comme tout ici, et gravée en ancien. Le mot du haut, tu ne sais pas le lire ; celui du bas, si, depuis longtemps : AC·CÈS RESTREINT. Dessous, une serrure à quatre logements, chacun marqué d'un pictogramme. Un automate passe à côté sans s'arrêter : pour lui, il n'y a pas de porte, il n'y a que du mur à frotter.",
             "« Les archives, c'est pas de la maintenance. Moi, j'ai pas le droit d'y entrer. » Il renifle. « Mais la serrure, elle, c'est de la maintenance. Et une serrure qu'on a pas graissée depuis trois siècles, c'est plus une serrure, c'est une suggestion. Elle te dira combien de pictogrammes sont à la bonne place, et combien sont juste dans le code. Moi, je regarde ailleurs. Je regarde très fort ailleurs. »"
           ],
-        defi:{ type:"cadenas", longueur:4, symboles:["▲","✓","⇪","◎","✦"], essais:8,
+        defi:{ type:"cadenas", longueur:4, symboles:["▲","✓","⇪","◎","✦"], essais:8, distincts:3,   // v1.93m : réglage d'avant (5 pictogrammes, 8 essais), mais au moins 3 pictogrammes DIFFÉRENTS dans le code
           texte:["Quatre logements, cinq pictogrammes possibles. La serrure dit combien sont à la bonne place, et combien sont seulement dans la combinaison."],
           reussite:[
             "La serrure cède avec un claquement sec, et la porte glisse dans le mur. Derrière, une pièce étroite et froide, où rien n'a bougé depuis le dernier jour : des rangées de casiers fermés, et sur un pupitre, au milieu, un écran resté allumé depuis trois siècles sur une seule page, comme on laisse sur la table le dernier dossier traité avant de partir."
@@ -3507,6 +3510,9 @@ const QUETES = [
   {
     id:"q28",
     nom:"Immatriculé",
+    /* v1.93l — demande de l'autrice : Q27 finit sur « Alors demain… » → Q28 ne se prend
+       qu'à partir du JOUR DE JEU suivant la fin de Q27 (minuit, heure de Paris). */
+    lendemain:{ apres:"q27", texte:"« Demain, j'ai dit. » Asulf a le nez dans un classeur qu'il n'a sûrement pas. « Faut que je lise la procédure. Toute. Deux fois. Reviens demain. »" },
     donneur:"Asulf",
     donneurImg:"images/quetes/asulf.png",
     donneurLieu:"La station d'Ancolie",
@@ -3617,16 +3623,16 @@ const QUETES = [
         image:"images/quetes/q29/2.png",
         arrivee:[
             "L'appel commence. Les écrans se couvrent de lignes bleu glacier, et dans la radio, très loin, des centaines de voix répondent chacune à son tour. Asulf aussi : tu l'entends dire, d'une voix plate de procédure que tu ne lui connais pas, le mot qui ne se dit pas chez vous. Puis il se tait. Pendant l'appel, il n'a le droit de rien faire d'autre.",
-            "Avant d'aller répondre, il t'a tout préparé, et tout expliqué deux fois. L'appel est une onde : elle a sa fréquence et son décalage, et elle dérive un peu, comme une vague. Ton émission doit se caler dessus, exactement, et tenir assez longtemps pour que le manifeste glisse entre deux réponses. Comme au Perchoir : en phase, ou rien.",
+            "Avant d'aller répondre, il t'a tout préparé, et tout expliqué deux fois. L'appel est une onde : sa fréquence ne change jamais, mais son décalage dérive, comme une vague. Tu trouves la fréquence une fois, et après tu suis la vague, assez longtemps en tout pour que le manifeste glisse entre deux réponses. Comme au Perchoir : en phase, ou rien.",
             "Au bord de l'écran, il a laissé un mot, en clair, dans son orthographe à lui : « Moi g répondu reçu ce jour-là. Fai pareil. »"
           ],
         defi:{ type:"brouillage", tenir:6, duree:60,
-          texte:["L'onde de l'appel, en rouge, et la tienne, en vert. Cale-toi dessus, et tiens."],
-          consigne:"Règle ta fréquence et ton décalage jusqu'à ce que les deux ondes se superposent, puis tiens-les ensemble six secondes d'affilée, avant la fin de l'appel.",
+          texte:["L'onde de l'appel, en rouge, et la tienne, en vert. Cale-toi dessus, et suis-la."],
+          consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant la fin de l'appel.",   // v1.93k
           echec:"L'appel se termine avant que le manifeste soit passé. Il faudra attendre une autre relève. Nouvelle tentative dans 8 h.",
           fini:"Le manifeste est parti, entre deux réponses.",
           reussite:[
-            "Les deux ondes n'en font plus qu'une pendant six secondes, et sur l'écran du milieu, entre deux réponses, passe une ligne que personne n'attendait : MANIFESTE MAAR-12/42 — ÉMIS.",
+            "Six secondes en tout, les deux ondes n'en font plus qu'une, et sur l'écran du milieu, entre deux réponses, passe une ligne que personne n'attendait : MANIFESTE MAAR-12/42 — ÉMIS.",
             "Personne ne s'arrête de répondre. L'appel continue, régulier, comme si rien ne s'était passé. C'est exactement ce qu'il fallait."
           ] } },
       /* ---- 3. L'accusé — ATTENTE (le cycle suivant) ---- */

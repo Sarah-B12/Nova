@@ -7,7 +7,7 @@
   await new Promise(x=>setTimeout(x,1200));
   const r = { erreurs:[] }, att = ms => new Promise(x=>setTimeout(x,ms));
   const a = { id:"q26", etape:0 }; queteActive = () => a; sauvegarder = () => {}; rafraichirQuetes = () => {};
-  majQueteHub = () => {}; sauverMaintenant = async () => {};
+  const _vraiHub = majQueteHub; majQueteHub = () => {}; sauverMaintenant = async () => {};
   let ok = 0, ko = 0, dernierEchec = ""; reussirDefi = () => { ok++; }; echouerDefi = (m) => { ko++; dernierEchec = m || ""; };
   journal = () => {};
   const z = document.createElement("div"); document.body.appendChild(z);
@@ -88,17 +88,29 @@
   const essaiEnigme = (rep) => { ok = 0; z.innerHTML = _defiHTML(dE); _defiWire(z, dE); z.querySelector("#q-enig-champ").value = rep; z.querySelector("#q-enig-btn").click(); return ok === 1; };
   r.enigme = { quai:essaiEnigme("Quai MAAR-12"), ancolie:essaiEnigme("celui d'Ancolie"), faux:essaiEnigme("MAAR-3") };
 
-  // 7. Q29 : le brouillage se gagne (onde calée) et se perd (appel fini).
+  // 7. Q29 : le brouillage (v1.93k) — fréquence FIXE réglée une fois puis verrouillée,
+  //    décalage à suivre, secondes CUMULÉES.
   const dB = queteData("q29").etapes[1].defi; a.id = "q29"; a.etape = 1;
-  async function brouiller(caler, duree){
-    ok = 0; ko = 0; dernierEchec = ""; const d = Object.assign({}, dB, { duree, tenir:1 });
+  async function brouiller(mode, duree, tenir){
+    ok = 0; ko = 0; dernierEchec = ""; const d = Object.assign({}, dB, { duree, tenir });
     z.innerHTML = _defiHTML(d); _defiWire(z, d); z.querySelector("#qj-br-go").click();
-    const P = QUETES_JEUX.brouillage._partie;
-    for(let k = 0; k < 200 && !ok && !ko; k++){ await att(30); if(caler && P.cible){ P.f = P.cible.f; P.d = P.cible.d; } }
-    _seqFin(); return { ok, ko, msg:dernierEchec };
+    const P = QUETES_JEUX.brouillage._partie; const fc0 = P.fc;
+    if(mode !== "rien") P.regler(P.fc + 0.05, null);              // à 0,05 près : se cale et se verrouille
+    const info = { verrou:P.fCalee && z.querySelector("#qj-br-f").disabled && P.f === P.fc };
+    for(let k = 0; k < 400 && !ok && !ko; k++){
+      await att(30);
+      if(mode === "suivre") P.regler(null, P.cible.d);
+      if(mode === "alterner") P.regler(null, (Math.floor(k / 5) % 2) ? P.cible.d : (P.cible.d + Math.PI) % (2 * Math.PI));   // calé une fois sur deux
+      if(mode === "frequenceSeule") P.regler(null, (P.cible.d + Math.PI) % (2 * Math.PI));
+    }
+    info.fixe = P.cible.f === fc0; info.tenu = Math.round(P.tenu * 10) / 10;
+    _seqFin(); return Object.assign(info, { ok, ko, msg:dernierEchec });
   }
-  const bG = await brouiller(true, 20), bP = await brouiller(false, 1);
-  r.brouillage = { gagne:bG.ok === 1, perdu:bP.ko === 1 && /8 h/.test(bP.msg), ratable:DEFIS_UNTRY.has("brouillage") };
+  const bG = await brouiller("suivre", 20, 1), bA = await brouiller("alterner", 20, 1.5),
+        bF = await brouiller("frequenceSeule", 1.5, 1), bP = await brouiller("rien", 1, 1);
+  r.brouillage = { gagne:bG.ok === 1, verrouille:bG.verrou, frequenceFixe:bG.fixe,
+                   cumule:bA.ok === 1, frequenceNeSuffitPas:bF.ko === 1,
+                   perdu:bP.ko === 1 && /8 h/.test(bP.msg), ratable:DEFIS_UNTRY.has("brouillage") };
 
   // 8. Q30 : la crevasse sous l'anneau ; récompenses et drapeaux de fin d'arc.
   const dC = queteData("q30").etapes[1].defi; r.crevasse = `${dC.n}/${dC.marge}`;
@@ -140,5 +152,34 @@
   etat.permisVaisseau = true; etat.vaisseau = Object.keys(VAISSEAUX)[0]; etat.immatricule = "MAAR-12/42";
   try{ majVaisseau(); r.indicatif = /MAAR-12\/42/.test(vv.innerHTML); }catch(e){ r.indicatif = "erreur : " + e.message; }
 
+
+  // 11. v1.93l — Q28 se prend le LENDEMAIN de Q27 ; le cadenas de Q27 ; la bête en Q23 ét. 3.
+  const qe = queteEtat(); const sauveQ = JSON.stringify(qe);
+  qe.active = null; qe.done = QUETES.map(q => q.id).filter(id => id < "q28" && id.length === 3 || /^q\d$/.test(id));
+  qe.done = QUETES.slice(0, QUETES.findIndex(q => q.id === "q28")).map(q => q.id);
+  const q28 = queteData("q28"); r.lendemain = {};
+  qe.finJour = { q27:jourDeJeu() };
+  r.lendemain.aujourdhui = queteAttendLendemain(q28);
+  const qa0 = queteActive; queteActive = () => queteEtat().active; sauvegarder = () => {}; sauverMaintenant = async () => {};
+  accepterQuete("q28"); r.lendemain.refuse = !qe.active;
+  qe.finJour = { q27:"2000-01-01" }; accepterQuete("q28"); r.lendemain.accepteeLeLendemain = !!qe.active && qe.active.id === "q28"; qe.active = null;
+  qe.finJour = { q27:jourDeJeu() };
+  let hub = document.querySelector("#hub-quete"); if(!hub){ hub = document.createElement("div"); hub.id = "hub-quete"; document.body.appendChild(hub); }
+  etat.secteur = "ancolie"; etat.ancolie = true; etat.surface = { x:1031, y:880, abord:false }; _seqFin();
+  _vraiHub(); r.lendemain.hub = /Disponible <b>demain<\/b>/.test(hub.innerHTML) && !hub.querySelector("#quete-accepter");
+  qe.finJour = { q27:"2000-01-01" }; _vraiHub(); r.lendemain.hubLeLendemain = !!hub.querySelector("#quete-accepter");
+  queteActive = qa0;
+  qe.finJour = { q27:"2000-01-01" }; r.lendemain.hier = !queteAttendLendemain(q28);
+  qe.finJour = {}; r.lendemain.ancienne = !queteAttendLendemain(q28);
+  r.lendemain.autres = !queteAttendLendemain(queteData("q29"));
+  Object.assign(qe, JSON.parse(sauveQ));
+  const dK = queteData("q27").etapes[0].defi; r.cadenasQ27 = `${dK.longueur}/${dK.symboles.length}/${dK.essais}/≥${dK.distincts}`;
+  // v1.93m : 200 tirages, jamais moins de 3 pictogrammes différents ; un ancien code « ▲▲▲▲ » est retiré.
+  const qa1 = queteActive; const aq = { id:"q27", etape:0 }; queteActive = () => aq; let minDiff = 9;
+  for(let k = 0; k < 200; k++){ aq._cadSecret = null; z.innerHTML = _defiHTML(dK); _defiWire(z, dK); minDiff = Math.min(minDiff, new Set(aq._cadSecret).size); }
+  aq._cadSecret = ["▲","▲","▲","▲"]; aq._cadEssais = 3; z.innerHTML = _defiHTML(dK); _defiWire(z, dK);
+  r.cadenasTirage = { minDifferents:minDiff, ancienRetire:new Set(aq._cadSecret).size >= 3 && aq._cadEssais === 0 };
+  queteActive = qa1;
+  etat.bete = { espece:"iris", nom:"Bip" }; r.beteQ23 = _varie(queteData("q23").etapes[2].image); etat.bete = null;
   return r;
 })();

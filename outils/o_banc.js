@@ -36,6 +36,7 @@ const DELAIS = {
   tranq: { profil: 50, sac: 50, jauges: 50 },     // v1.93c : onglet Tranquillité des consoles (o_tranq.js)
   canon: { profil: 50, sac: 50, jauges: 50 },     // v1.93e : canon de bord du Vaisseau maître (o_canon.js)
   maisonban: { profil: 50, sac: 50, jauges: 50 }, // v1.93g : bannière du logement, onglet Maison (o_maisonban.js)
+  avatarvue: { profil: 50, sac: 50, jauges: 50 }, // v1.93l : fenêtre d'avatar et zoom (o_avatarvue.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)
   traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (o_traque.js)
