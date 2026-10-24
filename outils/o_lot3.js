@@ -21,14 +21,15 @@
       try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi);
            if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${id}/${i} : épreuve inconnue ${e.defi.type}`);
            if(!_cibleResolue(e.cible)) r.erreurs.push(`${id}/${i} : cible introuvable`);
-           const im = (e.image && typeof e.image === "object") ? e.image.valeurs[e.image.defaut] : e.image;   // v1.93j : bannière selon la bête
-           if(im !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${im}`);
+           const im = (e.image && typeof e.image === "object") ? (e.image.src || e.image.valeurs[e.image.defaut]) : e.image;   // v1.93j, v1.93s
+           const attendue = (e.defi.type === "combat" && e.image && e.image.src) ? `images/quetes/${id}/gardien.png` : null;
+           if(attendue ? im !== attendue : !/^images\/quetes\/q\d+\/\d+\.png$/.test(im)) r.erreurs.push(`${id}/${i} : image ${im}`);
       }catch(err){ r.erreurs.push(`${id}/${i} : ${err.message}`); } });
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; }
     _seqFin();
   }
   // Jamais le même type dans deux quêtes consécutives (hors choix, attente).
-  const types = id => new Set(queteData(id).etapes.map(e => e.defi.type).filter(t => !["choix","attente","scene"].includes(t)));   // une scène n'est pas une épreuve
+  const types = id => new Set(queteData(id).etapes.map(e => e.defi.type).filter(t => !["choix","attente","scene","combat"].includes(t)));   // une scène n'est pas une épreuve ; v1.93s : le gardien (combat) est un barrage de niveau
   r.repetitions = []; ["q25", ...IDS].reduce((p, c) => { for(const t of types(c)) if(types(p).has(t)) r.repetitions.push(`${p}/${c}:${t}`); return c; });
   // Au moins une épreuve ratable par quête (une qui se perd).
   r.ratables = IDS.map(id => `${id}:${queteData(id).etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).length}`).join(" ");
@@ -79,7 +80,7 @@
 
 
   // 5. Q27 : les sons des glyphes existent tous (aucun son nouveau, LORE §11 bis).
-  const dG = queteData("q27").etapes[1].defi;
+  const dG = queteData("q27").etapes.find(e => e.defi.type === "glyphes").defi;   // v1.93s : gardien inséré
   r.glyphesConnus = dG.paires.every(p => p.sons.every(x => GLYPHES_ANCIEN[x]));
   r.cadenas = (({ longueur, symboles, essais }) => `${longueur}/${symboles.length}/${essais}`)(queteData("q27").etapes[0].defi);
 
@@ -113,7 +114,7 @@
                    perdu:bP.ko === 1 && /8 h/.test(bP.msg), ratable:DEFIS_UNTRY.has("brouillage") };
 
   // 8. Q30 : la crevasse sous l'anneau ; récompenses et drapeaux de fin d'arc.
-  const dC = queteData("q30").etapes[1].defi; r.crevasse = `${dC.n}/${dC.marge}`;
+  const dC = queteData("q30").etapes.find(e => e.defi.type === "crevasse").defi; r.crevasse = `${dC.n}/${dC.marge}`;
   r.flags = { q28:queteData("q28").recompense.flags, q29:queteData("q29").recompense.flags, q30:queteData("q30").recompense.flags };
   r.paSeulQ30 = IDS.filter(id => queteData(id).recompense.pa).join(",");
   r.prises = IDS.map(id => `${id}:${queteData(id).lieuPrise || "comptoir"}`).join(" ");
@@ -172,6 +173,14 @@
   qe.finJour = { q27:"2000-01-01" }; r.lendemain.hier = !queteAttendLendemain(q28);
   qe.finJour = {}; r.lendemain.ancienne = !queteAttendLendemain(q28);
   r.lendemain.autres = !queteAttendLendemain(queteData("q29"));
+  // v1.93q : la règle vaut dès Q6, pas avant ; les répliques suivent le donneur.
+  qe.finJour = { q2:jourDeJeu(), q5:jourDeJeu(), q15:jourDeJeu(), q20:jourDeJeu() };
+  r.lendemain.q3libre = !queteAttendLendemain(queteData("q3"));
+  r.lendemain.q6attend = queteAttendLendemain(queteData("q6")) && /Aujourd'hui, je découpe/.test(texteLendemain(queteData("q6")));
+  r.lendemain.q16attend = queteAttendLendemain(queteData("q16")) && /Mes genoux/.test(texteLendemain(queteData("q16")));
+  r.lendemain.q21attend = queteAttendLendemain(queteData("q21")) && /barre protéinée/.test(texteLendemain(queteData("q21")));
+  r.lendemain.q28texte = /Demain, j'ai dit/.test(texteLendemain(queteData("q28")));
+  qe.finJour = {};
   Object.assign(qe, JSON.parse(sauveQ));
   const dK = queteData("q27").etapes[0].defi; r.cadenasQ27 = `${dK.longueur}/${dK.symboles.length}/${dK.essais}/≥${dK.distincts}`;
   // v1.93m : 200 tirages, jamais moins de 3 pictogrammes différents ; un ancien code « ▲▲▲▲ » est retiré.

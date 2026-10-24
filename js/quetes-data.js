@@ -1447,6 +1447,27 @@ const QUETES = [
             "Sauf un."
           ] } },
 
+
+      /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
+         Puissance 77 : imbattable bien avant le niveau visé, sans texte « reviens au
+         niveau X » (seuil 70 % de la meilleure compétence, équipement et boissons compris). */
+      { indice:"Automate de garde du ber.",
+        cible:{ lieu:"planete_cassee" },
+        image:{ src:"images/quetes/q11/gardien.png", repli:"images/quetes/q11/3.png" },   // bannière à venir
+        arrivee:[
+            "Au pied du seul ber occupé, quelque chose se déplie. Un automate de garde, haut comme deux hommes, sur quatre pattes de grue, qui surveillait le quai bien avant qu'on éteigne le port. Ta lampe l'a réveillé : ses capteurs s'allument un à un, d'un orange sale, et il se met en travers de l'allée.",
+            "« Celui-là, on a oublié de le désarmer », grésille Galm. « Personne a pensé à lui dire que le port était fermé. Il garde un vaisseau pour des gens qui viendront jamais. » Un raclement dans la radio. « Il te laissera pas passer. Fais-lui comprendre. »"
+          ],
+        defi:{ type:"combat",
+          nom:"Automate de garde du ber",
+          puissance:77,
+          gain:2,
+          xp:15,
+          texte:["Il ne frappe pas vite, mais il frappe fort, et il ne recule jamais d'un pas : c'est sa consigne."],
+          reussite:[
+            "L'automate fléchit sur une patte, puis sur l'autre, et s'affaisse en travers de l'allée dans un long soupir de vérins. Ses capteurs pâlissent sans s'éteindre tout à fait, comme quelqu'un qui s'endort en gardant un œil ouvert.",
+            "Tu l'enjambes. Derrière lui, il n'y a plus que le ber."
+          ] } },
       /* ---- 4. Le vaisseau — ORDRE (ratable) : le journal du ber ---- */
       { indice:"Dans La Cassée, au dernier ber occupé. Le journal du vaisseau est brouillé : remets-le dans l'ordre.",
         cible:{ lieu:"planete_cassee" }, leurres:[ { lieu:"base" }, { lieu:"epave" }, { lieu:"asteroides" } ],
@@ -2284,6 +2305,26 @@ const QUETES = [
             "Tu poses tes patins sur son flanc, juste sous la plaque, et tu attends, crispé. Rien. Elle continue de tourner, de regarder Silène, de compter ce qu'elle compte depuis trois siècles. Elle ne t'a pas vu ; elle ne voit jamais personne."
           ] } },
 
+
+      /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
+         Puissance 94 : imbattable bien avant le niveau visé, sans texte « reviens au
+         niveau X » (seuil 70 % de la meilleure compétence, équipement et boissons compris). */
+      { indice:"Bras de défense de la sonde Chardon.",
+        cible:{ lieu:"satellite2" },
+        image:{ src:"images/quetes/q16/gardien.png", repli:"images/quetes/q16/2.png" },   // bannière à venir
+        arrivee:[
+            "Elle ne voit personne, mais sa coque, elle, sent qu'on s'y est posé. Sous la plaque, une trappe s'ouvre sans bruit, et un bras de défense se déplie, articulé comme une patte d'insecte, une pince au bout. Il se met en garde entre toi et le panneau de service.",
+            "« Comme celui d'Ortie », souffle Sorn dans le casque ; il a tout vu sur la retransmission. « Ces sondes-là, on les a armées pour qu'on leur fiche la paix. Celle-là a pas changé d'avis en trois cents ans. »"
+          ],
+        defi:{ type:"combat",
+          nom:"Bras de défense de la sonde Chardon",
+          puissance:94,
+          gain:3,
+          xp:18,
+          texte:["Il frappe à intervalles réguliers, comme celui d'Ortie, mais plus fort et plus vite : Chardon a eu trois siècles pour s'entretenir."],
+          reussite:[
+            "Le bras se bloque à mi-course, grince, et se replie dans sa trappe comme on rentre une main dans une poche. La trappe se referme. Chardon continue de tourner et de regarder Silène : elle n'a pas remarqué qu'on l'avait défendue."
+          ] } },
       /* ---- 2. Le panneau de service — CADENAS (ratable) ---- */
       { indice:"Contre la plaque de Chardon, le panneau de service. Il est verrouillé.",
         cible:{ lieu:"satellite2" }, leurres:[ { lieu:"satellite1" }, { lieu:"cailloux2" } ],
@@ -2626,6 +2667,27 @@ const QUETES = [
             "Tu fais demi-tour lentement, sans la quitter des yeux. Dans la radio, Galm se remet à respirer."
           ] } },
 
+
+      /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
+         Puissance 102 : imbattable bien avant le niveau visé, sans texte « reviens au
+         niveau X » (seuil 70 % de la meilleure compétence, équipement et boissons compris). */
+      { indice:"Sonde de garde de la Gorge.",
+        cible:{ carte:"espace", x:1440, y:824, r:130 },
+        image:{ src:"images/quetes/q19/gardien.png", repli:"images/quetes/q19/2.png" },   // bannière à venir
+        arrivee:[
+            "Sur le chemin du retour, ta radio s'affole avant tes capteurs : une sonde d'AREPO a quitté sa ronde et file droit sur toi, feux de position allumés. Elle n'a pas aimé qu'un vaisseau s'approche de la Gorge. Elle ne sait pas ce que tu es ; elle sait seulement que tu n'as rien à faire là.",
+            "« T'as réveillé une gardienne. » La voix de Galm est sèche. « Elles patrouillent le bord, celles-là. Ta coque tiendra, je l'ai doublée. Toi, tiens le reste. »"
+          ],
+        defi:{ type:"combat",
+          nom:"Sonde de garde de la Gorge",
+          puissance:102,
+          gain:3,
+          xp:18,
+          texte:["Elle tourne autour de toi en resserrant le cercle à chaque passage, et elle tire à chaque tour."],
+          reussite:[
+            "La sonde décroche d'un coup ; ses feux s'éteignent l'un après l'autre, et elle part à la dérive vers le bord de la Gorge, qui l'avale sans un bruit. Tu restes un moment à regarder l'endroit où elle a disparu.",
+            "« Rentre », grésille Galm. « Avant qu'une autre se réveille. »"
+          ] } },
       /* ---- 3. Avant de sauter — CHOIX de Cercle ---- */
       { indice:"Rentre à La Carcasse. Galm t'attend.",
         cible:{ lieu:"epave" }, leurres:[ { lieu:"base" } ],
@@ -2708,7 +2770,7 @@ const QUETES = [
         cible:{ carte:"ancolie", lieu:"chute" },
         image:"images/quetes/q20/3.png",
         arrivee:[
-          "Tu ne dis rien. Ta main se pose sur les commandes, et à l'autre bout il y a un silence, puis : « Ah. Ça, c'est un non. Tu dis rien, mais j'ai très bien entendu le non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
+          "Tu lui réponds que tu vas réparer ça toi-même, merci bien, et ta main est déjà sur les commandes. À l'autre bout, un silence, puis : « Ah. Ça, c'est un non. Poli, mais c'est un non. » Un bruit de mastication. « Vas-y, essaie. Je regarde. »",
           "L'écran de bord affiche la console du calculateur de saut. Une ligne de commande y défile, en caractères que tu sais lire : il suffirait de la retaper proprement pour que le calculateur retrouve ses routes, et toi les tiennes. Par la verrière fêlée, des fleurs bleues se pressent contre la vitre."
         ],
         defi:{ type:"impossible", essais:2, bouton:"Lâcher les commandes",
@@ -2973,7 +3035,7 @@ const QUETES = [
           "« Dis. Je te fais du chantage, et toi tu m'apportes à manger chaud. C'est pas logique. Chez nous, quand c'est pas logique, on ouvre un dossier. » Un temps. « J'ouvre pas de dossier. Je demande, c'est tout. »"
         ],
         defi:{ type:"choix",
-          texte:["Il attend une réponse. Tu n'as pas l'intention de faire la conversation à une trappe."],
+          texte:["Il attend une réponse, et tu ne sais pas trop laquelle lui donner."],
           options:[
             { texte:"Frapper deux coups sur la trappe, comme on frappe à une porte, et repartir.",
               cercles:{ racines:5 },
@@ -3078,7 +3140,7 @@ const QUETES = [
           reussite:[
             "Le bras attrape la sporelle et disparaît. Une mastication, longue. « C'est… amer. » Il mâche encore. « Non. C'est… Oh. Oh là. »",
             "Puis plus rien. Tu crois qu'il a coupé, mais au bout d'un moment sa voix revient, plus lente, presque rêveuse, une voix que tu ne lui connais pas : « Dis. Dehors. Quand il pleut, ça mouille partout ? Même sur la tête ? Même quand on veut pas ? »",
-            "Tu lèves les yeux. Il ne pleut pas, et tu ne réponds rien ; il n'a pas l'air d'attendre de réponse. « … Oublie. Je demandais pour un ami. » Un temps. « J'ai pas d'ami. Bon. Demain, l'automate. Il boite. »"
+            "Tu lèves les yeux vers un ciel tout sec, et tu lui expliques que oui : partout, même sur la tête, même quand on ne veut pas, et que c'est un peu tout l'intérêt. Un long silence. « … Oublie. Je demandais pour un ami. » Un temps. « J'ai pas d'ami. Bon. Demain, l'automate. Il boite. »"
           ] } }
     ],
     /* K48 : le gisement de Sélénite (au lac gelé) devient visible ; l'aiguille pousse (selenite.js). */
@@ -3166,7 +3228,7 @@ const QUETES = [
         image:"images/quetes/q24/4.png",
         arrivee:[
           "« Alors ? » Le bras ressort, lentement. Au bout, à côté de la pince, il y a un œil de caméra, tout petit, qui fait le point sur toi. « Vas-y. Raconte. »",
-          "Tu ne racontes pas : tu n'as jamais été doué pour ça. Mais tu peux montrer."
+          "Tu commences à lui raconter, et tu t'arrêtes au bout de trois phrases : il a une caméra, et il y a des choses qui se montrent mieux qu'elles ne se racontent."
         ],
         defi:{ type:"choix",
           texte:["Qu'est-ce que tu lui montres du dehors ?"],
@@ -3179,7 +3241,7 @@ const QUETES = [
               journal:"Tu as montré à Asulf une motte de terre de Silène, et tout ce qui vit dedans. Il a crié. Puis il a demandé si on pouvait la garder." },
             { texte:"Soulever ta bête jusqu'à la caméra, pour qu'il voie ses marques s'allumer quand la vague passe.",
               cercles:{ veilleurs:5 },
-              journal:"Tu as montré ta bête à Asulf, ses marques allumées. Il a mis longtemps à parler. « Elle brille. Pourquoi elle brille ? Elle est inventoriée ? » Tu n'as rien répondu. « Elle est pas inventoriée. Tant mieux. »" }
+              journal:"Tu as montré ta bête à Asulf, ses marques allumées. Il a mis longtemps à parler. « Elle brille. Pourquoi elle brille ? Elle est inventoriée ? » Tu lui as répondu qu'elle n'était à personne. « Pas inventoriée. Tant mieux. »" }
           ],
           reussite:[
             "« Bon. » Le bras rentre. « Tu sais quoi ? Moins de corvées. Plus de… ça. » Il s'entend, et se rattrape aussitôt : « J'ai dit ça ? J'ai pas dit ça. La corvée de demain est très importante. Elle est très longue. »",
@@ -3293,8 +3355,8 @@ const QUETES = [
      v1.93 — LOT 3 (Q26 → Q30). K33, K53 ; K59 → K62 (22/10).
      =========================================================== */
   /* ---------------- Q26 — Pas aujourd'hui (Silène, la serre) ----------------
-     Retour de K17 : Sorn et Adaya, à la serre. Le joueur raconte sans parler (il pose,
-     il dessine, il recopie). Fragments (R1) : Sorn apporte le SECOND VERROU de K32 (K60 :
+     Retour de K17 : Sorn et Adaya, à la serre. Le joueur raconte — v1.93p : il PARLE, au discours
+     indirect, jamais entre guillemets ; il pose aussi ce qu'il rapporte, il dessine, il recopie. Fragments (R1) : Sorn apporte le SECOND VERROU de K32 (K60 :
      un registre lit des cases, pas des gens — tous embarqués, pour de vrai ou sur le
      papier, la case se coche et l'on ferme) ; Adaya donne de sa sporelle à quelqu'un du
      Protocole. Fil comique : Asulf demande, pour la première fois, des nouvelles d'un
@@ -3321,7 +3383,7 @@ const QUETES = [
         image:"images/quetes/q26/1.png",
         arrivee:[
             "Adaya a fait du thé, et elle n'en boit pas. Elle est installée sur sa chaise longue, au bout du rang, à côté du bocal où la bouture bat doucement, une couverture sur les genoux et sa tasse posée par terre. Ta bête file se coucher contre le bocal ; ses marques s'allument au rythme de la lueur, comme chaque fois qu'elle rentre ici.",
-            "Sorn s'assoit sur un sac de terreau, Adaya repousse sa couverture, et tous les deux te regardent. Tu n'as jamais su raconter. Alors tu fais ce que tu sais faire : tu vides tes poches sur la paillasse, un emballage de ration, ta radio, ton carnet, et pour tout le reste tu dessines. Une chose après l'autre, dans l'ordre, pour qu'ils comprennent sans que tu aies à parler.",
+            "Sorn s'assoit sur un sac de terreau, Adaya repousse sa couverture, et tous les deux te regardent. Alors tu racontes. Ça part dans tous les sens, au début ; pour t'y retrouver, tu vides tes poches sur la paillasse, un emballage de ration, ta radio, ton carnet, et pour tout le reste tu dessines. Une chose après l'autre, dans l'ordre, à mesure que tu parles.",
             "« Prends ton temps, petit. » Adaya a sa voix des jours de récolte, celle qui ne presse personne. « On a toute la nuit. Lui, il a toute la vie, et il dit jamais rien d'intéressant. » Sorn grogne, pour la forme."
           ],
         defi:{ type:"ordre",
@@ -3337,7 +3399,7 @@ const QUETES = [
               "Les lignées à embarquer, et parmi elles, une ligne appelée à chaque cycle, qui ne répond jamais."
             ],
           reussite:[
-              "Ça leur prend du temps. Adaya pose ses questions avec les sourcils, Sorn avec les mains, et tu réponds en montrant, en redessinant, en tapant du doigt sur la paillasse. Quand tu arrives à l'automate qui salue l'air, Sorn éclate d'un rire qu'il ravale aussitôt. Quand tu arrives à l'appel, plus personne ne rit.",
+              "Ça prend du temps. Adaya t'arrête pour poser des questions, Sorn pour râler qu'il n'a rien compris, et tu reprends, tu redessines, tu tapes du doigt sur la paillasse. Quand tu arrives à l'automate qui salue l'air, Sorn éclate d'un rire qu'il ravale aussitôt. Quand tu arrives à l'appel, plus personne ne rit.",
               "Il reste une chose, et celle-là, tu ne la poses pas. Tu prends le crayon de Sorn, tu retournes un sachet de graines vide, et tu recopies la ligne au dos, de mémoire, en clair, mot après mot, comme elle s'affichait sur l'écran du milieu."
             ] } },
 
@@ -3364,7 +3426,7 @@ const QUETES = [
             "Ta radio grésille dans ta poche, au pire moment, comme toujours. « Allô ? C'est moi. Asulf. Enfin, tu sais que c'est moi, y a que moi sur ce canal. » Il a retrouvé un peu de ses cailloux depuis l'autre nuit, pas tous. « Je dérange pas ? Je dérange. Bon. C'est rapide. »",
             "Sorn lève un sourcil vers ta poche. Adaya pose un doigt sur ses lèvres pour le faire taire, et lui, pour une fois, se tait.",
             "« Ta bête. » Un silence gêné, des câbles qu'on tripote. « Elle va bien ? Je demande pas pour moi, hein. Je demande pour elle. Enfin, je demande pour savoir. C'est bizarre : je demande jamais rien pour les autres. J'ai même pas de formulaire pour ça. »",
-            "Tu ne sais pas comment on dit qu'une bête va bien. Mais la tienne est couchée contre la bouture, et ses marques battent, lentes, régulières. Tu approches la radio, et du bout du doigt, tu tapes sur le micro ce qu'elle fait."
+            "Tu lui dis qu'elle va bien. Il n'a pas l'air convaincu : « Bien comment ? Bien réglementaire ? » Alors tu regardes ta bête, couchée contre la bouture, ses marques qui battent, lentes, régulières, et tu approches la radio : du bout du doigt, tu tapes sur le micro ce qu'elle fait."
           ],
         defi:{ type:"sequence", longueur:10, cadence:CADENCE_PERIMETRE,
           texte:["Les marques de ta bête s'allument l'une après l'autre, puis s'éteignent. Tape-les sur le micro, jusqu'au bout, deux fois de suite."],
@@ -3437,6 +3499,27 @@ const QUETES = [
           reussite:[
             "La serrure cède avec un claquement sec, et la porte glisse dans le mur. Derrière, une pièce étroite et froide, où rien n'a bougé depuis le dernier jour : des rangées de casiers fermés, et sur un pupitre, au milieu, un écran resté allumé depuis trois siècles sur une seule page, comme on laisse sur la table le dernier dossier traité avant de partir."
           ] } },
+
+      /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
+         Puissance 117 : imbattable bien avant le niveau visé, sans texte « reviens au
+         niveau X » (seuil 70 % de la meilleure compétence, équipement et boissons compris). */
+      { indice:"Automate de sécurité des archives.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:{ src:"images/quetes/q27/gardien.png", repli:"images/quetes/q27/1.png" },   // bannière à venir
+        arrivee:[
+            "Tu as fait trois pas dans la pièce quand quelque chose bouge entre les casiers. Un automate de sécurité, plus massif que ceux de la grande salle, plaqué de métal mat, se décroche de son socle et se plante devant le pupitre. Son œil rouge s'allume. Il ne taille rien, il ne frotte rien : il garde.",
+            "« Ah. Lui. » Asulf a la voix de quelqu'un qui vient de se souvenir d'un détail important. « Les archives, c'est pas de la maintenance, je te l'ai dit. Lui non plus. Il m'écoute pas, il écoute personne. » Un silence gêné. « J'aurais dû prévenir. Le casse pas trop, il est inventorié. Enfin… casse-le si tu dois. »"
+          ],
+        defi:{ type:"combat",
+          nom:"Automate de sécurité des archives",
+          puissance:117,
+          gain:3,
+          xp:20,
+          texte:["Il ne cherche pas à te chasser : il se met entre toi et le pupitre, et il frappe tout ce qui avance."],
+          reussite:[
+            "L'automate plie un genou, puis l'autre, et s'immobilise face au pupitre, comme une sentinelle qui s'endort à son poste. Son œil rouge baisse jusqu'à n'être plus qu'une braise.",
+            "« Il est inventorié », répète Asulf, très bas. « Je vais devoir remplir un rapport. » Il renifle. « Je le remplirai pas. »"
+          ] } },
       /* ---- 2. Le manifeste — GLYPHES (ratable) ---- */
       { indice:"Dans les archives de la station : la page restée allumée.",
         cible:{ carte:"ancolie", lieu:"station", r:160 },
@@ -3470,8 +3553,8 @@ const QUETES = [
             "Tu fais défiler les noms. Il y en a des pages et des pages. Dans la radio, le silence dure si longtemps que tu vérifies deux fois que le canal est toujours ouvert.",
             "« Ils avaient des noms, eux. » Sa voix est toute petite. « Ils ont embarqué normalement, au bon quai, sur le bon vaisseau, avec un nom chacun. C'est pour ça qu'il y a personne en Ancolie : pas de Protocole, pas d'appel, rien. Juste les automates, qui gardent le quai propre au cas où ils reviendraient. »",
             "Puis il le dit, d'un coup, comme on saute dans l'eau froide : « Moi, je veux embarquer. Pas sur <i>le</i> vaisseau, celui qu'on attend depuis trois cents ans : il viendra pas, je le sais, j'entretiens les relais. Sur le tien. »",
-            "Tu montres le sol, là où s'ouvre la trappe de visite, puis la direction de Silène : les conduits, la trappe au dos de l'anneau, le bras qui sort. Il comprend tout de suite. « Sortir par la trappe ? Ça, je sais faire. Mais sortir, c'est pas partir. » Sur l'écran du pupitre, il fait apparaître une autre page, que tu connais déjà : SORN, E. — DÉSERTION — IDENTITÉ RADIÉE. « Sans manifeste, je suis lui. Un nom qu'on raye, et des machines qui me cherchent. Les miennes. »",
-            "Et puis les cailloux reviennent d'un coup, et toute l'excitation avec : « Sauf que ! Un jour, un civil est parti avec la navette du quai, sur Silène. Le registre a même pas crié à la désertion : il a coché une case. <i>Une personne évacuée.</i> J'ai toujours trouvé ça absurde. » Un silence. « Attends. C'était toi ? » Tu hoches la tête. « C'était toi. Bon. Ben voilà. Une personne évacuée, sur un appareil, avec un manifeste. C'est tout ce qu'il me faut. »"
+            "Tu lui proposes la trappe, celle du dos de l'anneau, par où sortent ses bras. Il y avait pensé avant toi, ça s'entend. « Sortir par la trappe ? Ça, je sais faire. Mais sortir, c'est pas partir. » Sur l'écran du pupitre, il fait apparaître une autre page, que tu connais déjà : SORN, E. — DÉSERTION — IDENTITÉ RADIÉE. « Sans manifeste, je suis lui. Un nom qu'on raye, et des machines qui me cherchent. Les miennes. »",
+            "Et puis les cailloux reviennent d'un coup, et toute l'excitation avec : « Sauf que ! Un jour, un civil est parti avec la navette du quai, sur Silène. Le registre a même pas crié à la désertion : il a coché une case. <i>Une personne évacuée.</i> J'ai toujours trouvé ça absurde. » Un silence. « Attends. C'était toi ? » Tu lui dis que oui : la navette, c'était toi. « C'était toi. Bon. Ben voilà. Une personne évacuée, sur un appareil, avec un manifeste. C'est tout ce qu'il me faut. »"
           ],
         defi:{ type:"scene", bouton:"Rester avec lui →" } },
       /* ---- 4. Ce que tu en fais — CHOIX de Cercle ---- */
@@ -3510,8 +3593,8 @@ const QUETES = [
   {
     id:"q28",
     nom:"Immatriculé",
-    /* v1.93l — demande de l'autrice : Q27 finit sur « Alors demain… » → Q28 ne se prend
-       qu'à partir du JOUR DE JEU suivant la fin de Q27 (minuit, heure de Paris). */
+    /* v1.93l — Q27 finit sur « Alors demain… » → Q28 se prend le jour de jeu suivant.
+       v1.93q : la règle vaut pour toutes les quêtes dès Q6 ; ici, seule la réplique change. */
     lendemain:{ apres:"q27", texte:"« Demain, j'ai dit. » Asulf a le nez dans un classeur qu'il n'a sûrement pas. « Faut que je lise la procédure. Toute. Deux fois. Reviens demain. »" },
     donneur:"Asulf",
     donneurImg:"images/quetes/asulf.png",
@@ -3614,7 +3697,7 @@ const QUETES = [
             "« Je sais pas quoi mettre. » La silhouette se tortille. « Chez nous, la case, elle est vide. Toujours. On a des matricules, c'est suffisant, c'est même mieux, ça se trompe pas. » Il se tait. Puis, très vite, sans respirer : « Mets celui que tu dis. »",
             "Tu t'approches du clavier, et tu tapes cinq lettres, les mêmes qu'un jour sur ta radio pour renommer un canal : A, S, U, L, F. La case les prend, les garde, et pour la première fois depuis trois siècles, une ligne du Protocole commence par un nom.",
             "Il ne dit rien. Puis, d'un coup, les cailloux : « Et toi ! On t'ajoute, toi ! Deux passagers, c'est pas interdit, j'ai vérifié, y a même une ligne prévue en dessous. » Il tape, ravi. La ligne du dessous clignote en rouge : MATRICULE REQUIS. Il tape encore. MATRICULE REQUIS. « Ah. » Il se gratte la tête. « T'as pas de matricule. Évidemment. T'es… dehors, toi. »",
-            "Tu repenses à Sorn, au sachet de graines plié dans sa poche : une case qui se coche, et derrière, ils ferment. Tu poses la main sur l'écran, sur la sienne, pour qu'il arrête de taper. Il arrête. « Je sais. » Sa voix est toute basse. « Je disais ça pour rire. Un peu pour rire. »"
+            "Alors tu lui racontes la serre, Sorn, le sachet de graines plié dans sa poche : une case qui se coche, et derrière, ils ferment. Il arrête de taper bien avant la fin. « Je sais. » Sa voix est toute basse. « Je disais ça pour rire. Un peu pour rire. »"
           ],
         defi:{ type:"scene", bouton:"Attendre l'appel →" } },
       /* ---- 2. L'émission — BROUILLAGE (ratable ; la plus dure). Porté des missions (H64). ---- */
@@ -3660,7 +3743,7 @@ const QUETES = [
             "« Demain soir, je sors. » Un temps. « Tu viendras ? »"
           ],
         defi:{ type:"choix",
-          texte:["Il attend une réponse que tu ne sais pas dire."],
+          texte:["Il attend ta réponse."],
           options:[
             { texte:"Taper deux coups sur le banc, comme la nuit de l'appel.",
               cercles:{ racines:5 },
@@ -3712,6 +3795,27 @@ const QUETES = [
             "« Voilà. T'es libre. » Il renifle. « Moi aussi, bientôt. Ce soir, à la relève, la case se coche. Rendez-vous à la trappe. Viens pas en avance : je vais avoir peur, et si t'es là en avance, tu vas me voir avoir peur. »"
           ],
         defi:{ type:"scene", bouton:"Rentrer sur Silène →" } },
+
+      /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
+         Puissance 122 : imbattable bien avant le niveau visé, sans texte « reviens au
+         niveau X » (seuil 70 % de la meilleure compétence, équipement et boissons compris). */
+      { indice:"Sentinelle de la trappe de visite.",
+        cible:{ x:322, y:1050, r:80 },
+        image:{ src:"images/quetes/q30/gardien.png", repli:"images/quetes/q30/2.png" },   // bannière à venir
+        arrivee:[
+            "Tu arrives au dos de l'anneau en avance, malgré ce qu'il t'a dit. Et tu n'es pas seul : devant le talus, entre la petite trappe du bras et une bosse ronde dans l'herbe, une machine est sortie du rempart. Une sentinelle basse et large, sur chenilles, qui n'avait jamais eu besoin de bouger tant que personne ne venait de ce côté.",
+            "Ta radio grésille, et la voix d'Asulf, déjà tendue, monte d'un cran. « Oh non. La sentinelle de la trappe de visite. Elle est pas à moi, celle-là, elle est au rempart. Pour elle, t'es quelqu'un du dehors qui s'approche d'une sortie. » Il déglutit. « Faut qu'elle soit plus là quand j'arrive. Je sortirai pas avec elle devant. »"
+          ],
+        defi:{ type:"combat",
+          nom:"Sentinelle de la trappe de visite",
+          puissance:122,
+          gain:3,
+          xp:22,
+          texte:["Lente, lourde, patiente : elle avance d'un mètre à chaque coup, et elle ne recule jamais."],
+          reussite:[
+            "La sentinelle s'arrête net en travers du talus ; ses chenilles patinent dans le vide, puis se taisent. Tu la pousses de l'épaule jusqu'au pied du rempart, et elle se laisse faire, comme une vieille machine qui attendait qu'on lui dise enfin que c'était fini.",
+            "« Elle est plus là ? » Asulf chuchote. « Elle est plus là. D'accord. D'accord. J'arrive. »"
+          ] } },
       /* ---- 2. La relève — CREVASSE (ratable ; la plus dure) : le guider dans les conduits ---- */
       { indice:"Sur Silène, au dos de l'anneau, côté mer : la trappe. Ce soir, à la relève.",
         cible:{ x:322, y:1050, r:80 }, leurres:[ { x:450, y:915, r:80 }, { x:452, y:1172, r:80 }, { x:660, y:1300, r:80 } ],
@@ -3735,9 +3839,9 @@ const QUETES = [
         cible:{ x:322, y:1050, r:80 },
         image:"images/quetes/q30/3.png",
         arrivee:[
-            "Il enlève son casque. C'est la première fois que tu le vois sans écran : un jeune homme propre sur lui, la coupe réglementaire, une barbichette taillée au millimètre, et des cernes comme des puits. Il respire, fort, trop fort, et il tousse. « Ça sent. Pourquoi ça sent ? Tout sent ! C'est la mer, ça ? Elle fait du bruit tout le temps ? Elle s'arrête jamais ? »",
+            "Il porte la main à son casque, et tu l'arrêtes : dehors, l'air de Silène est trop pauvre pour quelqu'un qui n'a respiré que celui des conduits. Il le garde. Derrière la visière, tu ne vois que ses yeux, et ils ne savent plus où se poser. « Ça fait du bruit. Pourquoi ça fait du bruit ? Tout fait du bruit ! C'est la mer, ça ? Elle fait du bruit tout le temps ? Elle s'arrête jamais ? »",
             "Une vague passe sur la silène, au loin, et les marques de ta bête s'allument avec elle. Il sursaute si fort qu'il manque de retomber dans le trou. Sur la crête, une balise pivote vers vous ; il se plaque contre le rempart, les yeux fermés. « Elle me voit. Ma combinaison lui dit qui je suis. » Il ouvre un œil. « Elle me voit, et elle s'en fiche. Je suis évacué. »",
-            "Puis il se met à parler, et il ne s'arrête plus : la terre est molle, le ciel est trop grand, est-ce que ça mouille vraiment, la pluie, ah oui, il avait déjà demandé, et la sporelle, elle pousse où, on peut aller voir, on peut y aller maintenant ? Il parle en marchant, il marche en se retournant, il se retourne en trébuchant. Tu le prends par le coude. Il se tait une seconde, surpris, regarde ta main sur son bras, puis repart de plus belle.",
+            "Puis il se met à parler, et il ne s'arrête plus : la terre est molle, le ciel est trop grand, est-ce que ça mouille vraiment, la pluie, ah oui, il avait déjà demandé, et la sporelle, elle pousse où, on peut aller voir, on peut y aller maintenant ? Il parle en marchant, il marche en se retournant, il se retourne en trébuchant. Tu réponds à ce que tu peux, la pluie, la sporelle, et tu le prends par le coude. Il se tait une seconde, surpris, regarde ta main sur son bras, puis repart de plus belle.",
             "Au bout du talus, il s'arrête, et regarde derrière lui le rempart tout entier, qu'il n'avait jamais vu que de l'intérieur. « C'est petit, vu d'ici. » Un temps. « De dedans, c'était le monde. »"
           ],
         defi:{ type:"scene", bouton:"L'emmener à la serre →" } },
@@ -3746,7 +3850,8 @@ const QUETES = [
         cible:{ x:1250, y:770, r:90 },
         image:"images/quetes/q30/4.png",
         arrivee:[
-            "À la serre, Adaya a refait du thé, et cette fois elle en boit. Sorn est là aussi, sur son sac de terreau ; il se lève quand vous entrez, ce qu'il ne fait pour personne. Les deux hommes se regardent un long moment, le radié et l'évacué, chacun d'un côté de la même ligne. « Alors c'est toi, le gamin qui répond <i>reçu</i> », finit par grogner Sorn. Asulf hoche la tête, trop vite. Sorn lui tend la main ; Asulf la regarde, puis la serre, maladroitement, comme on fait une chose qu'on a seulement lue dans un manuel.",
+            "À la serre, l'air est bon, et Asulf enlève enfin son casque. C'est la première fois que tu le vois sans écran : un jeune homme propre sur lui, la coupe réglementaire, une barbichette taillée au millimètre, et des cernes comme des puits. Il respire, fort, trop fort, et il tousse. « Ça sent. Pourquoi ça sent ? Tout sent ! »",
+          "Adaya a refait du thé, et cette fois elle en boit. Sorn est là aussi, sur son sac de terreau ; il se lève quand vous entrez, ce qu'il ne fait pour personne. Les deux hommes se regardent un long moment, le radié et l'évacué, chacun d'un côté de la même ligne. « Alors c'est toi, le gamin qui répond <i>reçu</i> », finit par grogner Sorn. Asulf hoche la tête, trop vite. Sorn lui tend la main ; Asulf la regarde, puis la serre, maladroitement, comme on fait une chose qu'on a seulement lue dans un manuel.",
             "Mais Asulf ne tient pas en place. Il fait le tour des rangs, il touche tout, il goûte une feuille que personne ne lui a proposée, et puis il s'arrête net devant la chaise longue d'Adaya, au bout du rang. Il la regarde longtemps. Il s'assoit dessus, très droit, les genoux serrés, les mains sur les cuisses, comme sur un banc de la grande salle, et il ne comprend pas pourquoi le dossier part en arrière. Il ne demande rien. Il se relève tout doucement, passe la main sur la toile, une fois, et revient vers vous.",
             "Adaya lui met dans les mains trois brins de sporelle et un bol de ration chaude. Il pleure un peu ; il dit que c'est la vapeur. Puis il annonce qu'il a choisi où il va vivre : à La Toundra. Sorn hausse un sourcil ; Asulf a déjà toutes ses raisons. « C'est là qu'il fait le plus froid, non ? Moi, j'ai toujours eu dix-neuf degrés. Je veux savoir ce que c'est, froid. » Il renifle. « Et puis, ils ont l'air d'avoir de la place. »"
           ],
@@ -3761,7 +3866,7 @@ const QUETES = [
               journal:"Tu lui as appris le feu. Il a brûlé deux allumettes, un gant et presque un sourcil, puis la flamme a pris, et il l'a regardée longtemps sans rien dire, comme on regarde un écran." },
             { texte:"L'emmener voir ton vaisseau, et lui montrer l'indicatif sur le flanc : MAAR-12/42, son nom de famille, en quelque sorte.",
               cercles:{ veilleurs:5 },
-              journal:"Il a lu l'indicatif du bout du doigt, chiffre par chiffre. « MAAR-12/42. Ça fait un nom de famille, ça ? » Tu as hoché la tête. Il a eu l'air de trouver que c'était une très bonne famille." }
+              journal:"Il a lu l'indicatif du bout du doigt, chiffre par chiffre. « MAAR-12/42. Ça fait un nom de famille, ça ? » Tu lui as dit que oui, et que ça en faisait même un très bon. Il a eu l'air de trouver que c'était une très bonne famille." }
           ],
           reussite:[
             "Le lendemain, tu l'accompagnes jusqu'à La Toundra. Il fait trois pas dans la neige, s'arrête, ouvre la bouche et la referme. Puis il se tourne vers toi, les joues rouges et les cils déjà blancs, avec l'air de quelqu'un à qui l'on vient d'offrir quelque chose d'énorme. « C'est ça, froid ? » Il respire un grand coup, et tousse. « C'est complètement irresponsable. C'est génial. »",

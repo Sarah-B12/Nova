@@ -38,6 +38,7 @@ const DELAIS = {
   maisonban: { profil: 50, sac: 50, jauges: 50 }, // v1.93g : bannière du logement, onglet Maison (o_maisonban.js)
   avatarvue: { profil: 50, sac: 50, jauges: 50 }, // v1.93l : fenêtre d'avatar et zoom (o_avatarvue.js)
   usureequipe: { profil: 50, sac: 50, jauges: 50 }, // v1.93o : usure de l'équipement porté (o_usureequipe.js)
+  gardiens: { profil: 50, sac: 50, jauges: 50 },  // v1.93s : les gardiens de niveau (o_gardiens.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)
   traque: { profil: 50, sac: 50, jauges: 50 },    // v1.24 : la chasse (o_traque.js)

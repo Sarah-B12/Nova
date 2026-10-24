@@ -20,7 +20,19 @@ function queteEtat(){ if(!etat.quetes || typeof etat.quetes!=="object") etat.que
      la v1.03 n'a pas de `paRecu`, et une quête remise à zéro lui repaierait ses
      PA. Les quêtes déjà faites ont forcément touché les leurs. */
   if(!Array.isArray(etat.quetes.paRecu)) etat.quetes.paRecu = etat.quetes.done.slice();
+  _migrerGardiens(etat.quetes);
   return etat.quetes; }
+/* v1.93s — LES GARDIENS (K70) : une étape de combat INSÉRÉE dans Q11, Q16, Q19, Q27, Q30.
+   Un joueur déjà arrivé à l'étape d'insertion ou au-delà ne doit pas reculer d'un cran :
+   on avance son numéro d'étape d'un rang, UNE fois (`gardiens`). Il saute ainsi le gardien
+   de la quête en cours, qu'il trouvait déjà derrière lui. Indices = position du gardien. */
+const GARDIENS_INSERES = { q11:3, q16:2, q19:2, q27:1, q30:1 };
+function _migrerGardiens(qe){
+  if(!qe || qe.gardiens) return;
+  const a = qe.active;
+  if(a && GARDIENS_INSERES[a.id] != null && (a.etape|0) >= GARDIENS_INSERES[a.id]) a.etape = (a.etape|0) + 1;
+  qe.gardiens = true;
+}
 /* v1.03 — LES PA NE SE TOUCHENT QU'UNE FOIS. Le staff peut rendre une quête
    rejouable (admin_reset_quete) ; sa récompense repart, mais pas les points
    d'aptitude, qui achètent des aptitudes définitives. `paRecu` liste les quêtes
@@ -64,6 +76,9 @@ function _varie(v){
    si l'image de la variante n'existe pas encore, on affiche `valeurs[defaut]` au lieu
    de rien. Q15 ét. 7, Q16 ét. 1, Q21 ét. 4 (images « X_<bête>.png »). */
 function _imgQueteHTML(v){
+  /* v1.93s — `{ src, repli }` : une bannière pas encore dessinée (les gardiens) garde
+     l'image d'une étape voisine en repli. */
+  if(v && typeof v === "object" && v.src) return `<img class="quete-img" src="${v.src}" alt=""${v.repli ? ` data-repli="${v.repli}"` : ""} onerror="if(this.dataset.repli&&this.getAttribute('src')!==this.dataset.repli){this.src=this.dataset.repli}else{this.remove()}">`;
   const src = _varie(v); if(!src) return "";
   const rep = (v && typeof v === "object" && v.valeurs && v.valeurs[v.defaut] !== src) ? v.valeurs[v.defaut] : "";
   return `<img class="quete-img" src="${src}" alt=""${rep ? ` data-repli="${rep}"` : ""} onerror="if(this.dataset.repli&&this.getAttribute('src')!==this.dataset.repli){this.src=this.dataset.repli}else{this.remove()}">`;
@@ -184,14 +199,38 @@ function _seqEnCours(){ return _seqAnim > 0 && (Date.now() - _seqAnim) < 60000; 
 function _seqFin(){ _seqAnim = 0; }
 
 /* ---------- Progression ---------- */
-/* v1.93l — UNE QUÊTE QUI SE PREND LE LENDEMAIN. `lendemain:{ apres:"q27", texte }` : la
-   quête n'est disponible qu'à partir du jour de jeu (minuit, heure de Paris) qui SUIT celui
-   où `apres` a été terminée (etat.quetes.finJour, posé par terminerQuete). Une quête finie
-   avant cette version n'a pas de date : rien n'est bloqué. Q28 (après Q27, « Alors demain »). */
+/* v1.93l — UNE QUÊTE QUI SE PREND LE LENDEMAIN : disponible à partir du jour de jeu
+   (minuit, heure de Paris) qui SUIT celui où la quête d'avant a été terminée
+   (etat.quetes.finJour, posé par terminerQuete). Une quête finie avant cette version
+   n'a pas de date : rien n'est bloqué.
+   v1.93q — demande de l'autrice (« que les gens ne fassent pas tout d'une traite ») :
+   la règle vaut pour TOUTES les quêtes à partir de Q6 (Q1 → Q5 restent libres : on
+   découvre le jeu). `lendemain:false` l'enlève à une quête ; `lendemain:{ apres, texte }`
+   change la quête d'avant ou la réplique. Les textes ont été relus : aucun enchaînement
+   ne demande « tout de suite » (beaucoup disent déjà « demain »). */
+const QUETE_LENDEMAIN_DES = "q6";
+const LENDEMAIN_VOIX = {
+  "Vieux Sorn":"Sorn ne lève pas le nez de son établi. « Demain, gamin. Mes genoux ont besoin d'une nuit, et ma tête aussi. »",
+  "Galm":"Galm ne sort pas de sous son carter. « Demain. Aujourd'hui, je découpe. »",
+  "Adaya":"« Demain, petit. Les plantes, ça se presse pas. Les vieilles non plus. »",
+  "Asulf":"« Demain. Aujourd'hui, j'ai… des trucs. Réglementaires. Très importants. » Un bruit d'emballage de barre protéinée.",
+  "42-U1F":"« Demain. Aujourd'hui, j'ai… des trucs. Réglementaires. » Un bruit d'emballage de barre protéinée."
+};
+function _queteLendemain(q){
+  if(!q || q.lendemain === false) return null;
+  const i = QUETES.indexOf(q); if(i <= 0) return null;
+  if(q.lendemain && typeof q.lendemain === "object") return { apres:q.lendemain.apres || QUETES[i-1].id, texte:q.lendemain.texte };
+  if(i < QUETES.findIndex(x => x.id === QUETE_LENDEMAIN_DES)) return null;
+  return { apres:QUETES[i-1].id, texte:null };
+}
 function queteAttendLendemain(q){
-  if(!q || !q.lendemain || typeof jourDeJeu !== "function") return false;
-  const f = queteEtat().finJour && queteEtat().finJour[q.lendemain.apres];
+  const L = _queteLendemain(q); if(!L || typeof jourDeJeu !== "function") return false;
+  const f = queteEtat().finJour && queteEtat().finJour[L.apres];
   return !!f && f >= jourDeJeu();
+}
+function texteLendemain(q){
+  const L = _queteLendemain(q);
+  return (L && L.texte) || LENDEMAIN_VOIX[q.donneur] || "Reviens demain : la suite ne commence pas aujourd'hui.";
 }
 function accepterQuete(id){
   if(queteActive()){ journal("Termine ta quête en cours d'abord.","alerte"); return; }
@@ -2041,7 +2080,7 @@ function majQueteHub(){
       return;
     }
     const q=queteProchaine(); let html=banniere;
-    if(q && queteAttendLendemain(q)) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.lendemain.texte)}<p class="vide">⏳ Disponible <b>demain</b>, à partir de minuit (heure de Paris).</p>`;   // v1.93l
+    if(q && queteAttendLendemain(q)) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(texteLendemain(q))}<p class="vide">⏳ Disponible <b>demain</b>, à partir de minuit (heure de Paris).</p>`;   // v1.93l
     else if(q) html+=`<h3 style="margin:2px 0">${q.nom}</h3><p class="vide" style="margin:0 0 8px">Donneur : <b>${q.donneur}</b></p>${_par(q.intro)}${_avertCombatQuete(q)}${q.avert?`<div class="quete-avert dur">${q.avert}</div>`:""}<button class="mini" id="quete-accepter" style="margin-top:10px">Accepter la quête</button>`;
     else html+=`<p class="vide">Toutes les quêtes disponibles sont accomplies. Le Vieux Sorn n'a rien de plus pour l'instant.</p>`;
     z.innerHTML=html;

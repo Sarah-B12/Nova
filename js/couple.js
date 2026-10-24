@@ -57,6 +57,7 @@ const UNION_REFUS = {
   prison:"Impossible depuis la prison.",
   deja_marie:"Déjà marié·e.",
   delai:"Il faut attendre 30 jours après un divorce pour se remarier.",
+  trop_recent:"Il faut 30 jours de jeu pour se marier.",   // v1.93r
   demande_en_cours:"Tu as déjà une demande en attente : annule-la d'abord.",
   hote_sans_maison:"Pose d'abord l'emplacement de ton logement.",
   regent:"Un Régent ne quitte pas sa faction : transmets d'abord ton mandat.",
@@ -113,6 +114,8 @@ function _uDate(iso){ try{ return new Date(iso).toLocaleDateString("fr-FR", { da
 function _uRefus(d){
   const e = d && d.err;
   if(e === "delai" && d.jusqua) _jc(`Il faut attendre le ${_uDate(d.jusqua)} pour se remarier.`, "alerte");
+  /* v1.93r — 30 jours de jeu avant de se marier (K69, serveur v217). */
+  else if(e === "trop_recent" && d.jusqua) _jc(d.qui === "cible" ? `L'autre doit avoir 30 jours de jeu pour se marier : possible à partir du ${_uDate(d.jusqua)}.` : `Il faut 30 jours de jeu pour se marier : possible à partir du ${_uDate(d.jusqua)}.`, "alerte");
   else if(e === "attente" && d.forcable_le) _jc(`Le divorce pourra être prononcé le ${_uDate(d.forcable_le)}.`, "alerte");
   else if(e === "hote_sans_maison" && d.qui === "cible") _jc("L'autre doit d'abord poser l'emplacement de son logement.", "alerte");
   else if((e === "regent" || e === "candidat") && d.qui === "cible") _jc("L'autre est Régent ou candidat : il doit d'abord transmettre ou se retirer.", "alerte");

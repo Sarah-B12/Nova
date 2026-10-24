@@ -20,7 +20,7 @@
       try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi);
            if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${id}/${i} : épreuve inconnue ${e.defi.type}`);
            if(!_cibleResolue(e.cible)) r.erreurs.push(`${id}/${i} : cible introuvable`);
-           const im = (e.image && typeof e.image === "object") ? e.image.valeurs[e.image.defaut] : e.image;   // v1.93j : bannière selon la bête
+           const im = (e.image && typeof e.image === "object") ? (e.image.src || e.image.valeurs[e.image.defaut]) : e.image;   // v1.93j, v1.93s
            if(im !== `images/quetes/${id}/${i + 1}.png`) r.erreurs.push(`${id}/${i} : image ${im}`);
       }catch(err){ r.erreurs.push(`${id}/${i} : ${err.message}`); } });
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; }
@@ -271,7 +271,7 @@
   { journal = jOrig; const av = etat.journal; etat.journal = [];
     journal("Ta lampe baisse. Tu rebrousses chemin à tâtons, la main sur la paroi. Nouvelle tentative plus tard.", "alerte");
     journal("Un courant te happe : la coque se tord, et une jointure de Cristal saute.", "alerte");
-    journal(queteData("q16").etapes[6].defi.options[1].journal, "gain");
+    journal(queteData("q16").etapes.find(e => e.defi.type === "choix").defi.options[1].journal, "gain");
     journal("Tu as récolté 3 sporelles.", "gain");
     r.journalQuetes = etat.journal.map(e => e.cat);
     etat.journal = Array.from({ length:150 }, (_, k) => ({ t:"ligne " + k, type:"", cat:"systeme", d:Date.now() - k * 1000 }));
