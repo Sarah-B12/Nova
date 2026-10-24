@@ -171,11 +171,22 @@ async function majUsure(){
     // v0.64 : date du LOT (serveur) plutôt que l'heure du dernier équipement.
     const t0 = (typeof dateEquipe==="function") ? dateEquipe(slot) : (etat.equipementDate||{})[slot];
     if(t0 == null){ etat.equipementDate[slot] = now; continue; }
+    /* v1.93o — l'alerte la veille : une seule fois par objet (repéré par la date de son lot). */
+    const reste = t0 + dureeVie(id)*JOUR_MS - now;
+    if(reste > 0 && reste <= JOUR_MS){
+      etat.usureAlerte = (etat.usureAlerte && typeof etat.usureAlerte === "object") ? etat.usureAlerte : {};
+      if(etat.usureAlerte[slot] !== t0){
+        etat.usureAlerte[slot] = t0; perte = true;
+        const it = item(id), h = Math.max(1, Math.round(reste / 3600000));
+        journal(`⚠ Usure : ${it ? it.nom : id} lâchera dans ${h} h. Prévois de quoi le remplacer.`, "alerte");
+      }
+    }
     if(now - t0 > dureeVie(id)*JOUR_MS){
       const it = item(id);
       if(!await _detruireEquipeServeur(id)) continue;   // échec : on réessaiera au prochain passage
       etat.equipement[slot] = null; delete etat.equipementDate[slot];
-      journal(`Usure : ${it?it.nom:id} a lâché.`,"alerte"); perte = true;
+      if(etat.usureAlerte) delete etat.usureAlerte[slot];
+      journal(`Usure : ${it?it.nom:id} a lâché, au bout de ${dureeVie(id)} jours. L'emplacement est libre.`,"alerte"); perte = true;
     }
   }
   /* v0.91 — Navette de réserve : échéance absolue. Les exemplaires qui traînent

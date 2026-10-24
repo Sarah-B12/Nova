@@ -38,6 +38,9 @@ function slotEquip(id){
   return null;
 }
 
+/* v1.93n — ÉQUILIBRAGE DES DEUX MAINS (retour d'un testeur, choix A de l'autrice) : deux armes à
+   une main s'ADDITIONNENT (inchangé) ; une arme à deux mains doit battre la paire de son rang.
+   ⚠ Dupliqué côté serveur : table `equip_bonus` (v216). Changer l'un = changer l'autre. */
 // Effets (BROUILLON) : force/agi/int = +compétence ; degats = multiplicateur de dégâts subis
 // (0.9 = −10 %) ; o2 = +coût O₂ par action ; esquive = +% d'esquive ; double = +% de doubler une trouvaille.
 const EQUIP_EFFETS = {
@@ -51,9 +54,9 @@ const EQUIP_EFFETS = {
   fab_pistolet_cinetique:  { force:4 },
   fab_lame_a_plasma:       { force:3, agi:3 },
   fab_pistolet_a_plasma:   { force:8 },
-  fab_fusil_a_ions:        { force:11 },
+  fab_fusil_a_ions:        { force:18 },          // v1.93n : 11 → 18 (deux mains > deux pistolets à plasma, +16)
   fab_lame_a_singularite:  { force:12, agi:8, o2:1 },
-  fab_canon_a_singularite: { force:18, o2:2 },
+  fab_canon_a_singularite: { force:30, o2:2 },    // v1.93n : 18 → 30 (deux mains > deux lames à singularité, +24)
   fab_drone_de_combat:     { force:8 },
   fab_drone_recuperateur:  { double:15 },
   fab_implant_de_force:    { force:10 },
@@ -123,16 +126,18 @@ function joursRestantsEquipe(slot){
   return Math.max(0, (t0 + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS);
 }
 function texteUsureEquipe(slot){
-  /* v1.51 — retour de l'autrice : « 27 j avant rupture » sur un pistolet était
-     FAUX (l'équipement porté ne se casse pas ainsi). On n'affiche plus rien,
-     ni dans la bulle de l'emplacement, ni dans le sélecteur. */
-  return "";
+  /* v1.51 — l'affichage avait été éteint (« 27 j avant rupture » paraissait faux).
+     v1.93o — RALLUMÉ (décision de l'autrice, K67) : TOUT ce qui s'équipe s'use au temps
+     (armes, casque, torse, jambières, implant, drone), 30 jours au plus, depuis la date
+     du LOT — conservée quand on l'équipe (ranger garde `acquis_le`) : un objet à 2 jours
+     au sac reste à 2 jours une fois porté. La destruction, elle, n'avait jamais été
+     coupée (majUsure → perimer, lieu « equipe »). */
   const j = joursRestantsEquipe(slot); if(j == null) return "";
   if(j < 1){  const h = Math.max(1, Math.round(j*24)); return `⚠ se casse dans ${h} h`; }
   const n = Math.floor(j);
   return `${n} jour${n>1?"s":""} avant rupture`;
 }
-function _classeUsure(slot){ return ""; /* v1.51 : plus d'alerte d'usure (fausse) */ const j=joursRestantsEquipe(slot); return (j!=null && j<1) ? " usure-critique" : ((j!=null && j<3) ? " usure-basse" : ""); }
+function _classeUsure(slot){ /* v1.93o : rallumé */ const j=joursRestantsEquipe(slot); return (j!=null && j<1) ? " usure-critique" : ((j!=null && j<3) ? " usure-basse" : ""); }
 
 /* ---------- Cumul des effets équipés ---------- */
 // Arme à feu sans munition : ni force ni agilité ni intelligence (le reste — poids, O₂ — demeure).
