@@ -222,11 +222,11 @@
     const ev = new Event("paste", { bubbles:true, cancelable:true }); ch.dispatchEvent(ev);
     const cp = new Event("copy", { bubbles:true, cancelable:true }); zi.querySelector("#qj-imp-ligne").dispatchEvent(cp);
     r.impossibleColle = { collageRefuse:ev.defaultPrevented, copieRefusee:cp.defaultPrevented, asulf:journaux.some(t => /Copier-coller/.test(t)),
-      nonSelectionnable:/user-select:none/.test(zi.innerHTML) };
+      nonSelectionnable:/user-select:none/.test(QUETES_JEUX.impossible.html.toString() + QUETES_JEUX.impossible.html(d)) };   // v1.93v : jsdom efface user-select du style
     if(_queteTimer){ clearInterval(_queteTimer); _queteTimer = null; } _seqFin(); zi.remove(); }
 
   // 9 sexies. v1.87k — une seule ligne sous la carte, pas de 🚀 sur la station.
-  { etat.secteur = "ancolie"; etat.surface = { x:391, y:1250, abord:false }; majCarteBraise();
+  { etat.secteur = "ancolie"; etat.seleniteConnue = true; etat.surface = { x:1780, y:600, abord:false }; majCarteBraise();   // v1.93t : le point de chute n'est plus un lieu affiché : on mesure au lac gelé
     const inf = document.querySelector("#braise-info");
     r.ligneCarte = { chute:inf.textContent, uneLigne:/nowrap/.test(inf.getAttribute("style") || ""), bulle:!!inf.querySelector("b[title]"),
       fuseeStation:/🚀\s*La station/.test(document.querySelector("#carte-braise").innerHTML) };

@@ -76,7 +76,7 @@ const ESPACE_FOND  = "images/carte_espace_1.png";
      portail         ⚠ LEURRE : ne mène à rien, jamais. Non répertorié,
                      seulement numéroté zéro. */
 const ESPACE_LIEUX = [
-  { id:"base", nom:"Le Perchoir", officiel:"Relais Triptolème-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ff9a3d",
+  { id:"base", nom:"Le Perchoir", officiel:"Relais Triptolème-1", img:"base1.png", x:685, y:728, t:312, type:"lieu", halo:"#ffffff",   /* v1.93t : blanc (était #ff9a3d) */
     usage:"Auberge · Boutique · Poste · Quêtes", desc:"Un moyeu de service accroché à rien. On y dort, on y boit, on y repart." },
   { id:"planete_chaude", nom:"La Braise", officiel:"Souci", img:"planete_chaude_1.png", x:1669, y:760, t:312, type:"lieu",
     usage:"Descente au sol · zone chaude", desc:"La croûte n'a jamais fini de refroidir. L'air y coûte cher." },

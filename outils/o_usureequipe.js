@@ -25,5 +25,30 @@
   r.casse = msgs.filter(m => /a lâché/.test(m)).length;
   await majUsure(); r.alerteUneSeuleFois = msgs.filter(m => /lâchera dans/.test(m)).length === 1;
   r.appels = appels.filter(a => a.startsWith("perimer")).length;
+  // v1.93w — deux pistolets identiques, deux lots d'âges différents : chacun son échéance ;
+  // seul le plus vieux casse, et c'est son emplacement (« arme ») qui se libère.
+  msgs.length = 0;
+  etat.equipement = { arme:"fab_pistolet_a_plasma", arme2:"fab_pistolet_a_plasma" };
+  etat.lots = [ lot("fab_pistolet_a_plasma", 10), lot("fab_pistolet_a_plasma", 29.6) ];
+  etat.usureAlerte = {};
+  r.deux = { arme:texteUsureEquipe("arme"), arme2:texteUsureEquipe("arme2") };
+  await majUsure();
+  r.deux.alertes = msgs.filter(m => /lâchera dans/.test(m)).length;
+  etat.lots[1].acquis = now - 30.5*J;   // le plus vieux dépasse 30 jours
+  await majUsure();
+  r.deux.apres = { arme:etat.equipement.arme || "—", arme2:etat.equipement.arme2 || "—", reste:texteUsureEquipe("arme2"),
+                   casse:msgs.filter(m => /a lâché/.test(m)).length };
+  // Même lot de deux exemplaires : même date, les deux affichent la même chose (c'est vrai).
+  etat.equipement = { arme:"fab_pistolet_a_plasma", arme2:"fab_pistolet_a_plasma" };
+  etat.lots = [ { item:"fab_pistolet_a_plasma", lieu:"equipe", qte:2, acquis:now - 12*J } ];
+  r.deuxMemeLot = texteUsureEquipe("arme") === texteUsureEquipe("arme2");
+  // Le serveur refuse : l'objet reste à sa place, rien n'est annoncé.
+  const rpcOk = sb.rpc; sb.rpc = async () => ({ data:null, error:{ message:"hors ligne" } });
+  msgs.length = 0;
+  etat.equipement = { arme:"fab_pistolet_a_plasma" };
+  etat.lots = [ lot("fab_pistolet_a_plasma", 31) ];
+  await majUsure();
+  r.refus = { arme:etat.equipement.arme || "—", casse:msgs.filter(m => /a lâché/.test(m)).length };
+  sb.rpc = rpcOk;
   return r;
 })();

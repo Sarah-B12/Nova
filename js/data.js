@@ -217,6 +217,8 @@ const IMG_ITEM = {
   proteines:"images/items/proteines.png",
   cuir:"images/items/cuir.png",   // v1.89c : l'image existait, elle n'était pas branchée (marché, sac)
   fab_ration_chaude: "images/items/ration_chaude.png",
+  barre_proteinee: "images/items/barre_proteinee.png",          // v1.93u : les vivres des réserves (K62)
+  ration_reglementaire: "images/items/ration_reglementaire.png",
   fab_lingot_de_cendrite:"images/items/lingot_cendrite.png",
   fab_lingot_de_voltane: "images/items/lingot_voltane.png",
   fab_lingot_de_silite:  "images/items/lingot_silite.png",
@@ -355,7 +357,6 @@ function iconeItem(id){
   if(id.indexOf("graine_")===0){ const j=imgPlanteJeune(id.slice(7)); return j ? `<img src="${j}" alt="">` : ICONE_GRAINE; }
   if(id.indexOf("bebe_")===0){ const j=imgAnimal(id.slice(5), false); return j ? `<img src="${j}" alt="">` : ICONE_BEBE; }
   if(id==="fab_ration_chaude")      return SVG.ration;
-  if(id==="barre_proteinee" || id==="ration_reglementaire") return SVG.ration;   // v1.93 : en attendant leurs images
   if(id==="fab_biocarburant")       return ICONE_BIOCARB;
   return "";
 }

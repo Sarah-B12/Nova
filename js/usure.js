@@ -183,8 +183,17 @@ async function majUsure(){
     }
     if(now - t0 > dureeVie(id)*JOUR_MS){
       const it = item(id);
-      if(!await _detruireEquipeServeur(id)) continue;   // échec : on réessaiera au prochain passage
-      etat.equipement[slot] = null; delete etat.equipementDate[slot];
+      /* v1.93w — l'emplacement est libéré AVANT de prévenir le serveur. Sa réponse réaligne
+         les emplacements (reconcilierEquipement) : avec deux objets identiques portés, elle
+         gardait le premier emplacement et vidait le second, puis on vidait le premier ici :
+         plus rien d'affiché ni de compté au combat, alors que le serveur en portait encore un. */
+      etat.equipement[slot] = null;
+      if(!await _detruireEquipeServeur(id)){   // échec : on remet, et on réessaiera au prochain passage
+        etat.equipement[slot] = id;
+        if(typeof reconcilierEquipement === "function") reconcilierEquipement();
+        continue;
+      }
+      delete etat.equipementDate[slot];
       if(etat.usureAlerte) delete etat.usureAlerte[slot];
       journal(`Usure : ${it?it.nom:id} a lâché, au bout de ${dureeVie(id)} jours. L'emplacement est libre.`,"alerte"); perte = true;
     }

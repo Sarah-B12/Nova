@@ -177,6 +177,10 @@ for(const f of fichiers){
   // `nom = function`, `nom = async (…) =>`, `nom: function`, méthodes d'objet
   const reAff = /([A-Za-z0-9_$]+)\s*[:=]\s*(?:async\s*)?(?:function|\([^)]*\)\s*=>|[A-Za-z0-9_$]+\s*=>)/g;
   while((m = reAff.exec(s))) declares.add(m[1]);
+  // v1.93v — méthodes d'objet en forme courte (`wire(z, d){`, `async html(d){`) : quetes-jeux.js
+  //   les utilise partout ; sans cette ligne, `wire()` sortait en fausse alerte.
+  const reMeth = /^[ \t]*(?:async[ \t]+)?([A-Za-z_$][A-Za-z0-9_$]*)[ \t]*\([^()\n]*\)[ \t]*\{/gm;
+  while((m = reMeth.exec(s))) declares.add(m[1]);
   // paramètres (fonctions classiques et flèches)
   const rePar = /(?:function[^(]*|=>\s*|\b)\(([^()]*)\)\s*(?:=>|\{)/g;
   while((m = rePar.exec(s))){

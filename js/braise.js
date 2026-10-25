@@ -82,13 +82,16 @@ const SURFACES = {
     /* v1.87j — retour de l'autrice : pas de quai à part. On se pose et on décolle À LA
        STATION (la station EST le quai, K23), où l'on respire. Rayon 120 : couvre aussi
        l'ancien point d'atterrissage (1110, 960), où dorment les vaisseaux déjà posés. */
-    vaisseau:{ x:1031, y:880, r:120 },
+    vaisseau:{ x:1063, y:905, r:120 },   // v1.93t : on se pose au centre du bâtiment (toujours dans l'abri : 41 du centre)
     zonesTh:{ chaude:{ x:360, y:270, r:540 }, froide:{ x:1910, y:380, r:580 } },
     lieux:[
-      { id:"station",      nom:"La station", x:1031, y:880, r:110, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser ; ton vaisseau attend devant la baie." },
-      { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
-      { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
-      { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, desc:"Des crêtes blanches où le vent ne s'arrête pas." },
+      /* v1.93t — retour de l'autrice : le cercle est recentré sur le bâtiment (relevé sur
+         la capture), dessiné en BLANC ; seuls la station et le lac gelé sont des points
+         d'intérêt : les autres lieux restent pour les quêtes (`carte:false`, ni cercle ni nom). */
+      { id:"station",      nom:"La station", x:1063, y:905, r:110, blanc:true, desc:"Un bâtiment rond au milieu de l'ancolie. Des machines y vont et viennent sans se presser ; ton vaisseau attend devant la baie." },
+      { id:"chute",        nom:"Le point de chute", x:391, y:1250, r:90, carte:false, desc:"Un sillon de fleurs couchées, et au bout, la place exacte d'un mauvais atterrissage." },
+      { id:"cratere",      nom:"Le Cratère", x:359, y:230, r:130, carte:false, desc:"Le volcan fume encore. La chaleur traverse les semelles." },
+      { id:"glaces",       nom:"Les Glaces", x:1953, y:391, r:150, carte:false, desc:"Des crêtes blanches où le vent ne s'arrête pas." },
       /* v1.87 — K48 : le gisement de Sélénite, au lac gelé. Invisible tant que Q23 ne
          l'a pas fait trouver (`si` : drapeau de etat). Mécanique : selenite.js. */
       { id:"selenite",     nom:"Le lac gelé", x:1780, y:600, r:70, si:"seleniteConnue", desc:"Des aiguilles pâles poussent dans la glace bleue. Quand le vent passe, elles brillent." }
@@ -124,7 +127,7 @@ function aLaStation(depuis){
 }
 function lieuVisible(l){ return !l.si || !!(etat && etat[l.si]); }   // v1.87 : un lieu caché tant qu'une quête ne l'a pas révélé
 function surfaceLieu(secteur, id){ const c=surfaceCfg(secteur); return c ? (c.lieux.find(l => l.id === id) || null) : null; }
-function lieuBraiseIci(){ const c=surfaceCfg(); if(!c) return null; const p=posSurface(); return c.lieux.find(l => lieuVisible(l) && Math.hypot(p.x-l.x, p.y-l.y) <= l.r) || null; }
+function lieuBraiseIci(){ const c=surfaceCfg(); if(!c) return null; const p=posSurface(); return c.lieux.find(l => lieuVisible(l) && l.carte !== false && Math.hypot(p.x-l.x, p.y-l.y) <= l.r) || null; }   // v1.93t : carte:false = pas un point d'intérêt
 function auVaisseauBraise(){ const c=surfaceCfg(); if(!c) return false; const p=posSurface(), v=c.vaisseau; return Math.hypot(p.x-v.x, p.y-v.y) <= v.r; }
 /* En orbite, au-dessus d'une planète à surface : renvoie son secteur ('braise',
    'suaire') ou null. C'est de là qu'on descend. */
@@ -258,6 +261,57 @@ async function _decollerVersSilene(c){
   if(typeof majApresDeplacement==="function") majApresDeplacement();
 }
 
+/* ---------- v1.93t — Ancolie : partir vers Silène ou Triptolème DEPUIS LA STATION ---------- */
+async function rentrerDepuisAncolie(){
+  const c = SURFACES.ancolie;
+  if(!aLaStation()){ journal("Ton vaisseau t'attend devant la station : rejoins-la d'abord.","alerte","voyage"); return; }
+  etat.surface = { ...posSurface(), abord:true };
+  await _decollerVersSilene(c);
+}
+async function partirEcartDepuisAncolie(){
+  if(_qActiveId() === "q20"){
+    journal("Les commandes ne répondent pas. Dans la radio, une voix bâille : « Non non non. Pas tant qu'on n'a pas causé, toi et moi. »","alerte","voyage"); return; }
+  if(typeof verrouMaar === "function" && verrouMaar()){
+    journal("Le calculateur de saut cherche la route de Triptolème, ne la trouve pas, et affiche MAAR. Rien que MAAR. « Fais mes trucs, et je te le répare. »","alerte","voyage"); return; }
+  if(typeof orbiteDebloquee === "function" && !orbiteDebloquee()){ journal("Tu ne connais pas encore de route vers l'orbite.","alerte"); return; }
+  if(!aLaStation()){ journal("Ton vaisseau t'attend devant la station : rejoins-la d'abord.","alerte","voyage"); return; }
+  if(typeof vaisseauCloue === "function" && vaisseauCloue()){ journal("Coque hors service : ton vaisseau ne quittera pas le sol.","alerte"); return; }
+  const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const auto = (typeof autonomieCarburant === "function") ? autonomieCarburant() : (etat.carburant||0);
+  if(auto < 2*cs.litres){
+    journal(`Départ refusé : il faut de quoi revenir. L'aller-retour coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage"); return; }
+  if(!await _payerSaut("Départ pour Triptolème", cs)) return;
+  const base = (typeof espaceLieu === "function") ? espaceLieu("base") : null;
+  etat.secteur = "ecart"; etat.surface = null;
+  etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
+  journal(`${SURFACES.ancolie.depart.replace("Silène est loin.", "")}Arrivée : ${base ? base.nom : "la base"} — secteur ${SECTEUR_NOM}.`,"gain","voyage");
+  if(typeof sauverMaintenant === "function") await sauverMaintenant();
+  fermerCarteBraise();
+  if(typeof majApresDeplacement === "function") majApresDeplacement();
+  if(typeof ouvrirOrbite === "function") ouvrirOrbite();
+}
+/* ---------- v1.93t — Triptolème : descendre vers Ancolie DEPUIS LE PERCHOIR ---------- */
+async function partirAncolieDepuisEcart(){
+  const c = SURFACES.ancolie;
+  if(!ancolieConnue()){ journal("Tu ne connais pas de route vers Ancolie.","alerte"); return; }
+  if(!(typeof surBase === "function" && surBase())){
+    journal(`${typeof RENTREE_RP !== "undefined" ? RENTREE_RP : ""} Rejoins le Perchoir d'abord : c'est de là qu'on redescend sur Maar.`,"alerte","voyage"); return; }
+  if(typeof vaisseauCloue === "function" && vaisseauCloue()){ journal("Coque hors service : impossible de tenter une descente.","alerte"); return; }
+  const cs = coutSaut(), retour = coutSautSurface(c); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const auto = (typeof autonomieCarburant === "function") ? autonomieCarburant() : (etat.carburant||0);
+  if(retour && auto < cs.litres + retour.litres){
+    journal(`Descente refusée : il faut de quoi revenir. L'aller vers Ancolie puis le retour sur Silène coûtent ${cs.litres + retour.litres} L, tu n'as que ${Math.round(auto)} L en tout.`,"alerte","voyage"); return; }
+  if(!await _payerSaut("Descente vers Ancolie", cs)) return;
+  etat.secteur = "ancolie";
+  etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
+  journal(c.arrivee,"gain","voyage");
+  if(typeof sauverMaintenant === "function") await sauverMaintenant();
+  await agirServeur({ motif:"air_station" });   // K47 : on se pose à la station, où l'on respire
+  if(typeof fermerOrbite === "function") fermerOrbite();
+  if(typeof majApresDeplacement === "function") majApresDeplacement();
+  ouvrirCarteBraise();
+}
+
 /* ---------- Déplacement au sol ---------- */
 async function voyagerBraise(x, y){
   const cfg = surfaceCfg(); if(!cfg) return;
@@ -343,7 +397,7 @@ function construireCarteBraise(){
     partir: (x, y) => voyagerBraise(x, y),
     /* v1.88f — au doigt, le premier toucher dit quel lieu on vise (s'il y en a un). */
     nom: (x, y) => { const c = surfaceCfg() || BRAISE;
-      const l = (c.lieux || []).find(l => (typeof lieuVisible !== "function" || lieuVisible(l)) && Math.hypot(x - l.x, y - l.y) <= l.r);
+      const l = (c.lieux || []).find(l => (typeof lieuVisible !== "function" || lieuVisible(l)) && l.carte !== false && Math.hypot(x - l.x, y - l.y) <= l.r);
       return l ? l.nom : null; }
   });
 }
@@ -355,9 +409,9 @@ function majCarteBraise(){
   const tt = document.querySelector("#surface-titre"); if(tt) tt.textContent = cfg.nom;
   let h = `<image href="${cfg.img}" x="0" y="0" width="${cfg.w}" height="${cfg.h}" preserveAspectRatio="none"/>`;
   for(const l of cfg.lieux){
-    if(!lieuVisible(l)) continue;   // v1.87 : le gisement de Sélénite, après Q23
+    if(!lieuVisible(l) || l.carte === false) continue;   // v1.87 : le gisement de Sélénite, après Q23 ; v1.93t : carte:false
     const vaiss = (l.id === "atterrissage");   // v1.87k : pas de 🚀 sur la station d'Ancolie (choix de l'autrice)
-    h += `<g style="pointer-events:none"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="${vaiss?"#ffffff14":"#00000033"}" stroke="${vaiss?"#f5e9d3":cfg.couleur}" stroke-opacity=".7" stroke-width="3" stroke-dasharray="${vaiss?"":"8 10"}"/>
+    h += `<g style="pointer-events:none"><circle cx="${l.x}" cy="${l.y}" r="${l.r}" fill="${(vaiss||l.blanc)?"#ffffff14":"#00000033"}" stroke="${(vaiss||l.blanc)?"#ffffff":cfg.couleur}" stroke-opacity="${l.blanc?".85":".7"}" stroke-width="3" stroke-dasharray="${vaiss?"":"8 10"}"/>
       <text x="${l.x}" y="${l.y + l.r + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">${vaiss?"🚀 ":""}${l.nom}</text></g>`;
   }
   if(typeof marqueursQueteCarteHtml==="function") h += marqueursQueteCarteHtml(etat.secteur);
@@ -389,7 +443,8 @@ function majCarteBraise(){
   }
   const bb = document.querySelector("#braise-bord"), bd = document.querySelector("#braise-decoller");
   if(bb){ const ok = !abord && auVaisseauBraise(); bb.disabled = !ok; bb.style.display = abord ? "none" : ""; }
-  if(bd){ bd.disabled = !(abord || auVaisseauBraise());   /* v1.34f : depuis l'aire aussi */ const cs = (typeof coutSaut==="function") ? coutSaut() : null;
+  if(bd){ bd.hidden = !!cfg.depuisSilene; bd.style.display = cfg.depuisSilene ? "none" : "";   // v1.93t : Ancolie → bouton « Partir pour Silène » du panneau
+    bd.disabled = !(abord || auVaisseauBraise());   /* v1.34f : depuis l'aire aussi */ const cs = (typeof coutSaut==="function") ? coutSaut() : null;
     const cs2 = cfg.depuisSilene ? coutSautSurface(cfg) : cs;
     bd.textContent = cs2 ? `${cfg.depuisSilene ? "Rentrer sur Silène" : "Décoller"} — ${cs2.litres} L, ${cs2.energie} % énergie` : "Décoller"; }
   if(typeof majDebris==="function") majDebris();   // v1.31 : panneau des débris
@@ -421,5 +476,5 @@ function majDescente(){
   if(q("#braise-bord"))     q("#braise-bord").addEventListener("click", monterABord);
   if(q("#braise-decoller")) q("#braise-decoller").addEventListener("click", decollerBraise);
   if(q("#ouvrir-braise"))   q("#ouvrir-braise").addEventListener("click", ouvrirCarteBraise);
-  if(q("#ouvrir-ancolie"))  q("#ouvrir-ancolie").addEventListener("click", partirVersAncolie);   // v1.85
+  if(q("#ouvrir-ancolie"))  q("#ouvrir-ancolie").addEventListener("click", boutonAncolie);   // v1.85 ; v1.93t : selon où l'on est
 })();

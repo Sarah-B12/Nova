@@ -34,10 +34,10 @@ document.querySelectorAll("button.action[data-action]").forEach(b => b.addEventL
 }));
 // Les boutons « Sauvegarder » et « Réinitialiser » ont été retirés :
 // la sauvegarde est automatique, et la réinitialisation effaçait la partie.
-document.querySelector("#ouvrir-carte").addEventListener("click", ouvrirCarte);
+document.querySelector("#ouvrir-carte").addEventListener("click", boutonSilene);   // v1.93t : carte, ou départ pour Silène
 /* v0.86 : le bouton EMBARQUE (et ouvre la carte si l'on est déjà là-haut). */
 const _bOrb=document.querySelector("#ouvrir-orbite");
-if(_bOrb) _bOrb.addEventListener("click", partirVersEcart);
+if(_bOrb) _bOrb.addEventListener("click", boutonTriptoleme);   // v1.93t
 const _bRet=document.querySelector("#orbite-retour");
 if(_bRet) _bRet.addEventListener("click", revenirVersSilene);
 const _bOrbF=document.querySelector("#orbite-fermer");

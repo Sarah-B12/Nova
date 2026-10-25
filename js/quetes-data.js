@@ -3794,7 +3794,7 @@ const QUETES = [
             "Sur la console, les routes reviennent une à une : Silène, Ancolie, puis Triptolème, La Carcasse, le Perchoir, La Cassée. La Gorge reste grise. « Celle-là, je peux pas. Elle se ferme de l'autre côté, et je sais pas qui tient la poignée. » Il retire ses mains du clavier, et la silhouette regarde ses mains.",
             "« Voilà. T'es libre. » Il renifle. « Moi aussi, bientôt. Ce soir, à la relève, la case se coche. Rendez-vous à la trappe. Viens pas en avance : je vais avoir peur, et si t'es là en avance, tu vas me voir avoir peur. »"
           ],
-        defi:{ type:"scene", bouton:"Rentrer sur Silène →" } },
+        defi:{ type:"scene", bouton:"Rendez-vous à la trappe →" } },
 
       /* ---- G. Le gardien — COMBAT (v1.93s, K70 : barrage de niveau ; ratable, 8 h) ----
          Puissance 122 : imbattable bien avant le niveau visé, sans texte « reviens au

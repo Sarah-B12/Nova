@@ -11,7 +11,7 @@
   const formes = sons.map(k=>GLYPHES_ANCIEN[k].join("/"));
   r.nbSons = sons.length;
   r.formesUniques = new Set(formes).size === formes.length;
-  r.xBarreLibre = !formes.includes("C/barre");
+  r.xBarreEstRE = GLYPHES_ANCIEN.RE && GLYPHES_ANCIEN.RE.join("/") === "C/barre";   // v1.93v : Χ barré = RE depuis v1.64 (balise) ; l'ancien test « libre » était périmé
   r.inconnu = glypheSVG("ZZZ").includes("?");
   return r;
 })()

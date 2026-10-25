@@ -2132,8 +2132,8 @@ function majQueteHub(){
    qu'il faut faire le trajet (les repères d'une carte ne se voient pas de l'autre). */
 function _objectifCarteTexte(){
   const c = carteEtapeActive(), ici = _carteJoueur();
-  if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins ton vaisseau à la station et rentre (« Rentrer sur Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
-  if(c==="ancolie" && ici!=="ancolie") return "C'est en Ancolie. Depuis une ville de Silène, prends le vaisseau (« Partir pour Ancolie »), puis ouvre la carte : des repères ★ y sont apparus.";
+  if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins la station et pars (« Partir pour Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
+  if(c==="ancolie" && ici!=="ancolie") return "C'est en Ancolie. Depuis une ville de Silène ou le Perchoir, prends le vaisseau (« Partir pour Ancolie »), puis ouvre la carte : des repères ★ y sont apparus.";
   return (({espace:"Ouvre la carte de Triptolème", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire", ancolie:"Ouvre la carte d'Ancolie"})[c] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place.";
 }
 

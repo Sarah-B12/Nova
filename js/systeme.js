@@ -93,7 +93,7 @@ function _categoriser(t){
   /* v1.36f — la traque et ses suites vont dans « Vols/hacks », AVANT la
      faction (« −5 réputation de faction ») : plaintes, primes, chasseurs,
      captures, séjours en prison qui en découlent. */
-  if(/chasseur de primes|t'a retrouv|te retrouver|sur ta t[êe]te|plainte|mis[e]? [àa] prix|tu es en prison|\bprime|fait les poches|pirat[ée] ton compte/.test(s)) return "vol";
+  if(/chasseur de primes|t'a retrouv|te retrouver|sur ta t[êe]te|plainte|mis[e]? [àa] prix|tu es en prison|\bprime|fait les poches|faire les poches|\bpoches\b|pirat[ée] ton compte/.test(s)) return "vol";   // v1.93t : « a tenté de te faire les poches » (allait dans Combats)
   // v1.11 — l'atelier : « Fabriqué : … », « +1 pt de formation », les paliers.
   if(/fabriqu|formation|atelier|pt de formation|point de formation|palier|apprenti|recette apprise/.test(s)) return "formation";
   // v1.11 — la faction : expéditions, gouvernement, Cercles, caisse, élections.

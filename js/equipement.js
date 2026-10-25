@@ -113,8 +113,22 @@ async function consommerMunitions(){
 function dateEquipe(slot){
   const id = etat.equipement && etat.equipement[slot]; if(!id) return null;
   if(typeof lotsDe === "function"){
-    const l = lotsDe(id, "equipe").sort((a,b)=>a.acquis-b.acquis)[0];
-    if(l) return l.acquis;
+    /* v1.93w — DEUX OBJETS IDENTIQUES PORTÉS (deux pistolets, deux lames) : chacun son
+       exemplaire. Avant, les deux emplacements lisaient le lot le plus VIEUX : ils
+       affichaient la même échéance et l'alerte de la veille partait deux fois, alors
+       qu'un seul cassait. On range les exemplaires du plus vieux au plus jeune, et les
+       emplacements qui portent cet objet dans l'ordre d'EQUIP_SLOTS : le premier prend
+       le plus vieux. majUsure casse ce plus vieux (_detruireEquipeServeur) et libère
+       justement cet emplacement-là ; l'autre lit ensuite l'exemplaire qui reste. */
+    const unites = [];
+    for(const l of lotsDe(id, "equipe").slice().sort((a,b)=>a.acquis-b.acquis))
+      for(let k = 0; k < Math.max(1, l.qte|0); k++) unites.push(l.acquis);
+    if(unites.length){
+      const ordre = (typeof EQUIP_SLOTS !== "undefined" ? EQUIP_SLOTS.map(x => x.id) : Object.keys(etat.equipement))
+        .filter(sl => etat.equipement[sl] === id);
+      const rang = Math.max(0, ordre.indexOf(slot));
+      return unites[Math.min(rang, unites.length - 1)];
+    }
   }
   const t0 = etat.equipementDate && etat.equipementDate[slot];
   return (t0 == null) ? null : t0;

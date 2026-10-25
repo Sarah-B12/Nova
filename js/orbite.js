@@ -566,40 +566,83 @@ function lieuOuvert(l){
 /* Conditions d'accès */
 function orbiteDebloquee(){ return etat.espace1===true && !!etat.vaisseau; }
 
-/* Le bouton n'apparaît que si tout est réuni */
+/* v1.93t — LES TROIS BOUTONS, TOUJOURS (demande de l'autrice). « Carte de Silène »,
+   « Triptolème », « Ancolie » restent affichés partout (dès que la route est connue) :
+   celui de la carte où l'on est ouvre sa carte ; les deux autres y partent — mais on ne
+   change de carte que depuis une VILLE de Silène, le PERCHOIR (Triptolème) ou la STATION
+   (Ancolie). Ailleurs, le bouton reste visible, grisé, et dit d'où l'on part.
+   Routes neuves : Triptolème ⇄ Ancolie (Perchoir ⇄ station), un saut. La Braise et Le
+   Suaire ne changent pas : on en DÉCOLLE (bouton de leur carte) pour rejoindre l'orbite.
+   Plus besoin des « Rentrer / Redescendre sur Silène » des cartes : retirés. */
+function _lieuNav(){
+  if(typeof enEcart === "function" && enEcart()) return "ecart";
+  if(etat.secteur === "ancolie") return "ancolie";
+  if(typeof enSurface === "function" && enSurface()) return "autre";   // La Braise, Le Suaire
+  return "silene";
+}
+function _txtCout(c){ return c ? `${c.litres} L carburant · ${c.energie} % énergie` : "en vaisseau"; }
+function _boutonNav(sel, titre, cout, dispo){
+  const b = document.querySelector(sel); if(!b) return;
+  const t = b.querySelector("span"); if(t) t.textContent = titre;
+  const k = b.querySelector(".cout"); if(k) k.textContent = cout;
+  b.disabled = false; b.style.opacity = dispo ? "" : ".55";
+}
+function _montrer(sel, oui){ const b = document.querySelector(sel); if(b){ b.hidden = !oui; b.style.display = oui ? "" : "none"; } }
 function majBoutonOrbite(){
-  const b=document.querySelector("#ouvrir-orbite"); if(!b) return;
-  /* v0.98 — au sol de La Braise : ni carte de Silène ni carte de l'orbite,
-     seulement la carte de la planète (on remonte par le vaisseau). */
-  const bb=document.querySelector("#ouvrir-braise");
-  const surf = (typeof enSurface==="function") && enSurface();
-  if(bb){ bb.hidden = !surf; bb.style.display = surf ? "" : "none";
-    const c=(typeof surfaceCfg==="function")?surfaceCfg():null; const sp=bb.querySelector("span");
+  const ici = _lieuNav(), surf = ici === "ancolie" || ici === "autre";
+  /* La Braise / Le Suaire : la carte de la planète (on remonte par le vaisseau). */
+  const bb = document.querySelector("#ouvrir-braise");
+  if(bb){ const autre = ici === "autre"; bb.hidden = !autre; bb.style.display = autre ? "" : "none";
+    const c = (typeof surfaceCfg === "function") ? surfaceCfg() : null; const sp = bb.querySelector("span");
     if(sp && c) sp.textContent = `Carte — ${c.nom}`; }
-  const ok = orbiteDebloquee() && !surf;
-  /* v1.85 — « Partir pour Ancolie », à côté, dès qu'Ancolie est connue (fin de Q20). */
-  const ba=document.querySelector("#ouvrir-ancolie");
-  if(ba){ const okA = (typeof ancolieConnue==="function") && ancolieConnue() && !surf && !enEcart() && !!etat.vaisseau;
-    ba.hidden = !okA; ba.style.display = okA ? "" : "none";
-    if(okA){ const cA = (typeof coutSautSurface==="function") ? coutSautSurface(SURFACES.ancolie) : null;
-      const k = ba.querySelector(".cout"); if(k) k.textContent = cA ? `${cA.litres} L carburant · ${cA.energie} % énergie` : "en vaisseau"; } }
-  b.hidden = !ok;
-  // button.action impose display:flex, qui l'emporterait sur l'attribut hidden.
-  b.style.display = ok ? "" : "none";
-  if(ok){
-    b.querySelector("span").textContent = enEcart() ? `Carte de ${SECTEUR_NOM}` : `Partir pour ${SECTEUR_NOM}`;
-    const cs=coutSaut();
-    const c=b.querySelector(".cout");
-    if(c) c.textContent = enEcart() ? "tu y es"
-      : ((typeof verrouMaar==="function" && verrouMaar()) ? "calculateur en panne"
-      : (cs ? `${cs.litres} L carburant · ${cs.energie} % énergie` : "en vaisseau"));
+  const verrou = (typeof verrouMaar === "function" && verrouMaar());
+  const base = (typeof surBase === "function") && surBase();
+  const station = (typeof aLaStation === "function") && ici === "ancolie" && aLaStation();
+  const csT = coutSaut(), csA = (typeof coutSautSurface === "function" && typeof SURFACES !== "undefined") ? coutSautSurface(SURFACES.ancolie) : null;
+  const decolle = "décolle d'abord";
+  // Silène
+  if(ici === "silene") _boutonNav("#ouvrir-carte", "Carte de Silène", "se déplacer", true);
+  else if(ici === "ecart") _boutonNav("#ouvrir-carte", "Partir pour Silène", base ? _txtCout(csT) : "depuis le Perchoir", base);
+  else if(ici === "ancolie") _boutonNav("#ouvrir-carte", "Partir pour Silène", station ? _txtCout(csA) : "depuis la station", station);
+  else _boutonNav("#ouvrir-carte", "Partir pour Silène", decolle, false);
+  // Triptolème
+  const okT = orbiteDebloquee(); _montrer("#ouvrir-orbite", okT);
+  if(okT){
+    if(ici === "ecart") _boutonNav("#ouvrir-orbite", `Carte de ${SECTEUR_NOM}`, "tu y es", true);
+    else if(ici === "autre") _boutonNav("#ouvrir-orbite", `Carte de ${SECTEUR_NOM}`, decolle, false);
+    else if(verrou) _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, "calculateur en panne", false);
+    else if(ici === "ancolie") _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, station ? _txtCout(csT) : "depuis la station", station);
+    else _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, _txtCout(csT), true);
   }
-  // La carte de Silène n'a pas de sens depuis l'orbite.
-  const bc=document.querySelector("#ouvrir-carte");
-  if(bc){ const loin = enEcart() || surf;
-    bc.disabled = loin;
-    bc.style.opacity = loin ? ".45" : "";
-    const c2=bc.querySelector(".cout"); if(c2) c2.textContent = surf ? `tu es sur ${(typeof surfaceCfg==="function" && surfaceCfg()) ? surfaceCfg().nom : "une autre planète"}` : (loin ? "tu es en orbite" : "se déplacer"); }
+  // Ancolie
+  const okA = (typeof ancolieConnue === "function") && ancolieConnue() && !!etat.vaisseau; _montrer("#ouvrir-ancolie", okA);
+  if(okA){
+    if(ici === "ancolie") _boutonNav("#ouvrir-ancolie", "Carte d'Ancolie", "tu y es", true);
+    else if(ici === "ecart") _boutonNav("#ouvrir-ancolie", "Partir pour Ancolie", base ? _txtCout(csT) : "depuis le Perchoir", base);
+    else if(ici === "autre") _boutonNav("#ouvrir-ancolie", "Partir pour Ancolie", decolle, false);
+    else _boutonNav("#ouvrir-ancolie", "Partir pour Ancolie", _txtCout(csA), true);
+  }
+}
+const NAV_DECOLLE = "Décolle d'abord : ton vaisseau t'attend à l'aire d'atterrissage, et c'est l'orbite qui mène ailleurs.";
+function boutonSilene(){
+  const ici = _lieuNav();
+  if(ici === "silene"){ if(typeof ouvrirCarte === "function") ouvrirCarte(); return; }
+  if(ici === "ecart"){ revenirVersSilene(); return; }
+  if(ici === "ancolie"){ if(typeof rentrerDepuisAncolie === "function") rentrerDepuisAncolie(); return; }
+  journal(NAV_DECOLLE, "alerte", "voyage");
+}
+function boutonTriptoleme(){
+  const ici = _lieuNav();
+  if(ici === "ancolie"){ if(typeof partirEcartDepuisAncolie === "function") partirEcartDepuisAncolie(); return; }
+  if(ici === "autre"){ journal(NAV_DECOLLE, "alerte", "voyage"); return; }
+  partirVersEcart();   // depuis Silène ; en orbite, ouvre la carte
+}
+function boutonAncolie(){
+  const ici = _lieuNav();
+  if(ici === "ancolie"){ if(typeof ouvrirCarteBraise === "function") ouvrirCarteBraise(); return; }
+  if(ici === "ecart"){ if(typeof partirAncolieDepuisEcart === "function") partirAncolieDepuisEcart(); return; }
+  if(ici === "autre"){ journal(NAV_DECOLLE, "alerte", "voyage"); return; }
+  if(typeof partirVersAncolie === "function") partirVersAncolie();
 }
 
 /* ⚠ v0.83 — les destinations dessinées « à la main » (rectangles, cercles)
@@ -627,9 +670,8 @@ function _espaceHtml(l){
     /* Deux cercles : un voile large et un anneau net. Le voile suffit à faire
        ressortir une image sombre sans la masquer. */
     const rh = l.t*0.52;
-    h += `<circle cx="${l.x}" cy="${l.y}" r="${rh*1.25}" fill="${l.halo}" opacity=".10"/>`
-       + `<circle cx="${l.x}" cy="${l.y}" r="${rh}" fill="none" stroke="${l.halo}" stroke-width="3" opacity=".75"/>`
-       + `<circle cx="${l.x}" cy="${l.y}" r="${rh}" fill="none" stroke="${l.halo}" stroke-width="10" opacity=".18"/>`;
+    /* v1.93t — retour de l'autrice : blanc et en pointillé, comme la station d'Ancolie. */
+    h += `<circle cx="${l.x}" cy="${l.y}" r="${rh}" fill="#ffffff14" stroke="${l.halo}" stroke-opacity=".85" stroke-width="3" stroke-dasharray="8 10"/>`;
   }
   h += `<image href="images/espace/${l.img}" x="${l.x-demi}" y="${l.y-demi}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
   /* ⚠ v0.84 — ZONE DE SAISIE. Une image de 109 u est minuscule à l'écran : on
@@ -787,8 +829,9 @@ function majOrbite(){
 
   if(typeof placementBrancher==="function") placementBrancher(svg);
 
-  const br=document.querySelector("#orbite-retour");
-  if(br){ br.hidden = !enEcart(); br.style.display = enEcart() ? "" : "none";
+  const br=document.querySelector("#orbite-retour");   // v1.93t : retiré (le bouton « Partir pour Silène » du panneau fait la même chose)
+  if(br){ br.hidden = true; br.style.display = "none"; }
+  if(false){
     const cs=coutSaut();
     if(enEcart() && cs){
       const alaBase = surLaBase();
