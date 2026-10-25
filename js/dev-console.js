@@ -37,7 +37,7 @@ const DEV_ONGLETS = [
       { sel:"#dev-coque", bouton:true }, { sel:"#dev-coque-ok", bouton:true }, { sel:"#dev-sonde", bouton:true } ] },
     { id:"terrain", titre:"🏗️ Terrain", items:[ { sel:"#dev-abimer", bouton:true }, { sel:"#dev-integrite-reset", bouton:true } ] },
     { id:"patrouilles", titre:"🛡️ Patrouilles", items:[ { sel:"#dev-protocole", bouton:true } ] },
-    { id:"outils", titre:"🛠️ Outils", note:"Édition du fichier de la carte spatiale — pas un test de jeu.", items:[ { sel:"#dev-placement", bouton:true } ] } ] },
+    { id:"outils", titre:"🛠️ Outils", note:"Édition des fichiers des cartes spatiales — pas un test de jeu.", items:[ { sel:"#dev-placement", bouton:true }, { sel:"#dev-placement2", bouton:true } ] } ] },
   { id:"evts", nom:"Événements", devSeul:true, sections:[
     { id:"calendrier", titre:"📅 À venir", items:[] },
     { id:"debris", titre:"☄️ Chute de débris (test)", items:[ { sel:"#dev-debris-lancer", bloc:true, titre:false } ] },
@@ -372,6 +372,7 @@ function majDev(){
       <button class="mini" id="dev-permis">${etat.permisVaisseau?"Retirer permis vaisseau":"Accorder permis vaisseau"}</button>
       <button class="mini" id="dev-espace1">${etat.espace1?"Fermer la route de l'orbite":"Ouvrir la route de l'orbite"}</button>
       <button class="mini" id="dev-placement">Placement carte spatiale</button>
+      <button class="mini" id="dev-placement2" title="Carte au-delà de la Gorge : js/espace2-data.js (v1.95)">Placement carte 2 (au-delà de la Gorge)</button>
       <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
       <button class="mini" id="dev-prison">Libérer de prison</button>
       <button class="mini" id="dev-journal-vider">Vider le journal</button>
@@ -397,6 +398,13 @@ function majDev(){
       fermerDev();
       if(typeof ouvrirOrbite==="function") ouvrirOrbite(true);   // true = forcer : outil de dev
       placementBasculer();
+    });
+    // v1.95 : carte 2, dans sa propre fenêtre (js/placement2.js) ; ne touche ni l'orbite ni le joueur.
+    const bp2=av.querySelector("#dev-placement2");
+    if(bp2) bp2.addEventListener("click", ()=>{
+      if(typeof placement2Ouvrir!=="function"){ journal("Placement carte 2 indisponible.","alerte"); return; }
+      fermerDev();
+      placement2Ouvrir();
     });
     const ben=av.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
     const bpr=av.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);

@@ -192,6 +192,11 @@ function _barStyle(){
     .cuve-jeton.tire{ background:rgba(139,212,80,.35); border-color:#8bd450; }
     .bar-img{ width:54px; height:54px; object-fit:contain; flex:0 0 54px; }
     .bar-img-vide{ width:54px; height:54px; flex:0 0 54px; border:1px dashed var(--line); border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--sourdine); font-size:22px; }
+    /* v1.93x — retour de l'autrice (capture) : les icônes des vivres (photos 1024 px) débordaient de la
+       case et couvraient l'onglet. Une image ou un dessin posé dans la case en prend la taille, pas plus. */
+    .bar-img-vide{ overflow:hidden; }
+    .bar-img-vide > img, .bar-img-vide > svg{ width:100%; height:100%; max-width:100%; max-height:100%; object-fit:contain; display:block; }
+    .bar-img-vide.bar-vivre{ border:none; }
     .bar-txt{ flex:1; min-width:0; }
     .bar-nom{ font-weight:700; }
     .bar-desc{ color:var(--sourdine); font-size:13px; font-style:italic; }
@@ -219,6 +224,7 @@ function _barOnglets(){
   return `<div class="sous-menu">
     <button class="sous-lien${_barVue==="boissons"?" actif":""}" data-barvue="boissons">Comptoir</button>
     <button class="sous-lien${_barVue==="jeux"?" actif":""}" data-barvue="jeux">Tables de jeu</button>
+    <button class="sous-lien${_barVue==="classements"?" actif":""}" data-barvue="classements">Classements</button>
     ${(barStation() && etat.habilitation) ? `<button class="sous-lien${_barVue==="reserves"?" actif":""}" data-barvue="reserves">Réserves</button>` : ""}
   </div>`;
 }
@@ -234,6 +240,7 @@ async function majBar(el){
   if(!fid && !station){ el.innerHTML=`<h3 style="margin:2px 0">Le bar</h3><p class="vide">Il n'y a pas de bar ici.</p>`; return; }
   if(_barVue==="reserves" && !(station && etat.habilitation)) _barVue = "boissons";   // v1.93 : hors de la station, pas de réserves
   if(_barVue==="jeux"){ await majBarJeux(el, fid); return; }
+  if(_barVue==="classements"){ await majBarClassements(el, fid); return; }   // v1.93z (K74)
   if(_barVue==="reserves"){ await majReserves(el); return; }
   el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Chargement…</p>`;
 
@@ -306,7 +313,7 @@ async function majBar(el){
 const BAR_JEUX = [
   { id:"des",        nom:"Les dés du fond", dispo:true,
     desc:"Deux dés usés. Tu paries au-dessus ou en dessous de 7 — ou pile sur 7, si tu te sens brave.",
-    gains:"bas ou haut ×2,2 · sept ×5,5" },
+    gains:"bas ou haut ×2 · sept ×4 · mise jusqu'à 500 ₡" },   // v1.93y (K73, SQL v219) : était ×2,2 / ×5,5
   { id:"cuve",       nom:"La cuve", dispo:true,
     desc:"Six jetons de quart dans un bocal opaque, un seul est marqué. Le pot double à chaque tirage, et tu peux t'arrêter quand tu veux.",
     gains:"jusqu'à ×5,4 · le jeton marqué prend tout" },
@@ -372,6 +379,46 @@ async function majBarJeux(el, fid){
   }));
 }
 
+/* ===========================================================
+   v1.93z — CLASSEMENTS DES TABLES (K74, SQL v220) — sur le modèle de l'Arène (v1.84) :
+   mois en cours (heure de Paris), top 10 + ta place, podium du mois précédent ;
+   le 1ᵉʳ du mois, 500 / 300 / 150 ₡ par classement (nova-missions). Deux classements :
+   le « plus beau coup » a été écarté (avec les plafonds de mise, trop d'égalités).
+   Tous les bars comptent, la buvette de la station aussi. Le serveur classe tout
+   (bar_classements) ; le client ne fait qu'afficher.
+   =========================================================== */
+const BAR_CLASSEMENTS = [
+  { id:"gains",   titre:"Gains du mois",   aide:"Ce que les tables t'ont rapporté ce mois-ci, pertes déduites. Seuls les totaux positifs sont classés.", unite:" ₡" },
+  { id:"gagnees", titre:"Parties gagnées", aide:"Les parties où tu es reparti avec plus que ta mise.", unite:"" }
+];
+async function majBarClassements(el, fid){
+  const titre = `<h3 style="margin:2px 0">${barNom(fid)} — classements</h3>${_barOnglets()}`;
+  el.innerHTML = titre + `<p class="vide">Chargement…</p>`;
+  _barWireOnglets(el);
+  let d = null;
+  try{ ({ data:d } = await sb.rpc("bar_classements")); }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "bar.js#classements"); d = null; }
+  if(_barVue !== "classements") return;   // on a changé d'onglet pendant la lecture
+  if(!d || !d.ok){ el.innerHTML = titre + `<p class="vide">Les classements ne répondent pas.</p>`; _barWireOnglets(el); return; }
+  const mois = new Date(String(d.mois).slice(0, 10) + "T12:00:00").toLocaleDateString("fr-FR", { month:"long", year:"numeric" });
+  const med = r => r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `${r}.`;
+  const nb = (n, u) => `${Number(n || 0).toLocaleString("fr-FR")}${u}`;
+  const tot = Number(d.total || 0);
+  let h = titre + `<p class="itip-gris" style="margin:0 0 10px">Classements de <b>${mois}</b>, tous les bars de Silène et la buvette de la station. Le 1ᵉʳ du mois, le podium de chaque classement est payé — 500, 300 et 150 ₡ — puis tout repart de zéro. À égalité, le premier à atteindre son total passe devant.</p>`;
+  h += `<p class="itip-gris" style="margin:0 0 12px">Ton bilan aux tables ce mois-ci : <b style="color:${tot > 0 ? "#8bd450" : (tot < 0 ? "#ff6b6b" : "inherit")}">${tot > 0 ? "+" : (tot < 0 ? "−" : "")}${nb(Math.abs(tot), " ₡")}</b>.</p>`;
+  for(const C of BAR_CLASSEMENTS){
+    const k = (d.classements || {})[C.id] || {};
+    h += `<div class="ar-class"><h4 class="gsec">${C.titre}</h4><p class="itip-gris" style="margin:0 0 6px">${C.aide}</p>`;
+    h += (k.top || []).length
+      ? `<ol class="ar-top">${k.top.map(x => `<li class="${x.moi ? "moi" : ""}"><span class="ar-r">${med(x.rang)}</span><span class="ar-n">${echapper(x.nom)}</span><b>${nb(x.n, C.unite)}</b></li>`).join("")}</ol>`
+      : `<p class="vide">Personne encore ce mois-ci.</p>`;
+    if(k.moi && k.moi.rang > 10) h += `<p class="ar-moi">Toi : ${k.moi.rang}ᵉ, ${nb(k.moi.n, C.unite)}.</p>`;
+    if((k.precedent || []).length) h += `<p class="itip-gris ar-prec">Le mois dernier : ${k.precedent.map(x => `${med(x.rang)} ${echapper(x.nom)} (${nb(x.n, C.unite)})`).join(" · ")}</p>`;
+    h += `</div>`;
+  }
+  el.innerHTML = h;
+  _barWireOnglets(el);
+}
+
 /* ---------- Les dés du fond ---------- */
 const DES_PARIS = { bas:"en dessous de 7", haut:"au-dessus de 7", sept:"pile 7" };
 const DES_FACES = ["⚀","⚁","⚂","⚃","⚄","⚅"];
@@ -394,16 +441,17 @@ function _desRouler(z, d1, d2){
 }
 function _tableDes(z){
   if(!z) return;
-  const max=(_barJeux&&_barJeux.mise_max)||200, min=(_barJeux&&_barJeux.mise_min)||50;
+  // v1.93y (K73) : les dés ont leur propre plafond (500 ₡), renvoyé par bar_jeux_etat (SQL v219).
+  const max=(_barJeux&&(_barJeux.mise_max_des||Math.min(500,_barJeux.mise_max||200)))||200, min=(_barJeux&&_barJeux.mise_min)||50;
   z.innerHTML=`<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:10px">
       <b>Les dés du fond</b>
       <span class="bar-desc">${barStation() ? "L'automate pousse deux dés vers toi, sans un mot. Sur son flanc : TABLE DE DÉTENTE — PERSONNEL." : "Le tenancier pousse deux dés vers toi. « Au-dessus, en dessous, ou pile. À toi de voir. »"}</span>
       <div class="actions" style="flex-wrap:wrap;gap:8px;align-items:center">
         <label class="itip-gris">Mise <input id="des-mise" type="number" min="${min}" max="${max}" step="10" value="${min}" style="width:90px"></label>
         <select id="des-pari" class="gouv-textarea" style="padding:6px 8px;width:auto">
-          <option value="bas">En dessous de 7 (2-6) — ×2,2</option>
-          <option value="haut">Au-dessus de 7 (8-12) — ×2,2</option>
-          <option value="sept">Pile 7 — ×5,5</option>
+          <option value="bas">En dessous de 7 (2-6) — ×2</option>
+          <option value="haut">Au-dessus de 7 (8-12) — ×2</option>
+          <option value="sept">Pile 7 — ×4</option>
         </select>
         <button class="mini" id="des-lancer">Lancer</button>
       </div>
@@ -702,7 +750,7 @@ async function majReserves(el){
     const effTxt = eff ? Object.entries(eff).map(([g, n]) => `${n > 0 ? "+" : "−"}${Math.abs(n)} ${labelJauge(g)}`).join(", ") : "";
     const trop = (etat.credits || 0) < v.prix;
     h += `<div class="bar-carte">
-      <span class="bar-img-vide">${iconeItem(id)}</span>
+      <span class="bar-img-vide${iconeItem(id) ? " bar-vivre" : ""}">${iconeItem(id) || "▨"}</span>
       <span class="bar-txt"><span class="bar-nom">${echapper(it ? it.nom : id)} <span class="itip-gris">· reste ${reste}/${v.stock} aujourd'hui</span></span>
         <span class="bar-desc">${effTxt}</span></span>
       <span class="bar-prix">${v.prix.toLocaleString("fr-FR")} ₡</span>

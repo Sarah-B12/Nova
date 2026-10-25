@@ -30,14 +30,31 @@ async function compterNotifs(){
        RPC : les RLS de `arene_defis` ne laissent voir que mes propres lignes,
        donc `head:true` suffit et ne coûte qu'un compte. Une RPC de plus dans
        une fonction appelée en boucle aurait été du gaspillage. */
-    const [mq, aq, dq] = await Promise.all([
+    const [mq, aq, dq, tq] = await Promise.all([
       sb.from("messages").select("id",{count:"exact",head:true}).eq("a_id",s.user.id).eq("lu",false).eq("efface_a",false),
       sb.from("amis").select("demandeur",{count:"exact",head:true}).eq("destinataire",s.user.id).eq("statut","attente"),
-      sb.from("arene_defis").select("id",{count:"exact",head:true}).eq("defie",s.user.id).eq("statut","attente")
+      sb.from("arene_defis").select("id",{count:"exact",head:true}).eq("defie",s.user.id).eq("statut","attente"),
+      // v1.94 — le destinataire n'était jamais prévenu que SA messagerie se remplissait.
+      sb.from("messages").select("id",{count:"exact",head:true}).eq("a_id",s.user.id).eq("efface_a",false)
     ]);
     _notifMsg = mq.count||0; _notifAmis = aq.count||0; _notifDefis = dq.count||0;
+    _alerteBoite(typeof (tq && tq.count) === "number" ? tq.count : null);
   }catch(e){ console.warn("[comm] notifs:", e.message); }
   majBadges();
+}
+/* v1.94 — Ta messagerie se remplit : une alerte quand il reste 5 places ou moins, une autre
+   quand elle est pleine. Une seule fois par palier et par session (le compteur tourne en
+   boucle) ; elle revient si la boîte se vide puis se remplit de nouveau. */
+let _boiteAlertee = null;   // null = pas encore lue ; "ok" | "presque" | "pleine"
+function _alerteBoite(n){
+  if(n === null) return;
+  const palier = n >= MSG_BOITE ? "pleine" : (n >= MSG_BOITE - 5 ? "presque" : "ok");
+  if(palier === _boiteAlertee) return;
+  const avant = _boiteAlertee; _boiteAlertee = palier;
+  if(palier === "ok") return;
+  if(palier === "presque" && avant === "pleine") return;   // on vient de faire du tri : pas d'alerte
+  if(palier === "pleine") journal(`Ta messagerie est pleine (${n}/${MSG_BOITE}) : plus personne ne peut t'écrire. Supprime des messages lus pour faire de la place.`,"alerte","social");
+  else journal(`Ta messagerie est presque pleine (${n}/${MSG_BOITE}) : encore ${MSG_BOITE - n} message${MSG_BOITE - n > 1 ? "s" : ""} et plus personne ne pourra t'écrire.`,"alerte","social");
 }
 function majBadges(){
   const B = n => ` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700;vertical-align:middle">${n}</span>`;
@@ -411,7 +428,11 @@ async function envoyerMessage(){
   /* v1.36e — retour de l'autrice : « Message envoyé à X » n'a rien à faire au
      journal (on bascule déjà sur « Envoyés »). On ne garde que l'avertissement
      utile : sa boîte est presque pleine. */
-  if(r.restant<=5) journal(`La boîte de ${dest} est presque pleine : il ne reste que ${r.restant} place${r.restant>1?"s":""}.`,"alerte","poste");
+  /* v1.94 — retour de l'autrice : ce message partait dans l'onglet « La Poste » et parlait de
+     « places » ; on le croyait sur la Poste des colis (qui n'a pas de limite). C'est la
+     MESSAGERIE : il va dans « Social » et le dit. */
+  if(r.restant<=0) journal(`La messagerie de ${dest} est maintenant pleine (${MSG_BOITE} messages) : plus personne ne pourra lui écrire avant qu'un tri y soit fait.`,"alerte","social");
+  else if(r.restant<=5) journal(`La messagerie de ${dest} est presque pleine : encore ${r.restant} message${r.restant>1?"s":""} et plus personne ne pourra lui écrire.`,"alerte","social");
   msgVue="envoyes"; majComm();
 }
 function _msgModal(){ let m=document.querySelector("#comm-msg"); if(!m){ m=document.createElement("div"); m.id="comm-msg"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m){ m.hidden=true; majComm(); } }); } return m; }

@@ -22,7 +22,7 @@ const AV_VISAGE     = { h:7, f:7 };   // visages disponibles par genre (compté 
 const AV_CHEVEUX    = { h:8,  f:13 };   // coiffures disponibles par genre
 const AV_CHEVEUX_DEUX = { h:[7], f:[] }; // v1.44 : coiffures en deux morceaux (_derriere / _devant)
 const AV_PILOSITE   = 7;               // pilosité : HOMME uniquement (la rangée est masquée pour les femmes)
-const AV_ACCESSOIRE = { h:0, f:1 };    // accessoires par genre (morphologies différentes)
+const AV_ACCESSOIRE = { h:1, f:1 };    // accessoires par genre (morphologies différentes)
 const AV_COULEURS = [                  // v1.88c : la première est celle des fichiers sans suffixe
   { id:"brun",  nom:"Brun",           teinte:"#5b3a24" },
   { id:"blond", nom:"Blond",          teinte:"#d9b46a" },
