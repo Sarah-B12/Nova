@@ -11,6 +11,7 @@
    · impossible (Q20) reprendre les commandes : on ne peut pas gagner (K15)
    · saut       (Q20) la Gorge : le saut détourné, le joueur arrive en Ancolie
    · brouillage (Q29) caler son onde sur celle de l'appel et la tenir (v1.93, porté de H64)
+   · message    (Q31) un son de l'ancien à deviner dans une phrase (v1.98, porté de H43)
    =========================================================== */
 const QUETES_JEUX = {};
 
@@ -275,12 +276,60 @@ QUETES_JEUX.impossible = {
 /* ---------- Le saut (Q20) : une scène, puis le détournement ----------
    Au clic, le vaisseau entre dans la Gorge ; 42-U1F le détourne (K9) : le joueur
    se retrouve au sol d'Ancolie, au point de chute (`d.lieu`), hors du vaisseau. */
+/* ---------- Le message (Q31) — porté des missions (H43, « La balise sous la glace ») ----------
+   Une phrase en ancien, dont UN son est inconnu : sa forme est montrée, en couleur ; quatre
+   propositions, une seule fait un mot (LORE §11 bis : les leurres ne forment pas de mot).
+   d.mots : tableau de mots ; un mot = tableau de sons ; le son inconnu s'écrit { inconnu:"SON" }.
+   d.propositions : les quatre sons proposés (mélangés à chaque affichage) ; la bonne = l'inconnu.
+   Une erreur = echouerDefi (verrou 8 h), comme les autres épreuves ratables. */
+function _qjMessageInconnu(d){
+  for(const w of (d.mots || [])) for(const s of w) if(s && typeof s === "object" && s.inconnu) return s.inconnu;
+  return null;
+}
+QUETES_JEUX.message = {
+  html(d){
+    const M = _qjEtat(_qjCle(d), () => {
+      const p = (d.propositions || []).slice();
+      for(let i = p.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+      return { props:p };
+    });
+    const forme = s => (typeof glypheFormeSVG === "function" && typeof GLYPHES_ANCIEN !== "undefined" && GLYPHES_ANCIEN[s]) ? glypheFormeSVG(GLYPHES_ANCIEN[s]) : "?";
+    const mot = w => `<span class="gly-mot">${w.map(s => (s && typeof s === "object")
+      ? `<span class="mi-msg-inconnu">${forme(s.inconnu)}</span>` : ((typeof glypheSVG === "function") ? glypheSVG(s) : s)).join("")}</span>`;
+    return `<div class="quete-etape">${_par(d.texte)}
+      <p class="quete-indice">${d.consigne || "La phrase, en écriture de l'ancien. Un son manque : lequel ?"}</p>
+      <div class="mi-msg">${(d.mots || []).map(mot).join(`<span class="mi-msg-sep"></span>`)}</div>
+      <div class="mi-btns">${M.props.map(p => `<button class="mini" data-qj-msg="${p}">${p}</button>`).join(" ")}</div></div>`;
+  },
+  wire(z, d){
+    z.querySelectorAll("[data-qj-msg]").forEach(b => b.addEventListener("click", () => {
+      z.querySelectorAll("[data-qj-msg]").forEach(x => x.disabled = true);
+      const a = queteActive(); if(a) a._qj = null;
+      if(b.dataset.qjMsg === _qjMessageInconnu(d)){ journal(d.fini || "Le mot tient : la phrase a un sens.", "gain"); reussirDefi(); }
+      else echouerDefi(d.echec || `Le mot ne tient pas : la phrase n'a plus de sens. Nouvelle tentative dans ${typeof VERROU_DEFI_H !== "undefined" ? VERROU_DEFI_H : 8} h.`);
+    }));
+  }
+};
+
 QUETES_JEUX.saut = {
   html(d){ return `<div class="quete-etape">${_par(d.texte)}<div class="quete-rep"><button class="mini" id="qj-saut">${d.bouton || "Sauter"}</button></div></div>`; },
   wire(z, d){
     const b = z.querySelector("#qj-saut"); if(!b) return;
     b.addEventListener("click", async () => {
       b.disabled = true;
+      /* v1.98 — Q31 : la Gorge mène à une carte SPATIALE, Cérès (`carte:"ceres"`, `lieu`
+         = un lieu de js/espace2-data.js). Le passage reste ouvert : etat.ceres (K75). */
+      if(d.carte === "ceres"){
+        const g = (typeof espaceLieu === "function") ? espaceLieu(d.lieu || "e2_gorge") : null;
+        if(!g){ journal("La Gorge ne mène nulle part pour l'instant.", "alerte"); b.disabled = false; return; }
+        etat.secteur = "ceres";
+        etat.posEspace = { x:g.x, y:g.y };
+        etat.ceres = true;
+        if(typeof sauverMaintenant === "function") await sauverMaintenant();
+        if(typeof majApresDeplacement === "function") majApresDeplacement();
+        reussirDefi();
+        return;
+      }
       const c = (typeof surfaceCfg === "function") ? surfaceCfg(d.carte || "ancolie") : null;
       const l = c && c.lieux.find(x => x.id === (d.lieu || "chute"));
       if(!c || !l){ journal("La Gorge ne mène nulle part pour l'instant.", "alerte"); b.disabled = false; return; }

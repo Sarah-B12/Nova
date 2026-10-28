@@ -3875,6 +3875,136 @@ const QUETES = [
     ],
     recompense:{ credits:3300, xp:600, pa:1, flags:{ verrouMaar:false, asulfToundra:true } }   // K39 : le PA de l'arc ; K54 : la réparation ; K59
   }
+  ,
+
+  /* ===========================================================
+     v1.98 — L'ARC DE CÉRÈS (Q31 → Q45). CADRAGE_CERES_DECISIONS.md ; LORE §3.
+     Lot 1, la traversée et la radio : Q31 La Toundra → la Gorge (K96).
+     =========================================================== */
+
+  /* ---------------- Q31 — Une sonde de plus (K90, K91, K110) ----------------
+     Donneur : Asulf, à La Toundra (lieuPrise:"toundra", K90), quelle que soit la faction.
+     K110 : la Gorge ne se ferme pas, elle TRIE ; elle laisse entrer ce qui se présente
+     comme une sonde (La Couronne, de l'autre côté, reçoit encore les sondes : K96). Le
+     vaisseau du joueur apprend à dire l'en-tête de Bardane. Rien ne répond (K79).
+     Épreuves : message (porté de H43, une première en quête) · ordre · choix · saut ·
+     scène. Aucune ne reprend un type de Q30 (scène, combat, crevasse, choix) hors choix.
+     Son nouveau : CUL (Ψ barré), dans CUL·TURE (TURE connu) ; leurres sans mot (H43).
+     La Gorge s'ouvre aux étapes `gorge:true` (gorgeOuverte, orbite.js), puis pour de bon :
+     le saut pose `etat.ceres` (quetes-jeux.js), la récompense aussi.
+     Transats (K91) : un fil comique, sans règle ; le premier est à sa porte. */
+  {
+    id:"q31",
+    nom:"Une sonde de plus",
+    donneur:"Asulf",
+    donneurImg:"images/quetes/asulf_toundra_1.png",   // K91 : la 1re des bannières de La Toundra (un transat)
+    donneurRepli:"images/quetes/asulf.png",           // K90 : celle de la station, tant qu'elle manque
+    donneurLieu:"La Toundra",
+    lieuPrise:"toundra",
+    intro:[
+      "Asulf s'est installé au bout de La Toundra, là où les maisons s'arrêtent et où la neige reprend. Devant sa porte, planté dans la congère, il y a un transat : un vrai, en toile rayée, délavée par on ne sait combien d'hivers. Asulf est assis dessus, très droit, les mains sur les genoux, un bonnet tiré jusqu'aux sourcils, et il ne se lève pas en te voyant arriver, parce qu'il vient seulement de trouver comment on s'y tient. « Dis rien. Je sais. Ça sert à rien, dans la neige, personne s'allonge ici, c'est sans doute pour ça qu'il traînait au fond d'une remise. Mais regarde comme il est bien fait. Le dossier, il descend tout seul. »",
+      "Il sort de sa poche une radio qu'il a démontée et remontée au moins une fois de trop, avec une antenne en fil de fer qui file jusqu'au toit. « Je t'ai fait venir pour la Gorge. La nuit, ici, le ciel est propre, on entend tout, et la nuit, les sondes de Triptolème parlent au Bureau. Toutes les nuits, depuis trois cents ans, et personne leur répond. » Il renifle. « Sauf que moi, j'ai gardé l'état de la Gorge sur un écran, à côté. Grise. Et chaque fois qu'une sonde parle, elle clignote. Une fraction de seconde. Ouverte. »",
+      "« Elle est pas fermée, ta Gorge. Elle trie. Elle laisse passer ce qui se présente comme il faut, et ce qui se présente comme il faut, c'est une sonde. » Il compte sur ses doigts gantés et s'embrouille dans les gants. « Toi, t'es pas une sonde. La première fois, t'avais une route officielle, recopiée au Perchoir ; je crois qu'elle servait qu'une fois, et c'est moi qui l'ai gâchée. Alors cette fois, faut que ton vaisseau dise ce que disent les sondes, mot pour mot. Le problème, c'est que c'est de l'ancien, et moi l'ancien, je connais que le jargon du service. »",
+      "« Bardane, la sonde qui dérive du côté de Mousseron, elle est assez près pour que tu l'entendes en entier. Va écouter ce qu'elle dit au Bureau, et rapporte-moi les mots exacts, dans l'ordre. Moi, je refais ta route avec. » Il se laisse aller en arrière, prudemment, et le dossier du transat suit le mouvement. Il a l'air ravi. « Et si tu en vois un, de l'autre côté. Un transat. Tu me le rapportes. On sait jamais. »"
+    ],
+    etapes:[
+
+      /* ---- 1. Bardane — MESSAGE (H43) : l'en-tête des sondes, un son à deviner ---- */
+      { indice:"Bardane, la sonde à la dérive, du côté de Mousseron. Écoute ce qu'elle dit au Bureau.",
+        cible:{ lieu:"satellite1" }, leurres:[ { lieu:"pp_vert" }, { lieu:"asteroide_v" } ],
+        image:"images/quetes/q31/1.png",
+        arrivee:[
+          "Bardane tourne lentement sur elle-même, une plaque cabossée sur le flanc, ses panneaux ouverts comme deux mains. Tu coupes les moteurs à sa hauteur et tu ouvres la radio. Elle ne t'a pas attendu : elle parle déjà, vers la Gorge, avec la voix plate des machines d'AREPO, la même phrase qu'elle a dû dire cent mille fois.",
+          "Sur l'écran de bord, ton décodeur aligne ce qu'il entend en glyphes de l'ancien, mot après mot. Tu en reconnais presque tout : un relais, une destination, la conservation, comme sur l'en-tête de Chardon. Un seul son te résiste, au début du troisième mot. Dans la radio, la voix d'Asulf, de très loin : « Tu l'as ? Tu l'as en entier ? Dis-moi que tu l'as en entier, parce que moi j'entends un éternuement au milieu. »"
+        ],
+        defi:{ type:"message",
+          texte:["Bardane répète sa phrase, toujours la même, toujours dans le même ordre."],
+          consigne:"Quatre mots en ancien. Le troisième commence par un son que tu ne connais pas : lequel fait un mot ?",
+          mots:[ ["RE","LAI"], ["DES","TIN","ATION"], [{ inconnu:"CUL" },"TURE"], ["CON","SERV","ATION"] ],
+          propositions:["CUL","BLI","DO","PLU"],
+          fini:"Le mot tient : la phrase a un sens.",
+          echec:"Le mot ne tient pas, la phrase n'a plus de sens, et Bardane est déjà repartie au début. Tu l'écouteras de nouveau dans 8 h.",
+          reussite:[
+            "Culture. Le troisième mot, c'est Culture, et toute la phrase tombe d'un coup : relais, destination, Cultures, conservation. La sonde ne dit pas qui elle est, ni où elle est. Elle dit à qui elle parle, et pour quoi : au Bureau des Cultures, pour la conservation, comme on écrit une adresse au dos d'une enveloppe qu'on sait que personne n'ouvrira.",
+            "« Culture », répète Asulf, en avalant la moitié du mot. « C'était ça, l'éternuement. » Tu notes la phrase, les quatre mots dans l'ordre, et Bardane continue de la dire derrière toi pendant que tu t'éloignes, à personne."
+          ] } },
+
+      /* ---- 2. La Toundra — ORDRE : rendre la phrase au calculateur, dans le bon ordre ---- */
+      { indice:"La Toundra, au bout de la cité. Asulf attend la phrase de Bardane.",
+        cible:{ x:1920, y:355, r:100 },
+        image:"images/quetes/q31/2.png",
+        arrivee:[
+          "Asulf t'attend au bord de la cité, à côté de ton vaisseau, en tapant des pieds pour se réchauffer. Il monte à bord avant toi, s'assoit dans le siège du pilote, très droit, et ouvre la console du calculateur à la main, avec un tournevis. C'est la première fois qu'il touche une machine pour de vrai, avec ses doigts, au lieu de passer par le réseau, et ça se voit : il range chaque vis dans son gant.",
+          "« Bon. Ton calculateur, il sait déjà où aller. Ce qu'il sait pas, c'est quoi dire en arrivant. » Il fait défiler l'en-tête d'une route, en glyphes, et le vide d'un geste. « Toi, tu as la phrase. Mets-la-moi dans l'ordre où Bardane la dit. Pas dans l'ordre logique, hein. Dans son ordre à elle. Une sonde qui dit les choses dans le désordre, c'est plus une sonde, c'est une sonde cassée, et une sonde cassée, la Gorge la laisse dehors. »"
+        ],
+        defi:{ type:"ordre",
+          texte:["La console attend l'en-tête, mot après mot. Les quatre mots de Bardane sont là, en ancien, mélangés."],
+          consigne:"Remets-les dans l'ordre où Bardane les dit.",
+          elements:[ { sons:["RE","LAI"] }, { sons:["DES","TIN","ATION"] }, { sons:["CUL","TURE"] }, { sons:["CON","SERV","ATION"] } ],
+          echec:"La console refuse la phrase. Dans le désordre, ce n'est plus une sonde, c'est une sonde cassée. Asulf range ses vis une à une dans son gant ; vous réessaierez dans 8 h.",
+          reussite:[
+            "La console accepte la phrase sans rien dire, ce qui, pour une machine d'AREPO, est une forme de compliment. Asulf la relit trois fois, du bout du doigt, sans pouvoir la lire, puis il tape le reste, la route elle-même, plus vite que tu ne peux suivre. « Voilà. Maintenant, en entrant, ton vaisseau va se présenter comme une sonde de plus. Relais, destination, Cultures, conservation. Il ira pas plus loin que ce que disent les sondes. Mais les sondes, elles entrent. »",
+            "Il referme la console, compte ses vis, en trouve une de trop, et la remet dans son gant sans rien dire."
+          ] } },
+
+      /* ---- 3. La Toundra — CHOIX de Cercle : avant de partir ---- */
+      { indice:"La Toundra. Avant de partir pour la Gorge.",
+        cible:{ x:1920, y:355, r:100 },
+        image:"images/quetes/q31/3.png",
+        arrivee:[
+          "Le soir tombe sur La Toundra. Asulf est retourné s'asseoir sur son transat, toujours droit, une couverture sur les genoux, et il regarde le ciel au-dessus des toits, là où passeront les sondes. Il ne dit rien pendant un moment, ce qui chez lui ressemble à une maladie.",
+          "« Je pourrai pas te suivre, là-bas. La radio, je sais pas si elle passera. Personne sait ce qu'il y a derrière, et moi j'ai jamais été nulle part. » Il tire la couverture jusqu'au menton. « Alors avant que tu partes, on fait un truc. N'importe quoi. Un truc qu'on fait avant de partir. C'est comme ça qu'on dit ? J'ai lu ça quelque part. »"
+        ],
+        defi:{ type:"choix",
+          texte:["Demain, tu pars pour la Gorge. Ce soir, tu…"],
+          options:[
+            { texte:"Monter avec lui sur le toit, avec sa radio et son écran, et attendre que les sondes passent, pour voir la Gorge clignoter de tes propres yeux.",
+              cercles:{ veilleurs:5 },
+              journal:"Vous avez attendu les sondes sur le toit jusqu'à la nuit noire. Il y en a eu quatre, et à chaque fois, sur son écran, la Gorge a clignoté. Asulf les a comptées à voix haute, puis s'est endormi contre la cheminée." },
+            { texte:"Lui demander de rouvrir la console et de te montrer, ligne par ligne, ce qu'il a changé dans ta route, jusqu'à ce que tu saches le refaire.",
+              cercles:{ assembleurs:5 },
+              journal:"Il t'a montré chaque ligne de ta route, deux fois, en s'excusant de celles qu'il ne comprenait pas lui-même. À la fin, tu as su refaire l'en-tête. Lui, il a retrouvé la vis en trop : elle était à toi." },
+            { texte:"Lui promettre de tout lui raconter par la radio, ce que tu verras de l'autre côté, et de lui rapporter un transat s'il y en a un.",
+              cercles:{ langues:5 },
+              journal:"Tu lui as promis de tout lui raconter, et un transat s'il y en a. Il a hoché la tête très sérieusement, puis il a ajouté qu'à la rigueur, deux, ce serait bien aussi." }
+          ],
+          reussite:[
+            "Au matin, il est déjà dehors quand tu montes à bord, sur son transat, le bonnet de travers. Il ne te fait pas signe. Il pointe seulement le ciel du doigt, vers l'endroit où, de jour, on ne voit rien, et il le garde levé jusqu'à ce que tu aies décollé."
+          ] } },
+
+      /* ---- 4. La Gorge — SAUT : se présenter comme une sonde (K110) ---- */
+      { indice:"La Gorge. Entre sur la route d'Asulf : ton vaisseau dira ce que disent les sondes.",
+        cible:{ lieu:"trou_noir" }, leurres:[ { lieu:"portail" }, { lieu:"base" } ],
+        gorge:true,   // v1.98 : la Gorge est ouverte pendant cette étape (gorgeOuverte)
+        image:"images/quetes/q31/4.png",
+        arrivee:[
+          "La Gorge remplit le hublot, comme la première fois : plus d'étoiles devant, seulement derrière, qui glissent vers le bord. Tu entres la route d'Asulf. La coque se remet à chanter sa note grave, et sur l'écran de bord, au-dessus des chiffres, s'affiche l'en-tête, en ancien : relais, destination, Cultures, conservation.",
+          "Puis ton vaisseau se met à parler tout seul. La radio de bord émet la phrase de Bardane, avec la voix plate des machines d'AREPO, une fois, deux fois, et tu as la sensation bizarre que ce n'est plus tout à fait ton vaisseau qui vole. Dans la radio, Asulf chuchote, comme si la Gorge pouvait l'entendre : « Elle clignote. Elle clignote, et elle reste ouverte. Vas-y. Vas-y maintenant. »"
+        ],
+        defi:{ type:"saut", carte:"ceres", lieu:"e2_gorge", bouton:"Entrer dans la Gorge",
+          texte:["La Gorge est ouverte. Elle attend une sonde de plus."],
+          reussite:[
+            "Tu entres. Le noir, et la pression énorme, partout à la fois. Les chiffres de la route défilent un par un, et cette fois, aucun ne se réécrit. La voix d'Asulf se défait dans la radio, des morceaux de mots, un rire peut-être, puis un souffle, puis plus rien.",
+            "Personne ne te dit d'entrer. Personne ne répond à la phrase de Bardane, ni reçu, ni bienvenue. La Gorge te laisse seulement passer, comme elle laisse passer les sondes depuis trois cents ans, sans savoir que tu n'en es pas une. Puis la pression lâche d'un coup."
+          ] } },
+
+      /* ---- 5. De l'autre côté — SCÈNE : Cérès (sobre ; rien sur les gens du Nid, K95) ---- */
+      { indice:"De l'autre côté de la Gorge. Regarde où tu es.",
+        cible:{ lieu:"e2_gorge" },
+        image:"images/quetes/q31/5.png",
+        arrivee:[
+          "Tu ressors au milieu d'étoiles que tu ne connais pas. Aucune constellation, aucun repère, pas même la tache pâle de Silène. Devant toi, très loin, une étoile bleue, petite et violente ; plus près, des arcs sombres qui tournent lentement autour d'une lueur, et une boule de plaques serrées qui ne laisse rien passer. Ton calculateur affiche un nom, un seul, en bas de l'écran, comme une évidence : SECTEUR CÉRÈS.",
+          "Tu appelles Asulf. La radio grésille, longtemps, un grésillement épais et égal, sans un mot dedans. Tu appelles encore. Un temps. Rien. Derrière toi, la Gorge est toujours là, la même gueule noire vue de l'autre côté : de ce côté-ci, elle ne trie rien, et tu sais que tu pourras y repasser. Plus bas, quelque part, des lumières s'allument et s'éteignent, posées sur une grande forme sombre qui dérive."
+        ],
+        defi:{ type:"scene", bouton:"Couper la radio, et regarder ces lumières" } }
+    ],
+    /* K110 : la route de Cérès est ouverte pour de bon (etat.ceres, posé aussi par le saut).
+       PA : comme Q20 (la Gorge, Ancolie), Q31 ouvre une carte — quête clé (K39, à confirmer
+       pour l'arc de Cérès). Gains des choix : comme Q20 (veilleurs 120 XP · assembleurs
+       1 composant avancé + 40 XP · langues 300 ₡), serveur v223. */
+    recompense:{ credits:2400, xp:420, pa:1, flags:{ ceres:true } }
+  }
+
 
 
   // Quête finale de la carte Silène : Q5 accorde le permis de vaisseau + ouvre l'espace (flag espace1).

@@ -142,7 +142,7 @@ function _fmtDuree(ms){
 
 // Mini-jeux ratables : un essai par jour.
 const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup",
-  "ronde","crevasse","tir","goupilles","reaction","brouillage"]);   // v1.93 : + brouillage (Q29)   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
+  "ronde","crevasse","tir","goupilles","reaction","brouillage","message"]);   // v1.98 : + message (Q31)   // v1.93 : + brouillage (Q29)   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
 /* ⚠ Le verrou ne dure plus 24 h glissantes mais jusqu'au PROCHAIN MINUIT
    PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
    23 h ne bloque donc plus toute la journée du lendemain. Repli sur l'ancien
@@ -2012,8 +2012,12 @@ function _priseIci(q){
   /* v1.87 — `lieuPrise:"station"` : à la station d'Ancolie (Q21 →), donneur 42-U1F.
      On se pose à la station (v1.87j) : on prend la quête en descendant du vaisseau. */
   if(q && q.lieuPrise==="station") return (typeof aLaStation==="function") && aLaStation();
+  /* v1.98 — `lieuPrise:"toundra"` : chez Asulf, à La Toundra (K90), quelle que soit
+     sa faction. Il s'y est installé à la fin de Q30 (K59). */
+  if(q && q.lieuPrise==="toundra") return aLaToundra();
   return _enFaction();
 }
+function aLaToundra(){ return (typeof villeActuelle==="function") && villeActuelle()==="toundra"; }
 
 /* ---------- Onglet « Quêtes » ---------- */
 /* v1.61 — deux sous-onglets : « Quête principale » (l'écran d'avant, INCHANGÉ,
@@ -2067,7 +2071,10 @@ function majQueteHub(){
      finie. Les quêtes prises en ville (Sorn) gardent leur bannière : on doit
      se déplacer pour les étapes, il n'y a jamais les deux à la fois. */
   const _masquee = !!(_qa0 && _qd0 && (_qd0.lieuPrise === "carcasse" || _qd0.lieuPrise === "station"));   // v1.87 : + station
-  const banniere = (_ici && !_masquee) ? `<div class="quete-banniere"><img src="${_dImg}" alt="" onerror="this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
+  /* v1.98 — `donneurRepli` : l'image à montrer tant que la bannière n'est pas dessinée
+     (Asulf à La Toundra, K90 : celle de la station). */
+  const _dRepli=(_qd0&&_qd0.donneurRepli)||"";
+  const banniere = (_ici && !_masquee) ? `<div class="quete-banniere"><img src="${_dImg}" alt=""${_dRepli?` data-repli="${_dRepli}"`:""} onerror="if(this.dataset.repli){this.src=this.dataset.repli;this.removeAttribute('data-repli');}else this.remove()"><span>${_dNom} — ${_dLieu}</span></div>` : "";
   const a=queteActive();
 
   if(!a){
@@ -2078,6 +2085,8 @@ function majQueteHub(){
       const _galm = qp && !qp.lieuPrise && (typeof surCarcasse==="function") && surCarcasse();
       z.innerHTML = (qp && qp.lieuPrise==="carcasse")
         ? `<p class="vide">Personne n'a de travail pour toi ici. Là-haut, dans le secteur Triptolème, on dit qu'à <b>La Carcasse</b> une ferrailleuse cherche toujours des bras.</p>`
+        : (qp && qp.lieuPrise==="toundra")   /* v1.98 */
+        ? `<p class="vide">Ta radio grésille. « C'est moi. Asulf. Enfin, tu sais que c'est moi. » Un reniflement. « Je suis à <b>La Toundra</b>, au bout, là où les maisons s'arrêtent. Viens quand tu peux. Viens quand tu veux. Viens, quoi. J'ai trouvé un truc pour la Gorge. »</p>`
         : (qp && qp.lieuPrise==="station")   /* v1.87 */
         ? `<p class="vide">Ta radio grésille. « Je t'attends à <b>la station d'Ancolie</b>. Oui, celle-là. Il y en a d'autres, mais c'est la mienne. Prends le vaisseau, je vais pas venir te chercher. » Un temps. « Je peux pas venir te chercher. »</p>`
         : _galm

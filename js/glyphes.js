@@ -44,7 +44,9 @@ const GLYPHES_ANCIEN = {
   // — v1.85 : Q16, l'en-tête de Chardon (« Destination ») —
   DES:["L","barre"],     TIN:["O","barre"],
   // — v1.96 : les étiquettes du Nid, à Cérès (« Propulsion », « Concentré ») —
-  PUL:["I","trait"],     SION:["C","trait"],    CEN:["D","trait"],    TRE:["L","trait"]
+  PUL:["I","trait"],     SION:["C","trait"],    CEN:["D","trait"],    TRE:["L","trait"],
+  // — v1.98 : Q31, l'en-tête de la sonde Bardane (« Cultures », CUL·TURE) —
+  CUL:["P","barre"]
 };
 /* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
    nettement distinctes. Prises depuis : Λ barré (DES), Ω barré (TIN), et en v1.96

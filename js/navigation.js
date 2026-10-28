@@ -92,7 +92,9 @@ function majHub(){
     ? { terrain:false, inn:true, centre:true, poste:true, marche:false, voler:false, boutique:true, quete:(typeof queteActive==="function" && !!queteActive()), garage:false, arene:true }
     : { terrain:chezSoi, inn:(!!ville && !chezSoi), centre:!!ville, poste:!!ville, marche:!!ville, voler:!!ville, garage:false, arene:false,
         boutique:(!!ville || (typeof aptBoutiquePartout==="function" && aptBoutiquePartout())),   // Boutique mobile (no1)
-        quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi };
+        quete:(typeof queteActive==="function" && !!queteActive()) || chezSoi
+          /* v1.98 — Asulf donne ses quêtes à La Toundra (K90), à tout le monde. */
+          || (ville==="toundra" && typeof queteProchaine==="function" && !!queteProchaine() && queteProchaine().lieuPrise==="toundra") };
   /* v1.61 — H18 : une affaire de mission en cours (groupe, invitation, gain)
      ouvre le lieu Quêtes PARTOUT, pour la suivre loin du comptoir. */
   if(typeof missionsAffaireEnCours==="function" && missionsAffaireEnCours()) dispo.quete = true;
