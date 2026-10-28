@@ -53,7 +53,8 @@ function coutSonde(){ return (typeof aptEndurance==="function" ? aptEndurance : 
    quota quotidien ne sert plus à rien. */
 
 function tenterSonde(){
-  if(!enEcart()) return false;
+  /* v1.96 — à Cérès aussi (K81 : « en vol, à l'improviste »), avec le tir durci. */
+  if(!((typeof enEspace === "function") ? enEspace() : enEcart())) return false;
   if(Math.random() >= SONDE_TAUX) return false;
   ouvrirSonde();
   return true;
@@ -131,7 +132,7 @@ async function sondeCombat(){
      rencontre pour que le joueur choisisse une autre issue. */
   const r = await agirServeur({ cout:coutSonde(), motif:"sonde" });
   if(!r){ ouvrirSonde(); return; }
-  lancerTirSonde(_sondeGagne, _sondePerdu);
+  lancerTirSonde(_sondeGagne, _sondePerdu, { durci: (typeof enCeres === "function") && enCeres() });   // v1.96 : K65 à Cérès
 }
 async function _sondeGagne(){
   let d = null;
@@ -266,6 +267,20 @@ const TIR_SALVES  = 5;   // tirs disponibles, quelle que soit la grille
    carte qu'ouvre la Gorge (K65). */
 const TIR_ASTEROIDES_PV = [5, 10];
 let _tirAst = new Set();
+/* v1.96 — LE TIR DURCI DE CÉRÈS (K65, choix B de l'autrice). Trois changements,
+   tous annoncés avant le premier tir :
+   · la grille a DEUX cases de plus de côté (9 / 8 / 7 selon l'Intelligence) ;
+   · autant d'astéroïdes que de lignes, comme à Triptolème ;
+   · la sonde GLISSE : tous les deux tirs manqués (un astéroïde compte), son cœur
+     passe sur une case voisine (haut, bas, gauche, droite), jamais hors de la
+     grille, ni sur un astéroïde, ni sur une case déjà jouée. Les échos d'avant restent affichés, grisés :
+     ils disent où elle ÉTAIT (à une case près par glissade).
+   Simulé (outils/o_ceres.js, joueur qui recoupe bien) : ~65 % de victoires à 5
+   salves, ~82 % à 6 (canon du maître ou Instinct). La salve du canon coûtera une
+   cellule (K83) : étape du Fléau, pas encore ici. */
+const TIR_DURCI_GRILLE = 2;   // cases de plus de côté
+const TIR_DURCI_GLISSE = 2;   // tirs manqués avant une glissade
+let _tirDurci = false, _tirRates = 0, _tirGlisse = 0, _tirVieux = new Set();
 /* v1.25 — Instinct de combat (tr1) : +1 salve (décision de l'autrice). */
 /* v1.93e — le canon de bord du Vaisseau maître : +1 salve (canonVaisseau, vaisseau.js). */
 function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0) + ((typeof canonVaisseau==="function") ? canonVaisseau() : 0); }
@@ -301,6 +316,7 @@ function _tirStyle(){
     .sd-case.loin{ color:var(--sourdine,#7f93a8); }
     .sd-case.touche{ background:rgba(139,212,80,.25); border-color:#8bd450; color:#8bd450; }
     .sd-case.ast{ background:rgba(120,96,72,.35); border-color:rgba(176,140,100,.6); color:#c9a77c; }   /* v1.93f : astéroïde */
+    .sd-case.vieux:not(.ast){ opacity:.45; border-style:dashed; }   /* v1.96 : écho d'avant une glissade (Cérès) */
     #tir-modale .mini{ background:rgba(16,41,78,.7); border:1px solid var(--line,#243a52); color:var(--texte,#dfe8f2); border-radius:8px; padding:8px 14px; font-family:inherit; font-size:13px; cursor:pointer; margin-top:12px; }
     #tir-modale .mini:hover{ border-color:var(--orange,#ff8a3d); }
   `;
@@ -312,9 +328,10 @@ function _tirStyle(){
 function _tirModal(){ _tirStyle(); return document.querySelector("#tir-modale"); }
 function _tirFermer(){ const m=document.querySelector("#tir-modale"); if(m){ m.hidden=true; m.innerHTML=""; } }
 
-function lancerTirSonde(onWin, onLose){
+function lancerTirSonde(onWin, onLose, opts){
   _tirWin=onWin; _tirLose=onLose;
-  _tirN = _tirTaille();
+  _tirDurci = !!(opts && opts.durci); _tirRates = 0; _tirGlisse = 0; _tirVieux = new Set();   // v1.96
+  _tirN = _tirTaille() + (_tirDurci ? TIR_DURCI_GRILLE : 0);
   _tirCoeur = { x:Math.floor(Math.random()*_tirN), y:Math.floor(Math.random()*_tirN) };
   _tirRestant = _tirSalves(); _tirVus = {};
   _tirAst = new Set();
@@ -333,8 +350,10 @@ function lancerTirSonde(onWin, onLose){
       <b>1</b> = juste à côté. Recoupe deux échos et tu le tiens.<br><br>
       ☄ <b>${_tirN} astéroïdes</b> dérivent dans la grille, invisibles à tes capteurs. Une salve qui en touche un
       éclate contre lui : pas d'écho, et les éclats rayent ta coque (${TIR_ASTEROIDES_PV[0]} à ${TIR_ASTEROIDES_PV[1]} PV). Le cœur n'est jamais derrière un astéroïde.<br><br>
+      ${_tirDurci ? `↻ <b>Celle-ci ne se laisse pas viser.</b> Tous les <b>${TIR_DURCI_GLISSE} tirs manqués</b>, son cœur <b>glisse d'une case</b>
+      (en haut, en bas, à gauche ou à droite). Les échos d'avant restent grisés : ils disent où il était.<br><br>` : ""}
       <span class="itip-gris">Aucun réflexe : prends ton temps, la sonde ne bouge pas.
-      ${_tirN>5?`Une meilleure <b>Intelligence</b> resserrera la grille — ${_tirN} × ${_tirN} pour l'instant.`:"Tes capteurs sont au mieux : grille resserrée au minimum."}</span></p>
+      ${_tirN>5+(_tirDurci?TIR_DURCI_GRILLE:0)?`Une meilleure <b>Intelligence</b> resserrera la grille — ${_tirN} × ${_tirN} pour l'instant.`:"Tes capteurs sont au mieux : grille resserrée au minimum."}</span></p>
     <div><button class="mini" id="sd-jouer">▶ Commencer</button>
          <button class="mini" id="sd-fuir" style="margin-left:8px">Renoncer</button></div>
   </div>`;
@@ -348,12 +367,13 @@ function _tirRendre(){
   let cases = "";
   for(let y=0;y<_tirN;y++) for(let x=0;x<_tirN;x++){
     const v = _tirVus[x+","+y];
-    const cls = v==null ? "" : ` joue ${v==="ast"?"ast":(v===0?"touche":(v===1?"p1":(v===2?"p2":(v===3?"p3":"loin"))))}`;
+    const cls = v==null ? "" : ` joue ${v==="ast"?"ast":(v===0?"touche":(v===1?"p1":(v===2?"p2":(v===3?"p3":"loin"))))}${_tirVieux.has(x+","+y)?" vieux":""}`;   // v1.96 : écho d'avant une glissade
     cases += `<div class="sd-case${cls}" data-x="${x}" data-y="${y}">${v==null?"":(v==="ast"?"☄":(v===0?"✷":v))}</div>`;
   }
   m.innerHTML = `<div class="sd-cadre">
     <div class="sd-tete"><b>🎯 Tir de sondage</b><span class="sd-salves">${_tirRestant} salve(s)</span></div>
-    <p class="sd-sous">Tire sur une case. L'écho te dira à combien de cases se trouve le cœur. ☄ = astéroïde.</p>
+    <p class="sd-sous">Tire sur une case. L'écho te dira à combien de cases se trouve le cœur. ☄ = astéroïde.${_tirDurci
+      ? `<br>${_tirGlisse ? `<b style="color:var(--orange,#ff8a3d)">↻ Le cœur a glissé${_tirGlisse>1?` (${_tirGlisse} fois)`:""}.</b> Les échos grisés datent d'avant.` : "↻ Le cœur glisse d'une case tous les deux tirs manqués."}` : ""}</p>
     <div class="sd-grille" style="grid-template-columns:repeat(${_tirN},1fr)">${cases}</div>
   </div>`;
   m.querySelectorAll(".sd-case:not(.joue)").forEach(c=>c.addEventListener("click", ()=>_tirSalve(+c.dataset.x, +c.dataset.y)));
@@ -368,6 +388,7 @@ function _tirSalve(x, y){
       if(n > 0) abimerVaisseau(n, "éclats d'astéroïde");
       journal(`☄ Ta salve éclate contre un astéroïde. Des éclats rayent la coque${n > 0 ? ` (−${n} PV)` : ""}.`, "alerte");
     }
+    _tirManque();
     _tirRendre();
     if(_tirRestant <= 0){ setTimeout(()=>{ _tirFermer(); if(_tirLose) _tirLose(); }, 900); }
     return;
@@ -377,5 +398,24 @@ function _tirSalve(x, y){
   _tirRestant--;
   _tirRendre();
   if(d === 0){ setTimeout(()=>{ _tirFermer(); if(_tirWin) _tirWin(); }, 600); return; }
+  if(_tirManque()) _tirRendre();   // v1.96 : la glissade s'affiche tout de suite
   if(_tirRestant <= 0){ setTimeout(()=>{ _tirFermer(); if(_tirLose) _tirLose(); }, 900); }
+}
+
+/* v1.96 — un tir manqué (écho ou astéroïde). Au tir durci, tous les
+   TIR_DURCI_GLISSE manqués, le cœur glisse d'une case voisine libre. Renvoie vrai
+   s'il a glissé. Les cases déjà jouées deviennent « vieilles » (grisées). */
+function _tirManque(){
+  if(!_tirDurci) return false;
+  _tirRates++;
+  if(_tirRates % TIR_DURCI_GLISSE !== 0) return false;
+  const v = [[1,0],[-1,0],[0,1],[0,-1]]
+    .map(([dx,dy]) => ({ x:_tirCoeur.x+dx, y:_tirCoeur.y+dy }))
+    .filter(p => p.x>=0 && p.y>=0 && p.x<_tirN && p.y<_tirN && !_tirAst.has(p.x+","+p.y)
+              && _tirVus[p.x+","+p.y] == null);   // jamais sur une case déjà jouée : elle ne se viserait plus
+  if(!v.length) return false;
+  _tirCoeur = v[Math.floor(Math.random()*v.length)];
+  _tirGlisse++;
+  Object.keys(_tirVus).forEach(k => _tirVieux.add(k));
+  return true;
 }

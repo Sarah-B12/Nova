@@ -424,7 +424,7 @@ async function _sauverMaintenantInterne(){
        C'est lui qui dit au serveur qu'un joueur parti en orbite n'est plus
        dans sa zone de faction (O₂, expéditions) — voir dans_zone_faction. */
     // v0.98 : + 'braise' / 'suaire' (sous-cartes). Le serveur refuse toute autre valeur.
-    secteur: ["ecart","braise","suaire","ancolie"].includes(etat.secteur) ? etat.secteur : "silene",
+    secteur: ["ecart","braise","suaire","ancolie","ceres"].includes(etat.secteur) ? etat.secteur : "silene",   // v1.96 : + Cérès (SQL v221)
     /* ⚠ `niveau` N'EST PLUS POUSSÉ ici. niveau_monter() ne recharge l'énergie
        que si le niveau déclaré dépasse celui en base ; or cette sauvegarde
        écrivait la colonne de son côté, et quand elle arrivait la première la

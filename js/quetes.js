@@ -102,16 +102,19 @@ function _cibleResolue(c){
   }
   if(c.lieu){
     const l = (typeof espaceLieu==="function") ? espaceLieu(c.lieu) : null; if(!l) return null;
-    return { carte:"espace", x:l.x, y:l.y, r:c.r || ((typeof espaceRayon==="function") ? espaceRayon(l) : 80), lieu:c.lieu };
+    /* v1.96 — un lieu de Cérès (`e2_*`) est sur la carte "ceres", pas "espace". */
+    const k = (typeof secteurDuLieu==="function" && secteurDuLieu(l) === "ceres") ? "ceres" : "espace";
+    return { carte:k, x:l.x, y:l.y, r:c.r || ((typeof espaceRayon==="function") ? espaceRayon(l) : 80), lieu:c.lieu };
   }
   return { carte:c.carte||"silene", x:c.x, y:c.y, r:c.r||70 };
 }
 function _carteJoueur(){
   if(typeof SURFACES!=="undefined" && SURFACES[etat.secteur]) return etat.secteur;   // v0.98 : sous-cartes (v1.85 : + Ancolie)
+  if(etat.secteur === "ceres") return "ceres";   // v1.96 : sinon Cérès passait pour Silène (une cible au sol s'y validait)
   return (typeof enEcart==="function" && enEcart()) ? "espace" : "silene";
 }
 function _posJoueur(carte){
-  if(carte==="espace") return (typeof posEspace==="function") ? posEspace() : null;
+  if(carte==="espace" || carte==="ceres") return (typeof posEspace==="function") ? posEspace() : null;   // v1.96
   if(typeof SURFACES!=="undefined" && SURFACES[carte]) return (typeof posSurface==="function") ? posSurface() : null;
   return etat.pos || null;
 }
@@ -1573,8 +1576,10 @@ function _triForce(p, src){ return Math.max(0, 100 - Math.round(Math.hypot(p.x-s
    visé. Une source tirée sous l'image était donc inatteignable — il fallait
    sortir de la zone pour pouvoir relever. On écarte ces disques (+30 u de marge). */
 function _triObstacles(carte){
-  if(carte !== "espace" || typeof ESPACE_LIEUX === "undefined") return [];
-  return ESPACE_LIEUX.filter(l => l && typeof l.x==="number" && l.t).map(l => ({ x:l.x, y:l.y, r:l.t/2 + 30 }));
+  const LX = (carte === "ceres" && typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX   // v1.96
+           : (carte === "espace" && typeof ESPACE_LIEUX !== "undefined") ? ESPACE_LIEUX : null;
+  if(!LX) return [];
+  return LX.filter(l => l && typeof l.x==="number" && l.t).map(l => ({ x:l.x, y:l.y, r:l.t/2 + 30 }));
 }
 function _triLibre(p, obs){ return !obs.some(o => Math.hypot(p.x-o.x, p.y-o.y) < o.r); }
 function _triTirer(c){
@@ -1652,7 +1657,7 @@ function _wireTriangulation(z, d){
       dessiner();
     }));
     if(typeof majCarteBraise==="function" && (typeof SURFACES!=="undefined" && SURFACES[carte])) majCarteBraise();
-    if(typeof majOrbite==="function" && carte==="espace") majOrbite();
+    if(typeof majOrbite==="function" && (carte==="espace" || carte==="ceres")) majOrbite();
   };
   z.querySelector("#q-tri-rel").addEventListener("click", ()=>{
     const p=_posJoueur(carte); if(!p) return;
@@ -1934,9 +1939,10 @@ function majMarqueursQuete(){
 function marqueursQueteEspaceHtml(){
   const e=etapeActive(); const a=queteActive();
   if(!e || !e.cible || (a && a._resolu)) return "";
-  const pts=_ptsQuete(e).map(_cibleResolue).filter(p=>p && p.carte==="espace");
+  const ici = (etat.secteur === "ceres") ? "ceres" : "espace";   // v1.96 : les repères de la carte affichée
+  const pts=_ptsQuete(e).map(_cibleResolue).filter(p=>p && p.carte===ici);
   return pts.map(p=>`<g style="pointer-events:none"><circle cx="${p.x}" cy="${p.y}" r="${p.r}" fill="#5aa8e6" fill-opacity="0.10" stroke="#5aa8e6" stroke-opacity="0.75" stroke-width="3" stroke-dasharray="10 12"/><text x="${p.x}" y="${p.y-p.r-10}" text-anchor="middle" style="fill:#5aa8e6" font-size="48">★</text></g>`).join("")
-       + _triRelevesHtml("espace");   // v0.98 : relevés de triangulation en orbite (Q10)
+       + _triRelevesHtml(ici);   // v0.98 : relevés de triangulation en orbite (Q10)
 }
 
 /* v0.98 — Repères ★ d'une SOUS-CARTE (La Braise…) : même dessin, pointer-events:none. */

@@ -391,6 +391,25 @@ function posDefaut(){ const v=VILLES[etat.faction]||VILLES.ignis; return {x:v.x,
 /* v0.98 — hors de Silène = en orbite OU à la surface d'une planète. ⚠ Ne pas
    utiliser enEcart() pour dire « pas sur Silène » : sur La Braise, enEcart()
    est faux, et le joueur serait resté « dans sa ville » (etat.pos inchangé). */
+/* v1.96 — LE NOM d'un secteur, pour l'afficher (liste d'amis, traque…). Avant,
+   la liste d'amis disait « Sur Triptolème » pour tout ce qui n'était pas Silène :
+   un ami en Ancolie ou sur La Braise passait pour un ami au Perchoir. */
+function nomSecteur(s){
+  if(!s || s === "silene") return "Silène";
+  if(s === "ecart") return "Triptolème";
+  if(s === "ceres") return "Cérès";
+  if(typeof SURFACES !== "undefined" && SURFACES[s] && SURFACES[s].nom) return SURFACES[s].nom;
+  return s;
+}
+/* v1.97 — « à » + un nom de lieu, avec la contraction : au Perchoir, aux Solfatares,
+   à La Carcasse, à l'aire d'atterrissage, à Mousseron. */
+function aLieu(nom){
+  nom = String(nom || "");
+  if(/^Le /.test(nom))  return "au " + nom.slice(3);
+  if(/^Les /.test(nom)) return "aux " + nom.slice(4);
+  if(/^Aire /.test(nom)) return "à l'a" + nom.slice(1);
+  return "à " + nom;
+}
 function horsSilene(){ return !!(typeof etat!=="undefined" && etat && etat.secteur && etat.secteur !== "silene"); }
 function enSurface(){ return !!(typeof etat!=="undefined" && etat && (etat.secteur === "braise" || etat.secteur === "suaire" || etat.secteur === "ancolie")); }   // v1.85 : + Ancolie
 function villeActuelle(){

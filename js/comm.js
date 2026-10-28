@@ -146,8 +146,7 @@ function _ligneJoueur(j, o){
   /* v0.91 — où se trouve l'ami. Réservé aux amis confirmés : sur la carte
      spatiale c'est une information utile (on sait qui peut nous retrouver là-
      haut), et sur un inconnu ce serait de la surveillance. */
-  const secteurNom = (j.secteur && j.secteur !== "silene")
-    ? (typeof SECTEUR_NOM !== "undefined" ? SECTEUR_NOM : "Triptolème") : "Silène";
+  const secteurNom = (typeof nomSecteur === "function") ? nomSecteur(j.secteur) : "Silène";   // v1.96 : Ancolie, La Braise, Cérès… (était « Triptolème » partout hors de Silène)
   const ou = o.ami ? ` · <span class="comm-ou">Sur ${secteurNom}</span>` : "";
   const infos = o.ami
     ? `<span class="comm-meta">niv. ${j.niveau}${cred} · ${j.metier||"—"} · ${fac}${ou}</span>`

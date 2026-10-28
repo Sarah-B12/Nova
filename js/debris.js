@@ -29,6 +29,7 @@ function _debrisCarteIci(){
   if(typeof etat === "undefined" || !etat) return null;
   if(etat.secteur === "braise" || etat.secteur === "suaire") return etat.secteur;
   if(etat.secteur === "ecart") return "espace";
+  if(etat.secteur === "ceres") return "ceres";   // v1.96 : aucune chute à Cérès (elle n'était pas Silène non plus)
   return "silene";
 }
 function _debrisPosIci(){

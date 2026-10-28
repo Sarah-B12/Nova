@@ -38,6 +38,8 @@ document.querySelector("#ouvrir-carte").addEventListener("click", boutonSilene);
 /* v0.86 : le bouton EMBARQUE (et ouvre la carte si l'on est déjà là-haut). */
 const _bOrb=document.querySelector("#ouvrir-orbite");
 if(_bOrb) _bOrb.addEventListener("click", boutonTriptoleme);   // v1.93t
+const _bCer=document.querySelector("#ouvrir-ceres");
+if(_bCer) _bCer.addEventListener("click", boutonCeres);   // v1.96 : Cérès, par la Gorge
 const _bRet=document.querySelector("#orbite-retour");
 if(_bRet) _bRet.addEventListener("click", revenirVersSilene);
 const _bOrbF=document.querySelector("#orbite-fermer");

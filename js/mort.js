@@ -97,7 +97,10 @@ function ecranMort(){
         if(data.secteur && data.secteur !== etat.secteur){ etat.secteur = data.secteur; etat.surface = null; }
         const enOrbite = (data.secteur && data.secteur !== "silene");
         if(enOrbite){
-          const b = (typeof espaceLieu==="function") ? espaceLieu("base") : null;
+          /* v1.96 — la base de la carte où l'on se réveille. (Cérès : le serveur v221
+             renvoie 'silene', choix A ; ceci ne sert qu'avant la migration.) */
+          const b = (typeof baseEspace==="function") ? baseEspace(data.secteur === "ceres" ? "ceres" : "ecart")
+                  : ((typeof espaceLieu==="function") ? espaceLieu("base") : null);
           if(b) etat.posEspace = { x:b.x, y:b.y };
         }
         if(typeof rechargerCredits === "function") await rechargerCredits();

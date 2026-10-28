@@ -149,7 +149,7 @@ async function rendrePlaintesRegent(el){
    =========================================================== */
 const TRAQUE_ENERGIE = 10;
 const TRAQUE_ESSAIS  = 3;
-const _TQ_SECTEURS = { silene:"Silène", ecart:"Triptolème", braise:"La Braise", suaire:"Le Suaire" };
+const _TQ_SECTEURS = { silene:"Silène", ecart:"Triptolème", braise:"La Braise", suaire:"Le Suaire", ceres:"Cérès" };   // v1.96 : + Cérès
 function _tqSecteurNom(s){
   if(typeof SURFACES!=="undefined" && SURFACES[s] && SURFACES[s].nom) return SURFACES[s].nom;
   return _TQ_SECTEURS[s] || s;
@@ -340,12 +340,12 @@ const _TQ_CARTES = [
     viser:(x,y)=>{ if(typeof _poserVisee==="function") _poserVisee(x,y); },
     vise:()=>(typeof _visee!=="undefined" ? _visee : null),
     partir:(x,y)=>{ if(typeof _effacerVisee==="function") _effacerVisee(); if(typeof voyager==="function") voyager(x,y); } },
-  { secteurs:["ecart"], modale:"#modale-orbite", svg:"#carte-orbite",
+  { secteurs:["ecart","ceres"], modale:"#modale-orbite", svg:"#carte-orbite",   // v1.96 : la même fenêtre montre Cérès
     ici:()=>(typeof posEspace==="function" ? posEspace() : null),
     viser:(x,y)=>{ if(typeof _viseeEsp!=="undefined" && _viseeEsp) _viseeEsp.poser(x,y); },
     vise:()=>(typeof _viseeEsp!=="undefined" && _viseeEsp ? _viseeEsp.vise() : null),
     partir:(x,y)=>{ if(typeof _viseeEsp!=="undefined" && _viseeEsp) _viseeEsp.allerA(x,y); else if(typeof volVersPoint==="function") volVersPoint({x,y}); } },
-  { secteurs:["braise","suaire"], modale:"#modale-braise", svg:"#carte-braise",
+  { secteurs:["braise","suaire","ancolie"], modale:"#modale-braise", svg:"#carte-braise",   // v1.97 (K104) : + Ancolie (même fenêtre)
     ici:()=>(typeof posSurface==="function" ? posSurface() : null),
     viser:(x,y)=>{ if(typeof _viseeSol!=="undefined" && _viseeSol) _viseeSol.poser(x,y); },
     vise:()=>(typeof _viseeSol!=="undefined" && _viseeSol ? _viseeSol.vise() : null),

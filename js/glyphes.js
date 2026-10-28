@@ -42,10 +42,15 @@ const GLYPHES_ANCIEN = {
   // — v1.64 : la balise sous la glace (H43, LORE §11 bis) —
   RE:["C","barre"],      MANDE:["L","renverse"],  SERV:["D","barre"],
   // — v1.85 : Q16, l'en-tête de Chardon (« Destination ») —
-  DES:["L","barre"],     TIN:["O","barre"]
+  DES:["L","barre"],     TIN:["O","barre"],
+  // — v1.96 : les étiquettes du Nid, à Cérès (« Propulsion », « Concentré ») —
+  PUL:["I","trait"],     SION:["C","trait"],    CEN:["D","trait"],    TRE:["L","trait"]
 };
 /* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
-   nettement distinctes, ex. ["L","barre"] (Λ barré), ["O","barre"] (Ω barré).
+   nettement distinctes. Prises depuis : Λ barré (DES), Ω barré (TIN), et en v1.96
+   les « traversées » Π, Χ, Δ, Λ (PUL, SION, CEN, TRÉ). Encore libres, par exemple :
+   ["P","barre"] (Ψ barré), ["I","barre"] (Π barré), ["O","trait"] (Ω traversé),
+   ["S","barre"] (Σ barré), ["S","trait"] (Σ traversé), ["D","miroir"] non (symétrique).
    À éviter : ["T","trait"] (Θ traversé, trop proche de Φ au doigt), et les
    formes symétriques dont le miroir ou le renversement ne change rien. */
 function glypheSVG(son){

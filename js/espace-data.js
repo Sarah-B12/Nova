@@ -72,7 +72,10 @@ const ESPACE_FOND  = "images/carte_espace_1.png";
                      nulle part pour l'instant.
      trou_noir       ⚠ AUCUN nom officiel : les registres d'AREPO s'arrêtent là.
                      Verrou porté de q15 à q20 — le trou noir ouvre la carte
-                     SUIVANTE, pas celle-ci.
+                     SUIVANTE, pas celle-ci. v1.96 : verrou "gorge" (orbite.js,
+                     gorgeOuverte) : Q20 étape 1, une étape marquée `gorge:true`
+                     (Q31), puis pour de bon une fois Cérès connue. Il mène
+                     à Cérès (js/espace2-data.js, `e2_gorge`).
      portail         ⚠ LEURRE : ne mène à rien, jamais. Non répertorié,
                      seulement numéroté zéro. */
 const ESPACE_LIEUX = [
@@ -88,7 +91,7 @@ const ESPACE_LIEUX = [
     usage:"À venir", desc:"Quelque chose l'a ouverte, et ça brûle encore à l'intérieur." },
   { id:"etoile", nom:null, libelle:"Une étoile", officiel:"Digitale", img:"etoile_violet_iodes.png", x:2004, y:169, t:312, type:"decor",
     usage:"", ici:"Tu t'approches autant que la coque le permet. La lumière est si forte que les instruments se taisent. Rien d'autre, pour l'instant.", desc:"" },
-  { id:"trou_noir", nom:"La Gorge", officiel:null, img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"q20",
+  { id:"trou_noir", nom:"La Gorge", officiel:null, img:"trou_noir_bleu.png", x:1163, y:824, t:312, type:"lieu", verrou:"gorge",
     usage:"Verrouillé", desc:"Elle avale la lumière sans un bruit. Personne n'en est revenu pour le raconter." },
   { id:"portail", nom:"L'Arche", officiel:"Structure TR-0", img:"portail.png", x:528, y:1394, t:344, type:"leurre",
     usage:"Inerte", desc:"L'anneau tourne encore, régulier. Il n'a jamais rien laissé passer." },
@@ -117,7 +120,14 @@ const ESPACE_LIEUX = [
 ];
 
 
-function espaceLieu(id){ return ESPACE_LIEUX.find(l => l.id === id) || null; }
+/* v1.96 — cherche aussi dans Cérès (js/espace2-data.js, identifiants `e2_*`) :
+   les deux cartes n'ont aucun identifiant en commun. `surLieuEspace` (orbite.js)
+   vérifie que le lieu est sur la carte où l'on vole. */
+function espaceLieu(id){
+  return ESPACE_LIEUX.find(l => l.id === id)
+      || ((typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX.find(l => l.id === id) : null)
+      || null;
+}
 /* Ce qu'on montre au joueur : nom courant, sinon désignation commune. */
 function espaceNom(l){ return (l && (l.nom || l.libelle)) || "Objet stellaire"; }
 function espaceRayon(l){ return l.r || Math.round(l.t/2) + 20; }

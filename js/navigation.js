@@ -33,7 +33,9 @@ function _innBanniere(){
    celle de Silène. Masquée tant que le fichier manque (jamais retirée). */
 function _boutiqueBanniere(){
   const ban = document.querySelector("#boutique-ban"), img = document.querySelector("#boutique-img"); if(!ban || !img) return;
-  const voulu = (typeof etat !== "undefined" && etat && etat.secteur === "ecart") ? "images/lieux/boutique_perchoir.png" : "images/lieux/boutique.png";
+  const voulu = (typeof etat !== "undefined" && etat && etat.secteur === "ecart") ? "images/lieux/boutique_perchoir.png"
+              : (typeof etat !== "undefined" && etat && etat.secteur === "ceres") ? "images/lieux/boutique_nid.png"   // v1.96 : masquée tant qu'elle n'existe pas
+              : "images/lieux/boutique.png";
   if(img.dataset.voulu === voulu) return;
   img.dataset.voulu = voulu; ban.hidden = true;
   img.onload = () => { ban.hidden = false; }; img.onerror = () => { ban.hidden = true; };
@@ -58,6 +60,7 @@ function majHub(){
      est là pour grossir — l'arc Q6→Q15 prévoit DEUX quêtes par lieu. */
   const carcasse = (typeof surCarcasse==="function") && surCarcasse();
   const gravier  = (typeof surGravier==="function")  && surGravier();
+  const nid      = (typeof surNid==="function")      && surNid();   // v1.96 : Cérès, Le Nid (K93 : carburant, remorquage)
   const auDessusBraise = (typeof surOrbiteBraise==="function") && surOrbiteBraise();   // v0.98 : La Braise OU Le Suaire
   // v0.99 — l'onglet de descente porte le nom de la planète survolée.
   { const bl=document.querySelector('.hub-lien[data-hub="descente"]'), c=(typeof surfaceCfg==="function"&&typeof surOrbitePlanete==="function")?surfaceCfg(surOrbitePlanete()):null; if(bl && c) bl.textContent=c.nom; }
@@ -75,6 +78,11 @@ function majHub(){
     ? { ...vide, garage:true, quete:true }   // v0.97 : Galm donne les quêtes Q6→
     : gravier
     ? { ...vide, gisement:true, quete:(typeof queteActive==="function" && !!queteActive()) }
+    : nid
+    /* v1.96 — Le Nid : la Boutique, réduite au carburant (boutique.js). Le remorquage
+       n'a pas d'onglet : c'est le secours (orbite.js) qui y dépose une coque clouée.
+       PNJ et quêtes du Nid : plus tard (K95), l'onglet Quêtes ne sert qu'à suivre. */
+    ? { ...vide, boutique:true, quete:qEnCours }
     : base
     /* v0.92 — L'ARÈNE n'existe qu'au Perchoir. `arene_adversaires()` refuse de
        toute façon ceux qui n'ont pas fini Q5, mais l'onglet ne doit pas
@@ -88,10 +96,15 @@ function majHub(){
   /* v1.61 — H18 : une affaire de mission en cours (groupe, invitation, gain)
      ouvre le lieu Quêtes PARTOUT, pour la suivre loin du comptoir. */
   if(typeof missionsAffaireEnCours==="function" && missionsAffaireEnCours()) dispo.quete = true;
+  /* v1.97 (K103, K106) — hors de Silène, l'onglet Voler / Hacker existe partout :
+     les poches sur un lieu, le hack n'importe où sur la carte. Il ne s'ouvre jamais
+     de lui-même (voir `prem`). */
+  const horsS = (typeof horsSilene==="function") && horsSilene();
+  if(horsS) dispo.voler = true;
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","bar","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || h!=="boutique"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","bar","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || nid || h!=="boutique") && !(horsS && h==="voler"));   // en pleine nature : on n'ouvre pas la boutique d'office
     /* ⚠ v0.91 — `montrerHub("vide")` est le vrai filet : si AUCUN onglet n'est
        disponible ici, on n'en laisse surtout pas un périmé affiché. C'est ce
        qui s'est produit avec Le Gisement resté seul après un atterrissage. */

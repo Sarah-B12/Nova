@@ -60,6 +60,43 @@ function coutSaut(){
 
 function enEcart(){ return etat.secteur === "ecart"; }
 
+/* ===========================================================
+   v1.96 — DEUX CARTES SPATIALES : Triptolème et Cérès (CADRAGE_CERES §5)
+   Une seule fenêtre (#modale-orbite), une seule position (`etat.posEspace`),
+   lue selon `etat.secteur` : "ecart" (Triptolème) ou "ceres". On passe de
+   l'une à l'autre par la Gorge (K75), dans les deux sens.
+   ⚠ `enEcart()` garde son sens : TRIPTOLÈME seulement (le Perchoir, La Carcasse,
+   Le Gravier, les descentes, les missions n'existent que là). « Dans l'espace,
+   où que ce soit » se dit `enEspace()`.
+   ⚠ `surLieuEspace(l)` vérifie que le lieu est sur la carte où l'on vole : les
+   deux cartes ont le même repère (2400 × 1600), un lieu de Triptolème ne doit
+   jamais être « atteint » depuis Cérès parce que ses coordonnées y tombent.
+   =========================================================== */
+const CARTES_ESPACE = {
+  ecart: { id:"ecart", nom:"Triptolème", base:"base", img:"images/espace/",
+           lieux:() => ESPACE_LIEUX, fond:() => ESPACE_FOND, monde:() => ESPACE_MONDE,
+           sortie:"Rentrée vers Silène : depuis le Perchoir uniquement." },
+  ceres: { id:"ceres", nom:"Cérès", base:"e2_base",
+           img:(typeof ESPACE2_IMG !== "undefined") ? ESPACE2_IMG : "images/espace2/",
+           lieux:() => (typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX : [],
+           fond:() => (typeof ESPACE2_FOND !== "undefined") ? ESPACE2_FOND : ESPACE_FOND,
+           monde:() => (typeof ESPACE2_MONDE !== "undefined") ? ESPACE2_MONDE : ESPACE_MONDE,
+           sortie:"Retour vers Triptolème : par la Gorge uniquement." }
+};
+function enCeres(){ return !!(etat && etat.secteur === "ceres"); }
+function enEspace(){ return enEcart() || enCeres(); }
+/* La carte spatiale « d'ici » : Cérès si l'on y est, Triptolème sinon (au sol, la
+   fenêtre de l'orbite ne s'ouvre que pour partir vers Triptolème). */
+function secteurEspaceIci(){ return enCeres() ? "ceres" : "ecart"; }
+function carteEspace(s){ return CARTES_ESPACE[s || secteurEspaceIci()] || CARTES_ESPACE.ecart; }
+function secteurDuLieu(l){
+  if(!l) return null;
+  return (typeof ESPACE2_LIEUX !== "undefined" && ESPACE2_LIEUX.includes(l)) ? "ceres" : "ecart";
+}
+function baseEspace(s){ return espaceLieu(carteEspace(s).base); }
+function ceresConnue(){ return !!(etat && etat.ceres === true); }
+function surNid(){ return enCeres() && surLieuEspace(espaceLieu("e2_base")); }
+
 /* Sur le Perchoir : c'est lui qui ouvre les services (auberge,
    comptoir, poste, gouvernement, quêtes). Ailleurs dans le secteur, on est
    « en vol » et les hubs se ferment, comme en pleine nature sur Silène. */
@@ -116,6 +153,7 @@ async function partirVersEcart(){
     return;
   }
   if(enEcart()){ ouvrirOrbite(); return; }
+  if(enCeres()){ repasserLaGorge(); return; }   // v1.96 : de Cérès, Triptolème est derrière la Gorge
   /* v1.85 — K16 : de la fin de Q20 à la fin de Q30, pas de vol hors de Maar.
      v1.87l — K54 : parce que 42-U1F a cassé le calculateur de saut en détournant le
      vaisseau ; il ne connaît plus que Maar. 42-U1F le réparera en fin de Q30. */
@@ -210,7 +248,7 @@ const PAS_ESPACE_C = 200;   // unités monde par litre (× conso du vaisseau)
 
 function posEspace(){
   if(etat.posEspace && typeof etat.posEspace.x === "number") return etat.posEspace;
-  const b = espaceLieu("base");
+  const b = baseEspace();   // v1.96 : le Perchoir à Triptolème, Le Nid à Cérès
   return b ? { x:b.x, y:b.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
 }
 function _distEsp(a, b){ return Math.hypot(a.x-b.x, a.y-b.y); }
@@ -228,7 +266,7 @@ function coutVol(dest, depuis){
 }
 /* Ce que coûterait le retour à la base DEPUIS un point donné. */
 function _coutRetourBase(depuis){
-  const b = espaceLieu("base"); if(!b) return null;
+  const b = baseEspace(); if(!b) return null;   // v1.96 : à Cérès, Le Nid (on y vend le carburant, K93)
   if(_distEsp(depuis, {x:b.x, y:b.y}) < 6) return { energie:0, litres:0, d:0 };
   return coutVol({ x:b.x, y:b.y }, depuis);
 }
@@ -252,7 +290,7 @@ function volPossible(dest){
 /* Déplacement effectif. Le carburant se prend d'abord au réservoir ; s'il n'y
    en a plus assez, on verse une unité transportée et on recommence. */
 async function volVers(l){
-  if(!enEcart()) return false;
+  if(!enEspace()) return false;   // v1.96 : Triptolème ou Cérès
   if(typeof vaisseauCloue==="function" && vaisseauCloue()){
     journal("Coque hors service : ton vaisseau ne décolle pas. Fais-le réparer.","alerte"); return false; }
   const dest = { x:l.x, y:l.y };
@@ -279,6 +317,7 @@ async function volVers(l){
   etat.posEspace = dest;
   journal(`Cap sur ${espaceNom(l)} — ${Math.round(j.cout.d)} u, ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain","voyage");
   if(l.type === "decor") journal(`${espaceNom(l)} : ${l.ici || "rien, pour l'instant."}`, "", "voyage");   // v1.01
+  else if(enCeres() && l.id && !ongletLieuEspace(l) && (l.ici || l.desc)) journal(`${espaceNom(l)} : ${l.ici || l.desc}`, "", "voyage");   // v1.96 : à Cérès, un lieu sans onglet (la Gorge) se raconte
   /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
      un joueur intercepté à mi-parcours ne saurait plus où il est, et les
      dégâts de coque changeraient le coût du vol déjà payé. */
@@ -311,7 +350,7 @@ function _apercuVol(l){
   if(j.ok) return `<b>${nom}</b> — ${cout}`;
   const raison = (j.err==="energie")
     ? "énergie insuffisante"
-    : `il faut ${j.besoin} L pour aller ET revenir à la base`;
+    : `il faut ${j.besoin} L pour aller ET revenir ${_alaBaseTxt()}`;
   return `<b>${nom}</b> — <span style="color:var(--coral,#ff5257)">${cout} — ${raison}</span>`;
 }
 
@@ -328,7 +367,7 @@ function ouvrirDistancesEspace(){
      base), soit 22 lignes pour 11 lieux : la fenêtre n'en finissait plus. Celle
      de Silène tient en 5 lignes. Ici, « depuis ta position » suffit — la base
      figure dans la liste comme les autres. */
-  const lieux = ESPACE_LIEUX.filter(l => l.type !== "decor")
+  const lieux = carteEspace().lieux().filter(l => l.type !== "decor")   // v1.96 : la carte d'ici
     .map(l => ({ l, c: coutVol({x:l.x, y:l.y}) }))
     .sort((a,b) => ((a.c&&a.c.energie)||0) - ((b.c&&b.c.energie)||0));
 
@@ -340,7 +379,7 @@ function ouvrirDistancesEspace(){
   }
   h += `</div>`;
   h += `<p class="vide" style="margin:10px 0 0">Trajets <b>directs</b>${v?`, ${v.nom} (conso ${v.conso} L/u)`:""}.
-    En rouge : pas de quoi <b>aller ET revenir au Perchoir</b>.</p>`;
+    En rouge : pas de quoi <b>aller ET revenir ${_alaBaseTxt()}</b>.</p>`;
 
   z.querySelector("#distances-corps").innerHTML = h;
   z.classList.add("ouverte"); z.setAttribute("aria-hidden","false");
@@ -361,8 +400,9 @@ function _coordEspace(svg, e){
 let _viseeEsp = null;   // v1.34e : visée au doigt (carte.js, viseeTactile)
 async function volVersPoint(pt){
   if(!pt) return;
-  pt.x = Math.max(0, Math.min(ESPACE_MONDE.w, pt.x));
-  pt.y = Math.max(0, Math.min(ESPACE_MONDE.h, pt.y));
+  const M = carteEspace().monde();   // v1.96
+  pt.x = Math.max(0, Math.min(M.w, pt.x));
+  pt.y = Math.max(0, Math.min(M.h, pt.y));
   await volVers({ x:pt.x, y:pt.y, nom:null, libelle:"ce point du secteur", id:null });
 }
 
@@ -448,7 +488,13 @@ async function reparerChezReparateur(){
 
 /* Est-on à portée d'un lieu ? ⚠ Même logique que Silène : on arrive DANS le
    rayon, pas sur le pixel. `espaceRayon` existait déjà. */
-function surLieuEspace(l){ return !!l && _distEsp(posEspace(), {x:l.x, y:l.y}) <= espaceRayon(l); }
+/* v1.96 — et sur la CARTE où l'on est (voir CARTES_ESPACE, plus haut). */
+function surLieuEspace(l){ return !!l && secteurDuLieu(l) === secteurEspaceIci() && _distEsp(posEspace(), {x:l.x, y:l.y}) <= espaceRayon(l); }
+/* « au Perchoir » / « au Nid » : le point de repli de la carte d'ici. */
+function _alaBaseTxt(){ const b = baseEspace(); const n = b ? espaceNom(b) : "la base";
+  return (typeof aLieu === "function") ? aLieu(n) : "à " + n; }
+/* Un lieu qui a un ÉCRAN (onglet) : sinon son arrivée se raconte dans le journal. */
+function ongletLieuEspace(l){ return !!l && ["base","epave","asteroides","planete_chaude","planete_froide","e2_base"].includes(l.id); }
 
 /* ===========================================================
    SECOURS — v0.91
@@ -496,7 +542,7 @@ async function secoursOrbite(){
      « Aucun vaisseau équipé » la bloquait au sol sans recours. Le secours vaut
      désormais AUSSI sur une sous-carte (La Braise, Le Suaire). */
   const enSurface = (typeof enSurfaceIci === "function") && enSurfaceIci();
-  if(!enEcart() && !enSurface) return false;
+  if(!enEspace() && !enSurface) return false;   // v1.96 : Cérès aussi
   const cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
   /* v0.92 — TROISIÈME CAS : le vaisseau est intact mais à sec, sans bidon et
      sans de quoi en acheter. Le secours n'existait que pour le vaisseau absent
@@ -531,6 +577,30 @@ async function secoursOrbite(){
      Silène. On remorque donc jusqu'au PERCHOIR, avec une navigabilité minimale
      rendue, de quoi rejoindre La Carcasse. Sans vaisseau du tout, en revanche,
      il n'y a plus rien à faire là-haut : retour au sol. */
+  /* v1.96 — CÉRÈS (choix A de l'autrice, 28/10, comme Ancolie, K41). Un vaisseau
+     CLOUÉ y est remorqué jusqu'au Nid (K93), avec la même navigabilité minimale :
+     de quoi rejoindre la Gorge et La Carcasse. Sans vaisseau, ou à sec sans de quoi
+     racheter du carburant : évacuation d'urgence, chez soi, sur Silène. ⚠ Jamais
+     « un cargo de passage » : aucun vaisseau ne vient de Cérès (K79). */
+  if(enCeres()){
+    if(cloue){
+      const n = baseEspace("ceres");
+      if(n) etat.posEspace = { x:n.x, y:n.y };
+      if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
+      journal(`Appel de détresse : on te remorque jusqu'au Nid et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon, à La Carcasse.`,"alerte","voyage");
+    } else {
+      const p = _villeDeMaFaction();
+      etat.secteur = "silene";
+      etat.pos = { x:p.x, y:p.y };
+      journal(aSec
+        ? `Réservoir à sec, plus un bidon et pas de quoi en acheter. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. ${du > 0 ? `Elle te prend tout ce qu'il te restait — ${du} ₡.` : "Tu n'avais rien à donner."}`
+        : `Plus de vaisseau pour repasser la Gorge. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
+      if(typeof fermerOrbite==="function") fermerOrbite();
+    }
+    if(typeof sauverMaintenant==="function") await sauverMaintenant();
+    majApresDeplacement();
+    return true;
+  }
   if(cloue){
     if(enSurface){ etat.secteur = "ecart"; etat.surface = null; if(typeof fermerCarteBraise==="function") fermerCarteBraise(); }   // v1.56
     const b = espaceLieu("base");
@@ -556,11 +626,82 @@ async function secoursOrbite(){
 }
 
 /* v1.85 — un lieu `verrou:"q20"` (la Gorge) s'ouvre SEULEMENT pendant la
-   première étape de Q20 ; il se referme ensuite jusqu'à l'arc suivant (K27). */
+   première étape de Q20 ; il se referme ensuite jusqu'à l'arc suivant (K27).
+   v1.96 — verrou "gorge" (`gorgeOuverte`) : Q20 étape 1 comme avant ; toute étape
+   de quête marquée `gorge:true` (Q31 n'aura qu'à le déclarer) ; puis pour de bon
+   une fois Cérès connue (`etat.ceres`, posé par la récompense de Q31). Un autre
+   verrou reste l'identifiant d'une quête, ouverte à sa première étape. */
+function gorgeOuverte(){
+  const a = (typeof queteActive==="function") ? queteActive() : null;
+  if(a && a.id === "q20" && a.etape === 0) return true;
+  const e = (typeof etapeActive==="function") ? etapeActive() : null;
+  if(a && !a._resolu && e && e.gorge === true) return true;
+  return ceresConnue();
+}
 function lieuOuvert(l){
   if(!l || !l.verrou) return true;
+  if(l.verrou === "gorge") return gorgeOuverte();
   const a = (typeof queteActive==="function") ? queteActive() : null;
   return !!(a && a.id === l.verrou && a.etape === 0);
+}
+/* Ce que dit la ligne « usage » d'un lieu : celle de la Gorge suit son verrou. */
+function usageLieu(l){
+  if(!l) return "";
+  if(l.id === "trou_noir") return gorgeOuverte() ? (ceresConnue() ? "Passage vers Cérès" : "Ouverte") : "Verrouillé";
+  return l.usage || "";
+}
+
+/* ===========================================================
+   v1.96 — PASSER LA GORGE (K75) : Triptolème ⇄ Cérès.
+   On ne passe que depuis l'une de ses deux bouches (le trou noir de Triptolème,
+   `trou_noir` ; l'autre bouche, `e2_gorge`). Coût : un saut (carburant + énergie,
+   comme tout changement de carte). Comme partout, on ne part pas sans de quoi
+   revenir : à l'aller, deux sauts (le retour se paie aussi) ; au retour, le saut
+   et le trajet jusqu'au Perchoir. Arrivée : sur l'autre bouche.
+   Aucune quête ici : Q31 ouvrira la route (`etat.ceres`).
+   =========================================================== */
+function surGorgeTriptoleme(){ return enEcart() && surLieuEspace(espaceLieu("trou_noir")); }
+function surGorgeCeres(){ return enCeres() && surLieuEspace(espaceLieu("e2_gorge")); }
+async function passerLaGorge(){
+  if(!enEcart()) return;
+  if(!ceresConnue() || !gorgeOuverte()){ journal("La Gorge est fermée. Rien ne passe, pas même la lumière.","alerte","voyage"); return; }
+  if(!surGorgeTriptoleme()){ journal("Pour passer la Gorge, rejoins-la d'abord sur la carte de Triptolème.","alerte","voyage"); return; }
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : tu n'entreras pas dans la Gorge comme ça.","alerte"); return; }
+  const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
+  if(auto < 2*cs.litres){
+    journal(`Passage refusé : il faut de quoi revenir. Passer la Gorge et la repasser coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage");
+    return;
+  }
+  if(!await _payerSaut("La Gorge", cs)) return;
+  const g = espaceLieu("e2_gorge");
+  etat.secteur = "ceres";
+  etat.posEspace = g ? { x:g.x, y:g.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
+  journal("Tu entres dans la Gorge. Le noir, la pression, la coque qui chante. Puis tout lâche d'un coup, et tu ressors de l'autre côté, au milieu d'étoiles que tu ne connais pas. Secteur Cérès.","gain","voyage");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  majApresDeplacement();
+  ouvrirOrbite();
+}
+async function repasserLaGorge(){
+  if(!enCeres()) return;
+  if(!surGorgeCeres()){ journal("Pour rentrer à Triptolème, rejoins d'abord la Gorge, sur la carte de Cérès.","alerte","voyage"); return; }
+  if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : tu n'entreras pas dans la Gorge comme ça.","alerte"); return; }
+  const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const t = espaceLieu("trou_noir"), b = espaceLieu("base");
+  const versPerchoir = (t && b) ? coutVol({ x:b.x, y:b.y }, { x:t.x, y:t.y }) : null;
+  const besoin = cs.litres + (versPerchoir ? versPerchoir.litres : 0);
+  const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
+  if(auto < besoin){
+    journal(`Passage refusé : de l'autre côté, il faudra encore rejoindre le Perchoir. La Gorge puis le Perchoir coûtent ${besoin} L, tu n'as que ${Math.round(auto)} L en tout. Le Nid vend du carburant.`,"alerte","voyage");
+    return;
+  }
+  if(!await _payerSaut("La Gorge", cs)) return;
+  etat.secteur = "ecart";
+  etat.posEspace = t ? { x:t.x, y:t.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
+  journal(`La Gorge te reprend, te serre, et te rend à Triptolème. Le Perchoir est là où tu l'as laissé.`,"gain","voyage");
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  majApresDeplacement();
+  ouvrirOrbite();
 }
 
 /* Conditions d'accès */
@@ -576,6 +717,7 @@ function orbiteDebloquee(){ return etat.espace1===true && !!etat.vaisseau; }
    Plus besoin des « Rentrer / Redescendre sur Silène » des cartes : retirés. */
 function _lieuNav(){
   if(typeof enEcart === "function" && enEcart()) return "ecart";
+  if(enCeres()) return "ceres";   // v1.96
   if(etat.secteur === "ancolie") return "ancolie";
   if(typeof enSurface === "function" && enSurface()) return "autre";   // La Braise, Le Suaire
   return "silene";
@@ -600,6 +742,23 @@ function majBoutonOrbite(){
   const station = (typeof aLaStation === "function") && ici === "ancolie" && aLaStation();
   const csT = coutSaut(), csA = (typeof coutSautSurface === "function" && typeof SURFACES !== "undefined") ? coutSautSurface(SURFACES.ancolie) : null;
   const decolle = "décolle d'abord";
+  /* v1.96 — CÉRÈS : on n'en sort que par la Gorge, vers Triptolème. Le bouton de
+     Triptolème y passe (depuis la Gorge) ; Silène et Ancolie restent grisés. */
+  const okC = ceresConnue() && !!etat.vaisseau; _montrer("#ouvrir-ceres", okC || ici === "ceres");
+  if(ici === "ceres"){
+    const gorge = surGorgeCeres();
+    _boutonNav("#ouvrir-carte", "Partir pour Silène", "par la Gorge", false);
+    _montrer("#ouvrir-orbite", true);
+    _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, gorge ? `la Gorge · ${_txtCout(csT)}` : "depuis la Gorge", gorge);
+    const okA2 = (typeof ancolieConnue === "function") && ancolieConnue() && !!etat.vaisseau; _montrer("#ouvrir-ancolie", okA2);
+    if(okA2) _boutonNav("#ouvrir-ancolie", "Partir pour Ancolie", "par la Gorge", false);
+    _boutonNav("#ouvrir-ceres", "Carte de Cérès", "tu y es", true);
+    return;
+  }
+  if(okC){
+    if(ici === "ecart"){ const g = surGorgeTriptoleme(); _boutonNav("#ouvrir-ceres", "Partir pour Cérès", g ? `la Gorge · ${_txtCout(csT)}` : "depuis la Gorge", g); }
+    else _boutonNav("#ouvrir-ceres", "Partir pour Cérès", "par la Gorge", false);
+  }
   // Silène
   if(ici === "silene") _boutonNav("#ouvrir-carte", "Carte de Silène", "se déplacer", true);
   else if(ici === "ecart") _boutonNav("#ouvrir-carte", "Partir pour Silène", base ? _txtCout(csT) : "depuis le Perchoir", base);
@@ -624,8 +783,10 @@ function majBoutonOrbite(){
   }
 }
 const NAV_DECOLLE = "Décolle d'abord : ton vaisseau t'attend à l'aire d'atterrissage, et c'est l'orbite qui mène ailleurs.";
+const NAV_CERES = "Cérès ne communique avec rien d'autre que Triptolème : repasse d'abord la Gorge.";
 function boutonSilene(){
   const ici = _lieuNav();
+  if(ici === "ceres"){ journal(NAV_CERES, "alerte", "voyage"); return; }   // v1.96
   if(ici === "silene"){ if(typeof ouvrirCarte === "function") ouvrirCarte(); return; }
   if(ici === "ecart"){ revenirVersSilene(); return; }
   if(ici === "ancolie"){ if(typeof rentrerDepuisAncolie === "function") rentrerDepuisAncolie(); return; }
@@ -633,16 +794,25 @@ function boutonSilene(){
 }
 function boutonTriptoleme(){
   const ici = _lieuNav();
+  if(ici === "ceres"){ repasserLaGorge(); return; }   // v1.96 : par la Gorge
   if(ici === "ancolie"){ if(typeof partirEcartDepuisAncolie === "function") partirEcartDepuisAncolie(); return; }
   if(ici === "autre"){ journal(NAV_DECOLLE, "alerte", "voyage"); return; }
   partirVersEcart();   // depuis Silène ; en orbite, ouvre la carte
 }
 function boutonAncolie(){
   const ici = _lieuNav();
+  if(ici === "ceres"){ journal(NAV_CERES, "alerte", "voyage"); return; }   // v1.96
   if(ici === "ancolie"){ if(typeof ouvrirCarteBraise === "function") ouvrirCarteBraise(); return; }
   if(ici === "ecart"){ if(typeof partirAncolieDepuisEcart === "function") partirAncolieDepuisEcart(); return; }
   if(ici === "autre"){ journal(NAV_DECOLLE, "alerte", "voyage"); return; }
   if(typeof partirVersAncolie === "function") partirVersAncolie();
+}
+/* v1.96 — le quatrième bouton : Cérès. On n'y entre que par la Gorge (K75). */
+function boutonCeres(){
+  const ici = _lieuNav();
+  if(ici === "ceres"){ ouvrirOrbite(); return; }
+  if(ici === "ecart"){ passerLaGorge(); return; }
+  journal("Cérès est de l'autre côté de la Gorge, dans le secteur Triptolème : monte d'abord en orbite, puis rejoins la Gorge.", "alerte", "voyage");
 }
 
 /* ⚠ v0.83 — les destinations dessinées « à la main » (rectangles, cercles)
@@ -673,7 +843,7 @@ function _espaceHtml(l){
     /* v1.93t — retour de l'autrice : blanc et en pointillé, comme la station d'Ancolie. */
     h += `<circle cx="${l.x}" cy="${l.y}" r="${rh}" fill="#ffffff14" stroke="${l.halo}" stroke-opacity=".85" stroke-width="3" stroke-dasharray="8 10"/>`;
   }
-  h += `<image href="images/espace/${l.img}" x="${l.x-demi}" y="${l.y-demi}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
+  h += `<image href="${carteEspace(secteurDuLieu(l)).img}${l.img}" x="${l.x-demi}" y="${l.y-demi}" width="${l.t}" height="${l.t}" preserveAspectRatio="xMidYMid meet"/>`;
   /* ⚠ v0.84 — ZONE DE SAISIE. Une image de 109 u est minuscule à l'écran : on
      n'arrivait ni à la sélectionner ni à la déplacer. Ce carré invisible, d'au
      moins 160 u, se superpose à l'objet et reçoit les clics. En jeu, il sert
@@ -690,23 +860,28 @@ function _espaceHtml(l){
 
 function majOrbite(){
   const svg=document.querySelector("#carte-orbite"); if(!svg) return;
-  svg.setAttribute("viewBox",`0 0 ${ESPACE_MONDE.w} ${ESPACE_MONDE.h}`);
+  /* v1.96 — la carte d'ICI : Triptolème, ou Cérès si l'on y est. L'outil de
+     placement (console dev) ne connaît que Triptolème : il la garde toujours. */
+  const C = _placementActif ? CARTES_ESPACE.ecart : carteEspace();
+  const M = C.monde(), LIEUX = C.lieux();
+  const tt = document.querySelector("#orbite-titre"); if(tt) tt.textContent = `Secteur ${C.nom}`;
+  svg.setAttribute("viewBox",`0 0 ${M.w} ${M.h}`);
   svg.setAttribute("preserveAspectRatio","xMidYMid meet");
 
   const barre=document.querySelector("#orbite-barre-plac");
   if(barre) barre.innerHTML = (typeof placementBarreHtml==="function") ? placementBarreHtml() : "";
 
-  let html = `<image href="${ESPACE_FOND}" x="0" y="0" width="${ESPACE_MONDE.w}" height="${ESPACE_MONDE.h}" preserveAspectRatio="none"/>`;
+  let html = `<image href="${C.fond()}" x="0" y="0" width="${M.w}" height="${M.h}" preserveAspectRatio="none"/>`;
   if(typeof placementGrilleHtml==="function") html += placementGrilleHtml();
   if(_placementActif){
     /* ⚠ v0.85 — en placement, TOUT est attrapable : on dessine du plus grand au
        plus petit, pour qu'une grosse zone de saisie ne recouvre jamais un petit
        objet (une planète de 406 u cachait l'astéroïde voisin). */
-    ESPACE_LIEUX.slice().sort((a,b)=>b.t-a.t).forEach(l=>{ html += _espaceHtml(l); });
+    LIEUX.slice().sort((a,b)=>b.t-a.t).forEach(l=>{ html += _espaceHtml(l); });
   } else {
     // En jeu : décor d'abord, les lieux passent au-dessus.
-    ESPACE_LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
-    ESPACE_LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
+    LIEUX.filter(l=>l.type==="decor").forEach(l=>{ html += _espaceHtml(l); });
+    LIEUX.filter(l=>l.type!=="decor").forEach(l=>{ html += _espaceHtml(l); });
   }
   /* v0.88 — marqueur du joueur, comme sur Silène (carte.js) : sans lui, on ne
      sait pas où l'on est dans le secteur. Dessiné EN DERNIER, donc au-dessus. */
@@ -731,7 +906,7 @@ function majOrbite(){
   if(!svg.dataset.branche){
     svg.dataset.branche = "1";
     svg.addEventListener("click", e=>{
-      if(_placementActif || !enEcart()) return;
+      if(_placementActif || !enEspace()) return;   // v1.96 : Cérès aussi
       if(e.target.closest("[data-lieu]")) return;      // un objet : sa fiche s'ouvre
       const p = _coordEspace(svg, e); if(!p) return;
       _orbSel = null;             // v1.88f : un toucher dans le vide oublie la planète choisie
@@ -752,7 +927,7 @@ function majOrbite(){
   const zi = document.querySelector("#orbite-info");
   if(zi){
     _orbInfoFige = null; _orbSel = null;   // v1.88f
-    zi.innerHTML = `Clique un point de la carte pour t'y rendre. <span class="itip-gris">Rentrée vers Silène : depuis le Perchoir uniquement.</span>`;
+    zi.innerHTML = `Clique un point de la carte pour t'y rendre. <span class="itip-gris">${C.sortie}</span>`;   // v1.96
   }
   if(zi && !zi.dataset.branche){
     zi.dataset.branche = "1";
@@ -770,7 +945,7 @@ function majOrbite(){
      il RESTAURE au départ de la souris ce que le dernier clic y avait mis. */
   svg.querySelectorAll("[data-lieu]").forEach(g=>{
     g.addEventListener("mouseenter", ()=>{
-      if(_placementActif || !enEcart()) return;
+      if(_placementActif || !enEspace()) return;
       const l = espaceLieu(g.dataset.lieu); if(!l) return;
       const z = document.querySelector("#orbite-info"); if(!z) return;
       if(_orbInfoFige === null) _orbInfoFige = z.innerHTML;
@@ -788,7 +963,7 @@ function majOrbite(){
       /* v1.88f — AU DOIGT (iPad, téléphone), comme sur Silène : le premier toucher sur
          un objet montre son nom et le coût du vol ; le second, sur le même objet, y
          emmène. À la souris, rien ne change (le survol montre déjà le nom). */
-      if(_orbPointeur === "touch" && enEcart() && !surLieuEspace(l) && !(l.verrou && !lieuOuvert(l)) && _orbSel !== l.id){
+      if(_orbPointeur === "touch" && enEspace() && !surLieuEspace(l) && !(l.verrou && !lieuOuvert(l)) && _orbSel !== l.id){
         _orbSel = l.id; if(_viseeEsp) _viseeEsp.effacer();
         z.innerHTML = `${_apercuVol(l)}<br><span class="itip-gris">Touche-le encore pour y aller.</span>`;
         return;
@@ -800,11 +975,11 @@ function majOrbite(){
          constate sur place qu'il n'y a rien — pour l'instant (`ici`, espace-data). */
       if(l.type === "decor"){
         if(surLieuEspace(l)){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">Tu y es. ${l.ici||"Rien, pour l'instant."}</span>`; return; }
-        if(!enEcart()){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`; return; }
+        if(!enEspace()){ z.innerHTML = `<b>${espaceNom(l)}</b><br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`; return; }
         volVers(l); return;
       }
       if(l.verrou && !lieuOuvert(l)){
-        z.innerHTML = `<b>${l.nom}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
+        z.innerHTML = `<b>${espaceNom(l)}</b> — <span style="color:#ff6b6b">verrouillé</span>.<br><span class="itip-gris">${l.desc}</span>`;
         return;
       }
       /* v0.91 — le bandeau annonce le coût du vol et propose de partir.
@@ -815,12 +990,18 @@ function majOrbite(){
          Le clic sur un objet EMMÈNE, comme sur Silène et comme le vol libre ;
          les services d'un lieu vivent dans son onglet (Le Garage, Le Gisement),
          qui a la place de respirer. Ici : uniquement de l'information. */
+      const us = usageLieu(l);   // v1.96 : la Gorge dit si elle est ouverte
       if(surLieuEspace(l)){
-        z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}<br><span class="itip-gris">Tu y es. ${l.type==="decor"?"Rien à y faire.":"Ferme la carte : son onglet t'attend."}</span>`;
+        /* v1.96 — un lieu SANS onglet (les deux bouches de la Gorge) dit plutôt quoi
+           faire ici ; les autres renvoient à leur onglet, comme avant. */
+        const g = (l.id === "trou_noir" && ceresConnue() && gorgeOuverte()) ? "« Partir pour Cérès », sous la carte, te fait passer."
+                : (l.id === "e2_gorge") ? "« Partir pour Triptolème », sous la carte, te fait repasser."
+                : (ongletLieuEspace(l) || !enCeres()) ? "Ferme la carte : son onglet t'attend." : (l.ici || l.desc || "");
+        z.innerHTML = `<b>${espaceNom(l)}</b>${us?` — ${us}`:""}<br><span class="itip-gris">Tu y es. ${l.type==="decor"?"Rien à y faire.":g}</span>`;
         return;
       }
-      if(!enEcart()){
-        z.innerHTML = `<b>${espaceNom(l)}</b>${l.usage?` — ${l.usage}`:""}<br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`;
+      if(!enEspace()){
+        z.innerHTML = `<b>${espaceNom(l)}</b>${us?` — ${us}`:""}<br><span class="itip-gris">${l.desc||"Décolle pour t'y rendre."}</span>`;
         return;
       }
       volVers(l);
@@ -848,9 +1029,9 @@ function majOrbite(){
      trouve dans le secteur est bien plus utile en un coup d'œil. */
   const nav=document.querySelector("#orbite-vaisseau");
   if(nav){
-    if(!enEcart()){ nav.textContent = "— vu depuis Silène"; }
+    if(!enEspace()){ nav.textContent = "— vu depuis Silène"; }
     else {
-      const ici = ESPACE_LIEUX.find(l => l.type !== "decor" && surLieuEspace(l));
+      const ici = LIEUX.find(l => l.type !== "decor" && surLieuEspace(l));
       nav.textContent = ici ? `— ${espaceNom(ici)}` : "— en vol";
     }
   }

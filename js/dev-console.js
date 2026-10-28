@@ -373,6 +373,7 @@ function majDev(){
       <button class="mini" id="dev-espace1">${etat.espace1?"Fermer la route de l'orbite":"Ouvrir la route de l'orbite"}</button>
       <button class="mini" id="dev-placement">Placement carte spatiale</button>
       <button class="mini" id="dev-placement2" title="Carte au-delà de la Gorge : js/espace2-data.js (v1.95)">Placement carte 2 (au-delà de la Gorge)</button>
+      <button class="mini" id="dev-ceres" title="v1.96 : ouvre ou ferme la Gorge pour ce personnage (etat.ceres, posé plus tard par Q31)">${etat.ceres?"Fermer la route de Cérès":"Ouvrir la route de Cérès"}</button>
       <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
       <button class="mini" id="dev-prison">Libérer de prison</button>
       <button class="mini" id="dev-journal-vider">Vider le journal</button>
@@ -406,6 +407,17 @@ function majDev(){
       fermerDev();
       placement2Ouvrir();
     });
+    const bce=av.querySelector("#dev-ceres");
+    if(bce) bce.addEventListener("click", ()=>{
+      /* v1.96 — tester Cérès avant Q31. ⚠ Fermer la route alors qu'on y est ne
+         rapatrie pas : on rentre par la Gorge comme tout le monde (le bouton de
+         Triptolème y marche toujours). */
+      etat.ceres = !etat.ceres;
+      journal(`[dev] Route de Cérès ${etat.ceres ? "ouverte : la Gorge laisse passer (bouton « Partir pour Cérès », depuis la Gorge)" : "fermée"}.`, "gain");
+      if(typeof sauvegarder==="function") sauvegarder();
+      if(typeof majApresDeplacement==="function") majApresDeplacement();
+      bce.textContent = etat.ceres ? "Fermer la route de Cérès" : "Ouvrir la route de Cérès";
+    });
     const ben=av.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
     const bpr=av.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);
     const bjv=av.querySelector("#dev-journal-vider"); if(bjv) bjv.addEventListener("click", devViderJournal);
@@ -422,7 +434,7 @@ function majDev(){
     });
     const bso=av.querySelector("#dev-sonde");
     if(bso) bso.addEventListener("click", ()=>{
-      if(typeof enEcart!=="function" || !enEcart()){ journal("[dev] Il faut être dans le secteur Triptolème.","alerte"); return; }
+      if(typeof enEspace!=="function" || !enEspace()){ journal("[dev] Il faut être dans l'espace (Triptolème ou Cérès).","alerte"); return; }
       if(typeof ouvrirSonde==="function") ouvrirSonde();
     });
     const bcr=av.querySelector("#dev-coque-ok");

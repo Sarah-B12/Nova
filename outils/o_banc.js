@@ -43,6 +43,8 @@ const DELAIS = {
   avatarvue: { profil: 50, sac: 50, jauges: 50 }, // v1.93l : fenêtre d'avatar et zoom (o_avatarvue.js)
   usureequipe: { profil: 50, sac: 50, jauges: 50 }, // v1.93o : usure de l'équipement porté (o_usureequipe.js)
   gardiens: { profil: 50, sac: 50, jauges: 50 },  // v1.93s : les gardiens de niveau (o_gardiens.js)
+  ceres: { profil: 50, sac: 50, jauges: 50 },     // v1.96 : Cérès jouable, sans quêtes (o_ceres.js)
+  volpartout: { profil: 50, sac: 50, jauges: 50 },   // v1.97 : le vol partout, K103 → K108 (o_volpartout.js)
   nav: { profil: 50, sac: 50, jauges: 50 },       // v1.93t : boutons de voyage, Triptolème ⇄ Ancolie (o_nav.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)

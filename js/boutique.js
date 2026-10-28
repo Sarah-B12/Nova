@@ -19,6 +19,9 @@ let _boutiqueMsgTimer = null;
     .bq-champ::-webkit-outer-spin-button,.bq-champ::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
     .bq-champ[type=number]{ -moz-appearance:textfield; appearance:textfield; }
     @media (max-width:560px){ .bq-qte{ margin-right:5px; } .bq-champ{ width:44px; } }
+    .bq-gly{ display:inline-flex; align-items:flex-end; gap:6px; flex-wrap:wrap; margin-top:2px; }   /* v1.96 : étiquettes du Nid */
+    .bq-gly .gly{ width:15px; height:26px; }
+    .bq-gly-sep{ color:var(--sourdine,#7f93a8); }
   `;
   document.head.appendChild(st);
 })();
@@ -38,10 +41,30 @@ function _boutiqueMsg(txt){
    (BASE_BOUTIQUE). Ils partagent tout le rendu ; seuls le catalogue, les
    onglets et le titre changent. */
 function _surBaseBoutique(){ return (typeof surBase==="function") && surBase(); }
-function _catalogueBoutique(){ return _surBaseBoutique() ? BASE_BOUTIQUE : BOUTIQUE; }
-function _catsBoutique(){ return _surBaseBoutique() ? CAT_BASE_BOUTIQUE : CAT_BOUTIQUE; }
+/* v1.96 — LE NID (Cérès, K93) : un troisième comptoir, qui ne vend QUE le carburant
+   du Perchoir, aux mêmes prix. Ses étiquettes sont en ANCIEN (demande de l'autrice,
+   28/10) : à Cérès, on parle et on écrit l'ancien (K80). Le nom de l'objet et son
+   image restent les nôtres ; la ligne de description se DÉCHIFFRE (LORE §11 bis).
+   Quatre sons nouveaux, tous dans un mot qui contient un son déjà appris :
+     PRO·PUL·SION (« propulsion », PRO connu) — PUL Π traversé, SION Χ traversé ;
+     CON·CEN·TRÉ (« concentré », CON connu)  — CEN Δ traversé, TRÉ Λ traversé. */
+function _surNidBoutique(){ return (typeof surNid==="function") && surNid(); }
+const NID_ETIQUETTES = {
+  fab_biocarburant:         [["PRO","PUL","SION"]],
+  fab_biocarburant_raffine: [["PRO","PUL","SION"], ["CON","CEN","TRE"]]
+};
+function _etiquetteNid(id){
+  const mots = NID_ETIQUETTES[id]; if(!mots || typeof glyphesMot !== "function") return "";
+  return `<span class="bq-gly">${mots.map(glyphesMot).join(`<span class="bq-gly-sep">·</span>`)}</span>`;
+}
+function _catalogueBoutique(){
+  if(_surNidBoutique()) return BASE_BOUTIQUE.filter(a => a.cat === "carburant");
+  return _surBaseBoutique() ? BASE_BOUTIQUE : BOUTIQUE; }
+function _catsBoutique(){
+  if(_surNidBoutique()) return CAT_BASE_BOUTIQUE.filter(c => c.id === "carburant");
+  return _surBaseBoutique() ? CAT_BASE_BOUTIQUE : CAT_BOUTIQUE; }
 function _boutiqueDehors(){
-  if(_surBaseBoutique()) return false;                       // la base EST un comptoir
+  if(_surBaseBoutique() || _surNidBoutique()) return false;  // la base (et Le Nid) SONT des comptoirs
   return !(typeof villeActuelle==="function" && villeActuelle());
 }
 function _prixBoutique(a){
@@ -56,7 +79,10 @@ function renderBoutique(){
      décollage, sans rien expliquer. */
   if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
-  if(_surBaseBoutique()){
+  if(_surNidBoutique()){
+    html += `<p class="vide" style="margin:0 0 10px">Le Nid — <b>du carburant</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons, eux, se reconnaissent.
+      <br><span class="itip-gris">Une coque clouée dans le secteur est remorquée jusqu'ici.</span></p>`;
+  } else if(_surBaseBoutique()){
     html += `<p class="vide" style="margin:0 0 10px">Comptoir du Perchoir — <b>oxygène, soins, carburant et vaisseau</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
   } else {
     html += `<p class="vide" style="margin:0 0 10px">Boutique officielle — mêmes prix partout, stock illimité. Les <b>graines</b> et <b>bébés</b> sont indispensables pour cultiver et élever.</p>`;
@@ -84,6 +110,7 @@ function renderBoutique(){
       sous = a.sous || (parts.length ? `${parts.join(", ")} à l'usage`
                                      : (a.cat === "carburant" ? "carburant de vaisseau" : ""));
     }
+    if(_surNidBoutique()) sous = _etiquetteNid(a.id) || sous;   // v1.96 : en ancien, au Nid
     html += `<div class="marche-ligne" data-item="${a.id}"><span class="marche-ic">${iconeItem(a.id)}</span>`
       + `<span class="marche-nom">${a.nom}<span class="qte">${sous}</span></span>`
       + `<span class="marche-prix">${_prixBoutique(a)} ₡</span>`

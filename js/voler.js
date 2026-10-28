@@ -24,6 +24,10 @@ const VOL_CAP_OBJETS  = 3;
    (gagnerXp → xp_gagner). */
 const XP_VOL_REUSSI = 8, XP_VOL_VIDE = 3, XP_VOL_RATE = 2;
 const IMMUNITE_JOURS  = 20;
+/* v1.97 (K107) — la victime est protégée, contre tout le monde et les deux gestes :
+   après un vol réussi, un hack réussi, une tentative ratée. « Rien pris » ne
+   protège pas. TEXTES seulement : le serveur applique (vol_preparer, v222). */
+const PROTECTION_VOL_H = 48, PROTECTION_HACK_H = 72, PROTECTION_RATE_H = 24;
 const ITEM_HACK_VOL   = "fab_ordinateur_de_hacking";
 let _volTimer = null, _hackTimer = null, _hackWin = null, _hackLose = null, _hackCleanup = null;
 
@@ -40,13 +44,43 @@ function _ordiEquipe(){ return !!(etat.equipement && (etat.equipement.arme===ITE
    présents (`presents_ici`), avec la même règle exactement.
    ⚠ v1.22 : le serveur applique la même règle pour DÉSIGNER la victime
      (`vol_preparer`) ; le butin n'est plus simulé. */
-function _enVille(){
-  if(typeof enEcart==="function" && enEcart()) return true;          // Perchoir & secteurs
-  return (typeof enZoneFaction==="function") && enZoneFaction();
+/* ⚠ v1.97 — LE VOL PARTOUT (K103 → K108, v222). Hors de Silène :
+   · FAIRE LES POCHES se fait sur un LIEU NOMMÉ de la carte (le Perchoir, La
+     Carcasse, Mousseron, Le Nid, une aire d'atterrissage, la station, le lac
+     gelé…), aux joueurs présents sur ce même lieu ; en pleine nature ou en plein
+     vol, personne. Rayon : celui de la carte (espaceRayon, `r` au sol).
+   · HACKER se fait de n'importe où sur la carte, contre n'importe qui de la carte.
+   Sur Silène, rien ne change : on vole et on hacke dans une cité, ses présents.
+   Le serveur a la même liste de lieux (table vol_lieux, outils/o_vol_lieux.js). */
+function lieuVolIci(){
+  if(typeof horsSilene !== "function" || !horsSilene()) return null;
+  const s = etat.secteur;
+  let L = [], p = null, ray = l => l.r;
+  if(s === "ecart" || s === "ceres"){
+    if(typeof carteEspace !== "function") return null;
+    L = carteEspace(s).lieux(); p = posEspace(); ray = l => espaceRayon(l);
+  } else if(typeof surfaceCfg === "function" && surfaceCfg(s)){
+    L = surfaceCfg(s).lieux || []; p = (typeof posSurface === "function") ? posSurface() : null;
+  }
+  if(!p) return null;
+  let best = null, bd = Infinity;
+  for(const l of L){ if(!l.nom) continue;
+    const d = Math.hypot(Math.round(p.x) - l.x, Math.round(p.y) - l.y);
+    if(d <= ray(l) && d < bd){ best = l; bd = d; } }
+  return best;
 }
-function _lieuVolNom(){
-  if(typeof enEcart==="function" && enEcart()) return "ici";
-  return "dans cette ville";
+function _volIci(mode){
+  if(typeof horsSilene !== "function" || !horsSilene()) return (typeof enZoneFaction==="function") && enZoneFaction();
+  return mode === "hack" ? true : !!lieuVolIci();
+}
+/* L'onglet a quelque chose à proposer ici (l'un ou l'autre geste). */
+function _enVille(){ return _volIci("vol") || _volIci("hack"); }
+let _volModeCourant = "vol";
+function _lieuVolNom(mode){
+  mode = mode || _volModeCourant;
+  if(typeof horsSilene !== "function" || !horsSilene()) return "dans cette ville";
+  if(mode === "hack") return `sur ${(typeof nomSecteur==="function") ? nomSecteur(etat.secteur) : "cette carte"}`;
+  const l = lieuVolIci(); return l ? ((typeof aLieu==="function") ? aLieu(l.nom) : `à ${l.nom}`) : "ici";
 }
 function enPrison(){ return (etat.prisonJusqua||0) > Date.now(); }
 /* ⚠⚠ v0.94 — LA PRISON NE TENAIT QUE LA MOITIÉ DU JEU.
@@ -139,8 +173,8 @@ function _volAppliquer(d){
 }
 const _VOL_REFUS = {
   personne:  ()=>`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,
-  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j) ou délestés hier ou aujourd'hui. Rien n'a été dépensé.`,
-  lieu:      ()=>"Va dans une ville, ou au Perchoir, pour cibler quelqu'un.",
+  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j), ou visés récemment (${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée). Rien n'a été dépensé.`,
+  lieu:      ()=>_VOL_LIEU_TXT,
   aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
   chasseur:  ()=>"Un chasseur de primes ne vole pas.",   // v1.72 (H80)
   ordinateur:()=>"Équipe un Ordinateur de hacking pour hacker.",
@@ -148,7 +182,9 @@ const _VOL_REFUS = {
   mort:      ()=>"Tu es mort : impossible d'agir.",
   prison:    ()=>"Tu es en prison."
 };
+const _VOL_LIEU_TXT = "Pour faire les poches : dans une cité sur Silène ; ailleurs, sur un lieu (le Perchoir, Le Nid, la station, une aire d'atterrissage…).";
 async function _volPreparer(mode){
+  _volModeCourant = mode;   // v1.97 : les refus parlent du bon endroit
   const d = await _volRpc(()=>sb.rpc("vol_preparer", { p_mode:mode, p_cout:_coutVol() }), "preparer");
   if(!d){ journal("Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol"); return null; }
   if(!d.ok){
@@ -168,6 +204,7 @@ async function _volConclure(mode, prep, reussi){
   const nom = (d && d.cible) || prep.cible || "ta cible";
   if(!d || !d.ok){ journal("Le serveur n'a pas enregistré l'issue — elle comptera comme un échec.","alerte","vol"); apresAction(); majVoler(); return; }
   _volAppliquer(d);
+  if(d.prison) setTimeout(_conduireEnPrison, 0);   // v1.97 : conduit tout de suite (avant : au prochain syncPrison)
   // v1.36k : le vol et le hack rapportent de l'XP (voir XP_VOL_*).
   const xp = d.reussi ? (d.vide ? XP_VOL_VIDE : XP_VOL_REUSSI) : XP_VOL_RATE;
   if(typeof gagnerXp==="function") gagnerXp(xp);
@@ -195,14 +232,14 @@ async function _volConclure(mode, prep, reussi){
 /* ---------- Actions ---------- */
 async function tenterVoler(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
-  if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
+  if(!_volIci("vol")){ journal(_VOL_LIEU_TXT,"alerte"); return; }
   if(!aDiscretion()){ journal("Il te faut l'aptitude Discrétion pour voler.","alerte"); return; }
   const prep = await _volPreparer("vol"); if(!prep) return;
   lancerMiniVol(()=>_volConclure("vol", prep, true), ()=>_volConclure("vol", prep, false));
 }
 async function tenterHacker(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
-  if(!_enVille()){ journal("Va dans une ville, ou au Perchoir, pour cibler quelqu'un.","alerte"); return; }
+  if(!_volIci("hack")){ journal("Pour hacker : dans une cité sur Silène ; ailleurs, n'importe où sur la carte.","alerte"); return; }
   if(!_ordiEquipe()){ journal("Équipe un Ordinateur de hacking pour hacker.","alerte"); return; }
   if(!aIntrusion()){ journal("Il te faut l'aptitude Intrusion pour hacker.","alerte"); return; }
   const prep = await _volPreparer("hack"); if(!prep) return;
@@ -536,21 +573,25 @@ function majVoler(){
   const z=document.querySelector("#voler-vue"); if(!z) return;
   _hackStyle();
   if(_volTimer){ clearInterval(_volTimer); _volTimer=null; }
-  if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents là où tu te trouves</b> : dans une cité sur Silène, au <b>Perchoir</b> hors de Silène. Rends-toi dans l'un ou l'autre.</p>`; return; }
+  if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents là où tu te trouves</b> : sur Silène, <b>dans une cité</b>. Ailleurs, on fait les poches <b>sur un lieu</b> (le Perchoir, Le Nid, la station…) et on hacke <b>n'importe où sur la carte</b>.</p>`; return; }
   if(enPrison()){
     z.innerHTML=`<div class="vol-prison">⛓️ <b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.<div style="margin-top:10px"><button class="mini" id="vol-evasion">Tenter une évasion (−10% énergie)</button></div><p class="itip-gris" style="margin-top:6px">Chance selon Agilité + Intelligence. Échec → tu restes en prison.</p></div>`;
     const _be=z.querySelector("#vol-evasion"); if(_be) _be.addEventListener("click", tenterEvasion);
     _volTimer=setInterval(()=>{ const el=z.querySelector("#vol-ptemps"); if(!el){ clearInterval(_volTimer); return; } if(enPrison()) el.textContent=_vfmt(prisonRestant()); else { clearInterval(_volTimer); majVoler(); } },500);
     return;
   }
-  const dV=aDiscretion(), dH=_ordiEquipe()&&aIntrusion(), e=Math.floor(etat.energie);
+  const ici = _volIci("vol"), hors = (typeof horsSilene==="function") && horsSilene();
+  const dV=aDiscretion()&&ici, dH=_ordiEquipe()&&aIntrusion(), e=Math.floor(etat.energie);
+  /* v1.97 — hors de Silène, les deux gestes ne visent pas les mêmes gens (K103, K106). */
+  const qui = !hors ? `présent <b>dans cette ville</b>`
+    : `présent ${ici ? `<b>${_lieuVolNom("vol")}</b> (poches)` : `sur un lieu (poches : <b>tu n'es sur aucun lieu</b>)`}, ou n'importe où <b>${_lieuVolNom("hack")}</b> (hack)`;
   z.innerHTML=`
-    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> présent ${(typeof enEcart==="function"&&enEcart())?"au Perchoir":"dans cette ville"}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés.</p>
+    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>Voler <span class="qte">· objets</span></h3>
         <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans un sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
-        <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${dV?"✅":"❌"}.</p>
+        <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${aDiscretion()?"✅":"❌"}${hors?` · sur un lieu ${ici?"✅":"❌"}`:""}.</p>
         <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
       </div>
       <div class="vol-carte">
@@ -631,9 +672,21 @@ async function syncPrison(){
    restait là où on l'avait trouvé (en pleine nature, voire dans l'espace) ;
    hors d'une cité, pas de Centre, donc pas d'évasion possible. Un prisonnier
    est désormais CONDUIT dans la cité de la faction qui l'enferme (le serveur
-   le fait aussi dans `traquer`, v149). Le Perchoir n'est pas une cité : rien. */
+   le fait aussi dans `traquer`, v149). v1.97 : la geôle du Perchoir aussi (K105). */
 function _conduireEnPrison(){
   const f = etat.prisonFaction;
+  /* v1.97 (K105) — la geôle du Perchoir : un voleur pris hors d'une cité (La Braise,
+     Ancolie, Cérès…) est conduit au Perchoir, à Triptolème (le serveur aussi, v222). */
+  if(enPrison() && f === "perchoir"){
+    if(typeof surBase==="function" && surBase()) return;
+    const b = (typeof espaceLieu==="function") ? espaceLieu("base") : null; if(!b) return;
+    etat.secteur = "ecart"; etat.posEspace = { x:b.x, y:b.y };
+    if(typeof fermerCarteBraise==="function") fermerCarteBraise();
+    journal("Tu as été conduit à la geôle du Perchoir.", "alerte", "vol");
+    if(typeof sauverMaintenant==="function") sauverMaintenant();
+    if(typeof majApresDeplacement==="function") majApresDeplacement(); else if(typeof afficher==="function") afficher();
+    return;
+  }
   if(!enPrison() || !f || typeof VILLES==="undefined" || !VILLES[f]) return;
   const surSilene = (etat.secteur||"silene")==="silene";
   if(surSilene && typeof villeActuelle==="function" && villeActuelle()===f) return;
