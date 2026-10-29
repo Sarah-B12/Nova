@@ -285,16 +285,55 @@ async function _remonterDuCoffre(ings, qtes){
   return true;
 }
 
-// Points gagnés par fabrication selon la difficulté de l'objet.
-// De base 1 point ; les armes, vaisseaux, armures et pièces maîtresses en rapportent plus.
+/* ===========================================================
+   v2.02 — LES POINTS DE FORMATION D'UN OBJET (révision de l'autrice, 29/10).
+   Avant : des MOTS du nom (« couteau », « cargo », « vaisseau »… → 3 points) ; le
+   Couteau de survie valait le Vaisseau maître, et le Cockpit blindé (1 point) faisait
+   un mur de 10 fabrications. Désormais : selon le COÛT d'une fabrication, calculé
+   depuis les recettes elles-mêmes (_coutFab) — les matières premières, intermédiaires
+   décomposés, chaque cristal (Nyx, Sélénite) comptant pour 25 :
+        coût < 20 → 1 pt · < 60 → 2 · < 150 → 3 · < 500 → 4 · ≥ 500 → 5 (rare)
+   Le plafond de 10 points par recette ne change pas (2 fabrications au moins).
+   Une recette ajoutée ou modifiée se recalcule seule. Exceptions voulues par
+   l'autrice : PTS_FAB_FORCES (prioritaire sur le calcul).
+   =========================================================== */
+const PTS_FAB_SEUILS = [[20,1],[60,2],[150,3],[500,4]];   // au-delà : 5
+const PTS_FAB_CRISTAL = 25;
+const PTS_FAB_FORCES = {                                  // nom normalisé → points (décision du 29/10)
+  "biocarburant raffine":2, "ordinateur de hacking":3, "ia d'assistance":3,
+  "drone recuperateur":4, "drone de combat":4
+};
+let _coutFabMemo = null;
+function _coutFab(nom){
+  if(!_coutFabMemo){
+    _coutFabMemo = {}; const R = {};
+    for(const f of Object.values(FORMATIONS)) for(const [, n, ing] of f.recettes){
+      const m = String(n).match(/×\s*(\d+)/); R[normNom(n)] = { ing, lot: m ? +m[1] : 1 }; }
+    const calc = (n, pile) => {
+      const k = normNom(n); if(_coutFabMemo[k] != null) return _coutFabMemo[k];
+      const r = R[k];
+      if(!r || pile.has(k)) return /cristal de (nyx|selenite)/.test(k) ? PTS_FAB_CRISTAL : 1;   // matière première
+      pile.add(k);
+      let c = 0;
+      for(const part of String(r.ing).split(",")){
+        const m = part.trim().match(/^(\d+)\s+(.*)$/); if(!m) continue;
+        const sous = normNom(m[2]), lot = (R[sous] && R[sous].lot) || 1;
+        c += +m[1] * calc(m[2], pile) / lot;
+      }
+      pile.delete(k);
+      return (_coutFabMemo[k] = c);
+    };
+    for(const k of Object.keys(R)) calc(k, new Set());
+  }
+  const k = normNom(nom);
+  return _coutFabMemo[k] != null ? _coutFabMemo[k] : 1;
+}
 function ptsFab(nom){
-  const n = normNom(nom); const has = (...ws) => ws.some(w => n.includes(w));
-  if(has("fusil","pistolet","carabine","canon","lame","couteau","lance-flammes","munitions",
-         "vaisseau","chassis","fregate","cargo","navette","reacteur","moteur ionique","propulseur","bloc de propulsion",
-         "implant")) return 3;                                   // armes, vaisseaux, pièces maîtresses
-  if(has("plastron","casque","armure","bouclier","gantelet","jambieres","exosquelette","combinaison",
-         "drone","tourelle","nano","kit chirurgical","serum de resurrection","noyau","supraconducteur","matrice")) return 2; // armures, drones, tech avancée
-  return 1;                                                      // intermédiaires de base
+  const k = normNom(nom);
+  if(PTS_FAB_FORCES[k] != null) return PTS_FAB_FORCES[k];
+  const c = _coutFab(nom);
+  for(const [s, p] of PTS_FAB_SEUILS) if(c < s) return p;
+  return 5;
 }
 
 const PROD_PAR_NOM = {};  // clé normalisée -> { id, nom, cle, seuil }
@@ -460,7 +499,7 @@ function renderAtelier(corps){
     `<p style="margin:0 0 4px"><b>${fo.nom}</b> <span class="qte">${palierDe(f.points)}</span></p>
      <div class="form-progress"><div class="form-progress-tete"><span><b class="or">${f.points}</b> pts</span><span>max ${dernier}</span></div>
        <div class="form-barre"><div class="form-remplissage" style="width:${Math.min(100, Math.round(f.points / dernier * 100))}%"></div></div></div>
-     <p class="vide" style="margin:6px 0 10px">Fabriquer range l'objet dans ton sac et rapporte des points de formation : +1 pt en général, davantage pour les objets difficiles (armes, vaisseaux…). Chaque recette est plafonnée à ${CAP_RECETTE} pts — on progresse en variant.</p>`;
+     <p class="vide" style="margin:6px 0 10px">Fabriquer range l'objet dans ton sac et rapporte des points de formation, selon ce que coûte l'objet : de 1 pt (un lingot) à 5 pts (les pièces les plus lourdes). Chaque recette est plafonnée à ${CAP_RECETTE} pts — on progresse en variant.</p>`;
   corps.appendChild(tete);
 
   const liste = document.createElement("div"); liste.className = "recette-liste atelier-liste";

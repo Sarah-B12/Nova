@@ -298,16 +298,35 @@ function _heureJ(d){
   const memeJour = t.getDate()===n.getDate() && t.getMonth()===n.getMonth() && t.getFullYear()===n.getFullYear();
   return memeJour ? hh : `${String(t.getDate()).padStart(2,"0")}/${String(t.getMonth()+1).padStart(2,"0")} ${hh}`;
 }
-/* v1.00 — COPIER LE JOURNAL. L'affichage inverse l'ordre (column-reverse :
+/* v1.00 — COPIER LE JOURNAL. L'affichage inversait l'ordre (column-reverse :
    le plus récent en bas) mais la copie suivait l'ordre du DOM : un testeur
-   collait son journal à l'envers sur son mur. On recompose le texte dans
-   l'ordre AFFICHÉ, ligne par ligne. */
+   collait son journal à l'envers sur son mur. On recompose le texte ligne par ligne.
+   v2.00 — retour de l'autrice : la copie emportait la ligne SOUS la sélection. Avec
+   column-reverse, le navigateur fait correspondre mal l'écran et le DOM ; le journal
+   est désormais écrit dans l'ordre de l'écran (le plus ancien en haut) et défile en
+   bas tout seul. La copie ne garde que les lignes dont du texte est sélectionné. */
 function _journalCopie(ev){
   const z=ev.currentTarget, sel=window.getSelection && window.getSelection(); if(!sel || sel.isCollapsed) return;
-  const lignes=[...z.querySelectorAll(".msg")].filter(m=>sel.containsNode(m, true));
-  if(lignes.length < 2 || !ev.clipboardData) return;   // une seule ligne : la copie normale convient
-  const txt=lignes.reverse().map(m=>[...m.childNodes].map(n=>(n.textContent||"").trim()).filter(Boolean).join(" ")).join("\n");
+  /* v2.00 — retour de l'autrice : la copie emportait aussi la ligne SOUS la sélection.
+     `containsNode(m, true)` compte une ligne que la sélection ne fait que toucher (son
+     bord, à 0 caractère). On ne garde que les lignes dont une partie du TEXTE est
+     réellement sélectionnée. */
+  const touchees=[...z.querySelectorAll(".msg")].filter(m=>sel.containsNode(m, true));
+  const lignes=touchees.filter(m=>_journalLigneSelectionnee(sel, m));
+  if(touchees.length < 2 || !lignes.length || !ev.clipboardData) return;   // une seule ligne : la copie normale convient
+  const txt=lignes.map(m=>[...m.childNodes].map(n=>(n.textContent||"").trim()).filter(Boolean).join(" ")).join("\n");
   ev.clipboardData.setData("text/plain", txt); ev.preventDefault();
+}
+function _journalLigneSelectionnee(sel, m){
+  for(let i = 0; i < sel.rangeCount; i++){
+    const r = sel.getRangeAt(i), x = document.createRange(); x.selectNodeContents(m);
+    if(r.compareBoundaryPoints(Range.END_TO_START, x) >= 0) continue;     // la sélection finit avant la ligne
+    if(r.compareBoundaryPoints(Range.START_TO_END, x) <= 0) continue;     // …ou commence après
+    if(r.compareBoundaryPoints(Range.START_TO_START, x) > 0) x.setStart(r.startContainer, r.startOffset);
+    if(r.compareBoundaryPoints(Range.END_TO_END, x) < 0) x.setEnd(r.endContainer, r.endOffset);
+    if(x.toString().trim()) return true;
+  }
+  return false;
 }
 function majJournal(){
   const z=document.querySelector("#journal"); if(!z) return;
@@ -327,11 +346,17 @@ function majJournal(){
      Tout ce qui est gardé (2 jours, 300 entrées) se consulte désormais : « Plus
      ancien » ajoute 80 lignes à la fois. */
   const tout=etat.journal.filter(e=>_journalFiltre==="tout"||e.cat===_journalFiltre);
-  const list=tout.slice(0, _journalVoir);
+  const list=tout.slice(0, _journalVoir).reverse();   // v2.00 : le plus ancien en haut, comme à l'écran
+  const _basAvant = z.scrollHeight - z.scrollTop - z.clientHeight;   // distance au bas, avant de redessiner
+  const _enBas = !z.dataset.vu || _basAvant < 40;
   z.innerHTML = list.length
-    ? list.map(e=>`<div class="msg ${e.type||""}"><span class="j-h">${_heureJ(e.d)}</span><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
-      + (tout.length > list.length ? `<p style="text-align:center;margin:6px 0"><button class="mini" id="journal-plus">Plus ancien (${tout.length - list.length})</button></p>` : "")
+    ? (tout.length > list.length ? `<p style="text-align:center;margin:6px 0"><button class="mini" id="journal-plus">Plus ancien (${tout.length - list.length})</button></p>` : "")
+      + list.map(e=>`<div class="msg ${e.type||""}"><span class="j-h">${_heureJ(e.d)}</span><span class="j-cat j-${e.cat||"systeme"}">${_catNom(e.cat)}</span>${e.n>1?`<span class="j-n">${e.n}×</span> `:""}${_echapJ(e.t)}</div>`).join("")
     : `<p class="vide" style="margin:6px 0">Aucune entrée${_journalFiltre!=="tout"?" dans cette catégorie":""}.</p>`;
+  /* v2.00 — on reste en bas (le plus récent) si on y était ; sinon on garde la même
+     distance au bas (une ligne qui arrive ne fait pas sauter ce qu'on lisait). */
+  z.dataset.vu = "1";
+  z.scrollTop = _enBas ? z.scrollHeight : Math.max(0, z.scrollHeight - z.clientHeight - _basAvant);
   const bp=z.querySelector("#journal-plus"); if(bp) bp.addEventListener("click",()=>{ _journalVoir+=80; z.dataset.jsig=""; majJournal(); });
 }
 

@@ -52,6 +52,14 @@ const BAR_ASULF_TOUNDRA = [
   "« Je suis évacué, tu sais. » Un reniflement glacé. « Évacué, mais facturé. C'est ça, la liberté ? »",
   "« Santé. » Il souffle sur ses doigts, ça s'entend. « Pose-moi un transat de côté, si t'en vois un. Non, pour rien. Pour rien. »"
 ];
+/* v1.99 — retour de l'autrice : dans le journal, on l'appelle Asulf ; le matricule 42-U1F
+   ne revient qu'à l'occasion (une fois sur quatre), comme un clin d'œil administratif. */
+function _imputeA(gabarit){
+  const matricule = Math.random() < 0.25;
+  return gabarit === "habilitation"
+    ? (matricule ? "Imputé à l'habilitation 42-U1F/1." : "Imputé à l'habilitation d'Asulf.")
+    : (matricule ? "Imputé au matricule 42-U1F." : "Imputé au compte d'Asulf.");
+}
 function _barAsulfLigne(){ const L = (etat && etat.asulfToundra) ? BAR_ASULF_TOUNDRA : BAR_ASULF; return L[Math.floor(Math.random()*L.length)]; }
 
 /* Libellé lisible d'un effet. Renvoie "" si la clé est inconnue (une boisson
@@ -182,7 +190,7 @@ function _barStyle(){
   if(document.querySelector("#bar-style")) return;
   const s=document.createElement("style"); s.id="bar-style";
   s.textContent=`
-    .bar-banniere{ width:100%; max-height:170px; object-fit:cover; border-radius:var(--r-s); border:1px solid var(--line); margin:0 0 12px; display:block; }
+    .bar-banniere{ width:100%; aspect-ratio:3/1; max-height:340px; object-fit:cover; border-radius:var(--r-s); border:1px solid var(--line); margin:0 0 12px; display:block; }   /* v1.99 : comme les autres bannières (3:1, 340 px au plus) ; avant, 170 px au plus */
     .bar-liste{ display:grid; gap:10px; }
     .bar-carte{ display:flex; gap:12px; align-items:center; background:rgba(16,41,78,.35); border:1px solid var(--line); border-radius:10px 4px 10px 4px; padding:10px 12px; }
     .bar-carte.exclu{ border-left:3px solid var(--orange); }
@@ -515,7 +523,7 @@ async function boire(id, bouton){
   /* v1.88c — retour de l'autrice : trois lignes pour un seul verre (la boisson, la
      réplique d'Asulf, puis l'événement du serveur). UNE ligne, dans « Économie » ;
      le serveur n'écrit plus d'événement (v206). */
-  const asulf = barStation() ? ` Imputé au matricule 42-U1F. ${_barAsulfLigne()}` : "";   // v1.93 : K61
+  const asulf = barStation() ? ` ${_imputeA("matricule")} ${_barAsulfLigne()}` : "";   // v1.93 : K61 ; v1.99 : Asulf, 42-U1F à l'occasion
   journal(`${res.nom} (−${res.prix} ₡). ${intro} : ${txt||"aucun effet notable"}. 24 h.${asulf}`, ton, "eco");
 
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();   // santé/moral/énergie immédiats
@@ -770,7 +778,7 @@ async function acheterReserve(id, bouton){
   if(typeof data.credits === "number") etat.credits = data.credits;
   if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
   const it = item(id);
-  journal(`L'automate te tend : ${it ? it.nom : id} (−${VIVRES_STATION[id].prix.toLocaleString("fr-FR")} ₡). Imputé à l'habilitation 42-U1F/1.`, "eco");
+  journal(`L'automate te tend : ${it ? it.nom : id} (−${VIVRES_STATION[id].prix.toLocaleString("fr-FR")} ₡). ${_imputeA("habilitation")}`, "eco");   // v1.99
   if(typeof sauvegarder === "function") sauvegarder();
   if(typeof afficher === "function") afficher();
   majReserves();

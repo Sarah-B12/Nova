@@ -304,6 +304,7 @@ async function posteEnvoyer(){
 }
 
 async function posteRecuperer(id){
+  if(typeof refusPrison==="function" && refusPrison("récupérer un colis")) return;   // v2.00 : comme l'envoi (retour d'une bêta-testeuse)
   const o=_posteCache.find(x=>String(x.id)===String(id)); if(!o) return;
   if(o.statut==="attente" && o.type==="objet" && o.montant>0 && etat.credits < o.montant){ journal(`Il faut ${o.montant} ₡ pour récupérer cet objet.`,"alerte"); return; }
   if(typeof pousserCredits==="function") await pousserCredits();

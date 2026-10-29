@@ -39,7 +39,11 @@ function aptEndurance(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ?
 /* v1.34b/c — Sauts en atmosphère (descente/décollage La Braise, Le Suaire,
    Silène ⇄ Triptolème) ET vols de vaisseau dans Triptolème (v1.34c) :
    Endurance −15 % et Pas léger −20 % (décisions de l'autrice, 28/09). */
-function aptSaut(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om3") ? 0.8 : 1))); }
+/* v1.99 — retour de l'autrice : les vols en vaisseau ignoraient les boissons. Un vol, un
+   saut sont des DÉPLACEMENTS : ils suivent `energie_depl` (Trouble ×0,8, Poussière de route
+   ×0,75), comme la marche. `energie_cout` (« par action » : Remontant ×1,25, Gel sec ×1,2,
+   Huile claire ×0,8…) reste pour les actions (vol, terrain, mine, sondes…), comme avant. */
+function aptSaut(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om3") ? 0.8 : 1) * _boi("energie_depl"))); }
 function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }        // Endurance (v1.25 : Repérage n'agit plus ici)
 function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8;   // v1.26 : Voyageur (no4) agit sur le carburant (aptCarburant)
   if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");

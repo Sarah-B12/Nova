@@ -324,7 +324,7 @@ async function _areneRepondre(id, accepte, bouton){
       /* ⚠ v0.92c — plus de forces affichées : `sa_force` n'est d'ailleurs plus
          renvoyée par le serveur. On garde la sienne, qui n'apprend rien sur
          l'adversaire et situe le joueur. */
-      journal(`⚔️ ${issue} contre ${data.adversaire} (ta force : ${data.ma_force}).${rep}${bis}`,
+      journal(`⚔️ ${issue} contre ${data.adversaire}.${rep}${bis}`,   // v1.99 : plus de « ta force : N » (ça renseignait sur le calcul)
               data.gagne ? "gain" : "alerte", "combat");
       /* L'XP est déposée dans `effets_combat` : c'est la synchro habituelle qui
          la ramène et qui gère la montée de niveau. On ne l'ajoute pas ici. */

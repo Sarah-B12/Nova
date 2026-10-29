@@ -257,8 +257,10 @@ function _hackP2(){
       el.onclick=()=>{ if(!b.alive||fini) return; if(b.x>=zoneA && b.x<=zoneB){ b.alive=false; el.remove(); intercept++; msg.textContent=`Interceptés : ${intercept}/${total}`; } };
       blocs.push(b);
     }, gapMs);
-    function boucle(){ if(fini) return;
-      blocs.forEach(b=>{ if(!b.alive) return; b.x+=vit; b.el.style.left=b.x+"%"; if(b.x>100){ b.alive=false; b.el.remove(); miss++; if(miss>maxMiss){ fin(false); return; } } });
+    const _pi={};   // v2.00 : pasImage
+    function boucle(now){ if(fini) return;
+      const k=pasImage(now,_pi);
+      blocs.forEach(b=>{ if(!b.alive) return; b.x+=vit*k; b.el.style.left=b.x+"%"; if(b.x>100){ b.alive=false; b.el.remove(); miss++; if(miss>maxMiss){ fin(false); return; } } });
       if(!fini && spawned>=total && blocs.every(b=>!b.alive)){ fin(intercept>=total-maxMiss); return; }
       if(!fini) requestAnimationFrame(boucle);
     }
@@ -393,12 +395,14 @@ async function _espF2(det){
       if(b.pos>=b.zoneStart && b.pos<=b.zoneStart+zoneW){ b.locked=true; e.classList.add("ok"); if(bars.every(x=>x.locked)) fin(true); }
       else { b.failed=true; e.classList.add("ko"); fin(false); }
     }));
-    function boucle(){
+    const _pi={};   // v2.00 : pasImage
+    function boucle(now){
       if(fini) return;
+      const k=pasImage(now,_pi);
       const reste=temps-(Date.now()-t0);
       if(reste<=0){ fin(false); return; }
       msg.textContent=(reste/1000).toFixed(1)+" s";
-      bars.forEach((b,i)=>{ if(b.locked) return; b.pos+=b.dir*vit; if(b.pos<=0){b.pos=0;b.dir=1;} if(b.pos>=100){b.pos=100;b.dir=-1;} curseurs[i].style.left=b.pos+"%"; });
+      bars.forEach((b,i)=>{ if(b.locked) return; b.pos+=b.dir*vit*k; if(b.pos<=0){b.pos=0;b.dir=1;} if(b.pos>=100){b.pos=100;b.dir=-1;} curseurs[i].style.left=b.pos+"%"; });
       requestAnimationFrame(boucle);
     }
     requestAnimationFrame(boucle);

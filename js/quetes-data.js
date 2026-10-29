@@ -3421,7 +3421,10 @@ const QUETES = [
          celle de la silène, celle des bêtes ») : CADENCE_PERIMETRE, deux fois (10). */
       { indice:"Ta radio grésille. Asulf veut des nouvelles.",
         cible:{ x:1250, y:770, r:90 },
-        image:"images/quetes/q26/3.png",
+        image:{ selon:"bete.espece", defaut:"aucune", valeurs:{   /* v1.99 : la bête du joueur sur la bannière (comme q21/4) */
+          chaume:"images/quetes/q26/3_chaume.png", braisillon:"images/quetes/q26/3_braisillon.png",
+          sentinelle:"images/quetes/q26/3_sentinelle.png", goupille:"images/quetes/q26/3_goupille.png",
+          iris:"images/quetes/q26/3_iris.png", aucune:"images/quetes/q26/3.png" } },
         arrivee:[
             "Ta radio grésille dans ta poche, au pire moment, comme toujours. « Allô ? C'est moi. Asulf. Enfin, tu sais que c'est moi, y a que moi sur ce canal. » Il a retrouvé un peu de ses cailloux depuis l'autre nuit, pas tous. « Je dérange pas ? Je dérange. Bon. C'est rapide. »",
             "Sorn lève un sourcil vers ta poche. Adaya pose un doigt sur ses lèvres pour le faire taire, et lui, pour une fois, se tait.",

@@ -293,18 +293,23 @@ async function terminerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id); const r=q.recompense||{};
   /* v0.97 — objets liés : remis en TOUT-OU-RIEN, et AVANT tout autre gain (sinon
      un échec après les crédits les ferait verser deux fois à la relance). */
-  const lies = r.objets ? Object.keys(r.objets).filter(id => typeof estObjetLie==="function" && estObjetLie(id)) : [];
+  /* v2.00 — retour de l'autrice (Q5) : un objet de récompense non lié était donné SANS
+     garantie — sac plein, la Navette de réserve de Q5 se perdait en silence, et la quête
+     se terminait quand même (permis et espace sans vaisseau). Désormais TOUT objet de
+     récompense passe en tout-ou-rien, avant les autres gains, comme les objets liés. */
+  const lies = r.objets ? Object.keys(r.objets) : [];
   if(lies.length){
     const ok = await agirServeur({ ajouter:r.objets, motif:"quete_recompense", toutOuRien:true });
     if(!ok){
       const it = (typeof item==="function") ? item(lies[0]) : null;
-      journal(`Fais de la place dans ton sac pour recevoir : ${it ? it.nom : lies[0]}. Puis valide à nouveau la dernière étape.`,"alerte");
+      const noms = lies.map(id => { const x = (typeof item==="function") ? item(id) : null; return x ? x.nom : id; }).join(", ");
+      journal(`Fais de la place dans ton sac pour recevoir : ${noms}. Puis valide à nouveau la dernière étape.`,"alerte");
       return false;
     }
   }
   const gainQ = r.credits ? ((typeof aptCredits==="function") ? aptCredits(r.credits) : r.credits) : 0;   // Négociant (no3)
   if(gainQ) etat.credits += gainQ;
-  if(!lies.length && r.objets && Object.keys(r.objets).length) await agirServeur({ ajouter:r.objets, motif:"quete_recompense" });
+  // (v2.00 : plus de remise « au mieux » ici — tout objet passe par le tout-ou-rien plus haut.)
   /* v0.91 — la Navette de réserve démarre son compte à rebours À LA REMISE,
      pas à l'équipement : dix jours, qu'on s'en serve ou non. */
   if(r.objets && r.objets[typeof NAVETTE_CADEAU!=="undefined" ? NAVETTE_CADEAU : "navette_reserve"]

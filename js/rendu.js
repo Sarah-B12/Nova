@@ -45,6 +45,7 @@ function afficher(){
   const f = FACTIONS.find(x => x.id === etat.faction);
   document.querySelector("#faction-nom").textContent = f ? f.nom : "Sans faction";
   document.querySelector("#portrait").style.setProperty("--tint", f ? f.couleur : "var(--orange)");
+  if(typeof _prisonFinVerifier==="function") _prisonFinVerifier();   // v2.00 : la fin de peine se dit dans le journal
   const _enPr = (typeof enPrison==="function") && enPrison();
   const _port=document.querySelector("#portrait"); if(_port) _port.classList.toggle("enprison", _enPr);
   if(typeof majAvatar==="function") majAvatar();

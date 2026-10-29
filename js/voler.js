@@ -327,13 +327,14 @@ function _miniLabyrinthe(m){
       if(r<0||c<0||r>=M||c>=M||g[r][c]===1) return true;
     } return false;
   }
-  let raf=null;
-  function frame(){
+  let raf=null; const _pi={};   // v2.00 : même vitesse à 60 et à 144 images/s (pasImage, config.js)
+  function frame(now){
+    const k=pasImage(now,_pi);
     const ax=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), ay=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);
-    vx=(vx+ax*0.32)*0.90; vy=(vy+ay*0.32)*0.90;
+    const fr=Math.pow(0.90,k); vx=(vx+ax*0.32*k)*fr; vy=(vy+ay*0.32*k)*fr;
     const sp=Math.hypot(vx,vy), MX=CS*0.42; if(sp>MX){ vx=vx/sp*MX; vy=vy/sp*MX; }
-    let nx=px+vx; if(!collide(nx,py)) px=nx; else vx*=-0.25;
-    let ny=py+vy; if(!collide(px,ny)) py=ny; else vy*=-0.25;
+    let nx=px+vx*k; if(!collide(nx,py)) px=nx; else vx*=-0.25;
+    let ny=py+vy*k; if(!collide(px,ny)) py=ny; else vy*=-0.25;
     bille.style.left=(px-R)+"px"; bille.style.top=(py-R)+"px";
     box.style.transform=`rotateX(${-ay*9}deg) rotateY(${ax*9}deg)`;
     if(Math.hypot(px-ex,py-ey)<CS*0.5){ _hackFin(true); return; }
@@ -507,16 +508,16 @@ function _miniLaser(m){
     tx=Math.max(R,Math.min(W-R,(e.clientX-r.left)*(W/r.width))); ty=Math.max(R,Math.min(H-R,(e.clientY-r.top)*(H/r.height))); };
   area.addEventListener("pointermove",move);
   function hit(){ dead=true; deadT=performance.now(); px=PAD/2; py=H/2; tx=px; ty=py; dot.classList.add("mort"); dot.style.left=(px-R)+"px"; dot.style.top=(py-R)+"px"; }
-  let raf=null, t0=performance.now();
+  let raf=null, t0=performance.now(); const _pi={};   // v2.00 : pasImage
   function frame(now){
-    const t=(now-t0)/1000;
+    const t=(now-t0)/1000, k=pasImage(now,_pi);
     for(let i=0;i<nb;i++){ const b=beams[i];
       b.gapS=b.gapAmp*Math.sin(t*b.gapSp*Math.PI+b.gapPh);
       const A=Math.max(0,Math.min(100,(LEN/2+b.gapS-gapH)/LEN*100)), B=Math.max(0,Math.min(100,(LEN/2+b.gapS+gapH)/LEN*100));
       const mk=`linear-gradient(90deg,#000 ${A}%,transparent ${A}%,transparent ${B}%,#000 ${B}%)`;
       bel[i].style.webkitMaskImage=mk; bel[i].style.maskImage=mk; }
     if(!dead){
-      const dx=tx-px, dy=ty-py, d=Math.hypot(dx,dy), MX=4.2;
+      const dx=tx-px, dy=ty-py, d=Math.hypot(dx,dy), MX=4.2*k;
       if(d>MX){ px+=dx/d*MX; py+=dy/d*MX; } else { px=tx; py=ty; }
       dot.style.left=(px-R)+"px"; dot.style.top=(py-R)+"px";
       if(px>=mid2){ _hackFin(true); return; }
@@ -556,10 +557,12 @@ function _miniBypass(m){
     el.addEventListener("pointerdown",e=>{ e.preventDefault(); resolve(p, p.bad?0:15); });
     area.appendChild(el); packets.push(p); spawned++;
   }
+  const _pi={};   // v2.00 : pasImage
   function frame(now){
     if(dead) return;
+    const k=pasImage(now,_pi);
     if(spawned<TOTAL && now-lastSpawn>700){ lastSpawn=now; spawnP(); }
-    for(const p of packets){ if(p.done) continue; p.x+=p.speed*2.0; p.el.style.left=p.x+"px"; if(p.x>=GATE) resolve(p, p.bad?25:0); }
+    for(const p of packets){ if(p.done) continue; p.x+=p.speed*2.0*k; p.el.style.left=p.x+"px"; if(p.x>=GATE) resolve(p, p.bad?25:0); }
     packets=packets.filter(p=>!p.done);
     raf=requestAnimationFrame(frame);
   }
@@ -586,19 +589,19 @@ function majVoler(){
   const qui = !hors ? `présent <b>dans cette ville</b>`
     : `présent ${ici ? `<b>${_lieuVolNom("vol")}</b> (poches)` : `sur un lieu (poches : <b>tu n'es sur aucun lieu</b>)`}, ou n'importe où <b>${_lieuVolNom("hack")}</b> (hack)`;
   z.innerHTML=`
-    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${VOL_ENERGIE}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée.</p>
+    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${_coutVol()}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>Voler <span class="qte">· objets</span></h3>
         <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets dans un sac. Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${aDiscretion()?"✅":"❌"}${hors?` · sur un lieu ${ici?"✅":"❌"}`:""}.</p>
-        <button class="mini" id="vol-voler" ${dV&&e>=VOL_ENERGIE?"":"disabled"}>Voler</button>
+        <button class="mini" id="vol-voler" ${dV&&e>=_coutVol()?"":"disabled"}>Voler</button>
       </div>
       <div class="vol-carte">
         <h3>Hacker <span class="qte">· crédits</span></h3>
         <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Tu restes anonyme <b>${Math.round(CHANCE_ANONYMAT_HACK*100)} % du temps</b> — sinon ta signature passe. Et l'échec coûte cher : <b>${Math.round(RISQUE_PRISON_HACK*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Intelligence = plus de temps). Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
-        <button class="mini" id="vol-hacker" ${dH&&e>=VOL_ENERGIE?"":"disabled"}>Hacker</button>
+        <button class="mini" id="vol-hacker" ${dH&&e>=_coutVol()?"":"disabled"}>Hacker</button>
       </div>
     </div>`;
   const bv=z.querySelector("#vol-voler"); if(bv) bv.addEventListener("click",tenterVoler);
@@ -634,7 +637,7 @@ async function tenterEvasion(){
      d'énergie, tire, et libère — tout ou rien, en une transaction.
      Le client n'envoie que son score (Agilité + Intelligence EFFECTIVES :
      équipement, boisson et moral compris, que le serveur ne sait pas
-     recalculer). La chance reste plafonnée à 60 % côté serveur.
+     recalculer). La chance est plafonnée côté serveur : v225 (29/10), 5 % + 0,12 % par point, au plus 50 %.
      `liberer_moi()` n'est plus exécutable par les joueurs. */
   const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
   const intel=(typeof intelligenceEffective==="function")?intelligenceEffective():5;
@@ -644,13 +647,13 @@ async function tenterEvasion(){
   if(!data || !data.ok){
     const err=data && data.err;
     if(err==="energie") journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte");
-    else if(err==="libre"){ etat.prisonJusqua=0; etat.prisonFaction=null; journal("Tu n'es plus en prison.","gain"); }
+    else if(err==="libre"){ etat.prisonJusqua=0; etat.prisonFaction=null; etat.prisonFinConnue=0; journal("Tu n'es plus en prison.","gain"); }
     else journal("Le serveur n'a pas répondu — réessaie.","alerte");
     if(typeof afficher==="function") afficher(); majVoler(); return;
   }
   if(typeof data.energie==="number"){ etat.energie=data.energie; etat.energieMaj=Date.now(); }
   if(data.reussi){
-    etat.prisonJusqua=0; etat.prisonFaction=null;
+    etat.prisonJusqua=0; etat.prisonFaction=null; etat.prisonFinConnue=0;   // v2.00 : pas de « peine purgée » après une évasion
     journal("Évasion réussie ! Tu disparais dans les couloirs. (−10% énergie)","gain","vol");
   } else {
     journal("Évasion ratée — tu restes en prison. (−10% énergie)","alerte","vol");
@@ -665,8 +668,31 @@ async function syncPrison(){
   try{ const { data } = await sb.rpc("mon_etat_prison");
     if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
     else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
+    _prisonSyncFaite = true;
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
+  _prisonFinVerifier();
   _conduireEnPrison();
+}
+/* v2.00 — retour d'une bêta-testeuse : la fin d'une peine n'était dite nulle part. La
+   table `prison` fait foi (syncPrison) et `prisonJusqua` n'est pas sauvegardé ; on garde
+   donc, SAUVEGARDÉE, la fin de peine connue (`etat.prisonFinConnue`). Quand on n'est plus
+   en prison et que cette fin est passée : une ligne dans le journal, une seule fois, même
+   si la peine s'est finie pendant l'absence. Une sortie avant la fin (évasion, grâce) a
+   déjà sa propre ligne : rien de plus. Rien n'est conclu avant la 1re réponse du serveur. */
+let _prisonSyncFaite = false;
+function _prisonFinVerifier(){
+  if(typeof etat === "undefined" || !etat) return;
+  if(enPrison()){ if(etat.prisonFinConnue !== etat.prisonJusqua) etat.prisonFinConnue = etat.prisonJusqua; return; }
+  const f = etat.prisonFinConnue || 0;
+  if(!f || !_prisonSyncFaite) return;
+  etat.prisonFinConnue = 0; etat.prisonJusqua = 0; etat.prisonFaction = null;
+  if(Date.now() >= f - 60000){
+    const d = new Date(f), hh = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+    const absent = Date.now() - f > 5*60000;
+    journal(absent ? `Ta peine s'est terminée pendant ton absence (${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")} à ${hh}) : tu es sorti de prison.`
+                   : "Ta peine est purgée : tu sors de prison.", "gain", "vol");
+  }
+  if(typeof sauvegarder === "function") sauvegarder();
 }
 /* v1.36f — retour de l'autrice : un voleur capturé par un chasseur de primes
    restait là où on l'avait trouvé (en pleine nature, voire dans l'espace) ;

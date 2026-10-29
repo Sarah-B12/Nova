@@ -50,6 +50,8 @@ const ACTIONS_COUPLE = {
   21: { nom:"Essayer d'avoir un bébé",                 phrase:"Vous avez essayé. Le matelas s'en souviendra.", seul:"{nom} aimerait essayer d'avoir un bébé." }
 };
 
+/* v2.01 (K114) — la prison comme un parloir : les gestes attendent, la parole reste. */
+const PARLOIR_TXT = "En prison, on ne peut que parler : les gestes attendront ta sortie. La discussion et votre carnet restent ouverts.";
 const UNION_REFUS = {
   cible:"Choisis la personne à qui tu fais ta demande.",
   introuvable:"Ce joueur n'existe plus.",
@@ -392,6 +394,7 @@ function _coupleActions(c, u){
   c.innerHTML = h;
   c.querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", async () => {
     if(b.disabled) return;
+    if(typeof enPrison === "function" && enPrison()){ _jc(PARLOIR_TXT, "alerte"); return; }   // v2.01 (K114) : le serveur refuse aussi (v227)
     const r = await _uRpc("union_agir", { p_action:Number(b.dataset.act) });
     if(!r) return;
     if(typeof r.moral === "number"){ etat.jauges = etat.jauges || {}; etat.jauges.moral = r.moral; }
@@ -659,6 +662,7 @@ function _coupleFamille(c, u){
   // v1.38 — les gestes (enfant_geste, v162).
   c.querySelectorAll("[data-geste]").forEach(bt => bt.addEventListener("click", async () => {
     if(bt.disabled) return;
+    if(typeof enPrison === "function" && enPrison()){ _jc(PARLOIR_TXT, "alerte"); return; }   // v2.01 (K114) : le parloir
     c.querySelectorAll("[data-geste]").forEach(x => { x.disabled = true; });
     const g = bt.dataset.geste, d = bt.dataset.detail || null;
     const r = await _uRpc("enfant_geste", { p_geste:g, p_detail:d });

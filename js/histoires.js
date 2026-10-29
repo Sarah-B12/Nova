@@ -297,9 +297,10 @@ function _jeuToit(z, fin){
     <button class="mini" id="jt-lacher">Lâcher</button>`;
   const pl = z.querySelector("#jt-pl"), pile = z.querySelector("#jt-pile"), cpt = z.querySelector("#jt-cpt");
   const maj = () => { cpt.textContent = `Posées : ${poses}/5 · chutes : ${chutes}/3`; };
-  const tour = () => {
+  const _pi = {};   // v2.00 : pasImage
+  const tour = (t) => {
     if(fini || !document.body.contains(pl)){ fini = true; _histJeuEnCours = false; return; }
-    pos += dir * vit; if(pos >= 70){ pos = 70; dir = -1; } if(pos <= 0){ pos = 0; dir = 1; }
+    pos += dir * vit * pasImage(t, _pi); if(pos >= 70){ pos = 70; dir = -1; } if(pos <= 0){ pos = 0; dir = 1; }
     pl.style.left = pos + "%"; raf = requestAnimationFrame(tour);
   };
   const lacher = () => {

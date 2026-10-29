@@ -45,6 +45,12 @@ function _ppStyle(){
     .pp-wrap{ max-width:1000px; margin:0 auto; }
     .pp-tete{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
     .pp-tete h2{ margin:0; }
+    /* v2.00 — un joueur en prison : des barreaux sur son portrait, comme sur sa propre fiche
+       (.portrait.enprison, css/fiche.css), au-dessus des calques, sous la bête. */
+    .pp-portrait.enprison{ position:relative; }
+    .pp-portrait.enprison::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg, rgba(8,12,20,.9) 0 5px, transparent 5px 24px); pointer-events:none; z-index:6; }
+    .pp-portrait.enprison::before{ content:"⛓️"; position:absolute; top:6px; right:8px; font-size:22px; z-index:7; }
+    .pp-prison{ color:#ff8f92; }
     .pp-haut{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
     .pp-haut .pp-portrait{ width:200px; aspect-ratio:3/4; flex:0 0 auto; }
     .pp-portraits{ display:flex; gap:10px; align-items:flex-end; flex:0 1 auto; max-width:100%; }
@@ -196,6 +202,10 @@ async function ouvrirPageProfil(nom){
   // v1.36p — le conjoint, avec un lien vers sa page (v156, profil_conjoint).
   let conjoint = null;
   if(p.id){ try{ const { data } = await sb.rpc("profil_conjoint", { p_profil:p.id }); conjoint = data || null; }catch(e){} }
+  // v2.00 — en prison ? (pour soi : le reflet local ; pour un autre : profil_en_prison, v226)
+  let enPr = false;
+  if(moi) enPr = (typeof enPrison==="function") && enPrison();
+  else if(p.id){ try{ const { data } = await sb.rpc("profil_en_prison", { p_profil:p.id }); enPr = data === true; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "profil-page.js#prison"); } }
   if(_ppNom!==nom) return;
   const L = (typeof _avCouches==="function") ? _avCouches(p.avatar) : [];
   const portrait = L.length ? L.map(c=>_avImg(c,"av-couche")).join("") : `<div class="av-x-grand">?</div>`;
@@ -207,10 +217,11 @@ async function ouvrirPageProfil(nom){
   m.innerHTML = `<div class="pp-wrap">
     <div class="pp-tete"><button class="mini" id="pp-retour">← Retour</button><h2>Profil</h2></div>
     <div class="pp-haut">
-      <div class="pp-portraits"><div class="pp-cadre"><div class="pp-portrait av-portrait">${portrait}</div>${(typeof cadreAvatarHtml==="function") ? cadreAvatarHtml(p.avatar) : ""}${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div></div>
+      <div class="pp-portraits"><div class="pp-cadre"><div class="pp-portrait av-portrait${enPr?" enprison":""}">${portrait}</div>${(typeof cadreAvatarHtml==="function") ? cadreAvatarHtml(p.avatar) : ""}${(bete && typeof beteVignetteHtml==="function") ? beteVignetteHtml(bete) : ""}</div></div>
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
+        ${enPr?`<p class="pp-prison">⛓️ <b>En prison.</b></p>`:""}
         <p>Faction : <b>${_facNomComm(p.faction)}</b></p>
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>

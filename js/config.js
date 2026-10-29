@@ -6,6 +6,17 @@
    =========================================================== */
 const MAX = 100;
 const CAP_COMP = 200;
+/* v2.00 — retour d'une bêta-testeuse : des mini-jeux allaient beaucoup plus vite sur
+   ordinateur que sur tablette. Ils avançaient d'un pas FIXE à chaque image : un écran à
+   144 images/s les jouait 2,4 fois plus vite qu'une tablette à 60. `pasImage(t, etat)`
+   rend le nombre d'« images à 60/s » écoulées depuis l'appel précédent (1 à 60 images/s,
+   0,4 à 144), borné à 3 (un onglet en arrière-plan ne fait pas sauter la partie). */
+function pasImage(t, o){
+  const now = (typeof t === "number") ? t : performance.now();
+  const k = (o && o.der) ? Math.min(3, Math.max(0, (now - o.der) / (1000 / 60))) : 1;
+  if(o) o.der = now;
+  return k;
+}
 const CLE = "nova-epic-save";
 const PTS_PAR_NIVEAU = 3;
 const MS_JOUR = 86400000;
