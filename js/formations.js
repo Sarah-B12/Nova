@@ -99,7 +99,15 @@ const FORMATIONS = {
   }
 };
 const PALIERS = [[0,"Apprenti"],[100,"Confirmé"],[200,"Maître"]];
-function palierDe(points){ let p="Apprenti"; for(const [s,nom] of PALIERS){ if(points>=s) p=nom; } return p; }
+/* v2.03 (K116) — le rang de MAÎTRE était à 200 points pour tous, alors qu'aucune formation
+   n'y monte (150 à 190 au plus) : personne ne pouvait l'être. Maître = avoir FINI sa
+   formation, toutes ses recettes au plafond : 10 × nombre de recettes (Fabricant d'armes
+   190, Ingénieur 160, Biotech 170, Constructeur 150). Sans la clé de la formation : 200. */
+function maitriseDe(cle){ const fo = cle && FORMATIONS[cle]; return fo ? fo.recettes.length * CAP_RECETTE : 200; }
+function palierDe(points, cle){
+  if(points >= maitriseDe(cle)) return "Maître";
+  return points >= 100 ? "Confirmé" : "Apprenti";
+}
 
 let centreVue = "formations";   // sous-onglet actif du Centre
 let formationApercu = null;     // clé de la formation prévisualisée (avant de commencer)
@@ -181,7 +189,7 @@ function vueFormations(){
   if(f){
     // Formation en cours
     const fo = FORMATIONS[f.cle]; const dernier = fo.recettes[fo.recettes.length-1][0];
-    wrap.innerHTML = `<h3>${fo.nom} <span class="qte">${palierDe(f.points)}</span></h3>
+    wrap.innerHTML = `<h3>${fo.nom} <span class="qte">${palierDe(f.points, f.cle)}</span></h3>
       <div class="form-progress"><div class="form-progress-tete"><span><b class="or">${f.points}</b> pts</span><span>max ${dernier} pts</span></div>
         <div class="form-barre"><div class="form-remplissage" style="width:${Math.min(100, Math.round(f.points/dernier*100))}%"></div></div></div>
       <p class="vide" style="margin:8px 0 4px">Voici tous les objets de la formation, avec leur nombre de points et les matières nécessaires. Bâtis un <b>Atelier</b> sur ton terrain de récolte pour les fabriquer et gagner ces points.</p>`;
@@ -496,7 +504,7 @@ function renderAtelier(corps){
 
   const tete = document.createElement("div");
   tete.innerHTML =
-    `<p style="margin:0 0 4px"><b>${fo.nom}</b> <span class="qte">${palierDe(f.points)}</span></p>
+    `<p style="margin:0 0 4px"><b>${fo.nom}</b> <span class="qte">${palierDe(f.points, f.cle)}</span></p>
      <div class="form-progress"><div class="form-progress-tete"><span><b class="or">${f.points}</b> pts</span><span>max ${dernier}</span></div>
        <div class="form-barre"><div class="form-remplissage" style="width:${Math.min(100, Math.round(f.points / dernier * 100))}%"></div></div></div>
      <p class="vide" style="margin:6px 0 10px">Fabriquer range l'objet dans ton sac et rapporte des points de formation, selon ce que coûte l'objet : de 1 pt (un lingot) à 5 pts (les pièces les plus lourdes). Chaque recette est plafonnée à ${CAP_RECETTE} pts — on progresse en variant.</p>`;

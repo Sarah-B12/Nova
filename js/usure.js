@@ -7,6 +7,10 @@
    Les objets du SAC périssent ; le coffre de la maison ne périt pas (à décider).
    =========================================================== */
 const USURE_MAX = 30;   // jours
+/* ⚠ v2.05 — COPIE AU SERVEUR : table `duree_vie` (v228), pour qu'un voleur ne puisse plus
+   prendre un lot déjà mort dans le sac d'un absent. Changer une durée ici (DUREE_VIE_CAT,
+   DUREE_VIE_ITEM) ou ajouter un objet → `node outils/o_banc.js . dureevie` et recoller les
+   lignes au serveur (BACKEND_PLAN §6, « Durées de vie »). */
 
 // Durée de vie par défaut selon la catégorie / le type
 const DUREE_VIE_CAT = { plante:3, organique:6, minerai:30, animal:18, conso:8, fabrique:30, graine:10, bebe:15 };
@@ -22,6 +26,20 @@ const DUREE_VIE_ITEM = {
   cape_voleur:15                     // v1.67 : 15 jours depuis sa récupération (C14, H63)
   // lingots, composants, armes, armures, implants, pièces et vaisseaux : 30 j (défaut)
 };
+/* v2.04 — ENTRETIEN (K117) : remplace l'Apprentissage (`ar3`, même place dans la voie
+   Artisanat). Ce qui s'équipe (armes, armures, implant, drone porté) et les vaisseaux
+   durent 20 % plus longtemps — 36 jours au lieu de 30 — tant qu'ils sont à soi : portés,
+   au sac, au coffre ou en soute. Ni la Navette de réserve (échéance fixe de Q5), ni les
+   objets des autres (marché) : `dureeVie()` reste la durée commune ; `dureeViePerso()`
+   est celle de SON inventaire. Le serveur ne fixe pas d'échéance : c'est le client qui
+   périme (`perimer`). */
+const ENTRETIEN_BONUS = 0.20;
+function dureeViePerso(id){
+  const d = dureeVie(id);
+  if(id === "navette_reserve" || typeof _apt !== "function" || !_apt("ar3")) return d;
+  const equipable = (typeof slotEquip === "function" && !!slotEquip(id)) || (typeof estVaisseau === "function" && estVaisseau(id));
+  return equipable ? Math.round(d * (1 + ENTRETIEN_BONUS)) : d;
+}
 function dureeVie(id){
   if(DUREE_VIE_ITEM[id]!=null) return Math.min(USURE_MAX, DUREE_VIE_ITEM[id]);
   const it=item(id); if(!it) return USURE_MAX;
@@ -41,7 +59,7 @@ function joursRestants(id, lieu){
      la seule mémoire de son usure réelle. */
   if(typeof estVaisseau==="function" && estVaisseau(id) && typeof ageVaisseau==="function"){
     const t0 = ageVaisseau(id);
-    if(t0 != null) return Math.max(0, Math.ceil((t0 + dureeVie(id)*JOUR_MS - Date.now())/JOUR_MS));
+    if(t0 != null) return Math.max(0, Math.ceil((t0 + dureeViePerso(id)*JOUR_MS - Date.now())/JOUR_MS));
   }
   if(typeof joursRestantsLot === "function"){
     const j = joursRestantsLot(id, lieu||"sac");
@@ -117,7 +135,7 @@ async function majUsure(){
     if(l.lieu === "equipe") continue;   // l'équipement porté s'use à part (etat.equipementDate)
     // v0.97 — un objet lié ne périt pas (le serveur refuserait tout le lot).
     if(typeof estObjetLie==="function" && estObjetLie(l.item)) continue;
-    const dv = (typeof dureeVie==="function") ? dureeVie(l.item) : null;
+    const dv = (typeof dureeViePerso==="function") ? dureeViePerso(l.item) : null;   // v2.04 : Entretien
     if(dv == null) continue;
     /* v0.91 — le lot d'un vaisseau rangé porte la date du jour où il est sorti
        de l'équipement, pas celle de sa sortie d'usine : on juge sur la garde
@@ -172,7 +190,7 @@ async function majUsure(){
     const t0 = (typeof dateEquipe==="function") ? dateEquipe(slot) : (etat.equipementDate||{})[slot];
     if(t0 == null){ etat.equipementDate[slot] = now; continue; }
     /* v1.93o — l'alerte la veille : une seule fois par objet (repéré par la date de son lot). */
-    const reste = t0 + dureeVie(id)*JOUR_MS - now;
+    const reste = t0 + dureeViePerso(id)*JOUR_MS - now;   // v2.04 : Entretien
     if(reste > 0 && reste <= JOUR_MS){
       etat.usureAlerte = (etat.usureAlerte && typeof etat.usureAlerte === "object") ? etat.usureAlerte : {};
       if(etat.usureAlerte[slot] !== t0){
@@ -181,7 +199,7 @@ async function majUsure(){
         journal(`⚠ Usure : ${it ? it.nom : id} lâchera dans ${h} h. Prévois de quoi le remplacer.`, "alerte");
       }
     }
-    if(now - t0 > dureeVie(id)*JOUR_MS){
+    if(now - t0 > dureeViePerso(id)*JOUR_MS){
       const it = item(id);
       /* v1.93w — l'emplacement est libéré AVANT de prévenir le serveur. Sa réponse réaligne
          les emplacements (reconcilierEquipement) : avec deux objets identiques portés, elle
@@ -195,7 +213,7 @@ async function majUsure(){
       }
       delete etat.equipementDate[slot];
       if(etat.usureAlerte) delete etat.usureAlerte[slot];
-      journal(`Usure : ${it?it.nom:id} a lâché, au bout de ${dureeVie(id)} jours. L'emplacement est libre.`,"alerte"); perte = true;
+      journal(`Usure : ${it?it.nom:id} a lâché, au bout de ${dureeViePerso(id)} jours. L'emplacement est libre.`,"alerte"); perte = true;
     }
   }
   /* v0.91 — Navette de réserve : échéance absolue. Les exemplaires qui traînent
@@ -215,7 +233,7 @@ async function majUsure(){
   // Vaisseau équipé (la coque s'use aussi : sinon la formation Constructeur ne sert qu'une fois)
   if(etat.vaisseau){
     if(etat.vaisseauDate == null){ etat.vaisseauDate = now; }
-    else if(now - etat.vaisseauDate > dureeVie(etat.vaisseau)*JOUR_MS){
+    else if(now - etat.vaisseauDate > dureeViePerso(etat.vaisseau)*JOUR_MS){   // v2.04 : Entretien
       const it = item(etat.vaisseau);
       // La soute part avec le vaisseau : on rapatrie ce qui tient, le reste est perdu.
       for(const sid of Object.keys(etat.soute||{})){
@@ -244,7 +262,7 @@ async function majUsure(){
      perd ce qui ne tient pas. On alerte à 3, 2 et 1 jour, une fois par jour de
      jeu (`jourDeJeu`), pour que le message ne devienne pas du bruit. */
   if(etat.vaisseau && typeof dureeVie==="function"){
-    const dvv = dureeVie(etat.vaisseau);
+    const dvv = dureeViePerso(etat.vaisseau);
     if(dvv != null && etat.vaisseauDate){
       const reste = Math.ceil((etat.vaisseauDate + dvv*JOUR_MS - now)/JOUR_MS);
       const jour  = (typeof jourDeJeu==="function") ? jourDeJeu() : new Date().toDateString();

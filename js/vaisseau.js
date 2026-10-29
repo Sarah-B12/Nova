@@ -371,7 +371,7 @@ function majVaisseau(){
   const v=VAISSEAUX[etat.vaisseau]; const plein=itemsSoute()>0;
   const carb=etat.carburant||0;
   const _jm=(typeof JOUR_MS!=="undefined")?JOUR_MS:86400000;
-  const jr=(typeof dureeVie==="function" && etat.vaisseauDate!=null) ? Math.max(0, dureeVie(etat.vaisseau) - (Date.now()-etat.vaisseauDate)/_jm) : null;
+  const jr=(typeof dureeVie==="function" && etat.vaisseauDate!=null) ? Math.max(0, ((typeof dureeViePerso==="function") ? dureeViePerso(etat.vaisseau) : dureeVie(etat.vaisseau)) - (Date.now()-etat.vaisseauDate)/_jm) : null;
   z.innerHTML=`
     <div class="vais-tete">
       <div class="vais-vis"><img src="${v.img}" alt="${v.nom}"></div>

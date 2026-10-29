@@ -637,7 +637,7 @@ async function tenterEvasion(){
      d'énergie, tire, et libère — tout ou rien, en une transaction.
      Le client n'envoie que son score (Agilité + Intelligence EFFECTIVES :
      équipement, boisson et moral compris, que le serveur ne sait pas
-     recalculer). La chance est plafonnée côté serveur : v225 (29/10), 5 % + 0,12 % par point, au plus 50 %.
+     recalculer). La chance est plafonnée côté serveur : v229 (29/10, K118), 20 % + 0,15 % par point, au plus 50 %.
      `liberer_moi()` n'est plus exécutable par les joueurs. */
   const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
   const intel=(typeof intelligenceEffective==="function")?intelligenceEffective():5;

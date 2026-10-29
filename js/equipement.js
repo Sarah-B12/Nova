@@ -137,7 +137,7 @@ function joursRestantsEquipe(slot){
   const id = etat.equipement && etat.equipement[slot]; if(!id) return null;
   const t0 = dateEquipe(slot);
   if(t0 == null || typeof dureeVie !== "function" || typeof JOUR_MS === "undefined") return null;
-  return Math.max(0, (t0 + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS);
+  return Math.max(0, (t0 + ((typeof dureeViePerso === "function") ? dureeViePerso(id) : dureeVie(id))*JOUR_MS - Date.now()) / JOUR_MS);   // v2.04
 }
 function texteUsureEquipe(slot){
   /* v1.51 — l'affichage avait été éteint (« 27 j avant rupture » paraissait faux).

@@ -23,7 +23,7 @@ function afficher(){
   if(typeof verifPauseAuto==="function") verifPauseAuto();
   document.querySelector("#nom-affiche").textContent = etat.nom || "Opérateur";
   const foAct = etat.formation && FORMATIONS[etat.formation.cle];
-  document.querySelector("#stat-metier").textContent = foAct ? (foAct.nom + " · " + palierDe(etat.formation.points||0)) : (etat.metier || "Aucun (en formation)");
+  document.querySelector("#stat-metier").textContent = foAct ? (foAct.nom + " · " + palierDe(etat.formation.points||0, etat.formation.cle)) : (etat.metier || "Aucun (en formation)");
   document.querySelector("#stat-niveau").textContent = etat.niveau;
   document.querySelector("#stat-age").textContent = ageJours() + " j";
   document.querySelector("#stat-credits").textContent = etat.credits;
@@ -130,7 +130,7 @@ function infoItemHTML(id, joursForce){
   if(typeof estObjetLie==="function" && estObjetLie(id)){
     h += `<div class="itip-effet">Objet de quête — lié à toi. Il ne se vend pas, ne se range pas, ne se perd pas, et il te suit même dans la mort.</div>`;
   } else if(typeof dureeVie==="function"){
-    let s=`Durée de vie : ${dureeVie(id)} j`;
+    let s=`Durée de vie : ${dureeViePerso(id)} j${dureeViePerso(id)>dureeVie(id)?" (Entretien)":""}`;   // v2.04
     const jr = (joursForce!=null) ? joursForce
              : ((typeof joursRestants==="function") ? joursRestants(id) : null);
     if(jr!=null) s += (jr<=0) ? ` · <b>périmé</b>` : ` · ${Math.ceil(jr)} j restant`;
@@ -220,13 +220,13 @@ function majSac(){
       t.draggable = true; t.dataset.id = id; t.dataset.item = id;
       // Échéance propre à CE lot, pas au plus ancien de l'objet.
       const jr = (lot.acquis!=null && typeof dureeVie==="function")
-        ? Math.max(0, dureeVie(id) - (Date.now()-lot.acquis)/JOUR_MS)
+        ? Math.max(0, dureeViePerso(id) - (Date.now()-lot.acquis)/JOUR_MS)   // v2.04
         : ((typeof joursRestants==="function") ? joursRestants(id) : null);
       // Tout objet finit par disparaître, y compris ceux à 30 jours : on affiche
       // donc le badge pour TOUS. Le masquer au-delà de 30 j ne prévenait que pour
       // une partie de l'inventaire, ce qui trompait plus que ça n'informait.
       const badgeUsure = (jr!=null && !(typeof estObjetLie==="function" && estObjetLie(id)))
-        ? `<span class="usure ${jr<1?"critique":jr<dureeVie(id)/2?"faible":""}">${Math.ceil(jr)}j</span>`
+        ? `<span class="usure ${jr<1?"critique":jr<dureeViePerso(id)/2?"faible":""}">${Math.ceil(jr)}j</span>`
         : "";
       t.innerHTML = `<span class="icone">${iconeItem(id)}</span><span class="compte">${lot.qte}</span>${badgeUsure}`;
       t.addEventListener("dragstart", ()=>{ dragId=id; t.classList.add("drag"); });

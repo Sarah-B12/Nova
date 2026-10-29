@@ -50,6 +50,8 @@ const DELAIS = {
   correctifs200: { profil: 50, sac: 50, jauges: 50 },   // v2.00 : retours du 29/10, 2e série (o_correctifs200.js)
   parloir: { profil: 50, sac: 50, jauges: 50 },   // v2.01 : la prison comme un parloir, K114 (o_parloir.js)
   ptsfab: { profil: 50, sac: 50, jauges: 50 },    // v2.02 : points de formation selon le coût (o_ptsfab.js)
+  entretien: { profil: 50, sac: 50, jauges: 50 }, // v2.04 : l'Entretien remplace l'Apprentissage, K117 (o_entretien.js)
+  dureevie: { profil: 50, sac: 50, jauges: 50 },  // v2.05 : source de la table serveur duree_vie (o_dureevie.js)
   nav: { profil: 50, sac: 50, jauges: 50 },       // v1.93t : boutons de voyage, Triptolème ⇄ Ancolie (o_nav.js)
   vol: { profil: 50, sac: 50, jauges: 50 },       // v1.22 : vrai vol entre joueurs (o_vol.js)
   plaintes: { profil: 50, sac: 50, jauges: 50 },  // v1.23 : plaintes et primes (o_plaintes.js)

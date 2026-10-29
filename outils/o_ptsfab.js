@@ -30,5 +30,8 @@
     if(prochain && points > prochain[0]) depasse = true;
   }
   r.jamaisAuDela = !depasse; r.pointsFinaux = points;                                          // vrai ; 160
+  // v2.03 (K116) : Maître = formation finie (10 × recettes) ; Confirmé à 100.
+  r.maitre = Object.keys(FORMATIONS).map(k => `${k}:${maitriseDe(k)}:${palierDe(maitriseDe(k) - 1, k)}→${palierDe(maitriseDe(k), k)}`).join(" ");
+  r.confirme = palierDe(99, "fabricant") + "→" + palierDe(100, "fabricant");                       // Apprenti→Confirmé
   return r;
 })();

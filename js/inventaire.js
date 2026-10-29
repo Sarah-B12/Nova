@@ -278,7 +278,7 @@ function joursRestantsLot(id, lieu){
     l = (etat.lots||[]).filter(x=>x.item===id && x.qte>0).sort((a,b)=>a.acquis-b.acquis)[0];
   }
   if(!l || typeof dureeVie!=="function") return null;
-  const reste = (l.acquis + dureeVie(id)*JOUR_MS - Date.now()) / JOUR_MS;
+  const reste = (l.acquis + dureeViePerso(id)*JOUR_MS - Date.now()) / JOUR_MS;   // v2.04 : Entretien
   return Math.max(0, reste);
 }
 
@@ -295,8 +295,8 @@ function lotsAffichage(lieu){
 function badgeLot(lot){
   if(!lot || lot.acquis==null || typeof dureeVie!=="function") return "";
   if(typeof estObjetLie==="function" && estObjetLie(lot.item)) return "";   // v0.97 : ne périt pas
-  const jr = Math.max(0, dureeVie(lot.item) - (Date.now()-lot.acquis)/JOUR_MS);
-  const cls = jr<1 ? "critique" : (jr < dureeVie(lot.item)/2 ? "faible" : "");
+  const jr = Math.max(0, dureeViePerso(lot.item) - (Date.now()-lot.acquis)/JOUR_MS);   // v2.04
+  const cls = jr<1 ? "critique" : (jr < dureeViePerso(lot.item)/2 ? "faible" : "");
   return `<span class="usure ${cls}">${Math.ceil(jr)}j</span>`;
 }
 

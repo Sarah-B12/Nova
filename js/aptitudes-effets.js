@@ -174,5 +174,5 @@ function aptTonteBonus(){ const m=_boi("recolte"); return (_apt("pr2") ? 1 : 0) 
 /* ---------- Atelier (fabrication) ---------- */
 function aptFabSkip(){ return _apt("ar1"); }             // Récup d'atelier : 20 % de ne pas consommer l'ingrédient le moins coûteux
 function aptFabSerie(){ return _apt("ar2"); }            // Production en série : 10 % de sortir 2 objets
-function aptFabPoints(){ return _apt("ar3") ? 1 : 0; }   // Apprentissage : +1 point de formation
+function aptFabPoints(){ return 0; }   // v2.04 (K117) : l'Apprentissage (+1 point) est remplacé par l'Entretien (usure.js, dureeViePerso)
 function aptFabMaitre(){ return _apt("ar4"); }           // Maître-artisan : −1 matière première sur le plus gros lot

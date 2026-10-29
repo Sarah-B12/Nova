@@ -36,7 +36,7 @@ const APT_TRONC = [
   { id:"artisan", nom:"Artisanat", noeuds:[
     { id:"ar1", nom:"Récup d'atelier",   effet:"20 % de chance de récupérer 1 unité de l'ingrédient le plus abondant de la recette." },
     { id:"ar2", nom:"Production en série",effet:"10 % de chance de fabriquer 2 objets pour 1." },
-    { id:"ar3", nom:"Apprentissage",     effet:"+1 point de formation bonus par objet fabriqué." },
+    { id:"ar3", nom:"Entretien",         effet:"Ton équipement et tes vaisseaux durent 20 % plus longtemps (36 jours au lieu de 30), tant qu'ils sont à toi." },   // v2.04 (K117) : remplace l'Apprentissage (+1 point de formation), inutile une fois la formation finie
     { id:"ar4", nom:"Maître-artisan",    effet:"Une recette consomme 1 matière première de moins sur son plus gros lot (min 1).", deblocage:true }
   ]},
   { id:"traqueur", nom:"Combativité", noeuds:[
