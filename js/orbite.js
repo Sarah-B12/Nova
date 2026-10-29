@@ -494,7 +494,7 @@ function surLieuEspace(l){ return !!l && secteurDuLieu(l) === secteurEspaceIci()
 function _alaBaseTxt(){ const b = baseEspace(); const n = b ? espaceNom(b) : "la base";
   return (typeof aLieu === "function") ? aLieu(n) : "à " + n; }
 /* Un lieu qui a un ÉCRAN (onglet) : sinon son arrivée se raconte dans le journal. */
-function ongletLieuEspace(l){ return !!l && ["base","epave","asteroides","planete_chaude","planete_froide","e2_base"].includes(l.id); }
+function ongletLieuEspace(l){ return !!l && ["base","epave","asteroides","planete_chaude","planete_froide","e2_base","e2_oeil_piques"].includes(l.id); }   // v2.06 : le Fléau
 
 /* ===========================================================
    SECOURS — v0.91

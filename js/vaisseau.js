@@ -353,8 +353,10 @@ function _vaisMonterStyle(){
   document.head.appendChild(st); _vaisStyle=true;
 }
 /* v1.93e — LE CANON DE BORD (choix A de l'autrice) : `canon` = salves EN PLUS dans le duel
-   contre une sonde (sonde.js, _tirSalves). Seul le Vaisseau maître en a un (1). Les combats
-   de vaisseaux de la carte d'après la Gorge devront le réutiliser (K64). */
+   contre une sonde (sonde.js, _tirSalves). Seul le Vaisseau maître en a un (1).
+   v2.06 (K83) — il tire des CELLULES D'ÉNERGIE (fab_cellule_d_energie), une par tir :
+   la salve de plus contre une sonde se charge au début du duel (sonde.js) ; contre le
+   Fléau, « charger le canon » est un choix à chaque passe (fleau.js, serveur v231). */
 function canonVaisseau(){ const v = etat && etat.vaisseau && VAISSEAUX[etat.vaisseau]; return (v && v.canon) || 0; }
 /* v1.93 — Q28 : l'indicatif MAAR-12/42 (etat.immatricule) s'affiche sous le nom du vaisseau. */
 function majVaisseau(){
@@ -384,7 +386,7 @@ function majVaisseau(){
           <div><span>Conso carburant</span><b>${v.conso} L/u${vaisseauAvarie()?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}${regulateurActif()?` <span style="color:var(--ok,#7bc47f)">−20 %</span>`:""}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
-          ${v.canon ? `<div><span>Armement</span><b>Canon de bord · +${v.canon} salve contre les sondes</b></div>` : ""}
+          ${v.canon ? `<div><span>Armement</span><b>Canon de bord · une cellule d'énergie par tir</b></div>` : ""}
         </div>
         <div class="jauge" style="margin:12px 0 4px">
           <div class="jauge-tete"><span>Carburant · ${item(v.carb).nom}</span><span class="val">${Math.round(carb)} / ${v.reservoir} L</span></div>

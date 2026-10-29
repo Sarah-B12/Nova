@@ -47,7 +47,7 @@ function _boutiqueBanniere(){
    jouait (retour de l'autrice). Un rafraîchissement ne redessine donc plus le Bar
    s'il est déjà affiché ; seul un vrai changement d'onglet le reconstruit. */
 function changerHub(h, rafraichir){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub();
-  if(h==="bar" && typeof majBar==="function"){ const bv=document.querySelector("#bar-vue"); if(!(rafraichir && bv && bv.childElementCount)) majBar(bv); } if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="descente" && typeof majDescente==="function") majDescente(); }
+  if(h==="bar" && typeof majBar==="function"){ const bv=document.querySelector("#bar-vue"); if(!(rafraichir && bv && bv.childElementCount)) majBar(bv); } if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="fleau" && typeof majFleau==="function") majFleau(rafraichir); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
   const nav=document.querySelector("#hub-nav"); if(!nav) return;
@@ -61,10 +61,11 @@ function majHub(){
   const carcasse = (typeof surCarcasse==="function") && surCarcasse();
   const gravier  = (typeof surGravier==="function")  && surGravier();
   const nid      = (typeof surNid==="function")      && surNid();   // v1.96 : Cérès, Le Nid (K93 : carburant, remorquage)
+  const fleau    = (typeof surFleau==="function")    && surFleau(); // v2.06 : Cérès, le Fléau (K81 : une attaque par jour)
   const auDessusBraise = (typeof surOrbiteBraise==="function") && surOrbiteBraise();   // v0.98 : La Braise OU Le Suaire
   // v0.99 — l'onglet de descente porte le nom de la planète survolée.
   { const bl=document.querySelector('.hub-lien[data-hub="descente"]'), c=(typeof surfaceCfg==="function"&&typeof surOrbitePlanete==="function")?surfaceCfg(surOrbitePlanete()):null; if(bl && c) bl.textContent=c.nom; }
-  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false, descente:false };
+  const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false, descente:false, fleau:false };
   const qEnCours = (typeof queteActive==="function" && !!queteActive());
   const dispo = auDessusBraise
     ? { ...vide, descente:true, quete:qEnCours }
@@ -83,6 +84,8 @@ function majHub(){
        n'a pas d'onglet : c'est le secours (orbite.js) qui y dépose une coque clouée.
        PNJ et quêtes du Nid : plus tard (K95), l'onglet Quêtes ne sert qu'à suivre. */
     ? { ...vide, boutique:true, quete:qEnCours }
+    : fleau
+    ? { ...vide, fleau:true, quete:qEnCours }   // v2.06 : le combat du jour et le classement
     : base
     /* v0.92 — L'ARÈNE n'existe qu'au Perchoir. `arene_adversaires()` refuse de
        toute façon ceux qui n'ont pas fini Q5, mais l'onglet ne doit pas
@@ -106,7 +109,7 @@ function majHub(){
   document.querySelectorAll(".hub-lien").forEach(b=>{ b.style.display = dispo[b.dataset.hub] ? "" : "none"; });
   const actif=document.querySelector(".hub-lien.actif"); const cur=actif?actif.dataset.hub:null;
   if(!cur || !dispo[cur]){
-    const prem=["terrain","inn","centre","marche","boutique","quete","bar","poste","voler","garage","gisement","arene"].find(h=>dispo[h] && (ville || base || nid || h!=="boutique") && !(horsS && h==="voler"));   // en pleine nature : on n'ouvre pas la boutique d'office
+    const prem=["terrain","inn","centre","marche","boutique","quete","bar","poste","voler","garage","gisement","arene","fleau"].find(h=>dispo[h] && (ville || base || nid || h!=="boutique") && !(horsS && h==="voler"));   // en pleine nature : on n'ouvre pas la boutique d'office
     /* ⚠ v0.91 — `montrerHub("vide")` est le vrai filet : si AUCUN onglet n'est
        disponible ici, on n'en laisse surtout pas un périmé affiché. C'est ce
        qui s'est produit avec Le Gisement resté seul après un atterrissage. */

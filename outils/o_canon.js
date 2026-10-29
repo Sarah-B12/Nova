@@ -1,14 +1,17 @@
 // v1.93e — le canon de bord du Vaisseau maître : +1 salve contre les sondes, affiché au Garage.
 // v1.93f — les astéroïdes cachés du tir de sondage.
+// v2.06 (K83) — la salve du canon se CHARGE (une cellule) : sans charge, 5 salves pour tous ;
+//   chargé, le maître en a 6 (7 avec l'Instinct). Détail du chargement : o_fleau.js.
 (async function(){
   await new Promise(x=>setTimeout(x,1200));
   const r = {}, vraiApt = (typeof _apt === "function") ? _apt : null;
   _apt = () => false;
-  for(const v of ["fab_navette_legere","fab_vaisseau_cargo","fab_vaisseau_maitre"]){ etat.vaisseau = v; r[v] = _tirSalves(); }
-  _apt = (id) => id === "tr1"; r.maitreInstinct = _tirSalves();
+  for(const v of ["fab_navette_legere","fab_vaisseau_cargo","fab_vaisseau_maitre"]){ etat.vaisseau = v; _tirCanon = 0; r[v] = _tirSalves(); }
+  _tirCanon = canonVaisseau(); r.maitreCharge = _tirSalves();
+  _apt = (id) => id === "tr1"; r.maitreInstinct = _tirSalves(); _tirCanon = 0;
   _apt = () => false;
   lancerTirSonde(() => {}, () => {}); const m = document.querySelector("#tir-modale");
-  r.texteDuel = /dont 1 de ton canon de bord/.test(m.innerHTML); _tirFermer();
+  r.texteDuel = /une de plus si tu charges ton canon de bord/.test(m.innerHTML); _tirFermer();
   etat.vaisseau = "fab_vaisseau_cargo"; lancerTirSonde(() => {}, () => {}); r.texteCargo = !/canon de bord/.test(document.querySelector("#tir-modale").innerHTML); _tirFermer();
   let vv = document.querySelector("#vaisseau-vue"); if(!vv){ vv = document.createElement("div"); vv.id = "vaisseau-vue"; document.body.appendChild(vv); }
   etat.permisVaisseau = true; etat.vaisseau = "fab_vaisseau_maitre"; majVaisseau(); r.garageMaitre = /Canon de bord/.test(vv.innerHTML);

@@ -221,6 +221,13 @@ async function _volConclure(mode, prep, reussi){
       journal(`Hack réussi : +${d.gain} ₡ siphonnés à ${nom}. `
         + (d.signe ? "Ta signature est passée : son journal porte TON NOM." : "Son journal ne verra qu'« un anonyme ».") + xpTxt, "gain","vol");
     }
+  } else if(d.pique){
+    /* v2.06 (K122) : la cible porte une pique du Fléau. Le mini-jeu était gagné ; la
+       tentative échoue quand même. Son journal ne dit pas qui (jamais de plainte). */
+    journal((mode==="vol" ? `Tu tenais les poches de ${nom}… et tu t'es pris dans une pique noire plantée devant chez ${nom}. Tu repars les mains vides.`
+                          : `Ton intrusion chez ${nom} s'est prise dans une pique noire. Tu repars les mains vides.`)
+      + " Son journal ne dira pas qui." + xpTxt, "alerte", "vol");
+    if(d.prison) journal(mode==="vol" ? "Pris la main dans le sac : direction la prison." : "Ta trace a été remontée : prison.","alerte","vol");
   } else {
     if(mode==="vol") journal(`Échec ! ${nom} t'a repéré — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");
     else journal(`Hack échoué sur ${nom}. `+(d.signe ? "Ta signature est passée : il sait QUI a essayé." : "Son journal : « un anonyme a tenté de me pirater ».")+xpTxt,"alerte","vol");

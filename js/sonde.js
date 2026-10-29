@@ -55,7 +55,8 @@ function coutSonde(){ return (typeof aptEndurance==="function" ? aptEndurance : 
 function tenterSonde(){
   /* v1.96 — à Cérès aussi (K81 : « en vol, à l'improviste »), avec le tir durci. */
   if(!((typeof enEspace === "function") ? enEspace() : enEcart())) return false;
-  if(Math.random() >= SONDE_TAUX) return false;
+  const len = (typeof fleauLentille === "function") ? fleauLentille() : 1;   // v2.06 (K123) : éclat de lentille, ×⅔
+  if(Math.random() >= SONDE_TAUX * len) return false;
   ouvrirSonde();
   return true;
 }
@@ -282,8 +283,14 @@ const TIR_DURCI_GRILLE = 2;   // cases de plus de côté
 const TIR_DURCI_GLISSE = 2;   // tirs manqués avant une glissade
 let _tirDurci = false, _tirRates = 0, _tirGlisse = 0, _tirVieux = new Set();
 /* v1.25 — Instinct de combat (tr1) : +1 salve (décision de l'autrice). */
-/* v1.93e — le canon de bord du Vaisseau maître : +1 salve (canonVaisseau, vaisseau.js). */
-function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0) + ((typeof canonVaisseau==="function") ? canonVaisseau() : 0); }
+/* v1.93e — le canon de bord du Vaisseau maître : +1 salve (canonVaisseau, vaisseau.js).
+   v2.06 (K83) — elle coûte UNE CELLULE D'ÉNERGIE : on charge le canon au début du duel
+   (case cochée d'office s'il y a une cellule au sac), la cellule part au « Commencer ».
+   Sans cellule, le maître tire comme un cargo. `_tirCanon` = salves du canon chargées. */
+const TIR_CELLULE = "fab_cellule_d_energie";
+let _tirCanon = 0;
+function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0) + _tirCanon; }
+function _tirCellules(){ return (etat && etat.sac && etat.sac[TIR_CELLULE]) || 0; }
 function _tirTaille(){
   const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
   if(i >= 55) return 5;
@@ -333,7 +340,9 @@ function lancerTirSonde(onWin, onLose, opts){
   _tirDurci = !!(opts && opts.durci); _tirRates = 0; _tirGlisse = 0; _tirVieux = new Set();   // v1.96
   _tirN = _tirTaille() + (_tirDurci ? TIR_DURCI_GRILLE : 0);
   _tirCoeur = { x:Math.floor(Math.random()*_tirN), y:Math.floor(Math.random()*_tirN) };
+  _tirCanon = 0;   // v2.06 : chargé (ou non) au « Commencer »
   _tirRestant = _tirSalves(); _tirVus = {};
+  const canon = (typeof canonVaisseau==="function") ? canonVaisseau() : 0, nCel = _tirCellules();
   _tirAst = new Set();
   while(_tirAst.size < _tirN){
     const ax = Math.floor(Math.random()*_tirN), ay = Math.floor(Math.random()*_tirN);
@@ -345,7 +354,7 @@ function lancerTirSonde(onWin, onLose, opts){
     <div class="sd-tete"><b>🎯 Tir de sondage</b></div>
     <p class="sd-sous">La coque de la sonde tient dans une grille de ${_tirN} × ${_tirN}.
       Son <b>cœur</b> est dans une case, et une seule.<br><br>
-      Tu as <b>${_tirSalves()} salves</b>${(typeof canonVaisseau==="function" && canonVaisseau()) ? `, dont ${canonVaisseau()} de ton canon de bord` : ""}. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
+      Tu as <b>${_tirSalves()} salves</b>${canon ? ` (une de plus si tu charges ton canon de bord)` : ""}. Chaque tir manqué te renvoie un <b>écho</b> : le nombre de cases
       qui te séparent du cœur, en comptant tout droit puis de côté.<br>
       <b>1</b> = juste à côté. Recoupe deux échos et tu le tiens.<br><br>
       ☄ <b>${_tirN} astéroïdes</b> dérivent dans la grille, invisibles à tes capteurs. Une salve qui en touche un
@@ -354,11 +363,22 @@ function lancerTirSonde(onWin, onLose, opts){
       (en haut, en bas, à gauche ou à droite). Les échos d'avant restent grisés : ils disent où il était.<br><br>` : ""}
       <span class="itip-gris">Aucun réflexe : prends ton temps, la sonde ne bouge pas.
       ${_tirN>5+(_tirDurci?TIR_DURCI_GRILLE:0)?`Une meilleure <b>Intelligence</b> resserrera la grille — ${_tirN} × ${_tirN} pour l'instant.`:"Tes capteurs sont au mieux : grille resserrée au minimum."}</span></p>
+    ${canon ? `<label class="sd-sous" style="display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" id="sd-canon" ${nCel > 0 ? "checked" : "disabled"} style="margin-top:3px">
+      <span>Charger le canon de bord : <b>+${canon} salve</b>, une <b>cellule d'énergie</b> (${nCel} au sac).${nCel > 0 ? "" : " Sans cellule, ton canon reste muet."}</span></label>` : ""}
     <div><button class="mini" id="sd-jouer">▶ Commencer</button>
          <button class="mini" id="sd-fuir" style="margin-left:8px">Renoncer</button></div>
   </div>`;
   m.hidden=false;
-  m.querySelector("#sd-jouer").addEventListener("click", _tirRendre);
+  m.querySelector("#sd-jouer").addEventListener("click", async () => {
+    const ch = m.querySelector("#sd-canon"), b = m.querySelector("#sd-jouer");
+    if(ch && ch.checked && canon > 0){
+      b.disabled = true;
+      const r = (typeof agirServeur === "function") ? await agirServeur({ retirer:{ [TIR_CELLULE]:1 }, motif:"canon_sonde" }) : null;
+      if(r){ _tirCanon = canon; _tirRestant = _tirSalves(); }
+      else journal("Le canon ne s'est pas chargé : tu tires sans lui.", "alerte");
+    }
+    _tirRendre();
+  });
   m.querySelector("#sd-fuir").addEventListener("click", ()=>{ _tirFermer(); if(_tirLose) _tirLose(); });
 }
 
