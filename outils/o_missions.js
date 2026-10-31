@@ -62,7 +62,7 @@
   await voir("missions");
   r.monGroupe = { mesure: txt().includes("L'épreuve sera équilibrée pour ce groupe."), aucunChiffre: !/force|rapport|%/.test(txt()),
     abandonne: txt().includes("Cyd (a abandonné)"), poste: (corps().querySelector("#mi-poste") || {}).tagName === "SELECT",
-    coffre: txt().includes("Capes") && txt().includes("1 / 3–9") && txt().includes("ou"),
+    coffre: txt().includes("Capes") && txt().includes("1 sur 3") && txt().includes("il en manque 2") && txt().includes("ou"),   // v2.10 : chiffres en clair
     choixDepot: [...corps().querySelectorAll("#mi-dep-item option")].map(o => o.value),
     tentative: txt().includes("1 tentative sur 2. La seconde s'ouvre le lendemain."),
     abandonner: !!corps().querySelector("[data-mi-abandon]") };

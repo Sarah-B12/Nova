@@ -25,7 +25,7 @@
   // 1. Cible choisie, pas de repérage : sélecteur pour le meneur ; ronde seulement dans la cité.
   await voir({ phase:"preparation", limite:"2026-12-23", cible:fac, meneur:true, postes_tenus:{ crocheteur:"Testeuse", guetteur:"Eve" }, ronde });
   r.selecteur = !!corps().querySelector("#mi-cible") && corps().querySelector("#mi-cible").value === fac;
-  r.loin = txt().includes("Le repérage se fait dans la cité visée") && !corps().querySelector("#mi-ronde");
+  r.loin = txt().includes("Rends-toi dans la cité visée pour le faire") && !corps().querySelector("#mi-ronde");   // v2.10 : nouveau texte
   ICI = fac; await voir({ phase:"preparation", limite:"2026-12-23", cible:fac, meneur:true, postes_tenus:{}, ronde });
   r.ronde = !!corps().querySelector("[data-ro-go]") && corps().querySelectorAll(".mi-ro-case").length === 36;
   // Réponses : phase « répondre » forcée (l'observation dure 8 × 450 ms).

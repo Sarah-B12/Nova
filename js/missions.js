@@ -15,6 +15,23 @@ const MISSION_MESURE = { facile:"plutôt facile", equilibree:"équilibrée", dif
 const MISSION_POSTES = { encordeur:"Encordeur", eclaireur:"Éclaireur", dechiffreur:"Déchiffreur",
                          artificier:"Artificier", porteur:"Porteur", crocheteur:"Crocheteur", guetteur:"Guetteur",
                          hacker:"Hacker", ingenieur:"Ingénieur", artilleur:"Artilleur" };
+/* v2.10 — ce que fait chaque poste (retour de l'autrice : « que les joueurs comprennent ce qu'ils font »).
+   Montré au choix du poste (ceux de la mission seulement), puis le seul sien une fois parti. */
+const MISSION_POSTES_DESC = {
+  encordeur:  "Pendant la descente, il tient la corde : trois nœuds à suivre du doigt, sans lever ni sortir du tracé.",
+  eclaireur:  "Pendant la descente, il trouve le passage dans le noir, en un nombre de pas compté.",
+  dechiffreur:"Pendant la descente, il lit le signal de la balise, écrit dans l'ancien, et trouve le son qui manque.",
+  artificier: "À l'entrepôt, il ouvre la brèche : il place ses charges pour faire sauter tous les piliers de la paroi.",
+  porteur:    "Une fois la brèche ouverte, chaque porteur range une caisse, avec le moins de vide possible.",
+  crocheteur: "Le jour du casse, il ouvre la serrure : cinq goupilles à bloquer quand le curseur passe dans le vert.",
+  guetteur:   "Le jour du casse, il brouille les drones : il cale son onde sur la leur et la tient cinq secondes.",
+  artilleur:  "Quand l'escorte attaque, chaque artilleur abat les sondes qui traversent l'écran.",
+  ingenieur:  "L'escorte repoussée, il ouvre le sas : une combinaison de quatre voyants à trouver.",
+  hacker:     "Le sas ouvert, il pirate le cœur de Bardane : un chemin lumineux à mémoriser puis à refaire."
+};
+const MISSION_OMBRE = "Sans poste, tu n'as pas de jeu à toi : tu comptes dans l'épreuve finale avec tout le groupe.";
+/* v2.10 — l'étape en cours, une seule à la fois (affichée en tête de la mission). */
+function _mEtape(titre, texte){ return `<div class="mi-etape"><b>${titre}</b>${texte}</div>`; }
 const MISSION_ERREURS = {
   non_connecte:"Connexion perdue.", deja:"Tu as déjà pris part à cette mission.", plein:"Ce groupe est complet.",
   ferme:"Ce groupe est fermé : on n'y entre que sur invitation.", parti:"Ce groupe est déjà parti.",
@@ -43,6 +60,8 @@ const MISSION_ERREURS = {
   energie:"Pas assez d'énergie.", prison:"Impossible depuis la prison.", objet_personnel:"Cet objet est personnel : il ne se vend pas et ne se donne pas.",
   // v1.64 — la balise
   postes:"Il faut un encordeur, un éclaireur et un déchiffreur.", minimum:"Le minimum de matériel n'est pas réuni.",
+  // v2.10 — les postes se figent au départ (K130)
+  poste_fige:"Ton poste est fixé depuis le départ du groupe.", postes_vides:"Chaque poste doit avoir quelqu'un avant de partir.",
   deja_fait:"Ton poste est déjà fait pour cette descente.", perdu:"Tu t'es perdu dans le noir : un autre passage s'ouvre.",
   faux:"Ce n'est pas ça : la balise répète un autre message.", postes_pas_faits:"Les trois postes ne sont pas encore faits.",
   demain:"La seconde descente se fera demain.", mur:"Un mur de glace.",
@@ -228,17 +247,36 @@ function _mMonGroupe(m, g){
   if(m.mesure) h += `<p style="margin:8px 0">L'épreuve sera <b>${MISSION_MESURE[m.mesure] || m.mesure}</b> pour ce groupe.</p>`;
   // Postes (G11, C16).
   const postes = Object.keys(m.postes || {});
+  /* v2.10 (K130) — les postes se choisissent avant le départ, puis se figent. Après le départ,
+     un poste resté libre peut encore être pris ; un membre qui abandonne libère le sien. */
+  const tenus = new Set(actifs.map(y => y.poste).filter(Boolean));
   if(postes.length){
-    h += `<div class="mi-ligne"><span>Ton poste :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${postes.map(p => `<option value="${p}"${m.mon_poste === p ? " selected" : ""}>${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
+    const libres = postes.filter(p => !tenus.has(p) || p === m.mon_poste);
+    if(g.statut === "formation"){
+      h += `<div class="mi-ligne"><span>Ton poste :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${postes.map(p => `<option value="${p}"${m.mon_poste === p ? " selected" : ""}>${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
+      h += `<div class="mi-postes">${postes.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">${MISSION_OMBRE} Les postes se figent au départ du groupe.</p></div>`;
+    } else if(m.mon_poste){
+      h += `<p style="margin:6px 0">Ton poste : <b>${MISSION_POSTES[m.mon_poste] || m.mon_poste}</b> <span class="vide">(fixé depuis le départ)</span></p>`;
+      if(MISSION_POSTES_DESC[m.mon_poste]) h += `<p class="vide" style="margin:0 0 6px">${MISSION_POSTES_DESC[m.mon_poste]}</p>`;
+    } else if(libres.length){
+      h += `<div class="mi-ligne"><span>Un poste est resté libre :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${libres.map(p => `<option value="${p}">${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
+      h += `<div class="mi-postes">${libres.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">Une fois pris, il ne change plus.</p></div>`;
+    } else h += `<p class="vide" style="margin:6px 0">${MISSION_OMBRE}</p>`;
   }
-  if(g.statut === "formation" && g.moi_fondateur && m.type === "casse" && m.revele) h += _mCasseCibleHtml(m, null);   // v1.67 (H58)
+  if(g.statut === "formation" && m.type === "casse" && m.revele){   // v1.67 (H58) ; v2.10 : la cité choisie reste affichée
+    if(g.moi_fondateur) h += _mCasseCibleHtml(m, m.cible);
+    else h += `<p style="margin:6px 0">Cité visée : <b>${m.cible ? echapper(_mFacNom(m.cible)) : "pas encore choisie par le meneur"}</b></p>`;
+  }
   if(g.statut === "formation" && g.moi_fondateur){
     h += `<div class="mi-ligne"><input id="mi-inv-nom" placeholder="Nom du joueur à inviter" maxlength="40">
           <button class="mini" data-mi-inviter="${g.id}">Inviter</button></div>`;
     if((g.invites || []).length) h += `<p class="vide" style="margin:2px 0">Invités : ${g.invites.map(echapper).join(", ")}</p>`;
-    const ok = actifs.length >= m.taille_min;
+    const vides = postes.filter(p => !tenus.has(p));               // v2.10 (K130) : on part avec ses postes
+    const ok = actifs.length >= m.taille_min && !vides.length;
+    const pourquoi = actifs.length < m.taille_min ? `Il faut au moins ${m.taille_min} membres.`
+                   : vides.length ? `Il manque : ${vides.map(p => MISSION_POSTES[p] || p).join(", ")}.` : "";
     h += `<div class="mi-btns"><button class="mini" data-mi-lancer="${g.id}"${ok ? "" : " disabled"}>Partir</button>
-          ${ok ? "" : `<span class="vide">Il faut au moins ${m.taille_min} membres.</span>`}</div>`;
+          ${pourquoi ? `<span class="vide">${pourquoi}</span>` : ""}</div>`;
   } else if(g.statut === "formation"){
     h += `<p class="vide">Le meneur donnera le départ. À la fin du recrutement, le groupe part de lui-même s'il est assez nombreux.</p>`;
   }
@@ -261,11 +299,14 @@ function _mCoffre(m){
   for(const s of (c.sortes || [])){
     (s.recettes || []).forEach(r => Object.keys(r).forEach(k => objets.add(k)));
     const ok = s.unites >= s.min;
+    // v2.10 — en clair (retour de l'autrice : « 0 / 2–6 » ne se comprenait pas).
+    const n = ok ? `${s.unites} ✓${s.unites < s.max ? `<br><span class="vide">jusqu'à ${s.max}</span>` : `<br><span class="vide">complet</span>`}`
+                 : `${s.unites} sur ${s.min}<br><span class="vide">il en manque ${s.min - s.unites}</span>`;
     h += `<tr><td><b>${echapper(s.nom || s.id)}</b><br><span class="vide">${_mRecettes(s.recettes)}</span></td>
-          <td class="mi-n${ok ? "" : " mi-manque"}">${s.unites} / ${s.min}${s.max > s.min ? "–" + s.max : ""}</td></tr>`;
+          <td class="mi-n${ok ? "" : " mi-manque"}">${n}</td></tr>`;
   }
   h += `</tbody></table>`;
-  h += `<p class="vide" style="margin:4px 0">${c.minimum ? "Le minimum est réuni." : "Le minimum n'est pas encore réuni."} Tout est consommé à la fin ; en cas de réussite, chacun est remboursé de ce qu'il a déposé.</p>`;
+  h += `<p class="vide" style="margin:4px 0">${c.minimum ? "Le minimum est réuni." : "Le minimum n'est pas encore réuni."} Il faut au moins le minimum de chaque sorte ; au-delà, chaque unité de plus rend l'épreuve plus facile, jusqu'au maximum. Tout est consommé à la fin ; en cas de réussite, chacun est remboursé de ce qu'il a déposé.</p>`;
   const mes = Object.entries(c.mes_depots || {});
   if(mes.length) h += `<p class="vide" style="margin:2px 0">Tes dépôts : ${mes.map(([k, q]) => `${q} × ${echapper(_mNomItem(k))}`).join(", ")}</p>`;
   if(!c.scelle){
@@ -306,6 +347,8 @@ function _mSurMousseron(){
 function _mBouture(m){
   const v = m.vue || {}; const ici = _mSurMousseron();
   let h = `<h4 class="gsec">La bouture</h4>`;
+  if(v.phase === "drones") h += _mEtape("Étape 1 sur 2 — Les drones", "Des drones rouillés gardent la bouture sur Mousseron. Il suffit qu'un seul d'entre vous aille les faire fuir.");
+  if(v.phase === "soins") h += _mEtape("Étape 2 sur 2 — Les soins", "Quatre jours de suite, la bouture doit être reliée à l'eau, sur Mousseron : on pose et on tourne des bouts de racine jusqu'à ce que l'eau passe.");
   if(v.phase === "drones"){
     if(v.tentatives >= 1){
       h += `<p>Les drones ont tenu bon. Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -455,6 +498,10 @@ function _mBalise(m){
   let h = `<h4 class="gsec">La descente</h4>`;
   const postes = ["encordeur","eclaireur","dechiffreur"];
   h += `<p class="vide" style="margin:2px 0">${postes.map(p => `${MISSION_POSTES[p]} : ${echapper((v.postes_tenus || {})[p] || "—")}${faits[p] ? " ✓" : ""}`).join(" · ")}</p>`;
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe.");
+  if(v.phase === "remontee") h += _mEtape("Seconde tentative", "La première descente a échoué. Le matériel du coffre reste : une seconde descente peut se tenter, pas avant demain.");
+  if(v.phase === "descente" && d && !postes.every(p => faits[p])) h += _mEtape("Étape 2 sur 3 — La descente", "La tempête approche. À la balise, chacun joue son poste avant qu'elle n'arrive : l'encordeur, l'éclaireur, le déchiffreur.");
+  if(v.phase === "descente" && d && postes.every(p => faits[p])) h += _mEtape("Étape 3 sur 3 — La tourelle", "Les trois postes sont faits. Il reste à affronter la tourelle, tous ensemble.");
   if(v.phase === "preparation" || v.phase === "remontee"){
     h += _mCoffre(m);
     if(v.phase === "remontee") h += `<p>Seconde descente : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -643,6 +690,11 @@ function _mInfiltration(m){
   let h = `<h4 class="gsec">L'entrepôt</h4>`;
   const porteurs = (v.porteurs || []).map(p => `${echapper(p.nom)}${p.score != null ? ` ✓ (${Math.round(p.score * 100)} %)` : ""}`).join(", ") || "—";
   h += `<p class="vide" style="margin:2px 0">Artificier : ${echapper(v.artificier || "—")}${v.breche_par ? " ✓" : ""} · Porteurs : ${porteurs}</p>`;
+  const ET_INF = { releve:["Étape 1 sur 4 — Le relevé", "L'entrée de l'entrepôt est cachée dans la zone marquée sur la carte de La Braise : elle apparaît quand l'un de vous passe tout près. Pendant ce temps, remplissez le coffre commun."],
+                   breche:["Étape 2 sur 4 — La brèche", "À l'entrepôt, l'artificier fait sauter la paroi."],
+                   rangement:["Étape 3 sur 4 — Le chargement", "La brèche est ouverte : chaque porteur range une caisse."],
+                   sentinelles:["Étape 4 sur 4 — La sortie", "Les sentinelles barrent la sortie : affrontez-les tous ensemble."] }[v.phase];
+  if(ET_INF) h += _mEtape(ET_INF[0], ET_INF[1]);
   if(v.tentatives === 1) h += `<p>Les sentinelles vous ont repoussés. Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
   if(v.phase === "releve"){
     h += _mCoffre(m);
@@ -811,6 +863,11 @@ function _mCasse(m, g){
   let h = `<h4 class="gsec">Le casse</h4>`;
   const pt = v.postes_tenus || {};
   h += `<p class="vide" style="margin:2px 0">Crocheteur : ${echapper(pt.crocheteur || "—")}${v.casse && v.casse.faits && v.casse.faits.crocheteur ? " ✓" : ""} · Guetteur : ${echapper(pt.guetteur || "—")}${v.casse && v.casse.faits && v.casse.faits.guetteur ? " ✓" : ""}</p>`;
+  const f0 = (v.casse && v.casse.faits) || {};
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Le meneur choisit la cité visée. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est dans la cité.");
+  if(v.phase === "repousse") h += _mEtape("Seconde tentative", "La première tentative a échoué. Le matériel du coffre reste : le casse peut se retenter, pas avant demain.");
+  if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "Toute l'équipe est dans la cité et n'en sort plus. Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
+  if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "Serrure ouverte, drones brouillés : il reste à vider les vitrines.");
   if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>${v.reperage ? ` — ${v.reperage.vendeurs} vendeur${v.reperage.vendeurs > 1 ? "s" : ""} en vitrine, ${CASSE_NIVEAUX[v.reperage.niveau] || ""}` : ""}.</p>`;
   if(v.tentatives === 1 && v.phase === "repousse") h += `<p>Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
   if(v.phase === "preparation" || v.phase === "repousse"){
@@ -818,7 +875,8 @@ function _mCasse(m, g){
     h += _mCoffre(m);
     if(!v.reperage){
       if(!v.cible) return h;
-      if(!_mDansCite(v.cible)){ h += `<p>Le repérage se fait dans la cité visée : un seul d'entre vous suffit.</p>`; return h; }
+      h += `<h4 class="gsec">Le repérage</h4><p class="vide" style="margin:2px 0 6px">Un seul d'entre vous suffit, dans la cité visée. Il en rapporte le nombre de vendeurs en vitrine et le niveau de surveillance.</p>`;   // v2.10
+      if(!_mDansCite(v.cible)){ h += `<p>Rends-toi dans la cité visée pour le faire.</p>`; return h; }
       if(v.ronde) h += `<div id="mi-ronde" data-mi-mission="${m.id}">${_mRondeHtml(m)}</div>`;
       return h;
     }
@@ -1003,6 +1061,12 @@ function _mSatellite(m){
   const v = m.vue || {}; const ici = _mABardane(); const auj = String(_missions && _missions.jour).slice(0, 10);
   let h = `<h4 class="gsec">Bardane</h4>`;
   const pt = v.postes_tenus || {};
+  const ET_SAT = { rendezvous:["Étape 1 sur 4 — Le rendez-vous", "Chacun rejoint Bardane avec son vaisseau et s'y signale. Quand les quatre se sont signalés le même jour, l'escorte attaque. Remplissez aussi le coffre commun."],
+                   rendezvous2:["Seconde tentative", "La première tentative a échoué. Le matériel du coffre reste : un nouveau rendez-vous est possible, pas avant demain."],
+                   escorte:["Étape 2 sur 4 — L'escorte", "Les artilleurs abattent les sondes ; ensuite, tout le groupe repousse les gardiennes."],
+                   sas:["Étape 3 sur 4 — Le sas", "L'ingénieur trouve la combinaison qui ouvre le sas."],
+                   coeur:["Étape 4 sur 4 — Le cœur", "Le hacker pirate le cœur de Bardane."] }[v.phase];
+  if(ET_SAT) h += _mEtape(ET_SAT[0], ET_SAT[1]);
   h += `<p class="vide" style="margin:2px 0">Artilleurs : ${(pt.artilleur || []).map(echapper).join(", ") || "—"} · Hacker : ${(pt.hacker || []).map(echapper).join(", ") || "—"} · Ingénieur : ${(pt.ingenieur || []).map(echapper).join(", ") || "—"}</p>`;
   if(v.phase === "rendezvous" || v.phase === "rendezvous2"){
     h += _mCoffre(m);
@@ -1239,6 +1303,10 @@ function _mBrancher(z){
     .mi-membre{ font-family:"Space Mono",monospace; font-size:12px; background:rgba(90,168,230,.12); border:1px solid var(--line); border-radius:6px; padding:3px 8px; }
     .mi-abandon{ opacity:.5; }
     .mi-coffre{ width:100%; border-collapse:collapse; margin:4px 0; }
+    .mi-etape{ border-left:3px solid var(--bleu,#5aa8e6); background:rgba(90,168,230,.08); padding:6px 10px; margin:6px 0 10px; line-height:1.5; }
+    .mi-etape b{ display:block; margin-bottom:2px; }
+    .mi-postes{ margin:2px 0 8px; font-size:13.5px; line-height:1.45; }
+    .mi-postes p{ margin:2px 0; }
     .mi-coffre td{ border-bottom:1px solid var(--line); padding:5px 4px; vertical-align:top; }
     .mi-coffre td.mi-n{ text-align:right; white-space:nowrap; font-family:"Space Mono",monospace; }
     .mi-coffre td.mi-manque{ color:var(--orange-hi,#ffb060); }
