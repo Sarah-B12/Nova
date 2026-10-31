@@ -59,8 +59,7 @@ async function chargerFacteurPatrouille(){
 }
 /* Un segment dure 4 h : toutes les 10 min suffisent largement, et on relit
    au retour au premier plan (les minuteries d'un onglet caché sont gelées). */
-setInterval(chargerFacteurPatrouille, 600000);
-document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) chargerFacteurPatrouille(); });
+rythme("patrouille", 600000, chargerFacteurPatrouille, { auRetour:true });   // v2.07 : le rythme (serveur.js)
 
 /* ===========================================================
    v1.45 — LE REGISTRE DU PROTOCOLE (PASSATION F ; serveur v170).

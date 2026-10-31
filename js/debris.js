@@ -62,8 +62,7 @@ async function debrisCharger(){
     majDebris();
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "debris.js#charger"); }
 }
-setInterval(debrisCharger, 600000);
-document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) debrisCharger(); });
+rythme("debris", 600000, debrisCharger, { auRetour:true });   // v2.07 : le rythme (serveur.js) ; relu à chaque retour, comme avant
 
 /* ---------- La visière (chaud / froid) ---------- */
 async function debrisSonder(bavard){

@@ -139,7 +139,7 @@ async function aptConsommerDons(){
     sauvegarder(); if(typeof majAptitudes==="function") majAptitudes();
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "aptitudes.js#dons"); }
 }
-if(typeof window!=="undefined"){ setTimeout(aptConsommerDons, 15000); setInterval(aptConsommerDons, 120000); }
+if(typeof window!=="undefined"){ setTimeout(aptConsommerDons, 15000); rythme("dons_pa", 120000, aptConsommerDons); }   // v2.07 : le rythme (serveur.js)
 /* Remboursement de la seule branche de FACTION — le tronc n'est jamais touché.
    ⚠ v0.92 — CÂBLÉE (parametres.js, changement de faction). Elle était écrite
    depuis des mois et appelée nulle part : les aptitudes d'une faction quittée

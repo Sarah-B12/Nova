@@ -54,6 +54,16 @@ function _appliquerEtatStocks(e, opt){
    aptEnergieAction). La liste est vide ; elle reste pour toute action future
    qui aurait droit à la remise d'Endurance / de zone. */
 const MOTIFS_ACTION = new Set([]);  // v1.22 : "vol" retiré — le vol passe par vol_preparer, qui reçoit le coût déjà réduit (_coutVol)
+let _agirManqueDer = 0;
+async function _agirManqueRelire(){
+  if(Date.now() - _agirManqueDer < 5000) return;   // une fois suffit, même si plusieurs refus s'enchaînent
+  _agirManqueDer = Date.now();
+  try{
+    if(typeof syncEffetsCombat === "function") await syncEffetsCombat();       // le journal d'abord (le vol, la Poste…)
+    if(typeof chargerStocksServeur === "function") await chargerStocksServeur(); // puis le vrai sac
+    if(typeof afficher === "function") afficher();
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "inventaire.js#manque"); }
+}
 async function agirServeur(o){
   o = o || {};
   if(typeof sb === "undefined"){ journal("Serveur indisponible.","alerte"); return null; }
@@ -87,6 +97,10 @@ async function agirServeur(o){
         const it = (typeof item === "function") ? item(data.item) : null;
         journal(`Il te manque : ${it ? it.nom : (data.item || "un objet")}.`,"alerte");
         console.warn("[agir] manque :", data.item, "| sac serveur :", (data.etat && data.etat.sac));
+        /* v2.07 — l'écran croyait l'objet là : il a pu être volé, posté, périmé depuis la
+           dernière relecture. On relit AUSSITÔT le journal (« on t'a fait les poches… »)
+           puis le sac, pour que le joueur voie ce qui s'est passé et ce qui lui reste. */
+        if(typeof _agirManqueRelire === "function") _agirManqueRelire();
       }
       else if(err === "sac_plein") journal("Sac plein — fais de la place d'abord.","alerte");
       else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }

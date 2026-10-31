@@ -553,6 +553,40 @@ async function battementPresence(){
   }catch(e){ console.warn("[presence]", (e && e.message) || e); }
 }
 setInterval(battementPresence, PRESENCE_MS);
+
+/* ===========================================================
+   v2.07 — LE RYTHME : les relectures périodiques du serveur.
+   Avant, chaque module avait son setInterval, et TOUS continuaient quand
+   l'onglet était caché (jusqu'à la déconnexion des 30 minutes) : une dizaine
+   de requêtes par minute pour un écran que personne ne regarde.
+   Désormais une seule horloge (toutes les 15 s) lance ce qui est dû, et
+   SEULEMENT si l'onglet est visible. Au retour au premier plan, elle rattrape
+   d'un coup ce qui est en retard ; `auRetour` relance en plus à chaque retour,
+   même à l'heure (le sac, les débris, le Protocole : comme avant).
+   ⚠ Ne passent PAS par ici : la sauvegarde, l'envoi des crédits (pousserCredits),
+     le filet de sortie — ce qui écrit ne doit jamais attendre.
+   ⚠ Une nouvelle relecture périodique : `rythme(nom, période, fonction)`, jamais
+     un setInterval qui appelle le serveur (outils/o_rythme.js liste les relectures).
+   =========================================================== */
+const RYTHME_PAS = 15000;
+const _RYTHME = [];
+function rythme(nom, periode, fn, opts){
+  _RYTHME.push({ nom, periode, fn, auRetour: !!(opts && opts.auRetour), der: Date.now() });
+}
+function _rythmeLancer(r){
+  r.der = Date.now();
+  try{ const p = r.fn(); if(p && typeof p.then === "function") p.then(null, e => { if(typeof _catchLog === "function") _catchLog(e, "rythme#" + r.nom); }); }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "rythme#" + r.nom); }
+}
+function _rythmeTic(retour){
+  if(typeof document !== "undefined" && document.hidden) return;   // onglet caché : rien
+  const t = Date.now();
+  for(const r of _RYTHME) if((retour && r.auRetour) || t - r.der >= r.periode - 1000) _rythmeLancer(r);
+}
+if(typeof window !== "undefined"){
+  setInterval(() => _rythmeTic(false), RYTHME_PAS);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) _rythmeTic(true); });
+}
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) battementPresence(); });
 
 /* Filet : pousse la dernière version en quittant la page (meilleur effort).
