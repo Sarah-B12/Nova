@@ -493,6 +493,12 @@ async function compterAnnonce(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   try{
     const { data } = await sb.from("annonce_faction").select("cree_le,texte").eq("faction",etat.faction).maybeSingle();
+    _annonceAppliquer(data);
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#4"); }
+}
+/* v2.09 — le badge « Gouvernement », que l'annonce vienne d'ici ou de la veille (veille.js). */
+function _annonceAppliquer(data){
+  try{
     const b=document.querySelector('#hub-centre [data-centre="gouvernement"]'); if(!b) return;
     const nouvelle = data && data.texte && data.texte.trim() && data.cree_le && (!etat.annonceFactionVue || new Date(data.cree_le)>new Date(etat.annonceFactionVue));
     b.innerHTML = "Gouvernement" + (nouvelle?` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700">1</span>`:"");
@@ -761,6 +767,16 @@ async function _expResoudre(){
 async function syncEffetsCombat(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   try{ const { data } = await sb.rpc("consommer_effets");
+    await _effetsAppliquer(data);
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
+  // Comptes rendus déposés par le serveur (expéditions résolues hors ligne).
+  try{ const { data:evs } = await sb.rpc("consommer_evenements");
+    await _evenementsAppliquer(evs);
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
+}
+/* v2.09 — ce que syncEffetsCombat faisait des effets et du journal serveur, inchangé, sorti en deux
+   fonctions pour que la veille (veille.js) l'applique de la même façon. */
+async function _effetsAppliquer(data){
     if(data && data.xp){
       /* ⚠⚠ v0.94 — NE PLUS APPELER gagnerXp() ICI. `consommer_effets()` crédite
          désormais `profils.xp` dans la MÊME transaction que la suppression de
@@ -805,9 +821,8 @@ async function syncEffetsCombat(){
       if(ok>0){ journal(`Butin du Protocole : +${ok} Cristal de Nyx !`,"gain"); if(typeof afficher==="function") afficher(); }
       if(ok<data.cristaux) journal(`${data.cristaux-ok} Cristal de Nyx perdu (sac plein).`,"alerte");
     }
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
-  // Comptes rendus déposés par le serveur (expéditions résolues hors ligne).
-  try{ const { data:evs } = await sb.rpc("consommer_evenements");
+}
+async function _evenementsAppliquer(evs){
     if(Array.isArray(evs) && evs.length){
       /* v0.63 — tout arrivait en rouge « alerte », y compris « colis reçu » ou
          « ta vente est partie ». Le ton suit la catégorie déposée par le serveur. */
@@ -855,7 +870,6 @@ async function syncEffetsCombat(){
         if(typeof missionsRedessiner==="function") missionsRedessiner();
       }
     }
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }
 async function _expSupprimer(){
   if(!await confirmerJoli("Annuler l'expédition", "Annuler l'expédition en cours ?", "Annuler l'expédition", true)) return;

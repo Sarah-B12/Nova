@@ -129,18 +129,16 @@ setInterval(() => { if (etat.inscrit) majJaugesSeules(); }, 60000);
 // v2.07 — les relectures passent par le rythme (serveur.js) : rien quand l'onglet est caché.
 // L'envoi des crédits reste une minuterie ordinaire : ce qui écrit n'attend jamais.
 setInterval(() => { if(etat.inscrit && typeof pousserCredits==="function") pousserCredits(); }, 60000);
-rythme("notifs",   60000, () => { if(etat.inscrit && typeof compterNotifs==="function") return compterNotifs(); });
-rythme("poste",    60000, () => { if(etat.inscrit && typeof compterPoste==="function") return compterPoste(); });
-rythme("annonce",  60000, () => { if(etat.inscrit && typeof compterAnnonce==="function") return compterAnnonce(); });
-rythme("prison",   60000, () => { if(_pretASynchro() && typeof syncPrison==="function") return syncPrison(); });
-rythme("effets",   60000, () => { if(_pretASynchro() && typeof syncEffetsCombat==="function") return syncEffetsCombat(); });
+/* v2.09 — les six relectures d'une minute (notifs, Poste, annonce, prison, effets et journal, sac)
+   n'en font plus qu'une : la veille (veille.js, serveur v233). Relue aussi à chaque retour. */
+rythme("veille",   60000, () => { if(_pretASynchro() && typeof veilleMinute==="function") return veilleMinute(); }, { auRetour:true });
 // v1.61 — missions : groupes, invitations et gains changent sans message (un coéquipier rejoint, dépose…).
 rythme("missions", 120000, () => { if(_pretASynchro() && typeof missionsCharger==="function") return missionsCharger().then(() => { if(typeof missionsRedessiner==="function") missionsRedessiner(); }); });
 /* v0.66 — le sac ne se relisait qu'au CHARGEMENT : un objet offert par la
    console du staff, ou tout ajout venu du serveur, n'apparaissait qu'après un
    rafraîchissement manuel. On relit périodiquement (sac_lire est peu coûteux),
    et dès que l'onglet revient au premier plan. */
-rythme("sac", 60000, () => { if(_pretASynchro() && typeof chargerStocksServeur==="function") return chargerStocksServeur(); }, { auRetour:true });   // v2.07 : relu aussi à chaque retour
+// (v2.09 : le sac est relu par la veille, ci-dessus.)
 document.addEventListener("visibilitychange", ()=>{
   if(document.hidden || !_pretASynchro()) return;
   if(typeof rechargerCredits==="function")     rechargerCredits();

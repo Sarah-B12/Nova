@@ -26,8 +26,13 @@ const SAC_MAX = 50;
    une lecture partie avant un changement est jetée (la réponse de la mutation
    fait déjà foi, et la prochaine lecture repassera). */
 let _stocksGen = 0;
+/* v2.09 — l'empreinte du sac que la veille a envoyé en dernier. Le serveur ne renvoie le sac
+   que s'il a changé depuis. ⚠ Toute AUTRE source qui applique un sac (une action, une
+   relecture directe) l'efface : la veille suivante renverra alors le sac entier. */
+let _sacEmpreinte = null;
 function _appliquerEtatStocks(e, opt){
   if(!e) return;
+  if(!(opt && opt.veille)) _sacEmpreinte = null;
   if(!(opt && opt.lecture)) _stocksGen++;
   // Les lots viennent TOUJOURS du serveur : jamais de localStorage, jamais de donnees.
   etat.sac    = e.sac    || {};
@@ -86,6 +91,14 @@ async function agirServeur(o){
        on peut donc reprendre la session et rejouer l'appel une fois, sans risque. */
     if(!error && data && data.err === "non_connecte" && typeof reprendreSession === "function" && await reprendreSession()){
       ({ data, error } = await sb.rpc("agir", args));
+    }
+    /* v2.08 (v232) — un objet a quitté le sac PENDANT l'action (vol, autre onglet) :
+       le serveur annule tout et lève « manque ». On le dit comme un refus ordinaire. */
+    if(error && error.message === "manque"){
+      const it = (typeof item === "function") ? item(error.details) : null;
+      journal(`Il te manque : ${it ? it.nom : (error.details || "un objet")}.`,"alerte");
+      if(typeof _agirManqueRelire === "function") _agirManqueRelire();
+      return null;
     }
     if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
     if(!data || !data.ok){

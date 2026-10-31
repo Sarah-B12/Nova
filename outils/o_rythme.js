@@ -43,6 +43,14 @@
   await agirServeur({ retirer:{ cendrite:1 }, motif:"banc" }); await att(300);
   const ordre = appels.filter(a => /consommer_evenements|sac_lire/.test(a));
   r.manque = { ordre, journalAvantSac: ordre[0] === "rpc:consommer_evenements", uneSeuleFois: ordre.filter(a => a === "rpc:sac_lire").length === 1 };
+  // 8. v2.08 — la même chose quand le serveur annule l'action en cours (exception « manque », v232).
+  const vrai = journal; const lus = []; journal = (t, ...a) => { lus.push(String(t)); return vrai(t, ...a); };
+  sb.rpc = (n, a) => n === "agir" ? (appels.push("rpc:agir"), Promise.resolve({ data:null, error:{ message:"manque", details:"cendrite", code:"P0001" } })) : rpc1(n, a);
+  _agirManqueDer = 0; appels.length = 0;
+  const res = await agirServeur({ retirer:{ cendrite:1 }, motif:"banc" }); await att(300);
+  journal = vrai;
+  r.exception = { nul: res === null, texte: lus.some(t => /^Il te manque : /.test(t)), pasServeurMuet: !lus.some(t => /n'a pas répondu/.test(t)),
+                  relu: appels.includes("rpc:sac_lire") && appels.includes("rpc:consommer_evenements") };
   sb.rpc = rpc0; sb.from = from0;
   return r;
 })();

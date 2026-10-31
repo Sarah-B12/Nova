@@ -341,7 +341,11 @@ async function compterPoste(){
   try{ await sb.rpc("poste_purge"); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "poste.js#2"); }
   const { count } = await sb.from("poste").select("id",{count:"exact",head:true})
     .or(`and(a_id.eq.${s.user.id},statut.eq.attente),and(de_id.eq.${s.user.id},statut.eq.retour)`);
-  const n=count||0;
+  _posteAppliquer(count||0);
+}
+/* v2.09 — le badge et le rappel de La Poste, que le compte vienne d'ici ou de la veille (veille.js). */
+function _posteAppliquer(n){
+  n = n||0;
   const b=document.querySelector('#hub-nav [data-hub="poste"]');
   if(b) b.innerHTML = "La Poste" + (n>0?` <span style="background:var(--orange,#ff8a3d);color:#0a1020;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700">${n}</span>`:"");
   /* ⚠ v0.63 — au premier passage _postePrec valait -1 : un colis arrivé

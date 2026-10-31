@@ -673,13 +673,18 @@ async function tenterEvasion(){
 async function syncPrison(){
   if(typeof sb==="undefined" || !sb) return;
   try{ const { data } = await sb.rpc("mon_etat_prison");
-    if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
-    else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
-    _prisonSyncFaite = true;
+    _prisonEtatAppliquer(data);
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#2"); }
   _prisonFinVerifier();
   _conduireEnPrison();
 }
+/* v2.09 — l'état de prison, qu'il vienne d'ici ou de la veille (veille.js). */
+function _prisonEtatAppliquer(data){
+  if(data && data.en_prison){ etat.prisonJusqua=new Date(data.jusqua).getTime(); etat.prisonFaction=data.faction; }
+  else if(etat.prisonJusqua){ etat.prisonJusqua=0; etat.prisonFaction=null; }
+  _prisonSyncFaite = true;
+}
+function _prisonAppliquer(data){ _prisonEtatAppliquer(data); _prisonFinVerifier(); _conduireEnPrison(); }
 /* v2.00 — retour d'une bêta-testeuse : la fin d'une peine n'était dite nulle part. La
    table `prison` fait foi (syncPrison) et `prisonJusqua` n'est pas sauvegardé ; on garde
    donc, SAUVEGARDÉE, la fin de peine connue (`etat.prisonFinConnue`). Quand on n'est plus

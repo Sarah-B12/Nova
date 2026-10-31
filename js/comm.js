@@ -37,9 +37,16 @@ async function compterNotifs(){
       // v1.94 — le destinataire n'était jamais prévenu que SA messagerie se remplissait.
       sb.from("messages").select("id",{count:"exact",head:true}).eq("a_id",s.user.id).eq("efface_a",false)
     ]);
-    _notifMsg = mq.count||0; _notifAmis = aq.count||0; _notifDefis = dq.count||0;
-    _alerteBoite(typeof (tq && tq.count) === "number" ? tq.count : null);
+    _notifsAppliquer({ messages:mq.count||0, amis:aq.count||0, defis:dq.count||0,
+                       boite: typeof (tq && tq.count) === "number" ? tq.count : null });
+    return;
   }catch(e){ console.warn("[comm] notifs:", e.message); }
+  majBadges();
+}
+/* v2.09 — appliquer les comptages, qu'ils viennent des quatre lectures ci-dessus ou de la veille (veille.js). */
+function _notifsAppliquer(c){
+  if(c){ _notifMsg = c.messages||0; _notifAmis = c.amis||0; _notifDefis = c.defis||0;
+         _alerteBoite(typeof c.boite === "number" ? c.boite : null); }
   majBadges();
 }
 /* v1.94 — Ta messagerie se remplit : une alerte quand il reste 5 places ou moins, une autre
