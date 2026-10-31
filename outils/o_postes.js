@@ -58,7 +58,37 @@
     satellite: ["rendezvous","escorte","sas","coeur"].map(p => etapes(_mSatellite({ id:4, coffre, vue:{ phase:p, limite:"2026-11-02", escorte:{ tirs:{} } } })))
   };
   r.uneSeuleAChaqueFois = [r.casse.preparation, r.casse.casse, r.casse.unFait, r.casse.vitrines, r.casse.seconde, ...r.autres.bouture, ...r.autres.balise, ...r.autres.infiltration, ...r.autres.satellite].every(e => e.length === 1);
-  // 6. Les messages d'erreur nouveaux
+  // 6. v2.11 — la brèche dit quand le coffre se scelle ; une mission finie qui attend un gain le dit
+  div.innerHTML = _mInfiltration({ id:3, coffre, vue:{ phase:"breche", limite:"2026-11-02" } });
+  r.brecheCoffre = /reste ouvert jusque-là/.test(div.textContent) && /il est scellé/.test(div.textContent);
+  div.innerHTML = _mCarte({ id:9, type:"satellite", nom:"Le satellite", revele:true, deja:true, mon_groupe:6, mon_statut:"actif", groupes:[{ id:6, statut:"reussi", membres:[] }] });
+  r.finieAvecGain = /la mission disparaîtra ensuite/.test(div.textContent);
+  // 7. v2.13 — le dépôt : la quantité ne dépasse pas ce qu'on a
+  etat.sac = { ...(etat.sac || {}), lingot_cendrite:4, cuir:9 };
+  const cof2 = { ...coffre, sortes:[{ id:"crochet", nom:"Crochets", recettes:[{ lingot_cendrite:1 }], unites:0, min:2, max:6 }, { id:"cape", nom:"Capes", recettes:[{ cuir:2, biofil_renforce:1 }], unites:0, min:2, max:6 }] };
+  div.innerHTML = _mCoffre({ ...base, coffre:cof2 }); _mBrancher(div);
+  const dsel = div.querySelector("#mi-dep-item"), dqte = div.querySelector("#mi-dep-qte");
+  dsel.value = "lingot_cendrite"; dsel.dispatchEvent(new Event("change"));
+  dqte.value = "21"; dqte.dispatchEvent(new Event("input"));
+  r.depot = { borne: dqte.value, max: dqte.max };
+  dsel.value = "cuir"; dsel.dispatchEvent(new Event("change")); dqte.value = "21"; dqte.dispatchEvent(new Event("input"));
+  r.depot.cuir = dqte.value;
+  const rpc0 = sb.rpc.bind(sb); let envoye = null; const lus = []; const vj = journal; journal = (t, ...x) => { lus.push(String(t)); return vj(t, ...x); };
+  sb.rpc = (n, a) => { if(n === "mission_deposer"){ envoye = a.p_qte; return Promise.resolve({ data:{ ok:true, depose:2, demande:a.p_qte, limite:"sac" }, error:null }); } return rpc0(n, a); };
+  dsel.value = "lingot_cendrite"; dqte.value = "4"; div.querySelector("[data-mi-deposer]").click(); await att(150);
+  r.depot.envoye = envoye; r.depot.message = lus.find(t => /^Déposé/.test(t)) || null;
+  sb.rpc = rpc0; journal = vj;
+  // 8. v2.14 — le fil de la mission
+  const hier = new Date(Date.now() - 864e5).toISOString(), maint = new Date().toISOString();
+  const mf = { ...base, cible:fac, fil:[{ t:"Ton groupe est parti pour la mission « Le casse ».", q:hier }, { t:"Autrice a choisi la cible : le marché de {fac:" + fac + "}.", q:maint }] };
+  div.innerHTML = _mFil(mf);
+  const lis = [...div.querySelectorAll(".mi-fil li")].map(li => li.textContent.replace(/\s+/g, " ").trim());
+  r.fil = { lignes: lis.length, recentEnHaut: /a choisi la cible/.test(lis[0] || ""), libelle: (lis[0] || "").includes(facNom) && !(lis[0] || "").includes("{fac:"),
+            hier: /^hier \d\d:\d\d/.test(lis[1] || ""), replie: !div.querySelector("details").open, vide: _mFil({ ...base, fil:[] }) === "" };
+  _mBrancher(div); const det = div.querySelector("details"); det.open = true; det.dispatchEvent(new Event("toggle"));
+  div.innerHTML = _mFil(mf); r.fil.resteOuvert = div.querySelector("details").open;
+  _mFilOuvert = {};
+  // 9. Les messages d'erreur nouveaux
   r.erreurs = [MISSION_ERREURS.poste_fige, MISSION_ERREURS.postes_vides];
   return r;
 })();

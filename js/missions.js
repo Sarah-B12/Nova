@@ -99,7 +99,7 @@ function missionsRedessiner(){
   if(!h.querySelector('[data-qsous="missions"].actif')) return;
   const a = document.activeElement;
   if(a && h.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
-  if(typeof majQueteHub === "function") majQueteHub();
+  if(typeof majQueteHub === "function") majQueteHub(true);   // v2.12 : pas en pleine partie, pas si rien n'a changé
 }
 
 function _missionGroupe(m){ return m && m.mon_groupe ? (m.groupes || []).find(g => g.id === m.mon_groupe) : null; }
@@ -157,6 +157,23 @@ function _mRestant(iso){
   return `${h} h ${Math.floor((ms % 3600e3) / 60e3)} min`;
 }
 
+/* v2.14 (v237, K132) — LE FIL DE LA MISSION : tout ce que le groupe a fait, le plus récent en
+   haut (20 lignes au plus, envoyées par missions_lire). Le journal personnel ne garde que
+   l'essentiel. Replié par défaut ; il se souvient d'être ouvert. */
+let _mFilOuvert = {};
+function _mFilQuand(iso){
+  const d = new Date(iso); if(isNaN(d)) return "";
+  const j = x => x.toLocaleDateString("fr-FR"), auj = new Date(), hier = new Date(Date.now() - 864e5);
+  const h = d.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" });
+  return j(d) === j(auj) ? h : j(d) === j(hier) ? `hier ${h}` : `${d.toLocaleDateString("fr-FR", { day:"numeric", month:"short" })} ${h}`;
+}
+function _mFil(m){
+  const L = (m.fil || []).slice().reverse();
+  if(!L.length) return "";
+  const txt = t => { let x = echapper(t || ""); if(typeof rendreLibelles === "function") x = rendreLibelles(x); return x; };
+  return `<details class="mi-fil" data-mi-fil="${m.id}"${_mFilOuvert[m.id] ? " open" : ""}><summary>Le fil de la mission <span class="vide">(${L.length}${L.length >= 20 ? ", les plus récents" : ""})</span></summary>
+    <ol>${L.map(x => `<li><span class="mi-fil-q">${_mFilQuand(x.q)}</span> ${txt(x.t)}</li>`).join("")}</ol></details>`;
+}
 function _mTitre(m){
   if(m.secrete && !m.revele) return m.mon_groupe ? "Un pli sans signature" : "Un mot glissé à voix basse";
   return echapper(m.nom || "Mission");
@@ -215,10 +232,13 @@ function _mCarte(m){
       <button class="mini" data-mi-inv="${inv.groupe}" data-mi-rep="1">Accepter</button>
       <button class="mini danger" data-mi-inv="${inv.groupe}" data-mi-rep="0">Refuser</button></div>`;
   }
-  if(enGroupe) h += _mMonGroupe(m, g);
+  if(enGroupe) h += _mMonGroupe(m, g) + _mFil(m);
   else if(m.deja && g){
     const issue = { reussi:"réussie", rate:"ratée", lance:"en cours" }[g.statut] || "terminée";
     h += `<p class="vide">Tu as pris part à cette mission (${m.mon_statut === "abandon" ? "abandonnée" : issue}). Tu attendras la prochaine.</p>`;
+    // v2.11 (v235) : une mission finie ne reste affichée que si quelque chose t'y attend.
+    if(g.statut === "reussi" || g.statut === "rate") h += `<p class="vide">Récupère ce qui t'attend, en haut de la liste : la mission disparaîtra ensuite.</p>`;
+    h += _mFil(m);
   } else if(!m.secrete && m.statut === "recrutement"){
     if(m.refus) h += `<p class="vide">${m.refus === "niveau" ? `Il faut le niveau ${m.niveau_min} pour cette mission.` : (MISSION_ERREURS[m.refus] || "Tu ne peux pas y prendre part.")}</p>`;
     else h += `<div class="mi-btns"><button class="mini" data-mi-creer="${m.id}" data-mi-ouvert="1">Fonder un groupe ouvert</button>
@@ -321,7 +341,7 @@ function _mCoffre(m){
     const dispo = [...objets].filter(k => (sac[k] || 0) > 0);
     h += dispo.length
       ? `<div class="mi-ligne"><select id="mi-dep-item">${dispo.map(k => `<option value="${k}">${echapper(_mNomItem(k))} (${sac[k]})</option>`).join("")}</select>
-         <input id="mi-dep-qte" type="number" min="1" value="1" style="width:5em"><button class="mini" data-mi-deposer="${m.id}">Déposer</button></div>
+         <input id="mi-dep-qte" type="number" min="1" max="${sac[dispo[0]]}" value="1" style="width:5em"><button class="mini" data-mi-deposer="${m.id}">Déposer</button></div>
          <p class="vide" style="margin:2px 0">Ce qui est déposé est engagé : on ne le reprend pas.</p>`
       : `<p class="vide">Rien dans ton sac ne sert à ce coffre.</p>`;
   }
@@ -691,7 +711,7 @@ function _mInfiltration(m){
   const porteurs = (v.porteurs || []).map(p => `${echapper(p.nom)}${p.score != null ? ` ✓ (${Math.round(p.score * 100)} %)` : ""}`).join(", ") || "—";
   h += `<p class="vide" style="margin:2px 0">Artificier : ${echapper(v.artificier || "—")}${v.breche_par ? " ✓" : ""} · Porteurs : ${porteurs}</p>`;
   const ET_INF = { releve:["Étape 1 sur 4 — Le relevé", "L'entrée de l'entrepôt est cachée dans la zone marquée sur la carte de La Braise : elle apparaît quand l'un de vous passe tout près. Pendant ce temps, remplissez le coffre commun."],
-                   breche:["Étape 2 sur 4 — La brèche", "À l'entrepôt, l'artificier fait sauter la paroi."],
+                   breche:["Étape 2 sur 4 — La brèche", "À l'entrepôt, l'artificier fait sauter la paroi. Le coffre commun reste ouvert jusque-là : ses charges en sortent. Une fois la brèche ouverte, il est scellé."],
                    rangement:["Étape 3 sur 4 — Le chargement", "La brèche est ouverte : chaque porteur range une caisse."],
                    sentinelles:["Étape 4 sur 4 — La sortie", "Les sentinelles barrent la sortie : affrontez-les tous ensemble."] }[v.phase];
   if(ET_INF) h += _mEtape(ET_INF[0], ET_INF[1]);
@@ -1189,6 +1209,8 @@ function _mSasBrancher(z){
 
 /* ---------- Branchements ---------- */
 function _mBrancher(z){
+  // v2.14 — le fil : il reste ouvert d'un redessin à l'autre.
+  z.querySelectorAll("[data-mi-fil]").forEach(d => d.addEventListener("toggle", () => { _mFilOuvert[d.dataset.miFil] = d.open; }));
   const q = (sel, fn) => z.querySelectorAll(sel).forEach(b => b.addEventListener("click", () => { if(b.disabled) return; b.disabled = true; fn(b); }));
   q("[data-mi-gain]", b => _missionAppel("mission_gain_recuperer", { p_gain:+b.dataset.miGain },
       d => `Récupéré : ${d.qte} × ${_mNomItem(d.item)}.`));
@@ -1211,12 +1233,24 @@ function _mBrancher(z){
     if(!ok){ b.disabled = false; return; }
     _missionAppel("mission_quitter", { p_mission:+b.dataset.miAbandon }, "Tu as abandonné la mission.");
   });
+  /* v2.13 — la quantité ne dépasse pas ce qu'on a (retour de l'autrice : « on peut rajouter plus que
+     ce qu'on a »). Le serveur ne déposait déjà que ce qu'on avait (v236 : et seulement ce qui sort
+     vraiment du sac). */
+  { const sel = z.querySelector("#mi-dep-item"), qte = z.querySelector("#mi-dep-qte");
+    if(sel && qte){
+      const borner = () => { const mx = Math.max(1, ((typeof etat !== "undefined" && etat.sac) || {})[sel.value] || 1);
+                             qte.max = mx; if(Number(qte.value) > mx) qte.value = mx; if(!(Number(qte.value) >= 1)) qte.value = 1; };
+      sel.addEventListener("change", borner); qte.addEventListener("change", borner); qte.addEventListener("input", borner); borner();
+    } }
   q("[data-mi-deposer]", b => {
     const it = (z.querySelector("#mi-dep-item") || {}).value;
-    const n = Math.round(Number((z.querySelector("#mi-dep-qte") || {}).value));
+    const mx = ((typeof etat !== "undefined" && etat.sac) || {})[it] || 0;
+    const n = Math.min(mx, Math.round(Number((z.querySelector("#mi-dep-qte") || {}).value)));
     if(!it || !(n >= 1)){ b.disabled = false; return; }
     _missionAppel("mission_deposer", { p_mission:+b.dataset.miDeposer, p_item:it, p_qte:n },
-      d => d.depose < d.demande ? `Déposé : ${d.depose} × ${_mNomItem(it)} (le coffre n'en prenait pas plus).` : `Déposé : ${d.depose} × ${_mNomItem(it)}.`);
+      d => d.depose < d.demande
+        ? `Déposé : ${d.depose} × ${_mNomItem(it)} (${d.limite === "sac" ? "tu n'en avais pas plus" : "le coffre n'en prenait pas plus"}).`
+        : `Déposé : ${d.depose} × ${_mNomItem(it)}.`);
   });
   // v1.63 — la bouture : faire fuir les drones, puis « Les racines ».
   q("[data-mi-fuir]", async b => {
@@ -1303,6 +1337,11 @@ function _mBrancher(z){
     .mi-membre{ font-family:"Space Mono",monospace; font-size:12px; background:rgba(90,168,230,.12); border:1px solid var(--line); border-radius:6px; padding:3px 8px; }
     .mi-abandon{ opacity:.5; }
     .mi-coffre{ width:100%; border-collapse:collapse; margin:4px 0; }
+    .mi-fil{ margin:10px 0 4px; }
+    .mi-fil summary{ cursor:pointer; font-weight:600; }
+    .mi-fil ol{ list-style:none; margin:6px 0 0; padding:0; max-height:220px; overflow-y:auto; font-size:13.5px; line-height:1.45; }
+    .mi-fil li{ padding:3px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+    .mi-fil-q{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine,#8a97ab); margin-right:4px; }
     .mi-etape{ border-left:3px solid var(--bleu,#5aa8e6); background:rgba(90,168,230,.08); padding:6px 10px; margin:6px 0 10px; line-height:1.5; }
     .mi-etape b{ display:block; margin-bottom:2px; }
     .mi-postes{ margin:2px 0 8px; font-size:13.5px; line-height:1.45; }

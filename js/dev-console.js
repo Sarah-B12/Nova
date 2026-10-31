@@ -765,6 +765,8 @@ function monterDev(){
     .dev-note{ font-size:11.5px; color:#8b95a8; line-height:1.45; margin:0 0 10px; }
     .dev-dim{ color:#8b95a8; }
     .dev-champ{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .dev-coche{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#a9b6cc; cursor:pointer; }
+    .dev-champ .dev-coche input{ flex:none; min-width:0; width:auto; padding:0; margin:0; }
     .cand-fac{ margin:12px 0 5px; font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:var(--orange-hi,#ffb060); }
     .cand-item{ border:1px solid var(--line); border-radius:8px; margin-bottom:6px; background:#0f1830; }
     .cand-item summary{ cursor:pointer; padding:7px 10px; font-size:13px; }
@@ -901,11 +903,14 @@ function _devAfficherFiche(p){
           <option value="">— Toutes les quêtes —</option>
           ${(typeof QUETES!=="undefined"?QUETES:[]).map(q=>`<option value="${q.id}">${q.id.toUpperCase()} — ${echapper(q.nom)}</option>`).join("")}
         </select>
-        <label class="dev-note" style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="f-quete-affut"> effacer aussi les jours d'affût</label>
-        <button class="mini" id="f-quete-verrou">Lever le verrou d'échec</button>
-        <button class="mini danger" id="f-quete-btn">Rendre rejouable</button></div>
+        <button class="mini" id="f-quete-verrou">Lever le verrou d'échec</button></div>
+      <!-- v2.12 : la case allait avec « Rendre rejouable » mais flottait loin de son texte (elle prenait la largeur
+           d'un champ). Elle est à côté de son bouton, ne sert qu'à Q15, et dit pourquoi. -->
+      <div class="dev-champ"><button class="mini danger" id="f-quete-btn">Rendre rejouable</button>
+        <label class="dev-coche"><input type="checkbox" id="f-quete-affut"> Q15 : effacer aussi les nuits d'affût déjà tenues</label></div>
       <p class="dev-note"><b>Lever le verrou</b> : la quête choisie (ou toutes) redevient jouable tout de suite, sans attendre les 8 h — la progression n'est pas touchée.<br>
-      <b>Rendre rejouable</b> : la quête repart à zéro (abandonnée si en cours). Les <b>PA</b> et les <b>points de Cercle</b> déjà gagnés ne seront pas reversés ; la bête reste. Le joueur connecté devra recharger sa page.</p>
+      <b>Rendre rejouable</b> : la quête repart à zéro (abandonnée si en cours). Les <b>PA</b> et les <b>points de Cercle</b> déjà gagnés ne seront pas reversés ; la bête reste. Le joueur connecté devra recharger sa page.<br>
+      <b>Nuits d'affût</b> (Q15 seulement, l'étape où l'on tient l'affût cinq jours différents) : ces jours sont gardés par le serveur, à part. Sans la case, une Q15 rendue rejouable garde les nuits déjà tenues, et le joueur n'a pas à les refaire. Avec la case, elles sont effacées : il lui faudra cinq nouveaux jours.</p>
     </div>
 
     <div class="dev-bloc"><h4>Journal du joueur</h4>
@@ -1005,11 +1010,16 @@ function _devAfficherFiche(p){
      ⚠ Elle incrémente `_rev` : l'onglet du joueur, s'il est ouvert, se verra
      refuser sa prochaine sauvegarde et lui demandera de recharger. Sans ça, il
      réécrirait son ancienne progression par-dessus la remise à zéro. */
+  /* v2.12 — la case des nuits d'affût ne sert qu'à Q15 (ou à « toutes les quêtes »). */
+  { const sq = z.querySelector("#f-quete"), ca = z.querySelector("#f-quete-affut");
+    const maj = () => { const ok = !sq.value || sq.value === "q15"; ca.disabled = !ok; if(!ok) ca.checked = false;
+                        ca.parentElement.style.opacity = ok ? "" : ".45"; };
+    sq.addEventListener("change", maj); maj(); }
   z.querySelector("#f-quete-btn").addEventListener("click", async ()=>{
     const qid = z.querySelector("#f-quete").value || null;
     const affut = !!z.querySelector("#f-quete-affut").checked;
     const quoi = qid ? qid.toUpperCase() : "TOUTES les quêtes";
-    if(!confirm(`Rendre ${quoi} rejouable pour ${p.nom} ?${affut?"\nLes jours d'affût déjà tenus seront effacés.":""}`)) return;
+    if(!confirm(`Rendre ${quoi} rejouable pour ${p.nom} ?${affut?"\nLes nuits d'affût déjà tenues (Q15) seront effacées.":""}`)) return;
     const { data, error } = await sb.rpc("admin_reset_quete",
       { p_profil: p.id, p_quete: qid, p_affut: affut });
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }

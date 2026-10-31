@@ -392,6 +392,10 @@
 /* v0.87 — « Carte de Silène » et « Partir pour Triptolème » côte à côte. */
 .cartes-paire { display:flex; gap:8px; margin-bottom:8px; }
 .cartes-paire .action { flex:1 1 0; margin-bottom:0; min-width:0; }
+/* v2.12 — quatre boutons sur une ligne (Silène, Triptolème, Ancolie, Cérès) : la destination et
+   son coût se chevauchaient. Comme sur petit écran : la destination au-dessus, le coût en dessous. */
+.cartes-paire .action { flex-direction:column; align-items:flex-start; justify-content:center; gap:3px; }
+.cartes-paire .action .cout { white-space:normal; }
 @media (max-width:520px){ .cartes-paire { flex-direction:column; } }
 
 /* v1.11 — Bandeau des perturbations de la Poste. Sert aussi de REPLI si

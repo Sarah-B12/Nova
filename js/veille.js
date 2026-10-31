@@ -34,8 +34,10 @@ async function veilleMinute(){
   if(typeof _prisonAppliquer === "function") _prisonAppliquer(d.prison);
   if(typeof _effetsAppliquer === "function") await _effetsAppliquer(d.effets);
   if(typeof _evenementsAppliquer === "function") await _evenementsAppliquer(d.evenements);
+  let sacApplique = false;
   if(d.sac){
     if(((typeof _stocksGen === "number") ? _stocksGen : 0) === gen0){
+      sacApplique = true;
       _appliquerEtatStocks(d.sac, { lecture:true, veille:true });
       _sacEmpreinte = d.empreinte || null;
       etat._sacEchec = false;
@@ -44,7 +46,11 @@ async function veilleMinute(){
   if(typeof _notifsAppliquer === "function") _notifsAppliquer(d.notifs);
   if(typeof _posteAppliquer === "function") _posteAppliquer(d.poste);
   if(typeof _annonceAppliquer === "function") _annonceAppliquer(d.annonce);
-  if(typeof afficher === "function") afficher();
+  /* v2.12 — on ne redessine tout QUE si le sac a changé. Le redessin de chaque minute (v2.09)
+     effaçait les jeux en cours de l'onglet Quêtes. Avant la veille, ces relectures ne
+     redessinaient rien : les badges, la Poste, l'annonce, la prison, les effets et le journal
+     se mettent à jour d'eux-mêmes. */
+  if(sacApplique && typeof afficher === "function") afficher();
 }
 /* La minute d'avant la v2.09, à l'identique (mêmes fonctions, mêmes conditions). */
 async function _veilleAncienne(){

@@ -2030,12 +2030,40 @@ function aLaToundra(){ return (typeof villeActuelle==="function") && villeActuel
    endroits habituels, l'onglet n'est là que pour une affaire de mission : on
    ouvre alors directement « Missions ». */
 let _queteSous = null;   // "principale" | "missions" — choix du joueur pendant la session
-function majQueteHub(){
+/* v2.12 — LE RAFRAÎCHISSEMENT NE REDESSINE PLUS L'ONGLET EN PLEINE PARTIE.
+   Retour de l'autrice : « on fait un truc et ça s'efface ». Chaque redessin général du jeu
+   (après n'importe quelle action, et chaque minute depuis la veille v2.09) redessinait TOUT
+   l'onglet Quêtes, et un mini-jeu en cours repartait de zéro (seul le Simon était protégé).
+   Désormais, un simple RAFRAÎCHISSEMENT (`majQueteHub(true)`, venu de majHub ou de la relecture
+   des missions) ne redessine pas : (1) si le joueur a touché l'onglet dans les 90 dernières
+   secondes — il est en train de jouer ; (2) si rien de ce que l'onglet montre n'a changé
+   (`_queteSignature`). Les redessins DEMANDÉS (après une action de quête ou de mission,
+   `majQueteHub()` sans argument) passent toujours. */
+let _queteTouche = 0, _queteSig = null;
+if(typeof document !== "undefined"){
+  const _queteMarquer = e => { const t = e.target; if(t && t.closest && t.closest("#hub-quete")) _queteTouche = Date.now(); };
+  ["pointerdown","keydown","input"].forEach(ev => document.addEventListener(ev, _queteMarquer, true));
+}
+function _queteSignature(){
+  try{
+    const qp = queteProchaine();
+    return JSON.stringify([_queteSous || null, queteActive() || null, qp ? qp.id : null, queteVerrou() > 0,
+      _priseIci(qp), surSiteQuete(), (typeof surCarcasse === "function") && surCarcasse(), _enFaction(),
+      queteAttendLendemain(qp), etat.secteur || null, (typeof villeActuelle === "function") ? villeActuelle() : null,
+      (typeof _missions !== "undefined") ? _missions : null]);
+  }catch(e){ return "?" + Date.now(); }    // en cas de doute, on redessine
+}
+function majQueteHub(rafraichir){
   const hub=document.querySelector("#hub-quete"); if(!hub) return;
   /* ⚠ v0.92 — NE PAS REDESSINER PENDANT UN SIMON : le redessin appelle
      `_clearQ()`, qui tuerait les minuteurs de la partie en cours, et
      reconstruirait le DOM en perdant la séquence mémorisée. Voir `_seqEnCours`. */
   if(_seqEnCours()) return;
+  if(rafraichir && hub.querySelector("#hub-quete-corps")){
+    if(Date.now() - _queteTouche < 90000) return;            // le joueur est en train de jouer
+    if(_queteSignature() === _queteSig) return;              // rien n'a changé
+  }
+  _queteSig = _queteSignature();
   _queteStyle();
   _clearQ();
   let z=hub.querySelector("#hub-quete-corps");
