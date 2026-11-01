@@ -88,7 +88,16 @@
   _mBrancher(div); const det = div.querySelector("details"); det.open = true; det.dispatchEvent(new Event("toggle"));
   div.innerHTML = _mFil(mf); r.fil.resteOuvert = div.querySelector("details").open;
   _mFilOuvert = {};
-  // 9. Les messages d'erreur nouveaux
+  // 9. v2.15 — le repérage, une photo datée
+  const rq = new Date(); rq.setHours(8, 32, 0, 0);
+  div.innerHTML = C({ phase:"preparation", cible:fac, reperage:{ par:"Vortex", jour:"2026-10-31", quand:rq.toISOString(), vendeurs:0, niveau:1 } });
+  let tr = div.textContent.replace(/\s+/g, " ");
+  r.reperage = { date: /Au repérage de Vortex \(\d+\/\d+, 08:32\)/.test(tr), zero: /personne d'autre ne vendait en vitrine, sous un œil\./.test(tr),
+                 explique: /le butin se prendra dans celle du jour du casse/.test(tr), plusAuPresent: !/0 vendeur/.test(tr) };
+  div.innerHTML = C({ phase:"preparation", cible:fac, reperage:{ par:"X", jour:"2026-10-30", vendeurs:3, niveau:2 } });
+  tr = div.textContent.replace(/\s+/g, " ");
+  r.reperage.ancienSansHeure = /Au repérage de X \(30\/10\) : 3 vendeurs en vitrine, bien gardé\./.test(tr);
+  // 10. Les messages d'erreur nouveaux
   r.erreurs = [MISSION_ERREURS.poste_fige, MISSION_ERREURS.postes_vides];
   return r;
 })();

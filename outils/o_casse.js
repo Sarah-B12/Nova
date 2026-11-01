@@ -37,7 +37,7 @@
   // 2. Repérage fait hier : « Commencer le casse » (meneur) ; absent → grisé.
   const rep = { par:"Eve", jour:"2026-12-20", vendeurs:12, niveau:2 };
   await voir({ phase:"preparation", limite:"2026-12-23", cible:fac, meneur:true, postes_tenus:{}, reperage:rep, absent:"Eve" });
-  r.cibleInfo = txt().includes("12 vendeurs en vitrine, Bien gardé");
+  r.cibleInfo = txt().includes("12 vendeurs en vitrine, bien gardé") && txt().includes("Au repérage");   // v2.15 : une photo datée
   r.absentGrise = corps().querySelector("[data-mi-commencer]").disabled && txt().includes("il manque Eve");
   await voir({ phase:"preparation", limite:"2026-12-23", cible:fac, meneur:true, postes_tenus:{}, reperage:rep, absent:null });
   corps().querySelector("[data-mi-commencer]").click(); await new Promise(x => setTimeout(x, 80));

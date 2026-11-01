@@ -871,6 +871,19 @@ async function ouvrirCaisseArepo(id){
    puis « Vider les vitrines ». Le serveur revérifie la présence à chaque pas.
    =========================================================== */
 const CASSE_NIVEAUX = ["Sans gardien","Sous un œil","Bien gardé","Sous haute surveillance"];
+/* v2.15 (v238, K133) — LE REPÉRAGE EST UNE PHOTO DATÉE. Il a compté les vendeurs (hors membres
+   du groupe) et la surveillance À CET INSTANT ; le butin se tire dans la vitrine du JOUR DU
+   CASSE, et la surveillance est celle de ce jour-là (casse_vider). Retour de l'autrice :
+   « 0 vendeur » restait affiché alors que d'autres avaient mis en vente depuis. */
+function _mReperageHtml(rp){
+  const d = rp.quand ? new Date(rp.quand) : null;
+  const quand = d && !isNaN(d) ? `${d.toLocaleDateString("fr-FR", { day:"numeric", month:"numeric" })}, ${d.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}`
+              : String(rp.jour || "").slice(0, 10).split("-").reverse().slice(0, 2).join("/");
+  const niv = (CASSE_NIVEAUX[rp.niveau] || "").replace(/^./, c => c.toLowerCase());
+  const vend = rp.vendeurs > 0 ? `${rp.vendeurs} vendeur${rp.vendeurs > 1 ? "s" : ""} en vitrine` : "personne d'autre ne vendait en vitrine";
+  return `<p style="margin:2px 0 6px">Au repérage${rp.par ? ` de ${echapper(rp.par)}` : ""} (${quand}) : ${vend}, ${niv}.</p>
+    <p class="vide" style="margin:0 0 8px">Une vitrine vit sa vie : le butin se prendra dans celle du jour du casse, et la surveillance sera celle de ce jour-là.</p>`;
+}
 function _mFacNom(f){ const x = (typeof FACTIONS !== "undefined" ? FACTIONS : []).find(y => y.id === f); return x ? x.nom : f; }
 function _mDansCite(f){ return typeof villeActuelle === "function" && villeActuelle() === f; }
 function _mCasseCibleHtml(m, actuelle){
@@ -888,7 +901,8 @@ function _mCasse(m, g){
   if(v.phase === "repousse") h += _mEtape("Seconde tentative", "La première tentative a échoué. Le matériel du coffre reste : le casse peut se retenter, pas avant demain.");
   if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "Toute l'équipe est dans la cité et n'en sort plus. Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
   if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "Serrure ouverte, drones brouillés : il reste à vider les vitrines.");
-  if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>${v.reperage ? ` — ${v.reperage.vendeurs} vendeur${v.reperage.vendeurs > 1 ? "s" : ""} en vitrine, ${CASSE_NIVEAUX[v.reperage.niveau] || ""}` : ""}.</p>`;
+  if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>.</p>`;
+  if(v.cible && v.reperage) h += _mReperageHtml(v.reperage);   // v2.15 (K133) : une photo datée
   if(v.tentatives === 1 && v.phase === "repousse") h += `<p>Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
   if(v.phase === "preparation" || v.phase === "repousse"){
     if(v.meneur && !v.reperage) h += _mCasseCibleHtml(m, v.cible);
