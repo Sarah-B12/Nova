@@ -24,11 +24,33 @@ const MISSION_POSTES_DESC = {
   artificier: "À l'entrepôt, il ouvre la brèche : il place ses charges pour faire sauter tous les piliers de la paroi.",
   porteur:    "Une fois la brèche ouverte, chaque porteur range une caisse, avec le moins de vide possible.",
   crocheteur: "Le jour du casse, il ouvre la serrure : cinq goupilles à bloquer quand le curseur passe dans le vert.",
-  guetteur:   "Le jour du casse, il brouille les drones : il cale son onde sur la leur et la tient cinq secondes.",
+  guetteur:   "Le jour du casse, il brouille les drones : il cale son onde sur la leur, cinq secondes en tout.",
   artilleur:  "Quand l'escorte attaque, chaque artilleur abat les sondes qui traversent l'écran.",
   ingenieur:  "L'escorte repoussée, il ouvre le sas : une combinaison de quatre voyants à trouver.",
   hacker:     "Le sas ouvert, il pirate le cœur de Bardane : un chemin lumineux à mémoriser puis à refaire."
 };
+/* v2.17 (K135) — CHAQUE ESSAI D'UN JEU DE POSTE COÛTE DE L'ÉNERGIE : 10 %, réduits par l'Endurance,
+   la zone et les boissons comme tout geste (aptEnergieAction), débités par le serveur (agir, motif
+   « mission_essai »). Pas de limite de temps : on recommence autant qu'on veut, chaque fois en payant.
+   Deux façons de payer, selon le jeu :
+   · une PORTE « Tenter » (nœud, crevasse, goupilles, sas) : le jeu s'affiche une fois l'essai payé, et
+     se referme à la fin de l'essai (réussi ou raté) ;
+   · au geste qui ENGAGE (le message, la paroi, le rangement, le brouillage, le tir, le cœur) : le coût
+     est écrit sur le bouton. */
+const MISSION_ESSAI = 10;
+let _mEssais = {};                                   // jeu → true : un essai payé, en cours
+function _mEssaiCout(){ return (typeof aptEnergieAction === "function") ? aptEnergieAction(MISSION_ESSAI) : MISSION_ESSAI; }
+async function _mEssaiPayer(){
+  if(typeof agirServeur !== "function") return true;
+  const r = await agirServeur({ cout:_mEssaiCout(), motif:"mission_essai" });
+  return !!r;                                        // refus (énergie…) : agirServeur l'a déjà dit au journal
+}
+function _mEssaiFin(jeu){ delete _mEssais[jeu]; }
+function _mEssaiPorte(jeu, mid, html){
+  if(_mEssais[jeu]) return html;
+  return `<div class="mi-essai"><button class="mini" data-mi-essai="${jeu}">Tenter · ${_mEssaiCout()} % d'énergie</button>
+    <p class="vide" style="margin:4px 0 0">Chaque essai coûte de l'énergie. Prends tout le temps qu'il te faut.</p></div>`;
+}
 const MISSION_OMBRE = "Sans poste, tu n'as pas de jeu à toi : tu comptes dans l'épreuve finale avec tout le groupe.";
 /* v2.10 — l'étape en cours, une seule à la fois (affichée en tête de la mission). */
 function _mEtape(titre, texte){ return `<div class="mi-etape"><b>${titre}</b>${texte}</div>`; }
@@ -274,7 +296,7 @@ function _mMonGroupe(m, g){
     const libres = postes.filter(p => !tenus.has(p) || p === m.mon_poste);
     if(g.statut === "formation"){
       h += `<div class="mi-ligne"><span>Ton poste :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${postes.map(p => `<option value="${p}"${m.mon_poste === p ? " selected" : ""}>${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
-      h += `<div class="mi-postes">${postes.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">${MISSION_OMBRE} Les postes se figent au départ du groupe.</p></div>`;
+      h += `<div class="mi-postes">${postes.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">${MISSION_OMBRE} Les postes se figent au départ du groupe. Chaque essai d'un jeu de poste coûte ${_mEssaiCout()} % d'énergie.</p></div>`;
     } else if(m.mon_poste){
       h += `<p style="margin:6px 0">Ton poste : <b>${MISSION_POSTES[m.mon_poste] || m.mon_poste}</b> <span class="vide">(fixé depuis le départ)</span></p>`;
       if(MISSION_POSTES_DESC[m.mon_poste]) h += `<p class="vide" style="margin:0 0 6px">${MISSION_POSTES_DESC[m.mon_poste]}</p>`;
@@ -547,8 +569,8 @@ function _mBalise(m){
   const mp = v.mon_poste;
   if(!mp || !postes.includes(mp)){ h += `<p class="vide">Tu n'as pas de poste : ta force comptera contre la tourelle.</p>`; return h; }
   if(faits[mp]){ h += `<p class="vide">Ton poste est fait. Attends les autres.</p>`; return h; }
-  if(mp === "encordeur") h += `<div id="mi-noeud" data-mi-mission="${m.id}">${_mNoeudHtml()}</div>`;
-  if(mp === "eclaireur" && v.crevasse) h += `<div id="mi-crevasse" data-mi-mission="${m.id}">${_mCrevasseHtml(m)}</div>`;
+  if(mp === "encordeur") h += `<div id="mi-noeud" data-mi-mission="${m.id}">${_mEssaiPorte("noeud", m.id, _mEssais.noeud ? _mNoeudHtml() : "")}</div>`;   // v2.17
+  if(mp === "eclaireur" && v.crevasse) h += `<div id="mi-crevasse" data-mi-mission="${m.id}">${_mEssaiPorte("crevasse", m.id, _mEssais.crevasse ? _mCrevasseHtml(m) : "")}</div>`;
   if(mp === "dechiffreur" && v.message) h += `<div id="mi-message" data-mi-mission="${m.id}">${_mMessageHtml(v.message)}</div>`;
   return h;
 }
@@ -581,7 +603,8 @@ function _mNoeudMaj(z){ const zone = z.querySelector("#mi-noeud"); if(!zone) ret
 function _mNoeudBrancher(z){
   const svg = z.querySelector("#mi-noeud-svg"); if(!svg) return;
   const pt = e => { const r = svg.getBoundingClientRect(); return [(e.clientX - r.left) * 300 / r.width, (e.clientY - r.top) * 300 / r.height]; };
-  const rater = () => { _noeud = { k:_noeud.k, pts:_noeudTracer(_noeud.k), prog:0, actif:false }; journal("La corde a glissé : recommence ce nœud.", "alerte", "quete"); _mNoeudMaj(z); };
+  const rater = () => { _noeud = { k:_noeud.k, pts:_noeudTracer(_noeud.k), prog:0, actif:false }; journal("La corde a glissé : recommence ce nœud.", "alerte", "quete");
+    _mEssaiFin("noeud"); if(typeof majQueteHub === "function") majQueteHub(); };   // v2.17 : l'essai est fini
   svg.addEventListener("pointerdown", e => {
     const [x, y] = pt(e), p0 = _noeud.pts[0];
     if(Math.hypot(x - p0[0], y - p0[1]) > NOEUD_TOL[_noeud.k]) return;
@@ -602,7 +625,7 @@ function _mNoeudBrancher(z){
     if(_noeud.prog >= pts.length - 2){
       _noeud.actif = false;
       if(_noeud.k < 2){ _noeud = { k:_noeud.k + 1, pts:null, prog:0, actif:false }; _mNoeudMaj(z); }
-      else { _noeud = { k:0, pts:null, prog:0, actif:false };
+      else { _noeud = { k:0, pts:null, prog:0, actif:false }; _mEssaiFin("noeud");   // v2.17
         const id = +z.querySelector("#mi-noeud").dataset.miMission;
         (async () => { if(typeof sauverMaintenant === "function") await sauverMaintenant();
           _missionAppel("balise_noeud", { p_mission:id }, "Corde assurée."); })(); }
@@ -640,7 +663,7 @@ function _mCrevassePas(z, d){
   const fini = _crev.pos === (n - 1) * n + g.ce, epuise = _crev.pas.length >= g.pas;
   _mCrevasseMaj(z);
   if(fini || epuise){
-    const pas = _crev.pas; _crev = { cle:null, pos:0, pas:"" };
+    const pas = _crev.pas; _crev = { cle:null, pos:0, pas:"" }; _mEssaiFin("crevasse");   // v2.17
     (async () => { if(typeof sauverMaintenant === "function") await sauverMaintenant();
       _missionAppel("balise_crevasse", { p_mission:m.id, p_pas:pas }, "Le passage est trouvé."); })();
   }
@@ -653,7 +676,7 @@ function _mCrevasseBrancher(z){
 /* ---------- « Le message » (H43) : un son à deviner, 4 propositions ---------- */
 function _mMessageHtml(msg){
   const mot = w => `<span class="gly-mot">${w.map(s => (s && typeof s === "object") ? `<span class="mi-msg-inconnu">${glypheFormeSVG(s.forme)}</span>` : glypheSVG(s)).join("")}</span>`;
-  return `<p style="margin:6px 0"><b>Le signal, en écriture de l'ancien. Quel son manque ?</b></p>
+  return `<p style="margin:6px 0"><b>Le signal, en écriture de l'ancien. Quel son manque ?</b> <span class="vide">Chaque réponse : ${_mEssaiCout()} % d'énergie.</span></p>
     <div class="mi-msg">${(msg.mots || []).map(mot).join(`<span class="mi-msg-sep"></span>`)}</div>
     <div class="mi-btns">${(msg.propositions || []).map(p => `<button class="mini" data-msg="${echapper(p)}">${echapper(p)}</button>`).join("")}</div>`;
 }
@@ -663,6 +686,7 @@ function _mBaliseBrancher(z){
   const zm = z.querySelector("#mi-message");
   if(zm) zm.querySelectorAll("[data-msg]").forEach(b => b.addEventListener("click", async () => {
     zm.querySelectorAll("[data-msg]").forEach(x => x.disabled = true);
+    if(!await _mEssaiPayer()){ zm.querySelectorAll("[data-msg]").forEach(x => x.disabled = false); return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     _missionAppel("balise_message", { p_mission:+zm.dataset.miMission, p_son:b.dataset.msg }, d => `Message lu : « ${d.sens} ».`);
   }));
@@ -777,6 +801,7 @@ function _mParoiBrancher(z){
   const b = zone.querySelector("[data-p-feu]");
   if(b) b.addEventListener("click", async () => {
     if(b.disabled) return; b.disabled = true;
+    if(!await _mEssaiPayer()){ b.disabled = false; return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     const charges = _paroi.charges.slice(); _paroi = { cle:null, charges:[] };
     _missionAppel("infiltration_breche", { p_mission:m.id, p_charges:charges }, "La paroi s'effondre : la brèche est ouverte.");
@@ -843,6 +868,7 @@ function _mRangementBrancher(z){
       : confirm("Valider ?");
     if(!ok) return;
     bv.disabled = true;
+    if(!await _mEssaiPayer()){ bv.disabled = false; return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     const pose = _rang.pose.slice(); _rang = { cle:null, pose:[], sel:0, rot:0 };
     _missionAppel("infiltration_ranger", { p_mission:m.id, p_pose:pose }, d => `Ta part est rangée (${Math.round(d.score * 100)} %).`);
@@ -931,7 +957,7 @@ function _mCasse(m, g){
           <div class="mi-btns"><button class="mini" data-mi-vider="${m.id}">Vider les vitrines</button></div>`;
     return h;
   }
-  if(v.mon_poste === "crocheteur" && !f.crocheteur) h += `<div id="mi-goupilles" data-mi-mission="${m.id}">${_mGoupillesHtml()}</div>`;
+  if(v.mon_poste === "crocheteur" && !f.crocheteur) h += `<div id="mi-goupilles" data-mi-mission="${m.id}">${_mEssaiPorte("goupilles", m.id, _mEssais.goupilles ? _mGoupillesHtml() : "")}</div>`;   // v2.17
   else if(v.mon_poste === "guetteur" && !f.guetteur) h += `<div id="mi-brouillage" data-mi-mission="${m.id}">${_mBrouillageHtml()}</div>`;
   else h += `<p class="vide">Personne ne quitte la cité.</p>`;
   return h;
@@ -1001,7 +1027,7 @@ function _mGoupillesHtml(){
     <div class="mi-btns"><button class="mini" data-gp-bloquer="1">Bloquer</button></div>`;
 }
 function _mGoupillesBrancher(z){
-  const zone = z.querySelector("#mi-goupilles"); if(!zone) return;
+  const zone = z.querySelector("#mi-goupilles"); if(!zone || !_mEssais.goupilles) return;   // v2.17 : rien ne tourne avant l'essai payé
   const id = +zone.dataset.miMission;
   if(!_goup.actif){
     _goup.actif = true;
@@ -1028,54 +1054,85 @@ function _mGoupillesBrancher(z){
     if(_goup.pos >= a - tol && _goup.pos <= c + tol){
       _goup.k++;
       if(_goup.k >= 5){
-        cancelAnimationFrame(_goup.raf); _goup = { k:0, pos:0, sens:1, raf:null, actif:false };
+        cancelAnimationFrame(_goup.raf); _goup = { k:0, pos:0, sens:1, raf:null, actif:false }; _mEssaiFin("goupilles");   // v2.17
         (async () => { if(typeof sauverMaintenant === "function") await sauverMaintenant();
           _missionAppel("casse_poste", { p_mission:id }, "Serrure crochetée."); })();
         return;
       }
-    } else { _goup.k = 0; journal("La serrure s'est refermée : recommence.", "alerte", "quete"); }
+    } else { _goup.k = 0; journal("La serrure s'est refermée : recommence.", "alerte", "quete");
+      cancelAnimationFrame(_goup.raf); _goup.actif = false; _mEssaiFin("goupilles");   // v2.17 : l'essai est fini
+      if(typeof majQueteHub === "function") majQueteHub(); return; }
     zone.innerHTML = _mGoupillesHtml(); _mGoupillesBrancher(z);
   });
 }
 
-/* ---------- « Le brouillage » (H64) : caler son onde et la tenir 5 s ---------- */
-let _brou = { f:1.0, d:0, tenu:0, t0:0, raf:null, actif:false };
+/* ---------- « Le brouillage » (H64) : caler son onde et la tenir 5 s ----------
+   v2.17 — RETOUR D'UNE TESTEUSE (« je tiens 2,5 s max, c'est trop difficile ») : la même correction
+   que le brouillage de Q29 (v1.93k, retour de l'autrice « il faut bouger les deux à la fois ») :
+   · la FRÉQUENCE des drones est FIXE (tirée à l'émission, 1,2 → 2,4) ; trouvée (± 0,12), le curseur
+     s'y cale et se verrouille : on la règle une fois ;
+   · seul le DÉCALAGE dérive (0,35 rad/s) : on le suit (± 0,45 rad) ;
+   · les secondes calées se CUMULENT : 5 s en tout, pendant une émission de 60 s.
+   Avant : fréquence ET décalage dérivaient, et le compteur retombait à zéro au moindre écart — on
+   ne tenait pas plus de 2,6 s sans bouger les deux curseurs à la fois.
+   K135 : chaque émission coûte un essai (10 % d'énergie). */
+const BROU_TENIR = 5, BROU_DUREE = 60;
+let _brou = { actif:false };
 function _mBrouillageHtml(){
-  return `<p style="margin:6px 0"><b>Cale ton onde sur celle des drones et tiens-la 5 secondes.</b></p>
+  return `<p style="margin:6px 0"><b>Cale ton onde sur celle des drones : ${BROU_TENIR} s calé en tout, pendant une émission de ${BROU_DUREE} s.</b></p>
     <svg id="mi-br-svg" viewBox="0 0 300 100" style="width:100%;max-width:340px;background:rgba(90,168,230,.06);border:1px solid var(--line);border-radius:8px">
       <path id="mi-br-drones" stroke="#ff5257" stroke-width="3" fill="none"/><path id="mi-br-moi" stroke="#7bc47f" stroke-width="3" fill="none"/></svg>
-    <div class="mi-ligne"><span>Fréquence</span><input type="range" id="mi-br-f" min="0.5" max="3" step="0.01" value="${_brou.f}"></div>
-    <div class="mi-ligne"><span>Décalage</span><input type="range" id="mi-br-d" min="0" max="6.28" step="0.01" value="${_brou.d}"></div>
-    <p class="vide" id="mi-br-tenu">Calé : 0,0 s / 5 s</p>`;
+    <div class="mi-ligne"><span>Fréquence</span><input type="range" id="mi-br-f" min="0.5" max="3" step="0.01" value="0.6" disabled></div>
+    <p class="vide" id="mi-br-fetat" style="margin:2px 0 6px">Fréquence : à caler.</p>
+    <div class="mi-ligne"><span>Décalage</span><input type="range" id="mi-br-d" min="0" max="6.28" step="0.01" value="0" disabled></div>
+    <p class="vide" id="mi-br-tenu">Calé : 0,0 s / ${BROU_TENIR} s · émission : ${BROU_DUREE} s</p>
+    <div class="mi-btns"><button class="mini" data-br-go="1">Commencer l'émission · ${_mEssaiCout()} % d'énergie</button></div>`;
 }
 function _mBrouillageBrancher(z){
   const zone = z.querySelector("#mi-brouillage"); if(!zone) return;
   const id = +zone.dataset.miMission;
-  const f = zone.querySelector("#mi-br-f"), d = zone.querySelector("#mi-br-d");
-  if(f) f.addEventListener("input", () => { _brou.f = +f.value; });
-  if(d) d.addEventListener("input", () => { _brou.d = +d.value; });
-  if(_brou.actif) return;
-  _brou.actif = true; _brou.t0 = performance.now(); let der = _brou.t0;
-  const onde = (fr, ph) => { let p = ""; for(let x = 0; x <= 300; x += 6){ const y = 50 + 35 * Math.sin(x / 300 * Math.PI * 2 * fr + ph); p += (x ? " L" : "M") + x + " " + y.toFixed(1); } return p; };
-  const pas = t => {
-    const zz = document.querySelector("#mi-brouillage"); if(!zz){ _brou.actif = false; return; }
-    const dt = (t - der) / 1000; der = t; const s = (t - _brou.t0) / 1000;
-    const fd = 1.6 + 0.5 * Math.sin(s / 7), pd = (s * 0.35) % (2 * Math.PI);   // l'onde des drones dérive lentement
-    zz.querySelector("#mi-br-drones").setAttribute("d", onde(fd, pd));
-    zz.querySelector("#mi-br-moi").setAttribute("d", onde(_brou.f, _brou.d));
-    let dp = Math.abs(((_brou.d - pd) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
-    const cale = Math.abs(_brou.f - fd) < 0.12 && dp < 0.45;
-    _brou.tenu = cale ? _brou.tenu + dt : 0;
-    zz.querySelector("#mi-br-tenu").textContent = `Calé : ${_brou.tenu.toFixed(1).replace(".", ",")} s / 5 s`;
-    if(_brou.tenu >= 5){
-      _brou = { f:1.0, d:0, tenu:0, t0:0, raf:null, actif:false };
-      (async () => { if(typeof sauverMaintenant === "function") await sauverMaintenant();
-        _missionAppel("casse_poste", { p_mission:id }, "Les drones sont brouillés."); })();
-      return;
-    }
-    _brou.raf = requestAnimationFrame(pas);
+  const f = zone.querySelector("#mi-br-f"), d = zone.querySelector("#mi-br-d"), go = zone.querySelector("[data-br-go]");
+  const svg = zone.querySelector("#mi-br-svg"), dr = zone.querySelector("#mi-br-drones"), moi = zone.querySelector("#mi-br-moi");
+  const et = zone.querySelector("#mi-br-tenu"), fet = zone.querySelector("#mi-br-fetat");
+  if(!go || !f || !d) return;
+  const P = { f:+f.value, d:0, tenu:0, s:0, fc:Math.round((1.2 + Math.random() * 1.2) * 100) / 100, fCalee:false };
+  _brou = { actif:false, partie:P };                                       // (le banc d'essai lit _brou.partie)
+  const caler = () => {
+    if(P.fCalee || Math.abs(P.f - P.fc) >= 0.12) return;
+    P.fCalee = true; P.f = P.fc; f.value = String(P.fc); f.disabled = true;
+    fet.textContent = "Fréquence calée ✓ — elle ne bougera plus. Suis le décalage.";
   };
-  _brou.raf = requestAnimationFrame(pas);
+  f.addEventListener("input", () => { P.f = +f.value; caler(); });
+  d.addEventListener("input", () => { P.d = +d.value; });
+  const dessiner = () => { dr.setAttribute("d", _brouOnde(P.fc, _brouDecalage(P.s))); moi.setAttribute("d", _brouOnde(P.f, P.d)); };
+  dessiner();
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    if(!await _mEssaiPayer()){ go.disabled = false; return; }
+    f.disabled = false; d.disabled = false; _brou.actif = true;
+    const t0 = Date.now(); let der = t0;
+    const pas = () => {
+      if(!_brou.actif) return;
+      if(!document.body.contains(svg)){ _brou.actif = false; return; }      // l'onglet a changé : l'émission s'arrête
+      const t = Date.now(), dt = (t - der) / 1000; der = t; P.s = (t - t0) / 1000;
+      if(P.fCalee && _brouPhaseOk(P.d, _brouDecalage(P.s))) P.tenu += dt;
+      dessiner();
+      et.textContent = `Calé : ${P.tenu.toFixed(1).replace(".", ",")} s / ${BROU_TENIR} s · émission : ${Math.max(0, BROU_DUREE - P.s).toFixed(0)} s`;
+      if(P.tenu >= BROU_TENIR){
+        _brou.actif = false;
+        (async () => { if(typeof sauverMaintenant === "function") await sauverMaintenant();
+          _missionAppel("casse_poste", { p_mission:id }, "Les drones sont brouillés."); })();
+        return;
+      }
+      if(P.s >= BROU_DUREE){
+        _brou.actif = false; journal("L'émission est finie et les drones ne sont pas brouillés : recommence.", "alerte", "quete");
+        if(typeof majQueteHub === "function") majQueteHub();
+        return;
+      }
+      setTimeout(pas, 40);
+    };
+    pas();
+  });
 }
 function _mCasseBrancher(z){ _mRondeBrancher(z); _mGoupillesBrancher(z); _mBrouillageBrancher(z); }
 
@@ -1124,11 +1181,11 @@ function _mSatellite(m){
     h += `<p class="vide">Sas et cœur au plus tard le ${_mJourTxt(v.sas_limite)}.</p>`;
     if(!ici){ h += `<p>Rends-toi à Bardane (carte de Triptolème).</p>`; return h; }
     if(v.phase === "sas"){
-      if(v.mon_poste === "ingenieur" && v.sas) h += `<div id="mi-sas" data-mi-mission="${m.id}">${_mSasHtml(v.sas)}</div>`;
+      if(v.mon_poste === "ingenieur" && v.sas) h += `<div id="mi-sas" data-mi-mission="${m.id}">${_mEssaiPorte("sas", m.id, _mEssais.sas ? _mSasHtml(v.sas) : "")}</div>`;   // v2.17
       else h += `<p class="vide">L'ingénieur ouvre le sas.</p>`;
       return h;
     }
-    if(v.mon_poste === "hacker" && v.coeur) h += `<div class="mi-btns"><button class="mini" data-mi-coeur="${m.id}" data-mi-vig="${v.coeur.vigilance}">Pirater le cœur</button></div>`;
+    if(v.mon_poste === "hacker" && v.coeur) h += `<div class="mi-btns"><button class="mini" data-mi-coeur="${m.id}" data-mi-vig="${v.coeur.vigilance}">Pirater le cœur · ${_mEssaiCout()} % d'énergie</button></div>`;
     else h += `<p class="vide">Le hacker pénètre le cœur.</p>`;
   }
   return h;
@@ -1140,15 +1197,16 @@ function _mTirHtml(t){
   return `<p style="margin:6px 0"><b>Abats les sondes qui traversent l'écran : ${t.cible} à toucher. Tirs : ${t.tirs}. Temps : ${t.duree} s.</b></p>
     <svg id="mi-tir-svg" viewBox="0 0 300 180" style="width:100%;max-width:360px;background:#060b14;border:1px solid var(--line);border-radius:8px;touch-action:none"></svg>
     <p class="vide" id="mi-tir-etat">Touchées : 0 / ${t.cible} · Tirs : ${t.tirs} · ${t.duree} s</p>
-    <div class="mi-btns"><button class="mini" data-tir-go="1">Ouvrir le feu</button></div>`;
+    <div class="mi-btns"><button class="mini" data-tir-go="1">Ouvrir le feu · ${_mEssaiCout()} % d'énergie</button></div>`;
 }
 function _mSatBrancher(z){
   const zt = z.querySelector("#mi-tir");
   if(zt){
     const m = (_missions.missions || []).find(x => x.id === +zt.dataset.miMission); const T = m && m.vue && m.vue.tir;
     const go = zt.querySelector("[data-tir-go]"); const svg = zt.querySelector("#mi-tir-svg");
-    if(go && T) go.addEventListener("click", () => {
+    if(go && T) go.addEventListener("click", async () => {
       go.disabled = true;
+      if(!await _mEssaiPayer()){ go.disabled = false; return; }   // v2.17
       _tir = { actif:true, touches:0, tirs:T.tirs, fin:performance.now() + T.duree * 1000, sondes:[], raf:null, der:performance.now(), pause:0 };
       const rater = msg => { _tir.actif = false; journal(msg, "alerte", "quete"); zt.innerHTML = _mTirHtml(T); _mSatBrancher(z); };
       const pas = t => {
@@ -1195,7 +1253,7 @@ function _mSasHtml(S){
   return h;
 }
 function _mSasBrancher(z){
-  const zs = z.querySelector("#mi-sas"); if(!zs) return;
+  const zs = z.querySelector("#mi-sas"); if(!zs || !_mEssais.sas) return;   // v2.17 : pas de manche (ni de minuteur) avant l'essai payé
   const m = (_missions.missions || []).find(x => x.id === +zs.dataset.miMission); if(!m || !m.vue || !m.vue.sas) return;
   const maj = () => { zs.innerHTML = _mSasHtml(m.vue.sas); _mSasBrancher(z); };
   zs.querySelectorAll("[data-sas-c]").forEach(b => b.addEventListener("click", () => { if(_sas.essai.length < 4){ _sas.essai.push(+b.dataset.sasC); maj(); } }));
@@ -1206,6 +1264,7 @@ function _mSasBrancher(z){
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     const d = await _missionAppel("satellite_sas", { p_mission:m.id, p_essai:essai, p_abandon:false }, x => x.ouvert ? "Le sas s'ouvre." : `● ${x.bien} · ○ ${x.mal}`);
     if(d && d.err === "verrouille") journal("Le sas se verrouille : un autre code.", "alerte", "quete");
+    if(!d || d.ouvert || d.err === "verrouille" || d.verrouille){ _mEssaiFin("sas"); _sas.manche = null; if(typeof majQueteHub === "function") majQueteHub(); }   // v2.17 : la manche est finie
   });
   // Temps de la manche (H70) : écoulé → le sas se verrouille, nouvelle manche.
   if(_sas.timer) clearInterval(_sas.timer);
@@ -1214,7 +1273,7 @@ function _mSasBrancher(z){
     const reste = Math.ceil((_sas.fin - Date.now()) / 1000);
     zz.textContent = `· ${Math.max(0, reste)} s`;
     if(reste <= 0){
-      clearInterval(_sas.timer); _sas.manche = null;
+      clearInterval(_sas.timer); _sas.manche = null; _mEssaiFin("sas");   // v2.17 : la manche est finie
       await _missionAppel("satellite_sas", { p_mission:m.id, p_essai:[], p_abandon:true });
       journal("Le sas se verrouille : un autre code.", "alerte", "quete");
     }
@@ -1327,12 +1386,20 @@ function _mBrancher(z){
       d => d.reussi ? "L'escorte est repoussée." : (d.definitif ? "L'escorte tient bon." : "L'escorte vous a dispersés.")); });
   q("[data-mi-coeur]", async b => {
     if(typeof _espF1 !== "function"){ b.disabled = false; return; }
+    if(!await _mEssaiPayer()){ b.disabled = false; return; }   // v2.17
     const ok = await _espF1(+b.dataset.miVig);
     if(!ok){ b.disabled = false; return; }
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     _missionAppel("satellite_coeur", { p_mission:+b.dataset.miCoeur }, "Le cœur de Bardane s'ouvre.");
   });
   _mSatBrancher(z);
+  // v2.17 (K135) — la porte d'un essai : payer, puis ouvrir le jeu.
+  q("[data-mi-essai]", async b => {
+    const jeu = b.dataset.miEssai;
+    if(await _mEssaiPayer()) _mEssais[jeu] = true;
+    b.disabled = false;
+    if(typeof majQueteHub === "function") majQueteHub();
+  });
   const sp = z.querySelector("#mi-poste");
   if(sp) sp.addEventListener("change", () => _missionAppel("mission_poste_choisir", { p_mission:+sp.dataset.miMission, p_poste:sp.value || null }));
 }

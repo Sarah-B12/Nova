@@ -2,6 +2,8 @@
 (async function(){
   const r = {};
   await new Promise(x => setTimeout(x, 1500));
+  // v2.17 (K135) : les essais se paient ; ici on vérifie les jeux eux-mêmes (le paiement : o_essais.js).
+  _mEssais = new Proxy({}, { get: () => true }); _mEssaiPayer = async () => true;
   const appels = [];
   sauverMaintenant = async () => {}; confirmerJoli = async () => true;
   let ICI = null; villeActuelle = () => ICI;
@@ -56,7 +58,7 @@
   r.goupilleRatee = _goup.k === 0;
   // Brouillage (guetteur) : rendu.
   await voir({ phase:"casse", cible:fac, meneur:false, mon_poste:"guetteur", postes_tenus:{}, reperage:rep, casse:{ jour:"2026-12-21", faits:{ crocheteur:true } } });
-  r.brouillage = !!corps().querySelector("#mi-br-f") && txt().includes("tiens-la 5 secondes");
+  r.brouillage = !!corps().querySelector("#mi-br-f") && txt().includes("5 s calé en tout");   // v2.17 : la consigne de la correction (Q29, v1.93k)
   // Les deux faits : « Vider les vitrines ».
   await voir({ phase:"casse", cible:fac, meneur:false, mon_poste:"guetteur", postes_tenus:{}, reperage:rep, casse:{ jour:"2026-12-21", faits:{ crocheteur:true, guetteur:true } } });
   corps().querySelector("[data-mi-vider]").click(); await new Promise(x => setTimeout(x, 80));

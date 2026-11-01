@@ -50,6 +50,8 @@ const DELAIS = {
   correctifs200: { profil: 50, sac: 50, jauges: 50 },   // v2.00 : retours du 29/10, 2e série (o_correctifs200.js)
   parloir: { profil: 50, sac: 50, jauges: 50 },   // v2.01 : la prison comme un parloir, K114 (o_parloir.js)
   ptsfab: { profil: 50, sac: 50, jauges: 50 },    // v2.02 : points de formation selon le coût (o_ptsfab.js)
+  essais: { profil: 50, sac: 50, jauges: 50 },     // v2.17 : le coût des essais (o_essais.js)
+  categories: { profil: 50, sac: 50, jauges: 50 }, // v2.16 : le tri du journal (o_categories.js)
   rafraichir: { profil: 50, sac: 50, jauges: 50 }, // v2.12 : onglet Quêtes, veille, boutons de carte (o_rafraichir.js)
   postes: { profil: 50, sac: 50, jauges: 50 },    // v2.10 : missions, postes figés, étapes (o_postes.js)
   veille: { profil: 50, sac: 50, jauges: 50 },    // v2.09 : la veille (o_veille.js)

@@ -4,6 +4,8 @@
 (async function(){
   const r = {};
   await new Promise(x => setTimeout(x, 1500));
+  // v2.17 (K135) : les essais se paient ; ici on vérifie les jeux eux-mêmes (le paiement : o_essais.js).
+  _mEssais = new Proxy({}, { get: () => true }); _mEssaiPayer = async () => true;
   const appels = [];
   sauverMaintenant = async () => {};
   confirmerJoli = async () => true;

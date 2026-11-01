@@ -88,6 +88,10 @@ function _categoriser(t){
      divorce) et le social. Les lignes écrites par couple.js portent déjà la
      catégorie ; cette règle range celles qui viennent du serveur. */
   if(/mariage|mari[ée]s?\b|divorc|complicit|r[ée]serve commune|conjoint|veuf|veuve|ton foyer|b[ée]b[ée]|dit oui|enfant|adopt|tout-petit|adolescence|quitt[ée] la maison|la famille|couple > famille|chambre de|l'appeler|pr[ée]nom|cachette|tra[îi]ne des pieds|ration maison|pris soin de vous|installation du terrain de|sur vos vaisseaux|l'histoire d|petite histoire/.test(s)) return "couple";   // v1.37-39 : enfants
+  /* v2.16 — les podiums du mois (serveur, catégorie « gain ») : Arène et Fléau → Combats ; tables de
+     jeu → Économie (comme les autres messages du bar). Avant les vols : le Fléau parle d'un « voleur ». */
+  if(/classement/.test(s) && /\bplace\b/.test(s)) return /tables de jeu/.test(s) ? "eco" : "combat";
+  if(/du fl[ée]au|[ée]clat de lentille/.test(s)) return "combat";   // v2.16 : les objets du podium du Fléau (pique, éclat, pupille)
   // v1.48 — retour autrice : « Ordinateur de hacking bradé » allait dans Vols/hacks.
   if(/\bbrad[ée]|\bvendu\b|\bachet[ée]\b/.test(s) && /₡/.test(t||"")) return "economie";
   /* v1.36f — la traque et ses suites vont dans « Vols/hacks », AVANT la
@@ -104,7 +108,10 @@ function _categoriser(t){
   if(/combat|patrouille|protocole|vaincu|défaite|assaut|attaqu|blessé|riposte|évacuation/.test(s)) return "combat";
   if(/\bmin[ée]|minage|minerai|filon|extra|foreuse|for[ée]|gisement|foraouse/.test(s)) return "minage";   // v1.51 : \b — « terminé » n'est pas du minage
   // v1.11 : + arrosage et pose d'une bête (« Jeune Toisard placé »).
-  if(/récolt|plant[ée]|sem[ée]|arros|bio-dôme|biodome|serre|animal|élevage|elevage|nourri|enclos|troupeau|traite|tonte|fourrage|cuprin|cuirasson|toisard|nourrin/.test(s)) return "agri";
+  /* v2.16 — début de mot exigé : « clas-SEME-nt » rangeait les podiums dans Agri. (retour de
+     l'autrice) ; « se res-SERRE », « re-TRAITE » / « TRAITé », « une pique PLANTée devant chez toi »
+     faisaient de même. */
+  if(/récolt|\bplant[ée]|\bsem[ée]|arros|bio-dôme|biodome|\bserres?\b|animal|élevage|elevage|nourri|enclos|troupeau|\btraite\b|tonte|fourrage|cuprin|cuirasson|toisard|nourrin/.test(s)) return "agri";
   if(/vendu|achet[ée]|achat|brad[ée]|march[ée]|commission|crédit|₡|revend|boutique|permis/.test(s)) return "eco";
   if(/poste|colis|envoi|envoy[ée]|exp[ée]diteur|destinataire|paquet|courrier|contre-remboursement/.test(s)) return "poste";
   if(/message|annonce|\bmur\b/.test(s)) return "social";
