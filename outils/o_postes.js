@@ -97,7 +97,15 @@
   div.innerHTML = C({ phase:"preparation", cible:fac, reperage:{ par:"X", jour:"2026-10-30", vendeurs:3, niveau:2 } });
   tr = div.textContent.replace(/\s+/g, " ");
   r.reperage.ancienSansHeure = /Au repérage de X \(30\/10\) : 3 vendeurs en vitrine, bien gardé\./.test(tr);
-  // 10. Les messages d'erreur nouveaux
+  // 10. v2.21 — la seconde tentative : le bon moment, et qui doit agir
+  const aujIso = new Date().toISOString().slice(0, 10); _missions = { ...(_missions || {}), jour:aujIso };   // le jour du jeu, comme missions_lire le donne
+  const jourAvant = (() => { const d = new Date(aujIso + "T12:00:00"); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
+  const gK = { ...g0("crocheteur", "guetteur", "lance", false), fondateur:"Kyraa" };
+  const rep = jour => { div.innerHTML = _mCasse({ ...base, vue:{ phase:"repousse", cible:fac, tentatives:1, epreuve_jour:jour, meneur:false, reperage:{ par:"Vortex", jour:"2026-10-30", vendeurs:2, niveau:1 } } }, gK); return div.textContent.replace(/\s+/g, " "); };
+  const tLendemain = rep(jourAvant), tMemeJour = rep(aujIso);
+  r.retenter = { lendemain: /peut se retenter, dès aujourd'hui, et jusqu'au/.test(tLendemain), memeJour: /peut se retenter, pas avant demain/.test(tMemeJour),
+                 meneurNomme: /Seul le meneur, Kyraa, peut relancer le casse\./.test(tLendemain) };
+  // 11. Les messages d'erreur nouveaux
   r.erreurs = [MISSION_ERREURS.poste_fige, MISSION_ERREURS.postes_vides];
   return r;
 })();

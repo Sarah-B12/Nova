@@ -53,6 +53,13 @@ function _mEssaiPorte(jeu, mid, html){
 }
 const MISSION_OMBRE = "Sans poste, tu n'as pas de jeu à toi : tu comptes dans l'épreuve finale avec tout le groupe.";
 /* v2.10 — l'étape en cours, une seule à la fois (affichée en tête de la mission). */
+/* v2.21 — « pas avant demain » était FIGÉ : le lendemain, il contredisait « Seconde tentative : du lundi
+   2 au mardi 3 » (retour d'une testeuse). Le moment est calculé à partir du jour de l'échec. */
+function _mQuandRetenter(v){
+  const auj = String(_missions && _missions.jour).slice(0, 10), j = String(v && v.epreuve_jour || "").slice(0, 10);
+  if(!j || j >= auj) return "pas avant demain";
+  return `dès aujourd'hui, et jusqu'au ${_mJourTxt(v.epreuve_jour, 2)}`;
+}
 function _mEtape(titre, texte){ return `<div class="mi-etape"><b>${titre}</b>${texte}</div>`; }
 const MISSION_ERREURS = {
   non_connecte:"Connexion perdue.", deja:"Tu as déjà pris part à cette mission.", plein:"Ce groupe est complet.",
@@ -541,7 +548,7 @@ function _mBalise(m){
   const postes = ["encordeur","eclaireur","dechiffreur"];
   h += `<p class="vide" style="margin:2px 0">${postes.map(p => `${MISSION_POSTES[p]} : ${echapper((v.postes_tenus || {})[p] || "—")}${faits[p] ? " ✓" : ""}`).join(" · ")}</p>`;
   if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe.");
-  if(v.phase === "remontee") h += _mEtape("Seconde tentative", "La première descente a échoué. Le matériel du coffre reste : une seconde descente peut se tenter, pas avant demain.");
+  if(v.phase === "remontee") h += _mEtape("Seconde tentative", `La première descente a échoué. Le matériel du coffre reste : une seconde descente peut se tenter, ${_mQuandRetenter(v)}.`);
   if(v.phase === "descente" && d && !postes.every(p => faits[p])) h += _mEtape("Étape 2 sur 3 — La descente", "La tempête approche. À la balise, chacun joue son poste avant qu'elle n'arrive : l'encordeur, l'éclaireur, le déchiffreur.");
   if(v.phase === "descente" && d && postes.every(p => faits[p])) h += _mEtape("Étape 3 sur 3 — La tourelle", "Les trois postes sont faits. Il reste à affronter la tourelle, tous ensemble.");
   if(v.phase === "preparation" || v.phase === "remontee"){
@@ -924,7 +931,7 @@ function _mCasse(m, g){
   h += `<p class="vide" style="margin:2px 0">Crocheteur : ${echapper(pt.crocheteur || "—")}${v.casse && v.casse.faits && v.casse.faits.crocheteur ? " ✓" : ""} · Guetteur : ${echapper(pt.guetteur || "—")}${v.casse && v.casse.faits && v.casse.faits.guetteur ? " ✓" : ""}</p>`;
   const f0 = (v.casse && v.casse.faits) || {};
   if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Le meneur choisit la cité visée. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est dans la cité.");
-  if(v.phase === "repousse") h += _mEtape("Seconde tentative", "La première tentative a échoué. Le matériel du coffre reste : le casse peut se retenter, pas avant demain.");
+  if(v.phase === "repousse") h += _mEtape("Seconde tentative", `La première tentative a échoué. Le matériel du coffre reste : le casse peut se retenter, ${_mQuandRetenter(v)}. C'est le meneur qui le relance.`);
   if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "Toute l'équipe est dans la cité et n'en sort plus. Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
   if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "Serrure ouverte, drones brouillés : il reste à vider les vitrines.");
   if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>.</p>`;
@@ -947,7 +954,10 @@ function _mCasse(m, g){
     if(v.meneur){
       if(v.absent) h += `<p class="vide">Toute l'équipe doit être dans la cité visée (il manque ${echapper(v.absent)}).</p>`;
       h += `<div class="mi-btns"><button class="mini" data-mi-commencer="${m.id}"${v.absent ? " disabled" : ""}>Commencer le casse</button></div>`;
-    } else h += `<p class="vide">Le meneur commencera le casse quand toute l'équipe sera dans la cité.</p>`;
+    } else {   // v2.21 : on nomme le meneur (une testeuse cherchait le bouton : il n'est que chez lui)
+      const qui = g && g.fondateur ? `Seul le meneur, ${echapper(g.fondateur)},` : "Seul le meneur";
+      h += `<p class="vide">${qui} peut ${v.phase === "repousse" ? "relancer" : "commencer"} le casse. Il le fera quand toute l'équipe sera dans la cité${v.absent ? ` (il manque ${echapper(v.absent)})` : ""}.</p>`;
+    }
     return h;
   }
   if(v.phase !== "casse") return h;
@@ -1153,7 +1163,7 @@ function _mSatellite(m){
   let h = `<h4 class="gsec">Bardane</h4>`;
   const pt = v.postes_tenus || {};
   const ET_SAT = { rendezvous:["Étape 1 sur 4 — Le rendez-vous", "Chacun rejoint Bardane avec son vaisseau et s'y signale. Quand les quatre se sont signalés le même jour, l'escorte attaque. Remplissez aussi le coffre commun."],
-                   rendezvous2:["Seconde tentative", "La première tentative a échoué. Le matériel du coffre reste : un nouveau rendez-vous est possible, pas avant demain."],
+                   rendezvous2:["Seconde tentative", `La première tentative a échoué. Le matériel du coffre reste : un nouveau rendez-vous est possible, ${_mQuandRetenter(v)}.`],
                    escorte:["Étape 2 sur 4 — L'escorte", "Les artilleurs abattent les sondes ; ensuite, tout le groupe repousse les gardiennes."],
                    sas:["Étape 3 sur 4 — Le sas", "L'ingénieur trouve la combinaison qui ouvre le sas."],
                    coeur:["Étape 4 sur 4 — Le cœur", "Le hacker pirate le cœur de Bardane."] }[v.phase];
@@ -1375,7 +1385,7 @@ function _mBrancher(z){
   q("[data-mi-vider]", async b => {
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     _missionAppel("casse_vider", { p_mission:+b.dataset.miVider },
-      d => d.reussi ? `Le casse a réussi : ${d.offres} offre${d.offres > 1 ? "s" : ""} emportée${d.offres > 1 ? "s" : ""}.` : (d.definitif ? "Les drones vous ont repérés une seconde fois." : "Les drones vous ont repérés."));
+      d => d.reussi ? `Le casse a réussi : ${d.offres} offre${d.offres > 1 ? "s" : ""} emportée${d.offres > 1 ? "s" : ""}.` : (d.definitif ? "Le brouillage a lâché une seconde fois, et les drones vous ont repérés." : "Le brouillage a lâché pendant que vous vidiez les vitrines : les drones vous ont repérés."));   // v2.21
   });
   _mCasseBrancher(z);
   // v1.68 — le satellite

@@ -161,6 +161,7 @@ async function _devRelireRole(){
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "dev-console.js#role"); }
 }
 async function ouvrirDev(){
+  if(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE) return;   // v2.20b : JAMAIS dans un onglet de contrôle, quel que soit le compte
   if(typeof estAdmin!=="function" || !estAdmin()) return;   // réservé dev/admin (les actions sont revérifiées serveur)
   await _devRelireRole();
   if(!estAdmin()){ fermerDev(); journal("Ton accès à la console a été retiré.", "alerte"); return; }

@@ -22,13 +22,14 @@ const CONTROLE_ERREURS = {
   staff:"Seule une dev peut prendre la main sur un membre du staff.",
   en_ligne:"Ce joueur est en ligne : on ne prend pas la main sur un personnage connecté.",
   deja_controle:"Un autre membre du staff a déjà la main sur ce personnage.",
-  compte:"Le compte de ce joueur est introuvable.", lien:"La session n'a pas pu s'ouvrir.", session:"La prise de main n'a pas pu s'inscrire."
+  compte:"Le compte de ce joueur est introuvable.", lien:"La session n'a pas pu s'ouvrir.", session:"La prise de main n'a pas pu s'inscrire.",
+  lecture:"Le serveur n'a pas pu lire les profils"
 };
 
 /* ---------- Côté console : « Prendre la main » ---------- */
 async function controlePrendre(p){
   if(!p || !p.id) return;
-  if(!confirm(`Prendre la main sur ${p.nom} ?\n\nUn nouvel onglet s'ouvre à son nom : tu y vois tout et tu agis pour lui. Ton compte reste connecté ici. Ce n'est inscrit que dans le journal de la console dev.`)) return;
+  if(!confirm(`Prendre la main sur ${p.nom} ?\n\nUn nouvel onglet s'ouvre à son nom : tu y vois tout et tu agis pour lui. Ton compte reste connecté ici.`)) return;   // v2.20b : rien sur le journal (l'autrice)
   const onglet = window.open("", "_blank");      // ouvert TOUT DE SUITE, au clic : sinon le navigateur le bloque
   try{
     const s = await sessionActuelle(); if(!s){ if(onglet) onglet.close(); alert(CONTROLE_ERREURS.non_connecte); return; }
@@ -36,7 +37,9 @@ async function controlePrendre(p){
       headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + s.access_token, "apikey":SB_KEY },
       body:JSON.stringify({ cible:p.id }) });
     const d = await r.json().catch(() => null);
-    if(!d || !d.ok){ if(onglet) onglet.close(); alert("Prise de main refusée : " + (CONTROLE_ERREURS[d && d.err] || ((d && (d.detail || d.err)) || ("erreur " + r.status)))); return; }
+    if(!d || !d.ok){ if(onglet) onglet.close();
+      const msg = CONTROLE_ERREURS[d && d.err] || ((d && d.err) || ("erreur " + r.status));
+      alert("Prise de main refusée : " + msg + (d && d.detail ? ` (${d.detail})` : "")); return; }   // v2.20b : le vrai message du serveur
     localStorage.setItem(CONTROLE_JETON, JSON.stringify({ jeton:d.jeton, cid:d.cid, nom:d.nom, t:Date.now() }));
     if(onglet) onglet.location.href = location.pathname + "?controle=1";
     else alert("Le navigateur a bloqué le nouvel onglet : autorise les fenêtres de ce site, puis recommence.");

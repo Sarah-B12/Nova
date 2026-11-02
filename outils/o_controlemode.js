@@ -12,19 +12,23 @@
     if(!document.querySelector("#dev-res")) document.body.appendChild(Object.assign(document.createElement("div"), { id:"dev-res" }));
     _devAfficherFiche(FICHE);
     r.bouton = !!document.querySelector("#f-controle");
-    confirm = () => true; let alerte = null; alert = m => { alerte = m; };
+    let question = null; confirm = m => { question = m; return true; }; let alerte = null; alert = m => { alerte = m; };
     sessionActuelle = async () => ({ access_token:"JETON-ADMIN", user:{ id:"00000000-0000-0000-0000-0000000000d0" } });
     let fermee = false; const faux = { location:{ href:"" }, close(){ fermee = true; } };
     window.open = () => faux;
     let requete = null, reponse = { ok:true, jeton:"hash-123", cid:7, nom:"Joueur" };
     window.fetch = async (url, o) => { requete = { url, o }; return { status:200, json: async () => reponse }; };
     document.querySelector("#f-controle").click(); await att(80);
+    r.question = { texte: question, rienSurLeJournal: !/journal/i.test(question || "") };
     r.prendre = { url: requete && requete.url.endsWith("/functions/v1/controle"), jetonAdmin: requete && requete.o.headers.Authorization === "Bearer JETON-ADMIN",
                   corps: requete && requete.o.body, jetonPose: !!localStorage.getItem("nova-controle-jeton"), onglet: faux.location.href };
     localStorage.removeItem("nova-controle-jeton");
     reponse = { ok:false, err:"en_ligne" }; fermee = false; alerte = null;
     await controlePrendre(FICHE); await att(40);
     r.refus = { ongletFerme: fermee, message: alerte, rienDePose: !localStorage.getItem("nova-controle-jeton") };
+    reponse = { ok:false, err:"lecture", detail:"Invalid API key" }; alerte = null;
+    await controlePrendre(FICHE); await att(40);
+    r.erreurLecture = alerte;
   } else {
     // 2. L'onglet de contrôle : sa connexion à part, pas de présence
     // (la connexion à part — sessionStorage, clé « nova-controle-auth » — se vérifie avec la VRAIE
@@ -41,6 +45,9 @@
     const ok = await controleOuvrir();
     r.ouvrir = { ok, appels:appels.slice(), jetonEfface: !localStorage.getItem("nova-controle-jeton"), bandeau: !!document.querySelector("#controle-bandeau"),
                  texte: (document.querySelector("#controle-bandeau") || {}).textContent, titre: document.title };
+    // la console ne s'ouvre jamais ici, même pour un compte du staff
+    etat.roleAdmin = "dev"; await ouvrirDev(); const md = document.querySelector("#dev-modale");
+    r.consoleBloquee = !md || md.hidden; etat.roleAdmin = null;
     // la présence ne bat pas
     etat.inscrit = true; let presence = false; const from0 = sb.from; sb.from = t => { presence = true; return from0.call(sb, t); };
     _presenceDer = 0; await battementPresence(); sb.from = from0; r.pasDePresence = !presence;
