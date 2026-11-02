@@ -119,7 +119,7 @@ function majHub(){
   }
 }
 function montrerBienvenue(){ const m=document.querySelector("#modale-bienvenue"); if(m) m.hidden=false; }
-function fermerBienvenue(){ const m=document.querySelector("#modale-bienvenue"); if(m) m.hidden=true; etat.bienvenueVue=true; if(typeof sauvegarder==="function") sauvegarder(); }
+function fermerBienvenue(){ const m=document.querySelector("#modale-bienvenue"); if(m) m.hidden=true; if(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE) return; /* v2.21c */ etat.bienvenueVue=true; if(typeof sauvegarder==="function") sauvegarder(); }
 /* ---------- Auth (Supabase) ---------- */
 let _authMode = "inscription";
 let _entreeStyleMonte=false;

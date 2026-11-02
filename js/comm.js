@@ -444,7 +444,8 @@ async function envoyerMessage(){
 function _msgModal(){ let m=document.querySelector("#comm-msg"); if(!m){ m=document.createElement("div"); m.id="comm-msg"; m.hidden=true; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m){ m.hidden=true; majComm(); } }); } return m; }
 async function ouvrirMessage(type, i){
   const arr=(type==="recus"?_msgRecusCache:_msgEnvoyesCache); const m=arr[i]; if(!m) return;
-  if(type==="recus" && !m.lu){ m.lu=true; try{ await sb.from("messages").update({lu:true}).eq("id",m.id); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#2"); } if(typeof compterNotifs==="function") compterNotifs(); }
+  if(type==="recus" && !m.lu && typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE){ /* v2.21c : en contrôle, lire ne marque pas « lu » */ }
+  else if(type==="recus" && !m.lu){ m.lu=true; try{ await sb.from("messages").update({lu:true}).eq("id",m.id); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#2"); } if(typeof compterNotifs==="function") compterNotifs(); }
   const modal=_msgModal();
   /* Le pseudo devient cliquable : on lit souvent un message en se demandant
      qui est l'expéditeur. `voirProfilJoueur` existe déjà dans ce fichier. */

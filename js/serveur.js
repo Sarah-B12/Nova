@@ -330,6 +330,8 @@ function _etatSansStocks(){
   const c = Object.assign({}, etat);
   for(const k of CLES_SERVEUR) delete c[k];
   for(const k of CLES_TRANSITOIRES) delete c[k];
+  // v2.21c (K138) : en contrôle, les lignes de journal du contrôle ne partent JAMAIS au serveur.
+  if(NOVA_CONTROLE && Array.isArray(c.journal)) c.journal = c.journal.filter(e => !(e && e.ctrl));
   return c;
 }
 

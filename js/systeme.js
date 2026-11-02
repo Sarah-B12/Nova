@@ -127,15 +127,23 @@ function sansEmoji(t){ return String(t).replace(_RE_EMOJI, "").replace(/\s{2,}/g
    accumulé depuis la dernière synchro portait la même seconde, et se rangeait
    au-dessus d'actions pourtant postérieures. Un testeur a ainsi lu une évasion
    AVANT l'emprisonnement qui l'avait causée. */
+/* v2.21c (K138) — EN CONTRÔLE, le journal ne garde pour le joueur que ce que le SERVEUR lui envoie
+   (vols subis, missions, colis, effets de combat : `_journalServeur`, posé par _evenementsAppliquer et
+   _effetsAppliquer). Tout le reste — « Systèmes en ligne. », ce que l'admin fait en son nom — est
+   marqué `ctrl` : visible dans l'onglet de contrôle, RETIRÉ de la sauvegarde (_etatSansStocks).
+   Le joueur n'en voit rien (K137). */
+let _journalServeur = 0;
+function _journalCtrl(){ return typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE && !_journalServeur; }
 function journal(t, type="", cat=null, quand=null){
   if(!etat.journal) etat.journal=[];
   const d = (typeof quand==="number" && isFinite(quand)) ? quand : Date.now();
   t = sansEmoji(t);
+  const ctrl = _journalCtrl();
   /* ⚠ Entrées identiques qui se suivent : on incrémente un compteur au lieu
      d'empiler. Acheter dix graines produisait dix lignes rigoureusement
      semblables, qui noyaient le reste du journal. */
   const der = etat.journal[0];
-  if(der && der.t === t && der.type === type){
+  if(der && der.t === t && der.type === type && !!der.ctrl === ctrl){   // v2.21c : jamais fondre une ligne du contrôle dans une ligne du joueur
     der.n = (der.n || 1) + 1; der.d = Math.max(der.d||0, d);
     majJournal(); _bulle(t, type); return;
   }
@@ -149,6 +157,7 @@ function journal(t, type="", cat=null, quand=null){
      que de les reprendre un à un, tout texte écrit dans une quête est reconnu
      (_texteDeQuete, quetes.js) et rangé dans « Quêtes ». */
   const e = { t, type, cat: cat || ((typeof _texteDeQuete==="function" && _texteDeQuete(t)) ? "quete" : _categoriser(t)), d };
+  if(ctrl) e.ctrl = true;
   let i = 0; while(i < etat.journal.length && (etat.journal[i].d||0) > d) i++;
   etat.journal.splice(i, 0, e);
   _purgerJournal();
@@ -257,7 +266,9 @@ function _purgerJournal(){
   if(!etat.journal) return;
   const min=Date.now()-JOURNAL_RETENTION;
   etat.journal = etat.journal.filter(e=>e && e.d>=min);
-  if(etat.journal.length>JOURNAL_MAX) etat.journal.length=JOURNAL_MAX;
+  // v2.21c : en contrôle, pas de coupe au nombre — les lignes du contrôle (retirées à la sauvegarde) ne
+  // doivent pas pousser dehors les anciennes lignes du joueur.
+  if(etat.journal.length>JOURNAL_MAX && !(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE)) etat.journal.length=JOURNAL_MAX;
 }
 function _catNom(id){ const c=JOURNAL_CATS.find(x=>x.id===id); return c?c.nom:id; }
 /* v1.89c — les textes de quête portent parfois <i>…</i> ou <b>…</b> (un titre, une

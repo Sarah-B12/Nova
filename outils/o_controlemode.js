@@ -29,6 +29,9 @@
     reponse = { ok:false, err:"lecture", detail:"Invalid API key" }; alerte = null;
     await controlePrendre(FICHE); await att(40);
     r.erreurLecture = alerte;
+    // K138 — hors contrôle, rien ne change : pas de marque, tout est sauvegardé
+    journal("Une ligne ordinaire.");
+    r.journalOrdinaire = { marque: !!(etat.journal[0] && etat.journal[0].ctrl), sauvee: (_etatSansStocks().journal || []).some(e => e.t === "Une ligne ordinaire.") };
   } else {
     // 2. L'onglet de contrôle : sa connexion à part, pas de présence
     // (la connexion à part — sessionStorage, clé « nova-controle-auth » — se vérifie avec la VRAIE
@@ -45,6 +48,19 @@
     const ok = await controleOuvrir();
     r.ouvrir = { ok, appels:appels.slice(), jetonEfface: !localStorage.getItem("nova-controle-jeton"), bandeau: !!document.querySelector("#controle-bandeau"),
                  texte: (document.querySelector("#controle-bandeau") || {}).textContent, titre: document.title };
+    // K138 — le journal : les lignes du contrôle ne partent pas au serveur ; celles du serveur, si
+    etat.journal = [{ t:"Une vieille ligne du joueur.", type:"", cat:"systeme", d:Date.now() - 3600e3 }];
+    journal("Systèmes en ligne.");
+    journal("Tu as vendu 3 cendrites.", "gain");
+    await _evenementsAppliquer([{ texte:"Quelqu'un t'a fait les poches : 1 × cuir.", cat:"alerte", quand:new Date(Date.now() - 600e3).toISOString() }]);
+    journal("Tu as vendu 3 cendrites.", "gain");          // un doublon : il ne doit pas grossir une ligne du joueur
+    const sauve = (_etatSansStocks().journal || []).map(e => e.t);
+    r.journal = { onglet: etat.journal.map(e => e.t + (e.ctrl ? " [contrôle]" : "") + (e.n ? " ×" + e.n : "")), sauvegarde: sauve,
+                  rienDuControle: !sauve.some(t => /Systèmes en ligne|Tu as vendu/.test(t)), vol: sauve.some(t => /fait les poches/.test(t)), ancienne: sauve.includes("Une vieille ligne du joueur.") };
+    // lire un message ne le marque pas « lu »
+    let maj = false; const f0 = sb.from; sb.from = t => ({ update(){ maj = true; return { eq: async () => ({}) }; }, select(){ return this; }, eq(){ return this; } });
+    try{ _msgRecusCache = [{ id:5, lu:false, de:"X", objet:"o", texte:"t", cree_le:new Date().toISOString() }]; await ouvrirMessage("recus", 0); }catch(e){}
+    sb.from = f0; r.messagePasLu = !maj;
     // la console ne s'ouvre jamais ici, même pour un compte du staff
     etat.roleAdmin = "dev"; await ouvrirDev(); const md = document.querySelector("#dev-modale");
     r.consoleBloquee = !md || md.hidden; etat.roleAdmin = null;

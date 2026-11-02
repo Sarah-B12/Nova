@@ -333,7 +333,7 @@ async function majAnnonceFaction(el){
         <div class="ann-txt">${rendu}</div></div>`;
     // Marquée comme lue : c'est ce qui éteint la pastille de l'onglet.
     if(etat.annonceFactionVue !== ann.cree_le){
-      etat.annonceFactionVue = ann.cree_le;
+      if(!(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE)) etat.annonceFactionVue = ann.cree_le;   // v2.21c : regarder en contrôle ne marque rien « vu »
       if(typeof sauvegarder==="function") sauvegarder();
     }
   } else {
@@ -777,6 +777,9 @@ async function syncEffetsCombat(){
 /* v2.09 — ce que syncEffetsCombat faisait des effets et du journal serveur, inchangé, sorti en deux
    fonctions pour que la veille (veille.js) l'applique de la même façon. */
 async function _effetsAppliquer(data){
+  _journalServeur++; try{ return await _effetsAppliquerFond(data); } finally { _journalServeur--; }   // v2.21c (K138) : ce sont des nouvelles du serveur
+}
+async function _effetsAppliquerFond(data){
     if(data && data.xp){
       /* ⚠⚠ v0.94 — NE PLUS APPELER gagnerXp() ICI. `consommer_effets()` crédite
          désormais `profils.xp` dans la MÊME transaction que la suppression de
@@ -823,6 +826,9 @@ async function _effetsAppliquer(data){
     }
 }
 async function _evenementsAppliquer(evs){
+  _journalServeur++; try{ return await _evenementsAppliquerFond(evs); } finally { _journalServeur--; }   // v2.21c (K138)
+}
+async function _evenementsAppliquerFond(evs){
     if(Array.isArray(evs) && evs.length){
       /* v0.63 — tout arrivait en rouge « alerte », y compris « colis reçu » ou
          « ta vente est partie ». Le ton suit la catégorie déposée par le serveur. */
