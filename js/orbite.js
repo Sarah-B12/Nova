@@ -528,11 +528,38 @@ function _prixPleinComptoir(carb, litresManquants){
 }
 
 /* Vrai si le joueur ne peut NI rentrer, NI faire le plein, NI en acheter un. */
+/* v2.18 — LE RETOUR RÉEL, D'OÙ QU'ON SOIT (vérification demandée par l'autrice, 01/11).
+   Avant, « sans retour » comparait le carburant au seul saut Perchoir → Silène, partout. Trois
+   trous en découlaient :
+   · à CÉRÈS, rentrer coûte le trajet jusqu'à la Gorge + le saut + le trajet de l'autre bouche au
+     Perchoir (repasserLaGorge le refuse à moins) : un pilote entre les deux, sans de quoi en
+     racheter, n'était ni libre de rentrer ni secouru ;
+   · sur une SURFACE (La Braise, Le Suaire, Ancolie), le décollage coûte plus cher (×1,5 pour
+     Ancolie) et on n'y vend pas de carburant : un pilote à qui l'on a volé ses bidons pouvait
+     y rester sans recours tant qu'il avait des crédits (le calcul le croyait capable d'acheter) ;
+   · à Triptolème, rien ne change : les vols du secteur garantissent le retour au Perchoir, qui
+     vend le carburant. */
+function _litresRetour(){
+  const c = coutSaut(); if(!c) return null;
+  if(enCeres()){
+    const g = espaceLieu("e2_gorge"), t = espaceLieu("trou_noir"), b = espaceLieu("base");
+    const versGorge = g ? coutVol({ x:g.x, y:g.y }) : null;
+    const versPerchoir = (t && b) ? coutVol({ x:b.x, y:b.y }, { x:t.x, y:t.y }) : null;
+    return c.litres + (versGorge ? versGorge.litres : 0) + (versPerchoir ? versPerchoir.litres : 0);
+  }
+  if(typeof enSurfaceIci === "function" && enSurfaceIci() && typeof coutSautSurface === "function" && typeof surfaceCfg === "function"){
+    const r = coutSautSurface(surfaceCfg()); return r ? r.litres : c.litres;
+  }
+  return c.litres;
+}
+function _carburantEnVenteIci(){ return enEcart() || enCeres(); }   // le Perchoir et le Nid en vendent ; une surface, non
 function vaisseauSansRetour(){
   const c = coutSaut(); if(!c) return false;
+  const besoin = _litresRetour(); if(besoin == null) return false;
   const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
-  if(auto >= c.litres) return false;                       // il peut rentrer, ou se remplir depuis ses bidons
-  const cout = _prixPleinComptoir(c.carb, c.litres - auto);
+  if(auto >= besoin) return false;                         // il peut rentrer, ou se remplir depuis ses bidons
+  if(!_carburantEnVenteIci()) return true;                 // v2.18 : sur une surface, on n'en vend pas
+  const cout = _prixPleinComptoir(c.carb, besoin - auto);
   if(cout == null) return true;                            // ce carburant ne se vend pas là-haut
   return (etat.credits||0) < cout;                         // il ne peut pas non plus l'acheter
 }
@@ -669,8 +696,13 @@ async function passerLaGorge(){
   if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : tu n'entreras pas dans la Gorge comme ça.","alerte"); return; }
   const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
   const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
-  if(auto < 2*cs.litres){
-    journal(`Passage refusé : il faut de quoi revenir. Passer la Gorge et la repasser coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage");
+  /* v2.18 — le retour, c'est le saut ET le trajet de la bouche au Perchoir (repasserLaGorge
+     l'exige) : on n'entre plus avec juste deux sauts, qui laissaient coincé de l'autre côté. */
+  const t0 = espaceLieu("trou_noir"), b0 = espaceLieu("base");
+  const versPerchoir0 = (t0 && b0) ? coutVol({ x:b0.x, y:b0.y }, { x:t0.x, y:t0.y }) : null;
+  const allerRetour = 2*cs.litres + (versPerchoir0 ? versPerchoir0.litres : 0);
+  if(auto < allerRetour){
+    journal(`Passage refusé : il faut de quoi revenir. Passer la Gorge, la repasser et rejoindre le Perchoir coûte ${allerRetour} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage");
     return;
   }
   if(!await _payerSaut("La Gorge", cs)) return;

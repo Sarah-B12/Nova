@@ -37,6 +37,8 @@ const DEV_ONGLETS = [
       { sel:"#dev-coque", bouton:true }, { sel:"#dev-coque-ok", bouton:true }, { sel:"#dev-sonde", bouton:true } ] },
     { id:"terrain", titre:"🏗️ Terrain", items:[ { sel:"#dev-abimer", bouton:true }, { sel:"#dev-integrite-reset", bouton:true } ] },
     { id:"patrouilles", titre:"🛡️ Patrouilles", items:[ { sel:"#dev-protocole", bouton:true } ] },
+    { id:"fleau", titre:"⚔️ Le Fléau", note:"Pour tester : le jeu ne montre jamais la force (K120).", items:[
+      { sel:"#dev-fleau-jour", bouton:true }, { sel:"#dev-fleau-effacer", bouton:true }, { sel:"#dev-fleau-etat", bouton:true } ] },   // v2.18
     { id:"outils", titre:"🛠️ Outils", note:"Édition des fichiers des cartes spatiales — pas un test de jeu.", items:[ { sel:"#dev-placement", bouton:true }, { sel:"#dev-placement2", bouton:true } ] } ] },
   { id:"evts", nom:"Événements", devSeul:true, sections:[
     { id:"calendrier", titre:"📅 À venir", items:[] },
@@ -147,8 +149,21 @@ async function _devChargerCalendrier(){
 window.addEventListener("keydown", e => {
   if(e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d")){ e.preventDefault(); ouvrirDev(); }
 });
-function ouvrirDev(){
+/* v2.19 — le rôle est RELU au serveur à chaque ouverture (vérification de l'autrice : « si je retire
+   la console à un admin, c'est vraiment retiré ? »). Le serveur refusait déjà toutes ses actions ;
+   désormais un ex-admin ne peut même plus ouvrir la console sans recharger sa page. */
+async function _devRelireRole(){
+  if(typeof SERVEUR_DISPO === "undefined" || !SERVEUR_DISPO || typeof sessionActuelle !== "function") return;
+  try{
+    const s = await sessionActuelle(); if(!s || !s.user) return;
+    const { data, error } = await sb.from("profils").select("role_admin").eq("id", s.user.id).maybeSingle();
+    if(!error && data) etat.roleAdmin = data.role_admin || null;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "dev-console.js#role"); }
+}
+async function ouvrirDev(){
   if(typeof estAdmin!=="function" || !estAdmin()) return;   // réservé dev/admin (les actions sont revérifiées serveur)
+  await _devRelireRole();
+  if(!estAdmin()){ fermerDev(); journal("Ton accès à la console a été retiré.", "alerte"); return; }
   monterDev();
   const m = document.querySelector("#dev-modale");
   const dev = (typeof estDev==="function" && estDev());
@@ -193,7 +208,34 @@ async function devEnergie(){
   if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
   if(typeof chargerJaugesServeur==="function") await chargerJaugesServeur();
   etat.energie=100; etat.energieMaj=Date.now(); journal("[DEV] énergie rechargée à 100 %.","gain"); sauvegarder(); afficher(); majDev(); }
-function devLibererPrison(){ etat.prisonJusqua=0; etat.prisonFaction=null; etat.prisonFinConnue=0; journal("[DEV] libéré de prison.","gain"); sauvegarder(); afficher(); majDev(); }
+/* v2.18 (v239) — la prison est tenue par le SERVEUR : effacer seulement le navigateur ne libérait
+   rien (la veille la remettait dans la minute). On passe par admin_prison_liberer. */
+async function devLibererPrison(){
+  const moi = (typeof sessionActuelle === "function") ? await sessionActuelle() : null;
+  const id = moi && moi.user && moi.user.id;
+  if(!id){ alert("Pas de session."); return; }
+  const { data, error } = await sb.rpc("admin_prison_liberer", { p_profil: id });
+  if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+  etat.prisonJusqua=0; etat.prisonFaction=null; etat.prisonFinConnue=0;
+  journal(data.libere ? "[DEV] libéré de prison." : "[DEV] tu n'étais pas en prison.","gain");
+  if(typeof syncPrison === "function") await syncPrison();
+  sauvegarder(); afficher(); majDev();
+}
+/* v2.18 (v239) — le Fléau, pour tester (console DEV seulement) : la force et la bande du jour
+   (que le jeu ne montre jamais, K120), et effacer son combat du jour pour rejouer. */
+async function devFleauJour(){
+  const { data, error } = await sb.rpc("admin_fleau_jour");
+  if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+  const z = document.querySelector("#dev-fleau-etat");
+  if(z) z.innerHTML = `Aujourd'hui (${data.jour}) : force <b>${data.force}</b>, point rouge <b>${data.bande}</b>${data.imbattable ? " — <b style=\"color:#ff5257\">imbattable</b>" : ""}.`;
+}
+async function devFleauEffacer(){
+  if(!confirm("Effacer ton combat du jour contre le Fléau, pour pouvoir rejouer ?\n(L'énergie et les cellules dépensées ne sont pas rendues ; le score du jour disparaît du classement.)")) return;
+  const { data, error } = await sb.rpc("admin_fleau_effacer");
+  if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+  journal(data.efface ? "[DEV] combat du jour contre le Fléau effacé : tu peux rejouer." : "[DEV] aucun combat du jour à effacer.","gain");
+  if(typeof majFleau === "function"){ if(typeof _fleauEtat !== "undefined") _fleauEtat = null; majFleau(); }
+}
 function devRecalerCompetences(){
   if(!confirm("Remettre les compétences à 10/10/10 + les points de niveau non dépensés ?\n(Les points déjà gagnés sont recrédités.)")) return;
   const pts = Math.max(0, (etat.niveau-1)) * (typeof PTS_PAR_NIVEAU!=="undefined" ? PTS_PAR_NIVEAU : 3);
@@ -376,6 +418,9 @@ function majDev(){
       <button class="mini" id="dev-ceres" title="v1.96 : ouvre ou ferme la Gorge pour ce personnage (etat.ceres, posé plus tard par Q31)">${etat.ceres?"Fermer la route de Cérès":"Ouvrir la route de Cérès"}</button>
       <button class="mini" id="dev-energie">Recharger énergie (100%)</button>
       <button class="mini" id="dev-prison">Libérer de prison</button>
+      <button class="mini" id="dev-fleau-jour" title="v2.18 : la force et la bande du jour (le jeu ne les montre jamais)">Fléau : force du jour</button>
+      <button class="mini" id="dev-fleau-effacer" title="v2.18 : efface ton combat du jour pour rejouer">Fléau : effacer mon combat du jour</button>
+      <span class="dev-note" id="dev-fleau-etat"></span>
       <button class="mini" id="dev-journal-vider">Vider le journal</button>
       <button class="mini" id="dev-declin" title="Applique une journée de déclin à TOUS les profils">Forcer le déclin quotidien</button>
       <button class="mini" id="dev-quotidien" title="Déclin + sorties de pause + destruction des morts + Protocole + ménage">Forcer les tâches quotidiennes</button>
@@ -420,6 +465,8 @@ function majDev(){
     });
     const ben=av.querySelector("#dev-energie"); if(ben) ben.addEventListener("click", devEnergie);
     const bpr=av.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);
+    const bfj=av.querySelector("#dev-fleau-jour"); if(bfj) bfj.addEventListener("click", devFleauJour);           // v2.18
+    const bfe=av.querySelector("#dev-fleau-effacer"); if(bfe) bfe.addEventListener("click", devFleauEffacer);
     const bjv=av.querySelector("#dev-journal-vider"); if(bjv) bjv.addEventListener("click", devViderJournal);
     const bdc=av.querySelector("#dev-declin"); if(bdc) bdc.addEventListener("click", devDeclin);
     const bqt=av.querySelector("#dev-quotidien"); if(bqt) bqt.addEventListener("click", devQuotidien);
@@ -878,6 +925,8 @@ function _devAfficherFiche(p){
       <div class="dev-actions">
         <button class="mini" id="f-soigner" title="Santé, moral, O₂ et énergie à 100 — et ressuscite si besoin">Tout remettre à 100 %</button>
         <button class="mini" id="f-pause">${p.en_pause ? "Réveiller" : "Mettre en pause"}</button>
+        ${p.en_prison ? `<button class="mini" id="f-prison">Sortir de prison</button>` : ""}
+        <button class="mini danger" id="f-controle" title="v2.20 : jouer à sa place, dans un nouvel onglet (K136)">Prendre la main</button>
       </div>
     </div>
 
@@ -960,6 +1009,19 @@ function _devAfficherFiche(p){
     const { data, error } = await sb.rpc("admin_soigner", { p_profil: p.id });
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
     journal(`[STAFF] ${p.nom} remis à 100 %.`,"gain"); rafraichir();
+  });
+
+  // v2.20 — le mode contrôle (K136) : controle.js.
+  const bfc = z.querySelector("#f-controle");
+  if(bfc) bfc.addEventListener("click", () => { if(typeof controlePrendre === "function") controlePrendre(p); });
+
+  // v2.18 (v239) — sortir de prison (admin et dev).
+  const bfp = z.querySelector("#f-prison");
+  if(bfp) bfp.addEventListener("click", async ()=>{
+    if(!confirm(`Sortir ${p.nom} de prison ?`)) return;
+    const { data, error } = await sb.rpc("admin_prison_liberer", { p_profil: p.id });
+    if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
+    journal(`[STAFF] ${p.nom} ${data.libere ? "sorti de prison" : "n'était pas en prison"}.`,"gain"); rafraichir();
   });
 
   z.querySelector("#f-pause").addEventListener("click", async ()=>{

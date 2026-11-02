@@ -50,6 +50,9 @@ const DELAIS = {
   correctifs200: { profil: 50, sac: 50, jauges: 50 },   // v2.00 : retours du 29/10, 2e série (o_correctifs200.js)
   parloir: { profil: 50, sac: 50, jauges: 50 },   // v2.01 : la prison comme un parloir, K114 (o_parloir.js)
   ptsfab: { profil: 50, sac: 50, jauges: 50 },    // v2.02 : points de formation selon le coût (o_ptsfab.js)
+  controlemode: { profil: 50, sac: 50, jauges: 50 }, // v2.20 : le mode contrôle (o_controlemode.js)
+  console: { profil: 50, sac: 50, jauges: 50 },    // v2.18 : console, prison et Fléau (o_console.js)
+  retour: { profil: 50, sac: 50, jauges: 50 },     // v2.18 : le carburant du retour (o_retour.js)
   essais: { profil: 50, sac: 50, jauges: 50 },     // v2.17 : le coût des essais (o_essais.js)
   categories: { profil: 50, sac: 50, jauges: 50 }, // v2.16 : le tri du journal (o_categories.js)
   rafraichir: { profil: 50, sac: 50, jauges: 50 }, // v2.12 : onglet Quêtes, veille, boutons de carte (o_rafraichir.js)
@@ -171,7 +174,7 @@ vc.on("error", (...a) => erreurs.push("console.error: " + a.map(String).join(" "
 
 const html = fs.readFileSync(path.join(RAC, "index.html"), "utf8");
 const dom = new JSDOM(html, {
-  url: "http://localhost/index.html", runScripts: "dangerously", resources: new Chargeur(), virtualConsole: vc, pretendToBeVisual: true,
+  url: "http://localhost/index.html" + (process.env.BANC_QUERY || ""), runScripts: "dangerously", resources: new Chargeur(), virtualConsole: vc, pretendToBeVisual: true,
   beforeParse(w){
     // état de la VEILLE dans localStorage : sac périmé, jauges de la veille
     w.localStorage.setItem("nova-epic-save", JSON.stringify({ ...donnees, jauges: { o2: 5, sante: 5, moral: 5 }, sac: {} }));
@@ -183,7 +186,7 @@ const dom = new JSDOM(html, {
 });
 setTimeout(() => {
   const w = dom.window;
-  if(fs.existsSync(__dirname + "/o_" + SCEN + ".js")){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/o_" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }); return; }
+  if(fs.existsSync(__dirname + "/o_" + SCEN + ".js")){ Promise.resolve(w.eval(fs.readFileSync(__dirname + "/o_" + SCEN + ".js", "utf8"))).then(r => { console.log(JSON.stringify(r, null, 1)); process.exit(0); }, e => { console.log("ÉCHEC DU SCÉNARIO : " + ((e && e.stack) || e)); process.exit(1); }); return; }   // v2.20 : un scénario qui échoue le dit
   const e = w.eval("etat");
   const res = {
     scenario: SCEN,

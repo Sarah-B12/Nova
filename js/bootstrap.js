@@ -97,6 +97,7 @@ document.querySelector("#auth-mdp").addEventListener("keydown", e => { if(e.key=
 construireCompetences(); construireCarte();
 (async function demarrer(){
   if(SERVEUR_DISPO){
+    if(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE && typeof controleOuvrir === "function" && !await controleOuvrir()) return;   // v2.20
     const session = await sessionActuelle();
     if(session){
       const prof = await chargerDepuisServeur();

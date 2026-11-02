@@ -17,7 +17,9 @@ function pasImage(t, o){
   if(o) o.der = now;
   return k;
 }
-const CLE = "nova-epic-save";
+/* v2.20 — en CONTRÔLE, la sauvegarde locale est à part (et propre à l'onglet) : sinon le personnage
+   contrôlé s'écrirait là où l'onglet de l'admin relit le sien. */
+const CLE = (typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE) ? "nova-epic-save-controle-" + ((typeof _SID === "string") ? _SID : "x") : "nova-epic-save";
 const PTS_PAR_NIVEAU = 3;
 const MS_JOUR = 86400000;
 

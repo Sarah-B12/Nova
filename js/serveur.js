@@ -47,8 +47,14 @@ function novaDiag(){ try{ const l = JSON.parse(localStorage.getItem("nova_diag")
 const SB_URL = "https://htwrtainoqmjaxolpmif.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0d3J0YWlub3FtamF4b2xwbWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMTc0ODksImV4cCI6MjEwMzY5MzQ4OX0.tDnZVbFMAU7GajR8x56wL4UtTtEjlxRP65CyV_GFgCs";
 
+/* v2.20 — LE MODE CONTRÔLE (K136) : un onglet ouvert avec ?controle=1 joue AU NOM d'un autre
+   joueur. ⚠ Sa connexion vit dans le sessionStorage DE CET ONGLET (clé à part) : la session de
+   l'admin, dans ses autres onglets, n'est jamais touchée — et celle-ci meurt avec l'onglet. */
+const NOVA_CONTROLE = (function(){ try{ return new URLSearchParams(location.search).has("controle"); }catch(e){ return false; } })();
 const sb = (typeof supabase !== "undefined" && supabase.createClient)
-  ? supabase.createClient(SB_URL, SB_KEY)
+  ? (NOVA_CONTROLE
+      ? supabase.createClient(SB_URL, SB_KEY, { auth:{ storage:window.sessionStorage, storageKey:"nova-controle-auth", persistSession:true, autoRefreshToken:true, detectSessionInUrl:false } })
+      : supabase.createClient(SB_URL, SB_KEY))
   : null;
 const SERVEUR_DISPO = !!sb;
 function estAdmin(){ return etat && (etat.roleAdmin==='dev' || etat.roleAdmin==='admin'); }
@@ -69,7 +75,9 @@ async function seConnecter(email, mdp){
    mélangeaient pas les espèces. On tente de reprendre la session ; sinon on
    prévient clairement, une seule fois. */
 let _deconnexionVolontaire = false, _sessionAlertee = false;
-async function seDeconnecter(){ _deconnexionVolontaire = true; if(SERVEUR_DISPO) try{ await sb.auth.signOut(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#3"); } }
+/* ⚠ v2.20 — en CONTRÔLE, on ne ferme QUE cette session (scope local) : la déconnexion ordinaire
+   ferme toutes les sessions du compte, et mettrait le vrai joueur dehors sur tous ses appareils. */
+async function seDeconnecter(){ _deconnexionVolontaire = true; if(SERVEUR_DISPO) try{ await sb.auth.signOut(NOVA_CONTROLE ? { scope:"local" } : undefined); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "serveur.js#3"); } }
 async function reprendreSession(){
   if(!SERVEUR_DISPO) return false;
   try{ const { data, error } = await sb.auth.refreshSession(); return !error && !!(data && data.session); }
@@ -541,6 +549,7 @@ const PRESENCE_MS = 60000;   // < 120 000, le seuil de _presenceEnLigne()
 let _presenceDer = 0;
 async function battementPresence(){
   if(!SERVEUR_DISPO || !etat || !etat.inscrit) return;
+  if(NOVA_CONTROLE) return;   // v2.20 : en contrôle, le personnage n'apparaît pas en ligne (le serveur fait de même, v241)
   if(typeof document !== "undefined" && document.hidden) return;
   if(Date.now() - _presenceDer < PRESENCE_MS - 5000) return;   // une sauvegarde vient peut-être de le faire
   const s = await sessionActuelle(); if(!s) return;
