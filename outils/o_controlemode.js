@@ -23,9 +23,19 @@
     r.prendre = { url: requete && requete.url.endsWith("/functions/v1/controle"), jetonAdmin: requete && requete.o.headers.Authorization === "Bearer JETON-ADMIN",
                   corps: requete && requete.o.body, jetonPose: !!localStorage.getItem("nova-controle-jeton"), onglet: faux.location.href };
     localStorage.removeItem("nova-controle-jeton");
-    reponse = { ok:false, err:"en_ligne" }; fermee = false; alerte = null;
+    // v2.25 — un joueur en ligne : on DEMANDE (avant : refus sec, qu'un bot rendait permanent)
+    let ouvertures = 0; window.open = () => { ouvertures++; return faux; };
+    const corps = []; window.fetch = async (url, o) => { const b = JSON.parse(o.body); corps.push(b);
+      return { status:200, json: async () => (b.forcer ? { ok:true, jeton:"hash-456", cid:8, nom:"Joueur" } : { ok:false, err:"en_ligne", actif_s:40 }) }; };
+    const questions = []; let reponses = [true, false]; confirm = m => { questions.push(m); return reponses.shift(); };
+    fermee = false; await controlePrendre(FICHE); await att(40);
+    r.enLigneNon = { question: /est en ligne \(actif il y a 40 s\)/.test(questions[1] || ""), ongletFerme: fermee, rienDePose: !localStorage.getItem("nova-controle-jeton"), unSeulAppel: corps.length === 1 };
+    corps.length = 0; questions.length = 0; reponses = [true, true]; ouvertures = 0; fermee = false; faux.location.href = "";
     await controlePrendre(FICHE); await att(40);
-    r.refus = { ongletFerme: fermee, message: alerte, rienDePose: !localStorage.getItem("nova-controle-jeton") };
+    r.enLigneOui = { forcer: corps.map(b => !!b.forcer).join(","), jetonPose: !!localStorage.getItem("nova-controle-jeton"), unSeulOnglet: ouvertures === 1, onglet: faux.location.href };
+    localStorage.removeItem("nova-controle-jeton");
+    confirm = () => true; window.open = () => faux;
+    window.fetch = async (url, o) => ({ status:200, json: async () => reponse });
     reponse = { ok:false, err:"lecture", detail:"Invalid API key" }; alerte = null;
     await controlePrendre(FICHE); await att(40);
     r.erreurLecture = alerte;

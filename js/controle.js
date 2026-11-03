@@ -30,16 +30,23 @@ const CONTROLE_ERREURS = {
 };
 
 /* ---------- Côté console : « Prendre la main » ---------- */
-async function controlePrendre(p){
+async function controlePrendre(p, forcer){
   if(!p || !p.id) return;
-  if(!confirm(`Prendre la main sur ${p.nom} ?\n\nUn nouvel onglet s'ouvre à son nom : tu y vois tout et tu agis pour lui. Ton compte reste connecté ici.`)) return;   // v2.20b : rien sur le journal (l'autrice)
-  const onglet = window.open("", "_blank");      // ouvert TOUT DE SUITE, au clic : sinon le navigateur le bloque
+  if(!forcer && !confirm(`Prendre la main sur ${p.nom} ?\n\nUn nouvel onglet s'ouvre à son nom : tu y vois tout et tu agis pour lui. Ton compte reste connecté ici.`)) return;   // v2.20b : rien sur le journal (l'autrice)
+  const onglet = (forcer && forcer.onglet) || window.open("", "_blank");      // ouvert TOUT DE SUITE, au clic : sinon le navigateur le bloque
   try{
     const s = await sessionActuelle(); if(!s){ if(onglet) onglet.close(); alert(CONTROLE_ERREURS.non_connecte); return; }
     const r = await fetch(SB_URL + "/functions/v1/controle", { method:"POST",
       headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + s.access_token, "apikey":SB_KEY },
-      body:JSON.stringify({ cible:p.id }) });
+      body:JSON.stringify({ cible:p.id, forcer:!!forcer }) });
     const d = await r.json().catch(() => null);
+    /* v2.25 — en ligne : on demande (un bot qui reste connecté rendait la prise de main impossible). */
+    if(d && !d.ok && d.err === "en_ligne" && !forcer){
+      const s2 = d.actif_s != null ? ` (actif il y a ${d.actif_s < 60 ? d.actif_s + " s" : Math.round(d.actif_s / 60) + " min"})` : "";
+      if(confirm(`${p.nom} est en ligne${s2}.\n\nSi tu prends la main, vous jouerez à deux : la page qui sauvegarde en second se fige avec « ta partie a avancé ailleurs, recharge-la ». Rien n'est perdu ni écrasé.\n\nPrendre la main quand même ?`))
+        return controlePrendre(p, { onglet });
+      if(onglet) onglet.close(); return;
+    }
     if(!d || !d.ok){ if(onglet) onglet.close();
       const msg = CONTROLE_ERREURS[d && d.err] || ((d && d.err) || ("erreur " + r.status));
       alert("Prise de main refusée : " + msg + (d && d.detail ? ` (${d.detail})` : "")); return; }   // v2.20b : le vrai message du serveur

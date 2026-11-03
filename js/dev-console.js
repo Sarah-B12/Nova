@@ -27,6 +27,12 @@ const DEV_ONGLETS = [
       { sel:"#dev-recherche > p.dev-note" }, { sel:"#dev-q", up:".dev-champ" }, { sel:"#dev-res" } ] },
     { id:"pa", titre:"✨ Donner des points d'Aptitude", items:[ { sel:"#dev-pa-btn", bloc:true, titre:false } ] },
     { id:"apparence", titre:"🎭 Apparence — verrou", items:[ { sel:"#dev-app-lire", bloc:true, titre:false } ] } ] },
+  /* v2.26 — demande des admins : la liste de tous les personnages, avec recherche (consoles admin et dev). */
+  { id:"liste", nom:"Personnages", sections:[
+    { id:"liste", titre:"📋 Tous les personnages", items:[ { sel:"#dev-liste-go", bloc:true, titre:false } ] } ] },
+  /* v2.28 — demande de l'autrice : les envois par la Poste entre personnages liés par l'adresse IP. */
+  { id:"alertes", nom:"Alertes", sections:[
+    { id:"poste", titre:"📦 Envois entre personnages liés par l'adresse IP", note:"Un <b>indice</b>, pas une preuve : un opérateur mobile, un wifi public ou un lycée mettent souvent beaucoup de gens derrière une même adresse.", items:[ { sel:"#dev-alertes-go", bloc:true, titre:false } ] } ] },
   { id:"perso", nom:"Mon perso", devSeul:true, sections:[
     { id:"etat", titre:"❤️ État", note:"Tests sur <b>ce personnage</b> seulement.", items:[
       { sel:"#dev-energie", bouton:true }, { sel:"#dev-pause", bouton:true }, { sel:"#dev-prison", bouton:true },
@@ -37,6 +43,8 @@ const DEV_ONGLETS = [
       { sel:"#dev-coque", bouton:true }, { sel:"#dev-coque-ok", bouton:true }, { sel:"#dev-sonde", bouton:true } ] },
     { id:"terrain", titre:"🏗️ Terrain", items:[ { sel:"#dev-abimer", bouton:true }, { sel:"#dev-integrite-reset", bouton:true } ] },
     { id:"patrouilles", titre:"🛡️ Patrouilles", items:[ { sel:"#dev-protocole", bouton:true } ] },
+    { id:"ip", titre:"🌐 Adresse IP", note:"Ce que le serveur voit pour ta connexion (v2.27, K144).", items:[
+      { sel:"#dev-ip-test", bouton:true }, { sel:"#dev-ip-etat", bouton:true } ] },
     { id:"fleau", titre:"⚔️ Le Fléau", note:"Pour tester : le jeu ne montre jamais la force (K120).", items:[
       { sel:"#dev-fleau-jour", bouton:true }, { sel:"#dev-fleau-effacer", bouton:true }, { sel:"#dev-fleau-etat", bouton:true } ] },   // v2.18
     { id:"outils", titre:"🛠️ Outils", note:"Édition des fichiers des cartes spatiales — pas un test de jeu.", items:[ { sel:"#dev-placement", bouton:true }, { sel:"#dev-placement2", bouton:true } ] } ] },
@@ -382,6 +390,8 @@ function majDev(){
   // ReferenceError ligne ~190, qui interrompait majDev() et empêchait la
   // construction des onglets Journal et Gouvernement. Déclaré localement.
   const dev = (typeof estDev==="function" && estDev());
+  _devListeConstruire();   // v2.26
+  _devAlertesConstruire(); // v2.28
   const r = document.querySelector("#dev-recherche");
   if(r && !r.dataset.pret){
     // ⚠ L'ancienne recherche cherchait dans l'état LOCAL : elle ne pouvait
@@ -422,6 +432,8 @@ function majDev(){
       <button class="mini" id="dev-fleau-jour" title="v2.18 : la force et la bande du jour (le jeu ne les montre jamais)">Fléau : force du jour</button>
       <button class="mini" id="dev-fleau-effacer" title="v2.18 : efface ton combat du jour pour rejouer">Fléau : effacer mon combat du jour</button>
       <span class="dev-note" id="dev-fleau-etat"></span>
+      <button class="mini" id="dev-ip-test" title="v2.27 : l'adresse que le serveur voit pour TA connexion">Tester l'adresse IP</button>
+      <span class="dev-note" id="dev-ip-etat"></span>
       <button class="mini" id="dev-journal-vider">Vider le journal</button>
       <button class="mini" id="dev-declin" title="Applique une journée de déclin à TOUS les profils">Forcer le déclin quotidien</button>
       <button class="mini" id="dev-quotidien" title="Déclin + sorties de pause + destruction des morts + Protocole + ménage">Forcer les tâches quotidiennes</button>
@@ -468,6 +480,12 @@ function majDev(){
     const bpr=av.querySelector("#dev-prison"); if(bpr) bpr.addEventListener("click", devLibererPrison);
     const bfj=av.querySelector("#dev-fleau-jour"); if(bfj) bfj.addEventListener("click", devFleauJour);           // v2.18
     const bfe=av.querySelector("#dev-fleau-effacer"); if(bfe) bfe.addEventListener("click", devFleauEffacer);
+    const bip=av.querySelector("#dev-ip-test"); if(bip) bip.addEventListener("click", async () => {   // v2.27
+      const z = document.querySelector("#dev-ip-etat"); const { data, error } = await sb.rpc("admin_ip_test");
+      if(z) z.innerHTML = (error || !data || !data.ok) ? `Échec : ${echapper((data && data.err) || (error && error.message) || "?")}`
+        : data.ip_retenue ? `Le serveur voit : <b>${echapper(data.ip_retenue)}</b> <span class="dev-note">(cf : ${echapper(data["cf-connecting-ip"] || "—")} · real : ${echapper(data["x-real-ip"] || "—")} · forwarded : ${echapper(data["x-forwarded-for"] || "—")})</span>`
+        : `<b style="color:#ff5257">Aucune adresse lue</b> : les en-têtes attendus sont absents. Envoie ce message à ton assistant.`;
+    });
     const bjv=av.querySelector("#dev-journal-vider"); if(bjv) bjv.addEventListener("click", devViderJournal);
     const bdc=av.querySelector("#dev-declin"); if(bdc) bdc.addEventListener("click", devDeclin);
     const bqt=av.querySelector("#dev-quotidien"); if(bqt) bqt.addEventListener("click", devQuotidien);
@@ -809,6 +827,17 @@ function monterDev(){
     .dev-onglets{ display:flex; gap:6px; border-bottom:1px solid #2a3550; margin-bottom:14px; }
     .dev-onglet{ background:none; border:none; border-bottom:2px solid transparent; color:#8b95a8; font-weight:600; padding:6px 10px; cursor:pointer; }
     .dev-onglet.actif{ color:#ff8a3d; border-bottom-color:#ff8a3d; }
+    /* v2.26 — la liste des personnages */
+    .dev-table-defile{ overflow-x:auto; max-height:60vh; overflow-y:auto; }
+    .dev-table{ width:100%; border-collapse:collapse; font-size:13px; }
+    .dev-table th{ text-align:left; color:#8b95a8; font-weight:600; padding:4px 6px; border-bottom:1px solid #2a3550; position:sticky; top:0; background:#141b29; }
+    .dev-table td{ padding:5px 6px; border-bottom:1px solid #1e2738; vertical-align:top; }
+    .dev-lien{ background:none; border:none; color:#7fb8ff; font-weight:600; cursor:pointer; padding:0; text-align:left; }
+    .dev-pastille{ display:inline-block; font-size:11px; padding:1px 6px; border-radius:8px; margin:1px 2px 1px 0; }
+    .dev-pastille.vert{ background:#1f4d2e; color:#9fe0b0; } .dev-pastille.rouge{ background:#4d1f22; color:#ffb0b4; }
+    .dev-pastille.gris{ background:#2a3346; color:#c3cbda; } .dev-pastille.orange{ background:#4d3a1f; color:#ffd29a; }
+    .dev-pastille.bleu{ background:#1f3550; color:#a9cdfa; }
+    .dev-ip{ font-family:"Space Mono",monospace; font-size:12px; }
     .dev-vue[hidden]{ display:none; }
     .dev-note{ font-size:11.5px; color:#8b95a8; line-height:1.45; margin:0 0 10px; }
     .dev-dim{ color:#8b95a8; }
@@ -856,7 +885,7 @@ function monterDev(){
          pendant une reconstruction, un id existe deux fois (bloc neuf ici, ancien
          dans son onglet) ; document.querySelector trouve ainsi le NEUF — c'est
          lui que les chargeurs (Protocole, staff, journal) doivent remplir. -->
-    <div class="dev-stage" hidden><div id="dev-recherche"></div><div id="dev-activ"></div><div id="dev-gouv"></div><div id="dev-journal"></div></div>
+    <div class="dev-stage" hidden><div id="dev-listage"></div><div id="dev-alertes-zone"></div><div id="dev-recherche"></div><div id="dev-activ"></div><div id="dev-gouv"></div><div id="dev-journal"></div></div>
     <div class="dev-onglets">${DEV_ONGLETS.map((o,i)=>`<button class="dev-onglet${i?"":" actif"}" data-dev="${o.id}">${o.nom}</button>`).join("")}</div>
     ${DEV_ONGLETS.map((o,i)=>`<div class="dev-vue" id="dev-t-${o.id}"${i?" hidden":""}>${o.sections.map(s=>`<section class="dev-sec${s.danger?" danger":""}" data-sec="${s.id}"><h3>${s.titre}</h3>${s.note?`<p class="dev-note">${s.note}</p>`:""}<div class="dev-sec-corps"></div></section>`).join("")}</div>`).join("")}
   </div>`;
@@ -1172,4 +1201,102 @@ async function _devSanctions(z, p){
     const d = await staffAction("annuler", p.id);
     fin(d, `suppression du compte de ${p.nom} annulée${d && d.ban_heures ? " (son bannissement continue)" : ""}.`);
   });
+}
+
+/* ===========================================================
+   v2.26 — LA LISTE DE TOUS LES PERSONNAGES (demande des admins, 03/11) : nom, en ligne,
+   création, dernière connexion, dernière activité, mort / pause / prison / banni /
+   suppression prévue, rôle. v2.27 (K144) : l'adresse IP la plus récente et les personnages qui en ont
+   partagé une (un clic les ouvre aussi).
+   Un clic sur un nom ouvre sa fiche (onglet Joueurs). Serveur : admin_liste_personnages
+   (v248, est_admin). 300 personnages au plus, les plus récemment actifs d'abord.
+   =========================================================== */
+function _devListeConstruire(){
+  const z = document.querySelector("#dev-listage"); if(!z || z.dataset.pret) return;
+  z.dataset.pret = "1";
+  z.innerHTML = `<div class="dev-bloc"><h4>Tous les personnages</h4>
+    <div class="dev-champ"><input id="dev-liste-q" placeholder="Filtrer par nom (une partie suffit)…"><button class="mini" id="dev-liste-go">Afficher</button></div>
+    <div id="dev-liste"><p class="dev-note">Clique « Afficher » (sans filtre : tous, les plus récemment actifs d'abord).</p></div></div>`;
+  z.querySelector("#dev-liste-go").addEventListener("click", _devListeCharger);
+  z.querySelector("#dev-liste-q").addEventListener("keydown", e => { if(e.key === "Enter") _devListeCharger(); });
+}
+const _devDate = v => v ? new Date(v).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—";
+function _devIlYa(v){
+  if(!v) return "—";
+  const s = Math.max(0, (Date.now() - new Date(v).getTime()) / 1000);
+  return s < 120 ? "à l'instant" : s < 3600 ? `il y a ${Math.round(s/60)} min` : s < 86400 ? `il y a ${Math.round(s/3600)} h` : `il y a ${Math.round(s/86400)} j`;
+}
+async function _devListeCharger(){
+  const zl = document.querySelector("#dev-liste"); if(!zl) return;
+  const q = ((document.querySelector("#dev-liste-q") || {}).value || "").trim();
+  zl.innerHTML = `<p class="dev-note">Chargement…</p>`;
+  let d = null;
+  try{ const r = await sb.rpc("admin_liste_personnages", { p_recherche: q || null }); d = r.data; if(r.error) d = { ok:false, err:r.error.message }; }catch(e){ d = { ok:false, err:String(e) }; }
+  if(!d || !d.ok){ zl.innerHTML = `<p class="dev-note">Échec : ${echapper((d && d.err) || "?")}</p>`; return; }
+  const L = d.liste || [];
+  const etat = p => [p.en_ligne ? `<span class="dev-pastille vert">en ligne</span>` : "",
+                     p.mort_le ? `<span class="dev-pastille rouge">mort</span>` : "",
+                     p.pause_depuis ? `<span class="dev-pastille gris">en pause</span>` : "",
+                     p.en_prison ? `<span class="dev-pastille orange">prison</span>` : "",
+                     p.banni_jusqua ? `<span class="dev-pastille rouge" title="jusqu'au ${_devDate(p.banni_jusqua)}">banni</span>` : "",
+                     p.suppression_prevue ? `<span class="dev-pastille rouge" title="le ${_devDate(p.suppression_prevue)}">suppression</span>` : "",
+                     p.role_admin ? `<span class="dev-pastille bleu">${echapper(p.role_admin)}</span>` : ""].join(" ");
+  zl.innerHTML = `<p class="dev-note">${L.length} personnage${L.length > 1 ? "s" : ""}${q ? ` pour « ${echapper(q)} »` : ""} · ${d.total} au total${L.length >= 300 ? " (300 affichés au plus : filtre par nom)" : ""}.</p>
+    <div class="dev-table-defile"><table class="dev-table">
+      <thead><tr><th>Nom</th><th>État</th><th>Dernière activité</th><th>Dernière connexion</th><th>Création</th><th>Adresse IP</th></tr></thead>
+      <tbody>${L.map(p => `<tr>
+        <td><button class="dev-lien" data-liste-nom="${echapper(p.nom)}">${echapper(p.nom)}</button><br><span class="dev-note">${echapper(p.faction || "—")} · niv. ${p.niveau ?? "—"}</span></td>
+        <td>${etat(p) || "<span class=\"dev-note\">actif</span>"}</td>
+        <td title="${_devDate(p.derniere_activite)}">${_devIlYa(p.derniere_activite)}</td>
+        <td>${_devDate(p.derniere_connexion)}</td>
+        <td>${_devDate(p.cree_le)}</td>
+        <td>${p.ip ? `<span class="dev-ip">${echapper(p.ip)}</span>${p.nb_ip > 1 ? `<span class="dev-note"> (+${p.nb_ip - 1} autre${p.nb_ip > 2 ? "s" : ""})</span>` : ""}` : `<span class="dev-note">—</span>`}
+            ${(p.partages || []).length ? `<br><span class="dev-pastille orange">partage avec</span> ${(p.partages).map(n => `<button class="dev-lien" data-liste-nom="${echapper(n)}">${echapper(n)}</button>`).join(", ")}` : ""}</td></tr>`).join("")}</tbody></table></div>`;   // v2.27 (K144)
+  zl.querySelectorAll("[data-liste-nom]").forEach(b => b.addEventListener("click", () => {
+    const champ = document.querySelector("#dev-q"); if(champ) champ.value = b.dataset.listeNom;
+    _devMontrerOnglet("joueurs");
+    if(typeof devChercherJoueur === "function") devChercherJoueur();
+  }));
+}
+
+/* ===========================================================
+   v2.28 — LES ALERTES : envois par la Poste (objets, cadeaux, crédits) entre deux personnages
+   liés par l'adresse IP — « même adresse en ce moment » et/ou « ont partagé une adresse depuis … ».
+   Serveur : déclencheur sur `poste`, `admin_alertes` (v250, est_admin). Rien pour un envoi fait
+   en contrôle (K136). 6 mois au plus.
+   =========================================================== */
+function _devAlertesConstruire(){
+  const z = document.querySelector("#dev-alertes-zone"); if(!z || z.dataset.pret) return;
+  z.dataset.pret = "1";
+  z.innerHTML = `<div class="dev-bloc"><h4>Envois suspects</h4>
+    <div class="dev-champ"><select id="dev-alertes-jours"><option value="7">7 derniers jours</option><option value="30" selected>30 derniers jours</option><option value="90">90 derniers jours</option><option value="183">6 mois</option></select>
+      <button class="mini" id="dev-alertes-go">Afficher</button></div>
+    <div id="dev-alertes"><p class="dev-note">Clique « Afficher ».</p></div></div>`;
+  z.querySelector("#dev-alertes-go").addEventListener("click", _devAlertesCharger);
+}
+async function _devAlertesCharger(){
+  const zl = document.querySelector("#dev-alertes"); if(!zl) return;
+  const j = Number((document.querySelector("#dev-alertes-jours") || {}).value) || 30;
+  zl.innerHTML = `<p class="dev-note">Chargement…</p>`;
+  let d = null;
+  try{ const r = await sb.rpc("admin_alertes", { p_jours: j }); d = r.data; if(r.error) d = { ok:false, err:r.error.message }; }catch(e){ d = { ok:false, err:String(e) }; }
+  if(!d || !d.ok){ zl.innerHTML = `<p class="dev-note">Échec : ${echapper((d && d.err) || "?")}</p>`; return; }
+  const L = d.alertes || [];
+  if(!L.length){ zl.innerHTML = `<p class="dev-note">Aucun envoi suspect sur cette période.</p>`; return; }
+  const nomItem = id => { const it = (typeof item === "function") ? item(id) : null; return it ? it.nom : id; };
+  const quoi = x => { const t = x.detail || {};
+    return t.envoi === "credits" ? `<b>${t.montant} ₡</b>` : `<b>${t.quantite || 1} × ${echapper(nomItem(t.item))}</b>${t.envoi === "cadeau" ? " (cadeau)" : t.montant ? ` (contre ${t.montant} ₡)` : ""}`; };
+  const pourquoi = x => [x.meme_ip ? `<span class="dev-pastille rouge">même adresse en ce moment</span>` : "",
+                         x.lien_premier ? `<span class="dev-pastille orange">ont partagé une adresse (depuis le ${_devDate(x.lien_premier)})</span>` : ""].join(" ");
+  zl.innerHTML = `<p class="dev-note">${L.length} envoi${L.length > 1 ? "s" : ""} sur ${j} jours.</p>
+    <div class="dev-table-defile"><table class="dev-table">
+      <thead><tr><th>Quand</th><th>De → à</th><th>Envoi</th><th>Pourquoi</th><th>Adresse de l'envoi</th></tr></thead>
+      <tbody>${L.map(x => `<tr><td>${_devDate(x.quand)}</td>
+        <td><button class="dev-lien" data-liste-nom="${echapper(x.de)}">${echapper(x.de)}</button> → <button class="dev-lien" data-liste-nom="${echapper(x.a)}">${echapper(x.a)}</button></td>
+        <td>${quoi(x)}</td><td>${pourquoi(x)}</td><td><span class="dev-ip">${echapper(x.ip || "—")}</span></td></tr>`).join("")}</tbody></table></div>`;
+  zl.querySelectorAll("[data-liste-nom]").forEach(b => b.addEventListener("click", () => {
+    const champ = document.querySelector("#dev-q"); if(champ) champ.value = b.dataset.listeNom;
+    _devMontrerOnglet("joueurs");
+    if(typeof devChercherJoueur === "function") devChercherJoueur();
+  }));
 }
