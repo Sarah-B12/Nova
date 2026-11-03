@@ -622,3 +622,13 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,138,61,.75); background-clip: padding-box; }
 ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 ::-webkit-scrollbar-corner { background: transparent; }
+
+/* v2.29 — tablettes (retour d'une testeuse) : un appui long ou appuyé lançait la sélection du texte et le menu de
+   l'appui long (Copier, Rechercher…), qui interrompent le geste et bloquent le jeu. Dans les zones de jeu des
+   quêtes ([data-qj-zone]) et des missions : ni sélection, ni menu, ni surbrillance au toucher. Les champs de
+   saisie restent sélectionnables. (Les jeux de piratage : voler.js.) */
+[data-qj-zone], #mi-noeud, #mi-crevasse, #mi-goupilles, #mi-brouillage, #mi-sas, #mi-ronde, #qj-ronde,
+#mi-paroi, #mi-rangement, #mi-tir, #mi-message, #mi-racines, .mi-essai{
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+[data-qj-zone] input, [data-qj-zone] textarea, #mi-noeud input, #mi-sas input{
+  -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }

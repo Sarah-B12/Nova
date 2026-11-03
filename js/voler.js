@@ -254,7 +254,14 @@ async function tenterHacker(){
 }
 
 /* ---------- Mini-jeux de hack (1 au hasard) ---------- */
-function _hackModal(){ let m=document.querySelector("#hack-modale"); if(!m){ m=document.createElement("div"); m.id="hack-modale"; m.hidden=true; document.body.appendChild(m); } return m; }
+/* v2.29 — retour d'une testeuse (tablette) : « si j'appuie trop fort, ça déclenche les raccourcis et ça me bloque
+   le jeu ». Un appui long ou appuyé lançait la sélection du texte et le menu de l'appui long (Copier, Rechercher…),
+   qui interrompent le geste. Dans la fenêtre de piratage : ni sélection, ni menu (sauf dans un champ de saisie). */
+function _hackModal(){ let m=document.querySelector("#hack-modale"); if(!m){ m=document.createElement("div"); m.id="hack-modale"; m.hidden=true; document.body.appendChild(m);
+  const champ = e => e.target && e.target.closest && e.target.closest("input, textarea");
+  m.addEventListener("contextmenu", e => { if(!champ(e)) e.preventDefault(); });
+  m.addEventListener("selectstart", e => { if(!champ(e)) e.preventDefault(); });
+} return m; }
 function _hackClear(){ if(_hackTimer){ clearInterval(_hackTimer); _hackTimer=null; } }
 function _hackFin(ok){ if(_hackCleanup){ try{_hackCleanup();}catch(e){ if(typeof _catchLog==="function") _catchLog(e, "voler.js#1"); } _hackCleanup=null; } _hackClear(); const m=_hackModal(); m.hidden=true; m.innerHTML=""; const cb=ok?_hackWin:_hackLose; _hackWin=_hackLose=null; if(cb) cb(); }
 // Chaque entrée : { t:titre, c:consigne (lue avant de lancer), f:fonction du jeu }
@@ -326,8 +333,9 @@ function _miniLabyrinthe(m){
   const ku=e=>{ if(keys[e.key]!==undefined) keys[e.key]=false; };
   window.addEventListener("keydown",kd); window.addEventListener("keyup",ku);
   m.querySelectorAll(".lab-pad button").forEach(b=>{ const d=b.dataset.d;
-    const on=e=>{ e.preventDefault(); keys[d]=true; }, off=()=>{ keys[d]=false; };
-    b.addEventListener("pointerdown",on); b.addEventListener("pointerup",off); b.addEventListener("pointerleave",off); });
+    const on=e=>{ e.preventDefault(); try{ b.setPointerCapture(e.pointerId); }catch(_){} keys[d]=true; }, off=()=>{ keys[d]=false; };
+    b.addEventListener("pointerdown",on); b.addEventListener("pointerup",off); b.addEventListener("pointerleave",off);
+    b.addEventListener("pointercancel",off); });   // v2.29 : interrompue par la tablette → relâchée, jamais coincée
   function collide(x,y){
     for(const [qx,qy] of [[x-R,y-R],[x+R,y-R],[x-R,y+R],[x+R,y+R]]){
       const c=Math.floor(qx/CS), r=Math.floor(qy/CS);
@@ -514,6 +522,9 @@ function _miniLaser(m){
   const move=e=>{ const r=area.getBoundingClientRect();
     tx=Math.max(R,Math.min(W-R,(e.clientX-r.left)*(W/r.width))); ty=Math.max(R,Math.min(H-R,(e.clientY-r.top)*(H/r.height))); };
   area.addEventListener("pointermove",move);
+  // v2.29 : au toucher, la cible part tout de suite, et le doigt reste « tenu » même s'il glisse hors du cadre.
+  const down=e=>{ e.preventDefault(); try{ area.setPointerCapture(e.pointerId); }catch(_){} move(e); };
+  area.addEventListener("pointerdown",down);
   function hit(){ dead=true; deadT=performance.now(); px=PAD/2; py=H/2; tx=px; ty=py; dot.classList.add("mort"); dot.style.left=(px-R)+"px"; dot.style.top=(py-R)+"px"; }
   let raf=null, t0=performance.now(); const _pi={};   // v2.00 : pasImage
   function frame(now){
@@ -537,7 +548,7 @@ function _miniLaser(m){
     } else if(now-deadT>500){ dead=false; dot.classList.remove("mort"); }
     raf=requestAnimationFrame(frame);
   }
-  _hackCleanup=()=>{ area.removeEventListener("pointermove",move); if(raf) cancelAnimationFrame(raf); };
+  _hackCleanup=()=>{ area.removeEventListener("pointermove",move); area.removeEventListener("pointerdown",down); if(raf) cancelAnimationFrame(raf); };
   raf=requestAnimationFrame(frame);
   _hackChrono(m, 22000 + Math.round((typeof agiliteEffective==="function"?agiliteEffective():0)*35));
 }
@@ -828,6 +839,10 @@ function _hackStyle(){
     .vol-prison{ border:1px solid rgba(255,82,87,.5); background:rgba(255,82,87,.10); color:#ff8f92; border-radius:var(--r-s); padding:14px; line-height:1.5; }
     #hack-modale{ position:fixed; inset:0; z-index:300; background:rgba(4,8,20,.78); display:grid; place-items:center; padding:20px; }
     #hack-modale[hidden]{ display:none; }
+    /* v2.29 — tablettes : ni sélection, ni menu de l'appui long, ni surbrillance au toucher dans les jeux de piratage */
+    #hack-modale{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+    #hack-modale input, #hack-modale textarea{ -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
+    .lab-scene, .lab-pad, .pf-svg{ touch-action:none; }
     .hk-cadre{ min-width:280px; max-width:440px; }
     .hk-chrono{ font-family:"Space Mono",monospace; color:var(--orange-hi,#ffb060); }
     .hk-sous{ color:var(--sourdine); font-size:13px; margin:6px 0 10px; }
