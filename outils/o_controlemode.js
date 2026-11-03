@@ -29,6 +29,13 @@
     reponse = { ok:false, err:"lecture", detail:"Invalid API key" }; alerte = null;
     await controlePrendre(FICHE); await att(40);
     r.erreurLecture = alerte;
+    // K141 — hors contrôle, pas de section « supprimés », et le serveur n'est même pas interrogé
+    { let demande = false; const rpcS = sb.rpc; sb.rpc = (n, a) => { if(n === "messages_supprimes_controle") demande = true; return rpcS(n, a); };
+      const fromS = sb.from; sb.from = t => { const q = { select(){ return q; }, eq(){ return q; }, gte(){ return q; }, order(){ return q; }, limit(){ return Promise.resolve({ data:[], count:0, error:null }); }, in(){ return Promise.resolve({ data:[] }); } }; return q; };
+      const zm = document.createElement("div"); document.body.appendChild(zm); msgVue = "recus";
+      await _rendreMessages(zm);
+      r.supprimesHorsControle = { pasDeSection: !/Supprimés par le joueur/.test(zm.textContent), pasDemande: !demande };
+      sb.rpc = rpcS; sb.from = fromS; zm.remove(); }
     // K138 — hors contrôle, rien ne change : pas de marque, tout est sauvegardé
     journal("Une ligne ordinaire.");
     r.journalOrdinaire = { marque: !!(etat.journal[0] && etat.journal[0].ctrl), sauvee: (_etatSansStocks().journal || []).some(e => e.t === "Une ligne ordinaire.") };
@@ -61,6 +68,21 @@
     let maj = false; const f0 = sb.from; sb.from = t => ({ update(){ maj = true; return { eq: async () => ({}) }; }, select(){ return this; }, eq(){ return this; } });
     try{ _msgRecusCache = [{ id:5, lu:false, de:"X", objet:"o", texte:"t", cree_le:new Date().toISOString() }]; await ouvrirMessage("recus", 0); }catch(e){}
     sb.from = f0; r.messagePasLu = !maj;
+    // K141 — la messagerie : les messages supprimés, en contrôle seulement
+    const rpcSup = sb.rpc;
+    sb.rpc = async (n, a) => n === "messages_supprimes_controle"
+      ? { data:{ ok:true, messages:[{ id:9, de:"Ami", objet:"Rendez-vous", texte:"Ce soir au bar ?", cree_le:new Date(Date.now() - 864e5).toISOString(), efface_le:new Date().toISOString() }] }, error:null }
+      : rpcSup(n, a);
+    const fromSup = sb.from;
+    sb.from = t => { const q = { select(){ return q; }, eq(){ return q; }, gte(){ return q; }, order(){ return q; }, limit(){ return Promise.resolve({ data:[], count:0, error:null }); }, in(){ return Promise.resolve({ data:[] }); } }; return q; };
+    sessionActuelle = async () => ({ user:{ id:"cible" } });
+    const zm = document.createElement("div"); document.body.appendChild(zm); msgVue = "recus";
+    await _rendreMessages(zm);
+    r.supprimes = { section: /Supprimés par le joueur \(5 derniers jours\)/.test(zm.textContent), ligne: /Rendez-vous.*De Ami · supprimé le/.test(zm.textContent.replace(/\s+/g, " ")) };
+    const bo = zm.querySelector("[data-open-supp]"); if(bo){ bo.click(); await att(20); }
+    const mo = document.querySelector("#msg-modal") || _msgModal();
+    r.supprimes.lecture = /supprimé par le joueur le/.test(mo.textContent) && !mo.querySelector("[data-suppr]") && !mo.querySelector("[data-rep]");
+    sb.rpc = rpcSup; sb.from = fromSup; zm.remove();
     // la console ne s'ouvre jamais ici, même pour un compte du staff
     etat.roleAdmin = "dev"; await ouvrirDev(); const md = document.querySelector("#dev-modale");
     r.consoleBloquee = !md || md.hidden; etat.roleAdmin = null;

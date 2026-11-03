@@ -266,7 +266,12 @@ function _mCarte(m){
     const issue = { reussi:"réussie", rate:"ratée", lance:"en cours" }[g.statut] || "terminée";
     h += `<p class="vide">Tu as pris part à cette mission (${m.mon_statut === "abandon" ? "abandonnée" : issue}). Tu attendras la prochaine.</p>`;
     // v2.11 (v235) : une mission finie ne reste affichée que si quelque chose t'y attend.
-    if(g.statut === "reussi" || g.statut === "rate") h += `<p class="vide">Récupère ce qui t'attend, en haut de la liste : la mission disparaîtra ensuite.</p>`;
+    if(g.statut === "reussi" || g.statut === "rate"){
+      // v2.24 (K142) : la mission reste une journée ; un gain en attente la garde jusqu'à ce qu'il soit pris.
+      const gain = ((_missions && _missions.gains) || []).some(x => x.mission === m.nom);
+      h += gain ? `<p class="vide">Récupère ce qui t'attend, en haut de la liste : la mission disparaîtra ensuite.</p>`
+                : `<p class="vide">Elle restera ici jusqu'à demain, le temps de relire son fil.</p>`;
+    }
     h += _mFil(m);
   } else if(!m.secrete && m.statut === "recrutement"){
     if(m.refus) h += `<p class="vide">${m.refus === "niveau" ? `Il faut le niveau ${m.niveau_min} pour cette mission.` : (MISSION_ERREURS[m.refus] || "Tu ne peux pas y prendre part.")}</p>`;
@@ -969,7 +974,15 @@ function _mCasse(m, g){
   }
   if(v.mon_poste === "crocheteur" && !f.crocheteur) h += `<div id="mi-goupilles" data-mi-mission="${m.id}">${_mEssaiPorte("goupilles", m.id, _mEssais.goupilles ? _mGoupillesHtml() : "")}</div>`;   // v2.17
   else if(v.mon_poste === "guetteur" && !f.guetteur) h += `<div id="mi-brouillage" data-mi-mission="${m.id}">${_mBrouillageHtml()}</div>`;
-  else h += `<p class="vide">Personne ne quitte la cité.</p>`;
+  else {
+    /* v2.23b — retour d'une testeuse (guetteuse, brouillage réussi : « je n'ai pas le bouton pour la suite ») :
+       « Vider les vitrines » n'apparaît qu'une fois la serrure ET le brouillage réussis. On dit ce qui reste, et à qui. */
+    const pt = v.postes_tenus || {}, qui = p => pt[p] ? ` (${echapper(pt[p])})` : "";
+    const reste = [!f.crocheteur ? `la serrure — le crocheteur${qui("crocheteur")}` : null,
+                   !f.guetteur ? `le brouillage — le guetteur${qui("guetteur")}` : null].filter(Boolean);
+    const fait = [f.crocheteur ? "La serrure est ouverte." : null, f.guetteur ? "Les drones sont brouillés." : null].filter(Boolean).join(" ");
+    h += `<p class="vide">${fait ? fait + " " : ""}Il reste ${reste.join(" et ")}. Ensuite, chacun pourra vider les vitrines. Personne ne quitte la cité.</p>`;
+  }
   return h;
 }
 

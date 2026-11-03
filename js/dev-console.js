@@ -928,6 +928,7 @@ function _devAfficherFiche(p){
         <button class="mini" id="f-pause">${p.en_pause ? "Réveiller" : "Mettre en pause"}</button>
         ${p.en_prison ? `<button class="mini" id="f-prison">Sortir de prison</button>` : ""}
         <button class="mini danger" id="f-controle" title="v2.20 : jouer à sa place, dans un nouvel onglet (K136)">Prendre la main</button>
+        <span id="f-sanctions"></span>
       </div>
     </div>
 
@@ -1011,6 +1012,9 @@ function _devAfficherFiche(p){
     if(error || !data || !data.ok){ alert("Échec : "+((data&&data.err)||(error&&error.message)||"?")); return; }
     journal(`[STAFF] ${p.nom} remis à 100 %.`,"gain"); rafraichir();
   });
+
+  // v2.22 — bannir, supprimer (K139, K140) : l'état du joueur, puis les bons boutons.
+  _devSanctions(z, p);
 
   // v2.20 — le mode contrôle (K136) : controle.js.
   const bfc = z.querySelector("#f-controle");
@@ -1121,5 +1125,51 @@ function _devAfficherFiche(p){
     }).join("");
     zj.innerHTML = `<div style="max-height:300px;overflow:auto;font-size:11px;line-height:1.6">${lignes||'<p class="dev-note">Journal vide.</p>'}</div>
       <p class="dev-note">${data.total} entrées au total.</p>`;
+  });
+}
+
+/* v2.22 — BANNIR, LEVER, SUPPRIMER, ANNULER (K139, K140), dans la fiche du personnage recherché.
+   L'état vient de admin_sanctions (v244) ; les gestes passent par la fonction serveur `controle`. */
+async function _devSanctions(z, p){
+  const zone = z.querySelector("#f-sanctions"); if(!zone || typeof staffAction !== "function") return;
+  let st = null;
+  try{ const { data } = await sb.rpc("admin_sanctions", { p_profil: p.id }); st = data; }catch(e){}
+  if(!st || !st.ok){ zone.innerHTML = `<span class="dev-note">(sanctions : état illisible)</span>`; return; }
+  const b = st.banni, s = st.suppression;
+  zone.innerHTML = (b ? `<span class="dev-note" style="color:#ff8a3d">Banni jusqu'au ${_staffDate(b.jusqua)} — ${echapper(b.motif || "")}</span>
+                         <button class="mini" id="f-lever">Lever le bannissement</button>`
+                      : `<button class="mini danger" id="f-bannir">Bannir…</button>`)
+                 + (s ? ` <span class="dev-note" style="color:#ff5257">Suppression prévue le ${_staffDate(s.prevue_le)}</span>
+                         <button class="mini" id="f-annuler-supp">Annuler la suppression</button>`
+                      : ` <button class="mini danger" id="f-supprimer">Supprimer le compte…</button>`);
+  const fin = (d, ok) => { if(!d || !d.ok){ alert("Refusé : " + staffErreur(d)); return; } journal("[STAFF] " + ok, "alerte"); _devSanctions(z, p); };
+  const bb = zone.querySelector("#f-bannir");
+  if(bb) bb.addEventListener("click", async () => {
+    const j = prompt(`Bannir ${p.nom} combien de jours ? (1 à 90)\nSon personnage sera mis en pause.`, "3"); if(j === null) return;
+    const jours = Math.round(Number(j)); if(!(jours >= 1 && jours <= 90)){ alert(CONTROLE_ERREURS.jours); return; }
+    const motif = prompt(`Motif du bannissement de ${p.nom} (obligatoire — le joueur le lira) :`, ""); if(motif === null) return;
+    if(motif.trim().length < 3){ alert(CONTROLE_ERREURS.motif); return; }
+    const d = await staffAction("bannir", p.id, { jours, motif:motif.trim() });
+    fin(d, `${p.nom} banni ${jours} jour${jours > 1 ? "s" : ""}.`);
+  });
+  const bl = zone.querySelector("#f-lever");
+  if(bl) bl.addEventListener("click", async () => {
+    if(!confirm(`Lever le bannissement de ${p.nom} ?`)) return;
+    const d = await staffAction("lever", p.id);
+    fin(d, `bannissement de ${p.nom} levé${d && d.suppression ? " (le compte reste bloqué : une suppression est en cours)" : ""}.`);
+  });
+  const bs = zone.querySelector("#f-supprimer");
+  if(bs) bs.addEventListener("click", async () => {
+    const n = prompt(`SUPPRIMER le compte de ${p.nom} ?\n\nLe compte est bloqué tout de suite et le personnage mis en pause ; tout sera effacé dans 3 jours (annulable d'ici là).\n\nPour confirmer, tape exactement son nom :`, "");
+    if(n === null) return;
+    if(n.trim() !== p.nom){ alert("Le nom ne correspond pas : rien n'est fait."); return; }
+    const d = await staffAction("supprimer", p.id);
+    fin(d, `suppression du compte de ${p.nom} demandée${d && d.prevue_le ? " (effective le " + _staffDate(d.prevue_le) + ")" : ""}.`);
+  });
+  const ba = zone.querySelector("#f-annuler-supp");
+  if(ba) ba.addEventListener("click", async () => {
+    if(!confirm(`Annuler la suppression du compte de ${p.nom} ?`)) return;
+    const d = await staffAction("annuler", p.id);
+    fin(d, `suppression du compte de ${p.nom} annulée${d && d.ban_heures ? " (son bannissement continue)" : ""}.`);
   });
 }

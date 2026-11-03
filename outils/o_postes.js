@@ -61,8 +61,12 @@
   // 6. v2.11 — la brèche dit quand le coffre se scelle ; une mission finie qui attend un gain le dit
   div.innerHTML = _mInfiltration({ id:3, coffre, vue:{ phase:"breche", limite:"2026-11-02" } });
   r.brecheCoffre = /reste ouvert jusque-là/.test(div.textContent) && /il est scellé/.test(div.textContent);
+  _missions = { ...(_missions || {}), gains:[{ id:1, item:"cape", qte:1, mission:"Le satellite" }] };
   div.innerHTML = _mCarte({ id:9, type:"satellite", nom:"Le satellite", revele:true, deja:true, mon_groupe:6, mon_statut:"actif", groupes:[{ id:6, statut:"reussi", membres:[] }] });
   r.finieAvecGain = /la mission disparaîtra ensuite/.test(div.textContent);
+  _missions = { ...(_missions || {}), gains:[] };   // v2.24 (K142) : sans gain, elle reste jusqu'au lendemain
+  div.innerHTML = _mCarte({ id:9, type:"satellite", nom:"Le satellite", revele:true, deja:true, mon_groupe:6, mon_statut:"actif", groupes:[{ id:6, statut:"rate", membres:[] }] });
+  r.finieSansGain = /restera ici jusqu'à demain/.test(div.textContent) && !/Récupère/.test(div.textContent);
   // 7. v2.13 — le dépôt : la quantité ne dépasse pas ce qu'on a
   etat.sac = { ...(etat.sac || {}), lingot_cendrite:4, cuir:9 };
   const cof2 = { ...coffre, sortes:[{ id:"crochet", nom:"Crochets", recettes:[{ lingot_cendrite:1 }], unites:0, min:2, max:6 }, { id:"cape", nom:"Capes", recettes:[{ cuir:2, biofil_renforce:1 }], unites:0, min:2, max:6 }] };
@@ -105,7 +109,17 @@
   const tLendemain = rep(jourAvant), tMemeJour = rep(aujIso);
   r.retenter = { lendemain: /peut se retenter, dès aujourd'hui, et jusqu'au/.test(tLendemain), memeJour: /peut se retenter, pas avant demain/.test(tMemeJour),
                  meneurNomme: /Seul le meneur, Kyraa, peut relancer le casse\./.test(tLendemain) };
-  // 11. Les messages d'erreur nouveaux
+  // 11. v2.23b — en attendant l'autre poste : ce qui reste, et à qui
+  const pt = { crocheteur:"Kyraa", guetteur:"Vortex" };
+  div.innerHTML = C({ phase:"casse", cible:fac, mon_poste:"guetteur", postes_tenus:pt, casse:{ faits:{ guetteur:true } } });
+  let tc = div.textContent.replace(/\s+/g, " ");
+  r.attente = { guetteur: /Les drones sont brouillés\. Il reste la serrure — le crocheteur \(Kyraa\)\. Ensuite, chacun pourra vider les vitrines\./.test(tc) };
+  div.innerHTML = C({ phase:"casse", cible:fac, mon_poste:null, postes_tenus:pt, casse:{ faits:{} } });
+  tc = div.textContent.replace(/\s+/g, " ");
+  r.attente.ombre = /Il reste la serrure — le crocheteur \(Kyraa\) et le brouillage — le guetteur \(Vortex\)\./.test(tc);
+  div.innerHTML = C({ phase:"casse", cible:fac, mon_poste:"guetteur", postes_tenus:pt, casse:{ faits:{ guetteur:true, crocheteur:true } } });
+  r.attente.vider = !!div.querySelector("[data-mi-vider]");
+  // 12. Les messages d'erreur nouveaux
   r.erreurs = [MISSION_ERREURS.poste_fige, MISSION_ERREURS.postes_vides];
   return r;
 })();

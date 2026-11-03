@@ -31,6 +31,7 @@ async function veilleMinute(){
     else if(typeof _catchLog === "function") _catchLog((r && r.error) || new Error("veille : réponse vide"), "veille.js");
     return _veilleAncienne();
   }
+  if(d.banni && typeof compteSuspendu === "function"){ compteSuspendu(d.banni); return; }   // v2.22 (K139)
   if(typeof _prisonAppliquer === "function") _prisonAppliquer(d.prison);
   if(typeof _effetsAppliquer === "function") await _effetsAppliquer(d.effets);
   if(typeof _evenementsAppliquer === "function") await _evenementsAppliquer(d.evenements);

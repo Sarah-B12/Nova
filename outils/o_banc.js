@@ -50,6 +50,7 @@ const DELAIS = {
   correctifs200: { profil: 50, sac: 50, jauges: 50 },   // v2.00 : retours du 29/10, 2e série (o_correctifs200.js)
   parloir: { profil: 50, sac: 50, jauges: 50 },   // v2.01 : la prison comme un parloir, K114 (o_parloir.js)
   ptsfab: { profil: 50, sac: 50, jauges: 50 },    // v2.02 : points de formation selon le coût (o_ptsfab.js)
+  sanctions: { profil: 50, sac: 50, jauges: 50 },  // v2.22 : bannir, supprimer (o_sanctions.js)
   controlemode: { profil: 50, sac: 50, jauges: 50 }, // v2.20 : le mode contrôle (o_controlemode.js)
   console: { profil: 50, sac: 50, jauges: 50 },    // v2.18 : console, prison et Fléau (o_console.js)
   retour: { profil: 50, sac: 50, jauges: 50 },     // v2.18 : le carburant du retour (o_retour.js)

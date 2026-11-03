@@ -178,6 +178,7 @@ function basculerAuth(mode){
 function validerAuth(){ if(_authMode==="inscription") inscrire(); else connecter(); }
 function _authMsg(e){ const m=(e&&e.message)||"", l=m.toLowerCase();
   if(l.includes("already registered")||l.includes("already been")) return "Cet e-mail a déjà un compte — connecte-toi.";
+  if(l.includes("banned") || l.includes("user_banned")) return "Ton compte est suspendu pour le moment.";   // v2.22 (K139)
   if(l.includes("invalid login")) return "E-mail ou mot de passe incorrect.";
   if(l.includes("database error")) return "Ce pseudo est peut-être déjà pris. Essaies-en un autre.";
   if(l.includes("password")) return "Mot de passe trop court (6 caractères minimum).";

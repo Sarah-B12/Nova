@@ -313,8 +313,36 @@ async function _chargerMessages(){
   const noms={};
   if(ids.size){ const { data:pubs } = await sb.from("profils_publics").select("id,nom").in("id",[...ids]); for(const p of (pubs||[])) noms[p.id]=p.nom; }
   out.recus   = rec.map(m=>({ ...m, ts:new Date(m.cree_le).getTime(), de:noms[m.de_id]||"(inconnu)" }));
+  // v2.23 (K141) — en CONTRÔLE seulement : les messages reçus que le joueur a supprimés (5 derniers jours).
+  // Le serveur refuse hors d'une session de contrôle (messages_supprimes_controle, v245).
+  out.supprimes = [];
+  if(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE){
+    try{ const { data } = await sb.rpc("messages_supprimes_controle");
+         if(data && data.ok) out.supprimes = (data.messages||[]).map(m=>({ ...m, ts:new Date(m.cree_le).getTime(), tsSupp:new Date(m.efface_le).getTime() })); }
+    catch(e){ if(typeof _catchLog==="function") _catchLog(e, "comm.js#supprimes"); }
+  }
   out.envoyes = env.map(m=>({ ...m, ts:new Date(m.cree_le).getTime(), a: noms[m.a_id]||"(inconnu)" }));
   return out;
+}
+/* v2.23 (K141) — la section des messages supprimés, dans l'onglet de contrôle seulement. */
+let _msgSupprimesCache = [];
+function _msgSectionSupprimes(){
+  if(!(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE) || msgVue !== "recus" || !_msgSupprimesCache.length) return "";
+  const quand = ts => new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  return `<h4 class="msg-supp-titre">Supprimés par le joueur (5 derniers jours) <span class="itip-gris">— le joueur ne les voit pas</span></h4>
+    <div class="msg-liste">${_msgSupprimesCache.map((m,i)=>`<div class="msg-ligne msg-supprime">
+      <button class="msg-item" data-open-supp="${i}"><span class="msg-obj">${(m.objet||"(sans objet)").replace(/</g,"&lt;")}</span>
+      <span class="msg-qui">De ${echapper(m.de||"?")} · <b>supprimé</b> le ${quand(m.tsSupp)}</span></button></div>`).join("")}</div>`;
+}
+function _msgOuvrirSupprime(i){
+  const m = _msgSupprimesCache[i]; if(!m) return;
+  const modal = _msgModal();
+  const quand = ts => new Date(ts).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  modal.innerHTML = `<div class="picker-cadre msg-cadre"><div class="picker-tete"><b>${(m.objet||"(sans objet)").replace(/</g,"&lt;")}</b><button class="mini" data-fermer="1">Fermer</button></div>
+    <div class="msg-corps"><p class="itip-gris">De <b>${echapper(m.de||"?")}</b> · reçu le ${quand(m.ts)} · <b style="color:#ff8a3d">supprimé par le joueur le ${quand(m.tsSupp)}</b></p>
+    <p style="white-space:pre-wrap; line-height:1.55">${(m.texte||"").replace(/</g,"&lt;")}</p></div></div>`;
+  modal.hidden = false;
+  modal.querySelector("[data-fermer]").addEventListener("click", () => { modal.hidden = true; });
 }
 function vueMessages(recus, envoyes){
   const nNL=recus.filter(m=>!m.lu).length;
@@ -336,7 +364,7 @@ function vueMessages(recus, envoyes){
       <button class="mini" id="msg-envoyer">Envoyer</button></div>`;
   }
   const liste = msgVue==="recus"?recus:envoyes;
-  if(!liste.length) return h+`<p class="vide">Aucun message ${msgVue==="recus"?"reçu":"envoyé"}.</p>`;
+  if(!liste.length) return h+`<p class="vide">Aucun message ${msgVue==="recus"?"reçu":"envoyé"}.</p>` + _msgSectionSupprimes();   // v2.23
   h+=`<div class="msg-liste">`;
   liste.forEach((m,i)=>{
     const qui = msgVue==="recus"?("De "+m.de):("À "+m.a);
@@ -353,13 +381,14 @@ function vueMessages(recus, envoyes){
   if(liste.length < total){
     h += `<button class="mini msg-plus" id="msg-plus">Plus anciens (${total - liste.length} restant${total-liste.length>1?"s":""})</button>`;
   }
-  return h+`</div>`;
+  return h+`</div>` + _msgSectionSupprimes();   // v2.23
 }
 async function _rendreMessages(z){
-  const { recus, envoyes } = await _chargerMessages();
-  _msgRecusCache=recus; _msgEnvoyesCache=envoyes;
+  const { recus, envoyes, supprimes } = await _chargerMessages();
+  _msgRecusCache=recus; _msgEnvoyesCache=envoyes; _msgSupprimesCache = supprimes || [];   // v2.23
   z.innerHTML = vueMessages(recus, envoyes);
   brancherMessages(z);
+  z.querySelectorAll("[data-open-supp]").forEach(b => b.addEventListener("click", () => _msgOuvrirSupprime(+b.dataset.openSupp)));   // v2.23
   compterNotifs();
 }
 // Brouillons : les redessins de panneau ne doivent pas effacer une saisie en cours.
@@ -752,6 +781,9 @@ function _commStyle(){
     .msg-liste{ display:flex; flex-direction:column; gap:4px; }
     .msg-item{ display:flex; justify-content:space-between; gap:12px; align-items:baseline; background:none; border:1px solid var(--line); border-radius:8px; padding:9px 12px; cursor:pointer; text-align:left; font:inherit; color:var(--texte); flex-wrap:wrap; }
     .msg-item:hover{ border-color:var(--bleu); }
+    /* v2.23 (K141) — les messages supprimés, en contrôle seulement */
+    .msg-supp-titre{ margin:14px 0 6px; font-size:14px; }
+    .msg-supprime .msg-item{ opacity:.6; border-style:dashed; }
     .msg-item.nonlu{ border-left:3px solid var(--orange); }
     .msg-item.nonlu .msg-obj{ font-weight:700; }
     .msg-obj{ color:var(--texte); } .msg-qui{ color:var(--sourdine); font-size:12px; }

@@ -23,7 +23,10 @@ const CONTROLE_ERREURS = {
   en_ligne:"Ce joueur est en ligne : on ne prend pas la main sur un personnage connecté.",
   deja_controle:"Un autre membre du staff a déjà la main sur ce personnage.",
   compte:"Le compte de ce joueur est introuvable.", lien:"La session n'a pas pu s'ouvrir.", session:"La prise de main n'a pas pu s'inscrire.",
-  lecture:"Le serveur n'a pas pu lire les profils"
+  lecture:"Le serveur n'a pas pu lire les profils",
+  // v2.22 — bannir, supprimer
+  jours:"Entre 1 et 90 jours.", motif:"Un motif est obligatoire (3 à 300 caractères) : le joueur le lira.",
+  suspension:"Supabase n'a pas pu suspendre le compte", action:"Action inconnue."
 };
 
 /* ---------- Côté console : « Prendre la main » ---------- */
@@ -90,4 +93,36 @@ async function controleRendre(){
   try{ await sb.auth.signOut({ scope:"local" }); }catch(e){}
   _controleEchec(`Tu as rendu la main${c && c.nom ? " sur " + echapper(c.nom) : ""}.`);
   try{ window.close(); }catch(e){}
+}
+
+/* ===========================================================
+   v2.22 — BANNIR, SUPPRIMER (K139, K140) : les gestes du staff passent par la même fonction
+   serveur `controle` (action « bannir », « lever », « supprimer », « annuler »).
+   =========================================================== */
+async function staffAction(action, cible, extra){
+  const s = await sessionActuelle(); if(!s) return { ok:false, err:"non_connecte" };
+  try{
+    const r = await fetch(SB_URL + "/functions/v1/controle", { method:"POST",
+      headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + s.access_token, "apikey":SB_KEY },
+      body:JSON.stringify(Object.assign({ action, cible }, extra || {})) });
+    return (await r.json().catch(() => null)) || { ok:false, err:"erreur " + r.status };
+  }catch(e){ return { ok:false, err:"injoignable" }; }
+}
+function staffErreur(d){
+  const m = CONTROLE_ERREURS[d && d.err] || (d && d.err === "injoignable" ? "La fonction serveur « controle » ne répond pas." : ((d && d.err) || "?"));
+  return m + (d && d.detail ? ` (${d.detail})` : "");
+}
+const _staffDate = iso => { const d = new Date(iso); return isNaN(d) ? "?" : d.toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }); };
+
+/* La veille dit au joueur qu'il est suspendu (K139 A) : il le lit, puis il est déconnecté. Le message
+   reste aussi dans son journal (le serveur l'y a déposé). Une suppression en cours : « suspendu », sans plus. */
+let _suspenduVu = false;
+async function compteSuspendu(b){
+  if(_suspenduVu || !b) return; _suspenduVu = true;
+  const msg = b.suppression ? "Ton compte est suspendu."
+            : `Ton compte est suspendu jusqu'au ${_staffDate(b.jusqua)}.${b.motif ? " Motif : " + b.motif : ""}`;
+  try{ if(typeof alerterJoli === "function") await alerterJoli("Compte suspendu", msg, "OK"); else alert(msg); }catch(e){}
+  try{ if(typeof sauverMaintenant === "function") await sauverMaintenant(); }catch(e){}
+  try{ if(typeof seDeconnecter === "function") await seDeconnecter(); }catch(e){}
+  location.reload();
 }
