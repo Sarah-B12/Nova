@@ -64,17 +64,39 @@ async function debrisCharger(){
 }
 rythme("debris", 600000, debrisCharger, { auRetour:true });   // v2.07 : le rythme (serveur.js) ; relu à chaque retour, comme avant
 
-/* ---------- La visière (chaud / froid) ---------- */
+/* ---------- La visière (chaud / froid) ----------
+   v2.30 — retour de l'autrice : « la jauge est à X % à un endroit, je pars, je reviens au même endroit,
+   elle est totalement différente ». Le serveur est juste (la distance au point, sans hasard ; le point ne
+   bouge qu'après une fouille), mais il n'accepte qu'UNE mesure toutes les 2 s : en se déplaçant plus vite,
+   la mesure du nouvel endroit était REFUSÉE (trop_vite) et la jauge GARDAIT celle de l'endroit d'avant ;
+   une mesure déjà en route faisait de même abandonner la suivante. Désormais : la position finale est
+   TOUJOURS mesurée (on refait la mesure dès que le serveur l'accepte), et tant qu'elle ne l'est pas, la
+   jauge s'affiche grisée, « mesure… », au lieu de montrer l'ancien endroit. */
+let _debrisRefaire = false, _debrisMinuteur = null, _debrisBavard = false;
+function _debrisRelancer(delai){
+  if(_debrisMinuteur) clearTimeout(_debrisMinuteur);
+  _debrisMinuteur = setTimeout(() => { _debrisMinuteur = null; debrisSonder(_debrisBavard); }, delai);
+}
 async function debrisSonder(bavard){
-  if(!debrisIci() || _debris.fini || _debrisSondeEnCours) return;
+  if(!debrisIci() || _debris.fini) return;
+  if(bavard) _debrisBavard = true;
+  if(_debrisSondeEnCours){ _debrisRefaire = true; return; }        // une mesure en route : on refera celle du dernier endroit
   const p = _debrisPosIci(); if(!p) return;
-  _debrisSondeEnCours = true;
+  _debrisSondeEnCours = true; _debrisRefaire = false;
   try{
     const { data, error } = await sb.rpc("debris_sonder", { p_x:Math.round(p.x), p_y:Math.round(p.y) });
-    if(error || !data) return;
-    if(!data.ok){ if(data.err === "aucun"){ _debris = { actif:false }; majDebris(); } return; }   // trop_vite : on garde l'affichage
+    if(error || !data){ _debrisRelancer(4000); return; }
+    if(!data.ok){
+      if(data.err === "aucun"){ _debris = { actif:false }; majDebris(); }
+      else if(data.err === "trop_vite") _debrisRelancer(2100);       // refusée : on la refait dès que le serveur l'accepte
+      return;
+    }
     if(!data.ici) return;
-    if(data.fini){ _debris.fini = true; majDebris(); return; }
+    if(data.fini){ _debris.fini = true; _debris.enAttente = false; majDebris(); return; }
+    // une mesure partie d'un endroit que l'on a déjà quitté ne compte pas : la suivante dira le vrai
+    const p2 = _debrisPosIci();
+    if(p2 && (Math.round(p2.x) !== Math.round(p.x) || Math.round(p2.y) !== Math.round(p.y))){ _debrisRefaire = true; return; }
+    bavard = _debrisBavard; _debrisBavard = false; _debris.enAttente = false;
     _debris.palier = data.palier; _debris.tendance = data.tendance; _debris.surPoint = !!data.sur_point;
     if(bavard){
       const mot = _debrisMot(data.palier);
@@ -84,10 +106,17 @@ async function debrisSonder(bavard){
     }
     majDebris();
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "debris.js#sonder"); }
-  finally{ _debrisSondeEnCours = false; }
+  finally{
+    _debrisSondeEnCours = false;
+    if(_debrisRefaire){ _debrisRefaire = false; _debrisRelancer(2100); }   // v2.30 : le dernier endroit sera mesuré
+  }
 }
 /* Appelée par voyager() (carte.js) et voyagerBraise() (braise.js). */
-function debrisApresDeplacement(){ if(debrisIci() && !_debris.fini) debrisSonder(true); }
+function debrisApresDeplacement(){
+  if(!debrisIci() || _debris.fini) return;
+  if(_debris.palier !== undefined && _debris.palier !== null){ _debris.enAttente = true; majDebris(); }   // v2.30 : pas encore mesuré ici
+  debrisSonder(true);
+}
 
 /* ---------- La fouille ---------- */
 async function debrisFouiller(){
@@ -160,6 +189,9 @@ function _debrisPanneauHtml(){
   const sens = _debris.tendance === "chaud" ? " · ↑ plus chaud" : _debris.tendance === "froid" ? " · ↓ plus froid" : _debris.tendance === "egal" ? " · = pareil" : "";
   const btn = _debris.surPoint ? `<button class="mini debris-fouiller">Fouiller — ${DEBRIS_COUT} % énergie</button>` : "";
   const w = (typeof jaugeChaleur === "function") ? jaugeChaleur(i, _debris.surPoint) : Math.round((i+1)/6*85);   // v1.33d : pleine seulement sur le point
+  if(_debris.enAttente)   // v2.30 : la nouvelle position n'est pas encore mesurée — on ne montre pas l'ancienne comme si c'était celle-ci
+    return tete + `<div class="debris-thermo" style="opacity:.35"><i style="width:${w}%"></i></div>
+      <div class="debris-ligne"><span class="itip-gris">La visière mesure…</span></div>`;
   return tete + `<div class="debris-thermo"><i style="width:${w}%"></i></div>
     <div class="debris-ligne"><span>Signature thermique : <b>${_debrisMot(i)}</b>${sens}</span>${btn}</div>`;
 }
