@@ -245,7 +245,7 @@ async function _tqPister(cible, nom, apres){
     journal({ aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas.", essais:"Plus d'essai sur cette cible aujourd'hui.",
               energie:"Pas assez d'énergie.", en_prison:"Ta cible est déjà en prison.", indisponible:"Ta cible est hors d'atteinte (morte ou absente).",
               pas_recherche:"Plus aucune prime sur cette tête.", soi_meme:"Tu ne peux pas te traquer toi-même.",
-              prison:"Tu es en prison.", mort:"Tu es mort." }[d && d.err] || "Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","traque");
+              prison:"Tu es en prison.", mort:"Tu es mort." }[d && d.err] || "Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol");
     if(apres) apres(); return;
   }
   if(typeof d.energie==="number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
@@ -253,9 +253,9 @@ async function _tqPister(cible, nom, apres){
   const fin = async (gagne)=>{
     const r = await _tqRpc(()=>sb.rpc("traque_essai_fin", { p_id: d.id, p_reussi: !!gagne }), "essai_fin");
     if(r && r.ok && r.gagne && r.piste)
-      journal(`Trace trouvée : ${nom} était à ${_tqSecteurNom(r.piste.secteur)}, au point ${r.piste.x} · ${r.piste.y}. Rends-toi exactement là, puis Traquer depuis la carte.`,"gain","traque");
-    else if(r && r.ok && r.gagne) journal(`Trace trouvée, mais le signal de ${nom} est brouillé : impossible de le situer.`,"alerte","traque");
-    else journal(`Tu perds la trace de ${nom}. Essais restants aujourd'hui : ${d.essais}.`,"alerte","traque");
+      journal(`Trace trouvée : ${nom} était à ${_tqSecteurNom(r.piste.secteur)}, au point ${r.piste.x} · ${r.piste.y}. Rends-toi exactement là, puis Traquer depuis la carte.`,"gain","vol");
+    else if(r && r.ok && r.gagne) journal(`Trace trouvée, mais le signal de ${nom} est brouillé : impossible de le situer.`,"alerte","vol");
+    else journal(`Tu perds la trace de ${nom}. Essais restants aujourd'hui : ${d.essais}.`,"alerte","vol");
     await _tqRafraichir(true);
     if(apres) apres();
   };
@@ -442,17 +442,17 @@ async function _tqTraquer(cible, nom){
   if(r && typeof r.energie==="number"){ etat.energie = r.energie; etat.energieMaj = Date.now(); }
   if(r && r.ok && r.reussi){
     if(typeof r.solde==="number" && typeof appliquerSoldeServeur==="function") appliquerSoldeServeur(r.solde);
-    journal(`Capture ! ${r.nom||nom} part pour ${r.heures} h derrière les barreaux (prison : ${typeof _factionNom==="function" ? _factionNom(r.prison_faction) : (r.prison_faction||"")}). Prime${r.plaintes>1?"s":""} encaissée${r.plaintes>1?"s":""} : +${r.prime} ₡.`,"gain","traque");
+    journal(`Capture ! ${r.nom||nom} part pour ${r.heures} h derrière les barreaux (prison : ${typeof _factionNom==="function" ? _factionNom(r.prison_faction) : (r.prison_faction||"")}). Prime${r.plaintes>1?"s":""} encaissée${r.plaintes>1?"s":""} : +${r.prime} ₡.`,"gain","vol");
     if(r.rep > 0){ if(typeof r.reputation==="number") etat.reputation = r.reputation;   // v1.30
-      journal(`+${r.rep} réputation de faction : ta faction recherchait ce voleur.`,"gain","traque"); }
+      journal(`+${r.rep} réputation de faction : ta faction recherchait ce voleur.`,"gain","vol"); }
   } else if(r && r.ok){
-    journal(`${nom} t'a filé entre les doigts (${Math.round((r.chance||0)*100)} % de chances). Nouvelle traque possible dans 24 h, avec une nouvelle trace.`,"alerte","traque");
+    journal(`${nom} t'a filé entre les doigts (${Math.round((r.chance||0)*100)} % de chances). Nouvelle traque possible dans 24 h, avec une nouvelle trace.`,"alerte","vol");
   } else {
     journal({ froide:`La piste est froide : ${nom} n'est plus à ce point. Il te faut une nouvelle trace. Rien n'a été dépensé.`,
               pas_sur_place:"Tu n'es pas exactement sur le point de la piste.", delai:"Tu as déjà traqué cette cible il y a moins de 24 h.",
               pas_de_piste:"Tu n'as pas (ou plus) de piste sur cette cible.", energie:"Pas assez d'énergie.",
               en_prison:"Ta cible est déjà en prison.", indisponible:"Ta cible est hors d'atteinte.", pas_recherche:"Plus aucune prime sur cette tête.",
-              aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas." }[r && r.err] || "Le serveur n'a pas répondu.","alerte","traque");
+              aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas." }[r && r.err] || "Le serveur n'a pas répondu.","alerte","vol");
   }
   await _tqRafraichir(true);
   if(typeof afficher==="function") afficher();

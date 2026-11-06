@@ -46,13 +46,17 @@ const GLYPHES_ANCIEN = {
   // — v1.96 : les étiquettes du Nid, à Cérès (« Propulsion », « Concentré ») —
   PUL:["I","trait"],     SION:["C","trait"],    CEN:["D","trait"],    TRE:["L","trait"],
   // — v1.98 : Q31, l'en-tête de la sonde Bardane (« Cultures », CUL·TURE) —
-  CUL:["P","barre"]
+  CUL:["P","barre"],
+  // — v2.32 : Q32, la plaque d'Aruns (« Retour », RE·TOUR ; RE connu) —
+  TOUR:["S","barre"]
 };
 /* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
-   nettement distinctes. Prises depuis : Λ barré (DES), Ω barré (TIN), et en v1.96
-   les « traversées » Π, Χ, Δ, Λ (PUL, SION, CEN, TRÉ). Encore libres, par exemple :
-   ["P","barre"] (Ψ barré), ["I","barre"] (Π barré), ["O","trait"] (Ω traversé),
-   ["S","barre"] (Σ barré), ["S","trait"] (Σ traversé), ["D","miroir"] non (symétrique).
+   nettement distinctes. Prises depuis : Λ barré (DES), Ω barré (TIN), en v1.96
+   les « traversées » Π, Χ, Δ, Λ (PUL, SION, CEN, TRÉ), en v1.98 Ψ barré (CUL),
+   en v2.32 Σ barré (TOUR). ⚠ Il n'en reste que TROIS bien distinctes :
+   ["I","barre"] (Π barré), ["O","trait"] (Ω traversé), ["S","trait"] (Σ traversé).
+   ["D","miroir"] non (symétrique). Au-delà, il faudra une nouvelle famille de
+   variantes (à décider avec l'autrice, LORE §11 bis).
    À éviter : ["T","trait"] (Θ traversé, trop proche de Φ au doigt), et les
    formes symétriques dont le miroir ou le renversement ne change rien. */
 function glypheSVG(son){

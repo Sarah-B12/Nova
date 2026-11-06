@@ -16,6 +16,17 @@
     ["Jeune Toisard placé dans l'enclos.", "agri"], ["Usure : Drone de récolte a cessé de fonctionner.", "agri"],
     ["Un chasseur de primes t'a retrouvé.", "vol"], ["Attaque du Protocole REPOUSSÉE ! Notre défense a tenu.", "combat"]
   ];
+  cas.push(["Casque léger bradé — +34 ₡.", "eco"]);                     // v2.31 : allait dans « economie », un onglet qui n'existe pas
   const ecarts = cas.map(([t, att]) => [t.slice(0, 50), att, _categoriser(t)]).filter(x => x[1] !== x[2]);
-  return { cas: cas.length, ecarts };
+  // v2.31 — aucune catégorie fantôme : à l'écriture (une catégorie inconnue est rangée) et dans le journal déjà gardé
+  const ids = JOURNAL_CATS.map(c => c.id);
+  etat.journal = [];
+  journal("Trace trouvée : X était à Silène.", "alerte", "traque");
+  journal("Un essai au hasard.", "", "nimporte_quoi");
+  const ecriture = etat.journal.map(e => e.cat);
+  etat.journal = [{ t:"Casque léger bradé — +34 ₡.", type:"gain", cat:"economie", d:Date.now() }, { t:"Tu perds la trace de X.", type:"alerte", cat:"traque", d:Date.now() - 1000 },
+                  { t:"Un vieux bidule.", type:"", cat:"inconnue", d:Date.now() - 2000 }];
+  _purgerJournal();
+  const anciennes = etat.journal.map(e => e.cat);
+  return { cas: cas.length, ecarts, ecriture, anciennes, toutesConnues: [...ecriture, ...anciennes].every(c => ids.includes(c)) };
 })();

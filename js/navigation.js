@@ -82,8 +82,9 @@ function majHub(){
     : nid
     /* v1.96 — Le Nid : la Boutique, réduite au carburant (boutique.js). Le remorquage
        n'a pas d'onglet : c'est le secours (orbite.js) qui y dépose une coque clouée.
-       PNJ et quêtes du Nid : plus tard (K95), l'onglet Quêtes ne sert qu'à suivre. */
-    ? { ...vide, boutique:true, quete:qEnCours }
+       v2.32 — Q32 s'y prend (Aruns et Dagon, K150) ; la Boutique n'ouvre qu'à la fin de Q32 (K155). */
+    ? { ...vide, boutique:(typeof nidOuvert==="function") && nidOuvert(),   // v2.32 (K155) : fermée avant la fin de Q32
+        quete:qEnCours || (typeof queteProchaine==="function" && !!queteProchaine() && queteProchaine().lieuPrise==="nid") }   // v2.32 : Q32 s'y prend
     : fleau
     ? { ...vide, fleau:true, quete:qEnCours }   // v2.06 : le combat du jour et le classement
     : base

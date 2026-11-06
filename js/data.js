@@ -151,8 +151,11 @@ const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", 
    `inventaire_objet_lie` (v097_objets_lies.sql). OBJETS_LIES n'en est que le
    REFLET, pour masquer les boutons : toute entrée ajoutée ici doit l'être là-bas
    (BACKEND_PLAN §6 et §14). Sans l'entrée serveur, rien n'est protégé. */
-const OBJETS_QUETE = [ { id:"bouture", nom:"Bouture de silène", type:"quete", cat:"quete", poids:1 } ];
-const OBJETS_LIES = new Set(["bouture"]);
+const OBJETS_QUETE = [ { id:"bouture", nom:"Bouture de silène", type:"quete", cat:"quete", poids:1 },
+  /* v2.35 (K159) — le transat du Nid (Q35) : la chaise pliante d'AREPO de Dagon, à rapporter à Asulf. */
+  { id:"transat", nom:"Transat du Nid", type:"quete", cat:"quete", poids:1,
+    desc:"Une chaise pliante d'AREPO, toile délavée, armature tordue. Sur la toile, à la craie : un petit bonhomme allongé, très content de lui. Pour Asulf." } ];
+const OBJETS_LIES = new Set(["bouture","transat"]);   // ⚠ reflet de la table serveur `objets_lies` (v097 ; v255 : + transat)
 function estObjetLie(id){ return OBJETS_LIES.has(id); }
 /* v1.63 — OBJETS DE MISSION (récompenses des quêtes de groupe, G12).
    La Mousse-amie (bouture capricieuse, B2-B4, H28-H32) : objet PERSONNEL. */
@@ -290,6 +293,7 @@ const IMG_ITEM = {
 
 const ICONE_GRAINE = `<svg viewBox="0 0 24 24"><path d="M12 21c0-5 3-7 3-11 0-2-1-3-3-3s-3 1-3 3c0 4 3 6 3 11z" fill="rgba(127,224,160,.2)" stroke="#7fe0a0" stroke-width="1.4"/><path d="M12 14c-2 0-3-1-3-3 2 0 3 1 3 3z" fill="#7fe0a0"/></svg>`;
 const ICONE_BEBE = `<svg viewBox="0 0 24 24"><ellipse cx="12" cy="14" rx="6" ry="5" fill="rgba(224,168,111,.22)" stroke="#e0a86f" stroke-width="1.4"/><circle cx="10" cy="13" r="1" fill="#e0a86f"/><circle cx="14" cy="13" r="1" fill="#e0a86f"/><path d="M9 8l1.5 2M15 8l-1.5 2" stroke="#e0a86f" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+const ICONE_TRANSAT = `<svg viewBox="0 0 24 24"><path d="M5 20 L11 9 M9 20 L16 7 M7 14 L15 14 M11 9 L19 9 M16 7 L19 9" fill="none" stroke="#d9b37a" stroke-width="1.6" stroke-linecap="round"/><path d="M11 9 L16 7 L18 13 L13 15 Z" fill="rgba(217,179,122,.25)"/></svg>`;   // v2.35 : repli du transat
 const ICONE_BIOCARB = `<svg viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z" fill="rgba(230,194,79,.2)" stroke="#e6c24f" stroke-width="1.4"/></svg>`;
 // Plantes disposant d'un sprite « jeune » (images/plantes/<id>_jeune.png).
 // Réutilisé par le bio-dôme (plante en croissance) ET par les graines (même visuel).
@@ -352,6 +356,8 @@ function imgBouture(){
 }
 function iconeItem(id){
   if(id === "bouture") return `<img src="${imgBouture()}" alt="">`;
+  /* v2.35 — le transat : son image si elle est là, sinon un dessin de repli (l'image est à générer). */
+  if(id === "transat") return `<img src="images/items/transat.png" alt="" onerror="this.nextElementSibling.hidden=false;this.remove()"><span hidden>${ICONE_TRANSAT}</span>`;
   if(IMG_ITEM[id]) return `<img src="${IMG_ITEM[id]}" alt="">`;
   if(SVG[id]) return SVG[id];
   if(id.indexOf("graine_")===0){ const j=imgPlanteJeune(id.slice(7)); return j ? `<img src="${j}" alt="">` : ICONE_GRAINE; }

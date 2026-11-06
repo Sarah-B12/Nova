@@ -93,7 +93,7 @@ function _categoriser(t){
   if(/classement/.test(s) && /\bplace\b/.test(s)) return /tables de jeu/.test(s) ? "eco" : "combat";
   if(/du fl[ée]au|[ée]clat de lentille/.test(s)) return "combat";   // v2.16 : les objets du podium du Fléau (pique, éclat, pupille)
   // v1.48 — retour autrice : « Ordinateur de hacking bradé » allait dans Vols/hacks.
-  if(/\bbrad[ée]|\bvendu\b|\bachet[ée]\b/.test(s) && /₡/.test(t||"")) return "economie";
+  if(/\bbrad[ée]|\bvendu\b|\bachet[ée]\b/.test(s) && /₡/.test(t||"")) return "eco";   // v2.31 : « economie » n'était pas un onglet (la ligne n'apparaissait que dans « Tout »)
   /* v1.36f — la traque et ses suites vont dans « Vols/hacks », AVANT la
      faction (« −5 réputation de faction ») : plaintes, primes, chasseurs,
      captures, séjours en prison qui en découlent. */
@@ -156,6 +156,7 @@ function journal(t, type="", cat=null, quand=null){
      courant te happe… »). Les 74 appels des quêtes ne donnent pas de catégorie ; plutôt
      que de les reprendre un à un, tout texte écrit dans une quête est reconnu
      (_texteDeQuete, quetes.js) et rangé dans « Quêtes ». */
+  if(cat && !JOURNAL_CATS.some(c => c.id === cat)) cat = (cat === "traque") ? "vol" : (cat === "economie") ? "eco" : null;   // v2.31 : jamais d'onglet fantôme
   const e = { t, type, cat: cat || ((typeof _texteDeQuete==="function" && _texteDeQuete(t)) ? "quete" : _categoriser(t)), d };
   if(ctrl) e.ctrl = true;
   let i = 0; while(i < etat.journal.length && (etat.journal[i].d||0) > d) i++;
@@ -263,6 +264,15 @@ function _bulleFermer(b, tout_de_suite){
   setTimeout(()=>{ if(b.parentNode) b.remove(); }, 450);
 }
 function _purgerJournal(){
+  /* v2.31 — deux catégories FANTÔMES (aucun onglet ne les montrait, seulement « Tout ») : « economie »
+     (le tri des objets bradés, v1.48) et « traque » (les messages de traque.js). Les lignes déjà dans le
+     journal retrouvent leur onglet. Toute catégorie inconnue tombe désormais dans « Système ». */
+  for(const e of (etat.journal || [])){
+    if(!e) continue;
+    if(e.cat === "economie") e.cat = "eco";
+    else if(e.cat === "traque") e.cat = "vol";
+    else if(e.cat && !JOURNAL_CATS.some(c => c.id === e.cat)) e.cat = "systeme";
+  }
   if(!etat.journal) return;
   const min=Date.now()-JOURNAL_RETENTION;
   etat.journal = etat.journal.filter(e=>e && e.d>=min);

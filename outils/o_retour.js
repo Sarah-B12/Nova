@@ -4,6 +4,7 @@
   await att(1500);
   etat.espace1 = true; etat.permisVaisseau = true; etat.ceres = true; etat.vaisseau = "fab_vaisseau_cargo"; etat.vaisseauPv = {};
   etat.sac = {}; sauverMaintenant = async () => {};
+  etat.nidOuvert = true;   // v2.32 (K155) : le Nid vend du carburant après Q32 (le cas fermé : plus bas)
   const c = coutSaut(), b = espaceLieu("base"), t = espaceLieu("trou_noir"), g = espaceLieu("e2_gorge"), nid = espaceLieu("e2_base");
   const vp = coutVol({ x:b.x, y:b.y }, { x:t.x, y:t.y }).litres;
   r.couts = { saut:c.litres, gorgeVersPerchoir:vp };
@@ -16,6 +17,9 @@
     unSautEtDemi_pauvre: cas("ceres", { x:nid.x, y:nid.y }, c.litres + vp, 0),          // avant : « il peut rentrer » (faux)
     unSautEtDemi_riche: cas("ceres", { x:nid.x, y:nid.y }, c.litres + vp, 99999),         // il achètera au Nid
     assez: cas("ceres", { x:nid.x, y:nid.y }, besoin, 0) };
+  // v2.32 (K155) : avant la fin de Q32, le Nid ne vend rien → riche mais à court = sans retour (évacué).
+  etat.nidOuvert = false; r.ceres.nidFerme_riche = cas("ceres", { x:nid.x, y:nid.y }, c.litres + vp, 99999);   // vrai
+  etat.nidOuvert = true;
   // 3. Une surface (Ancolie) : décollage ×1,5, pas de carburant en vente
   etat.secteur = "ancolie"; etat.surface = { ...SURFACES.ancolie.abri };
   const cs = coutSautSurface(surfaceCfg());

@@ -4,6 +4,7 @@
 // Chaque valeur attendue est notée à côté : tout ce qui n'est pas « vrai » doit l'être.
 (async function(){
   await new Promise(x=>setTimeout(x,1200));
+  fugueuseLa = () => true;   // v2.38 (K162) : la Fugueuse n'est là que le dimanche ; le banc la veut toujours (résultats stables)
   const r = {}, att = ms => new Promise(x=>setTimeout(x,ms)), msgs = [];
   journal = (m) => msgs.push(String(m)); sauverMaintenant = async () => {}; agirServeur = async () => ({ ok:true });
   let ouvertes = 0; const vraiOuvrir = ouvrirOrbite; ouvrirOrbite = () => { ouvertes++; };
@@ -74,11 +75,13 @@
   tenterSonde = vraiSonde;
 
   // 9. Le Nid : la Boutique seule (carburant), étiquettes en ancien ; rien d'autre.
+  // v2.32 (K155) : la Boutique n'ouvre qu'à la fin de Q32 (drapeau `nidOuvert`) ; fermée : banc o_q32.
+  etat.nidOuvert = true;
   majHub();
   const vis = [...document.querySelectorAll(".hub-lien")].filter(b => b.style.display !== "none").map(b => b.dataset.hub);
   r.ongletsNid = vis;                                                                                          // ["boutique"]
   changerHub("boutique"); const bq = document.querySelector("#boutique-vue").innerHTML;
-  r.boutiqueNid = { textes: /Le Nid/.test(bq) && /ancien/.test(bq), seulCarburant: _catalogueBoutique().every(a => a.cat === "carburant") && _catalogueBoutique().length === 2,
+  r.boutiqueNid = { textes: /du Nid/.test(bq) && /ancien/.test(bq), seulCarburant: _catalogueBoutique().every(a => a.cat === "carburant") && _catalogueBoutique().length === 2,
     glyphes: (bq.match(/class="gly"/g) || []).length, pasDeTexteCarburant: !/carburant de vaisseau/.test(bq), prixPerchoir: _prixBoutique(_catalogueBoutique()[0]) === 320 };   // …, 9 glyphes
   r.sonsNouveaux = ["PUL","SION","CEN","TRE"].every(s => GLYPHES_ANCIEN[s]) &&
     new Set(Object.values(GLYPHES_ANCIEN).map(g => g.join("/"))).size === Object.keys(GLYPHES_ANCIEN).length;  // vrai : aucune forme en double

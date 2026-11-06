@@ -80,7 +80,7 @@ function renderBoutique(){
   if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
   if(_surNidBoutique()){
-    html += `<p class="vide" style="margin:0 0 10px">Le Nid — <b>du carburant</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons, eux, se reconnaissent.
+    html += `<p class="vide" style="margin:0 0 10px">Le module du Nid — <b>du carburant</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons, eux, se reconnaissent.
       <br><span class="itip-gris">Une coque clouée dans le secteur est remorquée jusqu'ici.</span></p>`;
   } else if(_surBaseBoutique()){
     html += `<p class="vide" style="margin:0 0 10px">Comptoir du Perchoir — <b>oxygène, soins, carburant et vaisseau</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
@@ -136,6 +136,8 @@ function renderBoutique(){
 async function acheterBoutique(id){
   const a = _catalogueBoutique().find(x=>x.id===id); if(!a) return;
   const dehors = _boutiqueDehors();
+  /* v2.32 (K155) — le module du Nid ne s'ouvre qu'à la fin de Q32 (l'onglet est caché avant). */
+  if(_surNidBoutique() && !(typeof nidOuvert==="function" && nidOuvert())){ journal("Au Nid, personne ne te vend rien pour l'instant.","alerte"); return; }
   if(dehors && !(typeof aptBoutiquePartout==="function" && aptBoutiquePartout())){ journal("La Boutique n'est accessible qu'en ville.","alerte"); _boutiqueMsg("Rejoins une ville pour acheter."); return; }
   /* v0.91 — le comptoir de la base vend un vaisseau : il doit respecter le même
      verrou que l'atelier, le marché et l'équipement. En pratique on ne peut pas

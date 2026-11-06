@@ -78,12 +78,19 @@ const CARTES_ESPACE = {
            sortie:"Rentrée vers Silène : depuis le Perchoir uniquement." },
   ceres: { id:"ceres", nom:"Cérès", base:"e2_base",
            img:(typeof ESPACE2_IMG !== "undefined") ? ESPACE2_IMG : "images/espace2/",
-           lieux:() => (typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX : [],
+           lieux:() => (typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX.filter(l => l.id !== "e2_comete" || fugueuseLa()) : [],   // v2.38 (K162) : la Fugueuse, le dimanche
            fond:() => (typeof ESPACE2_FOND !== "undefined") ? ESPACE2_FOND : ESPACE_FOND,
            monde:() => (typeof ESPACE2_MONDE !== "undefined") ? ESPACE2_MONDE : ESPACE_MONDE,
            sortie:"Retour vers Triptolème : par la Gorge uniquement." }
 };
 function enCeres(){ return !!(etat && etat.secteur === "ceres"); }
+/* v2.38 (K162) — la Fugueuse (`e2_comete`) ne passe que LE DIMANCHE, jour de jeu (heure de Paris,
+   `jourDeJeu()`), de minuit à minuit. Les autres jours, elle n'est ni dessinée, ni atteignable, ni
+   repérée par une quête (Q38). Rien côté serveur. */
+function fugueuseLa(ts){
+  if(typeof jourDeJeu !== "function") return true;
+  return new Date(jourDeJeu(ts) + "T12:00:00Z").getUTCDay() === 0;
+}
 function enEspace(){ return enEcart() || enCeres(); }
 /* La carte spatiale « d'ici » : Cérès si l'on y est, Triptolème sinon (au sol, la
    fenêtre de l'orbite ne s'ouvre que pour partir vers Triptolème). */
@@ -96,6 +103,12 @@ function secteurDuLieu(l){
 function baseEspace(s){ return espaceLieu(carteEspace(s).base); }
 function ceresConnue(){ return !!(etat && etat.ceres === true); }
 function surNid(){ return enCeres() && surLieuEspace(espaceLieu("e2_base")); }
+/* v2.32 (K155) — le module du Nid (le carburant) ne s'ouvre qu'à la fin de Q32 : drapeau
+   `nidOuvert` posé par sa récompense ; Q32 finie suffit aussi (filet de sécurité). */
+function nidOuvert(){
+  if(etat && etat.nidOuvert === true) return true;
+  const q = etat && etat.quetes; return !!(q && Array.isArray(q.done) && q.done.includes("q32"));
+}
 
 /* Sur le Perchoir : c'est lui qui ouvre les services (auberge,
    comptoir, poste, gouvernement, quêtes). Ailleurs dans le secteur, on est
@@ -552,7 +565,7 @@ function _litresRetour(){
   }
   return c.litres;
 }
-function _carburantEnVenteIci(){ return enEcart() || enCeres(); }   // le Perchoir et le Nid en vendent ; une surface, non
+function _carburantEnVenteIci(){ return enEcart() || (enCeres() && nidOuvert()); }   // le Perchoir et le Nid en vendent ; une surface, non ; v2.32 : le Nid après Q32 (K155)
 function vaisseauSansRetour(){
   const c = coutSaut(); if(!c) return false;
   const besoin = _litresRetour(); if(besoin == null) return false;
@@ -675,6 +688,7 @@ function lieuOuvert(l){
 function usageLieu(l){
   if(!l) return "";
   if(l.id === "trou_noir") return gorgeOuverte() ? (ceresConnue() ? "Passage vers Cérès" : "Ouverte") : "Verrouillé";
+  if(l.id === "e2_base" && !nidOuvert()) return "Remorquage";   // v2.32 (K155) : pas encore de carburant
   return l.usage || "";
 }
 
@@ -709,7 +723,8 @@ async function passerLaGorge(){
   const g = espaceLieu("e2_gorge");
   etat.secteur = "ceres";
   etat.posEspace = g ? { x:g.x, y:g.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
-  journal("Tu entres dans la Gorge. Le noir, la pression, la coque qui chante. Puis tout lâche d'un coup, et tu ressors de l'autre côté, au milieu d'étoiles que tu ne connais pas. Secteur Cérès.","gain","voyage");
+  journal("Tu entres dans la Gorge. Le noir, la pression, la coque qui chante. Puis tout lâche d'un coup, et tu ressors de l'autre côté, au milieu d'étoiles que tu ne connais pas. Secteur Cérès."
+    + (nidOuvert() ? "" : " De ce côté-ci, personne ne vend de carburant : garde de quoi rentrer."),"gain","voyage");   // v2.32 (K155)
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();
   ouvrirOrbite();
@@ -724,7 +739,7 @@ async function repasserLaGorge(){
   const besoin = cs.litres + (versPerchoir ? versPerchoir.litres : 0);
   const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
   if(auto < besoin){
-    journal(`Passage refusé : de l'autre côté, il faudra encore rejoindre le Perchoir. La Gorge puis le Perchoir coûtent ${besoin} L, tu n'as que ${Math.round(auto)} L en tout. Le Nid vend du carburant.`,"alerte","voyage");
+    journal(`Passage refusé : de l'autre côté, il faudra encore rejoindre le Perchoir. La Gorge puis le Perchoir coûtent ${besoin} L, tu n'as que ${Math.round(auto)} L en tout.${nidOuvert() ? " Le Nid vend du carburant." : ""}`,"alerte","voyage");   // v2.32 (K155)
     return;
   }
   if(!await _payerSaut("La Gorge", cs)) return;

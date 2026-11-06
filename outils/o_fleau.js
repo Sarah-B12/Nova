@@ -52,6 +52,7 @@
   r.lieu = { type:F.type, onglet:ongletLieuEspace(F), usage:F.usage };
   etat.espace1 = true; etat.permisVaisseau = true; etat.vaisseau = "fab_vaisseau_maitre"; etat.vaisseauPv = {}; etat.ceres = true;
   etat.sac.fab_cellule_d_energie = 3; etat.energie = 80;
+  etat.nidOuvert = true;   // v2.32 (K155) : la Boutique du Nid après Q32 (le cas fermé : banc o_q32)
   etat.secteur = "ceres"; etat.posEspace = { x:N.x, y:N.y }; majHub();
   const onglets = () => [...document.querySelectorAll(".hub-lien")].filter(b => b.style.display !== "none").map(b => b.dataset.hub);
   r.ongletsNid = onglets();

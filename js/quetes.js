@@ -119,6 +119,7 @@ function _posJoueur(carte){
   return etat.pos || null;
 }
 function _dansCible(c){
+  if(typeof _fugueuseAbsente === "function" && _fugueuseAbsente(c)) return false;   // v2.38 (K162)
   const r=_cibleResolue(c); if(!r || r.carte!==_carteJoueur()) return false;
   const p=_posJoueur(r.carte); if(!p) return false;
   return Math.hypot(p.x-r.x, p.y-r.y) <= r.r;
@@ -217,7 +218,9 @@ const LENDEMAIN_VOIX = {
   "Galm":"Galm ne sort pas de sous son carter. « Demain. Aujourd'hui, je découpe. »",
   "Adaya":"« Demain, petit. Les plantes, ça se presse pas. Les vieilles non plus. »",
   "Asulf":"« Demain. Aujourd'hui, j'ai… des trucs. Réglementaires. Très importants. » Un bruit d'emballage de barre protéinée.",
-  "42-U1F":"« Demain. Aujourd'hui, j'ai… des trucs. Réglementaires. » Un bruit d'emballage de barre protéinée."
+  "42-U1F":"« Demain. Aujourd'hui, j'ai… des trucs. Réglementaires. » Un bruit d'emballage de barre protéinée.",
+  /* v2.33 — au Nid, on ne se comprend pas (lot 1) : un geste, pas une réplique. Q32 a le sien (personne ne vient). */
+  "Aruns et Dagon":"Sous les toiles, presque tout le monde dort encore. Dagon, assis au bord d'une passerelle, te voit arriver ; il pose la joue sur ses mains jointes et ronfle, très fort, sans te quitter des yeux, jusqu'à ce que tu comprennes : demain. Tu aurais pu y penser tout seul."
 };
 function _queteLendemain(q){
   if(!q || q.lendemain === false) return null;
@@ -417,16 +420,19 @@ function _wireScene(z, d){
     /* v1.00b — `rendre:"bouture"` : l'objet lié est rendu (Q15, à Adaya). Seul
        le serveur peut le retirer (bouture_rendre ; le trigger des objets liés
        refuse tout le reste). La sauvegarde part AVANT : la RPC vérifie l'étape. */
-    if(d.rendre==="bouture"){
+    /* v2.40 (K165) — `rendre:"transat"` : le transat du Nid rendu à Asulf (Q40, RPC transat_rendre, v260). */
+    const RENDRE = { bouture:{ rpc:"bouture_rendre", msg:"Tu as rendu la bouture à Adaya." },
+                     transat:{ rpc:"transat_rendre", msg:"Tu as rendu le transat à Asulf." } }[d.rendre];
+    if(RENDRE){
       try{ if(typeof sauverSurServeur==="function") await sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"quetes.js#rendre"); }
       let data=null, error=null;
-      try{ ({ data, error } = await sb.rpc("bouture_rendre")); }catch(e){ error=e; }
+      try{ ({ data, error } = await sb.rpc(RENDRE.rpc)); }catch(e){ error=e; }
       if(error || !data || !data.ok){
         journal((data && data.err==="hors_quete") ? "Ta progression n'est pas encore enregistrée. Réessaie dans un instant." : "Le serveur ne répond pas. Réessaie dans un instant.","alerte");
         b.disabled=false; return;
       }
       if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
-      journal("Tu as rendu la bouture à Adaya.","gain");
+      journal(RENDRE.msg,"gain");
     }
     avancerQuete();
   });
@@ -656,7 +662,7 @@ function _wireCalques(z, d){
     const bonC=_calqInvActif(c) ? (c.inv && _calqCorrespond(c.C.slice().reverse(), c.oC, c.pA, M)) : _calqCorrespond(c.C, c.oC, c.pA, M);
     if(bonB && bonC){ journal("Les trois signaux n'en font plus qu'un.","gain"); reussirDefi(); return; }
     c.essais++; sauvegarder();
-    if(c.essais>=CALQ_ESSAIS){ echouerDefi(`Ça ne coïncide pas. Le signal se brouille, la vague est passée. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+    if(c.essais>=CALQ_ESSAIS){ echouerDefi(d.echec || `Ça ne coïncide pas. Le signal se brouille, la vague est passée. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }   // v2.34 : d.echec (Q34)
     journal(`Ça ne coïncide pas. (${CALQ_ESSAIS-c.essais} vérification${CALQ_ESSAIS-c.essais>1?"s":""} restante${CALQ_ESSAIS-c.essais>1?"s":""})`,"alerte");
     rafraichirQuetes();
   });
@@ -1201,7 +1207,7 @@ function _wirePiratage(z,d){
     if(!_queteTimer) return;                       // épreuve déjà terminée
     if(pos>=gp && pos<=gp+gw){
       round++;
-      if(round>=manches){ clearInterval(_queteTimer); _queteTimer=null; journal("Sécurité contournée !","gain"); reussirDefi(); return; }
+      if(round>=manches){ clearInterval(_queteTimer); _queteTimer=null; journal(d.fini || "Sécurité contournée !","gain"); reussirDefi(); return; }   // v2.36 : d.fini (Q36)
       msg.textContent="Verrou ouvert. Suivant.";
       setup(); return;
     }
@@ -1216,7 +1222,7 @@ function _wirePiratage(z,d){
       setup(); return;
     }
     clearInterval(_queteTimer); _queteTimer=null;
-    echouerDefi(`Raté de ${Math.round(ecart)} % (${sens}) — l'alarme se déclenche. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
+    echouerDefi(d.echec || `Raté de ${Math.round(ecart)} % (${sens}) — l'alarme se déclenche. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);   // v2.36 : d.echec (Q36)
   });
 }
 
@@ -1241,7 +1247,7 @@ function _wireGlyphes(z,d){
     if(sels.some(s=>!s.value)){ journal("Associe chaque glyphe avant de valider.","alerte"); return; }
     const ok=sels.every(s=> _qnorm(s.value)===_qnorm(paires[parseInt(s.dataset.i,10)].sens));
     if(ok){ journal("Glyphes déchiffrés !","gain"); reussirDefi(); }
-    else echouerDefi(`Traduction erronée — les glyphes se brouillent. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);
+    else echouerDefi(d.echec || `Traduction erronée — les glyphes se brouillent. Nouvelle tentative dans ${VERROU_DEFI_H} h.`);   // v2.32 : d.echec (Q32)
   });
 }
 
@@ -1310,9 +1316,9 @@ function _wireCadenas(z,d){
     for(let i=0;i<L;i++){ if(gc[i]===sc[i]){ bien++; sc[i]=null; gc[i]=null; } }
     let pres=0; for(let i=0;i<L;i++){ if(gc[i]){ const j=sc.indexOf(gc[i]); if(j>=0){ pres++; sc[j]=null; } } }
     const h={ g, bien, pres }; a._cadHist.push(h); ligneHist(h);
-    if(bien===L){ journal("Code trouvé !","gain"); reussirDefi(); return; }
+    if(bien===L){ journal(d.fini || "Code trouvé !","gain"); reussirDefi(); return; }   // v2.38 : d.fini
     a._cadEssais=(a._cadEssais||0)+1; sauvegarder();
-    if(a._cadEssais>=maxE){ echouerDefi(`Trop d'essais — le sas se bloque. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; } maj();
+    if(a._cadEssais>=maxE){ echouerDefi(d.echec || `Trop d'essais — le sas se bloque. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; } maj();   // v2.38 : d.echec (Q38)
   });
 }
 
@@ -1406,7 +1412,7 @@ function _travCaseSureExiste(C, L, lave, vus){
 function _htmlTraversee(d){
   const C=d.colonnes||6, P=d.plaques||3;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — après, tu rebrousses chemin pour ${VERROU_DEFI_H} h. Quand rien ne permet de savoir où poser le pied, tu peux tenter ta chance sans perdre de plaque ; mais une erreur que les chiffres permettaient d'éviter en coûte une.</p>
+    <p class="quete-indice">${d.consigne || `Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — après, tu rebrousses chemin pour ${VERROU_DEFI_H} h. Quand rien ne permet de savoir où poser le pied, tu peux tenter ta chance sans perdre de plaque ; mais une erreur que les chiffres permettaient d'éviter en coûte une.`}</p>
     <div class="quete-rep" style="gap:8px;flex-wrap:wrap">
       <button class="mini" id="q-trav-mode">Mode : 👣 Sonder</button>
       <span class="itip-gris" id="q-trav-pl"></span>
@@ -1457,7 +1463,7 @@ function _wireTraversee(z, d){
       t.plaques--; sauvegarder();
       if(t.plaques<=0){ dessiner(); echouerDefi(d.echec || `La croûte cède sous toi, et ta dernière plaque avec. Tu rebrousses chemin — nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
       journal(d.brulant || "La croûte cède — une plaque de protection fond sous tes bottes.","alerte");   // v1.87g : d.brulant
-    } else if(i < C){ sauvegarder(); journal("Tu atteins l'autre bord !","gain"); reussirDefi(); return; }
+    } else if(i < C){ sauvegarder(); journal(d.fini || "Tu atteins l'autre bord !","gain"); reussirDefi(); return; }   // v2.34 : d.fini
     sauvegarder(); dessiner();
   });
   dessiner();
@@ -1877,7 +1883,10 @@ function _wireMemoire(z,d){
 
 /* v1.00 — `cache:true` sur une étape : AUCUN repère ★ (ni cible ni leurre) sur
    aucune carte. Q15 étape 2 : la cachette des bêtes se trouve à la bouture. */
-function _ptsQuete(e){ return (!e || e.cache) ? [] : [e.cible, ...(e.leurres||[])]; }
+function _ptsQuete(e){ return (!e || e.cache) ? [] : [e.cible, ...(e.leurres||[])].filter(c => !_fugueuseAbsente(c)); }   // v2.38 : pas de ★ sur la Fugueuse absente
+/* v2.38 (K162) — une cible sur la Fugueuse, un autre jour que le dimanche : elle n'est pas là.
+   v2.40 — aussi toute cible marquée `dimanche:true` (Q40 : la fête du passage, au Nid). */
+function _fugueuseAbsente(c){ return !!(c && (c.lieu === "e2_comete" || c.dimanche) && typeof fugueuseLa === "function" && !fugueuseLa()); }
 
 /* ---------- Déplacements (entrée/sortie de zone) ---------- */
 function queteArrivee(){
@@ -2020,6 +2029,8 @@ function _priseIci(q){
   /* v1.98 — `lieuPrise:"toundra"` : chez Asulf, à La Toundra (K90), quelle que soit
      sa faction. Il s'y est installé à la fin de Q30 (K59). */
   if(q && q.lieuPrise==="toundra") return aLaToundra();
+  /* v2.32 — `lieuPrise:"nid"` : au Nid, à Cérès (Q32 →), donneurs Aruns et Dagon (K150). */
+  if(q && q.lieuPrise==="nid") return (typeof surNid==="function") && surNid();
   return _enFaction();
 }
 function aLaToundra(){ return (typeof villeActuelle==="function") && villeActuelle()==="toundra"; }
@@ -2103,7 +2114,7 @@ function majQueteHub(rafraichir){
      une quête `lieuPrise:"carcasse"`, et elle revient quand la quête est
      finie. Les quêtes prises en ville (Sorn) gardent leur bannière : on doit
      se déplacer pour les étapes, il n'y a jamais les deux à la fois. */
-  const _masquee = !!(_qa0 && _qd0 && (_qd0.lieuPrise === "carcasse" || _qd0.lieuPrise === "station"));   // v1.87 : + station
+  const _masquee = !!(_qa0 && _qd0 && (_qd0.lieuPrise === "carcasse" || _qd0.lieuPrise === "station" || _qd0.lieuPrise === "nid"));   // v1.87 : + station ; v2.32 : + le Nid (Q32 s'y joue)
   /* v1.98 — `donneurRepli` : l'image à montrer tant que la bannière n'est pas dessinée
      (Asulf à La Toundra, K90 : celle de la station). */
   const _dRepli=(_qd0&&_qd0.donneurRepli)||"";
@@ -2118,6 +2129,10 @@ function majQueteHub(rafraichir){
       const _galm = qp && !qp.lieuPrise && (typeof surCarcasse==="function") && surCarcasse();
       z.innerHTML = (qp && qp.lieuPrise==="carcasse")
         ? `<p class="vide">Personne n'a de travail pour toi ici. Là-haut, dans le secteur Triptolème, on dit qu'à <b>La Carcasse</b> une ferrailleuse cherche toujours des bras.</p>`
+        : (qp && qp.lieuPrise==="nid")   /* v2.32 — la radio est muette (Q31) : pas d'appel ; v2.36 — après Q35, elle passe : Asulf */
+        ? (etat.radioGorge
+            ? `<p class="vide">Asulf, à la radio : « Ils te cherchent, au <b>Nid</b>. Enfin, je crois. J'ai compris "toi" et "viens". »</p>`
+            : `<p class="vide">Ta radio ne rend toujours que du grésillement. De l'autre côté de la Gorge, sur la grande forme sombre, les lanternes du <b>Nid</b> vont et viennent.</p>`)
         : (qp && qp.lieuPrise==="toundra")   /* v1.98 */
         ? `<p class="vide">Ta radio grésille. « C'est moi. Asulf. Enfin, tu sais que c'est moi. » Un reniflement. « Je suis à <b>La Toundra</b>, au bout, là où les maisons s'arrêtent. Viens quand tu peux. Viens quand tu veux. Viens, quoi. J'ai trouvé un truc pour la Gorge. »</p>`
         : (qp && qp.lieuPrise==="station")   /* v1.87 */
@@ -2180,9 +2195,12 @@ function majQueteHub(rafraichir){
    qu'il faut faire le trajet (les repères d'une carte ne se voient pas de l'autre). */
 function _objectifCarteTexte(){
   const c = carteEtapeActive(), ici = _carteJoueur();
+  { const e = etapeActive(); if(e && _fugueuseAbsente(e.cible)) return e.cible.dimanche
+      ? "La fête est dimanche, au passage de la Fugueuse (de minuit à minuit, heure de Paris)."   // v2.40 (Q40)
+      : "Elle n'est pas là. Elle repasse dimanche (de minuit à minuit, heure de Paris)."; }   // v2.38 (K162)
   if(c==="silene" && ici==="ancolie") return "C'est sur Silène. Rejoins la station et pars (« Partir pour Silène »), puis ouvre la carte : des repères ★ y sont apparus.";
   if(c==="ancolie" && ici!=="ancolie") return "C'est en Ancolie. Depuis une ville de Silène ou le Perchoir, prends le vaisseau (« Partir pour Ancolie »), puis ouvre la carte : des repères ★ y sont apparus.";
-  return (({espace:"Ouvre la carte de Triptolème", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire", ancolie:"Ouvre la carte d'Ancolie"})[c] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place.";
+  return (({espace:"Ouvre la carte de Triptolème", ceres:"Ouvre la carte de Cérès", braise:"Ouvre la carte de La Braise", suaire:"Ouvre la carte du Suaire", ancolie:"Ouvre la carte d'Ancolie"})[c] || "Ouvre la carte") + " : des repères ★ sont apparus (certains sont de fausses pistes). Rends-toi au bon endroit — l'épreuve n'apparaît que sur place.";
 }
 
 /* ---------- Style + rafraîchissement ---------- */

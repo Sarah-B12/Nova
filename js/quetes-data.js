@@ -3908,7 +3908,7 @@ const QUETES = [
       "Asulf s'est installé au bout de La Toundra, là où les maisons s'arrêtent et où la neige reprend. Devant sa porte, planté dans la congère, il y a un transat : un vrai, en toile rayée, délavée par on ne sait combien d'hivers. Asulf est assis dessus, très droit, les mains sur les genoux, un bonnet tiré jusqu'aux sourcils, et il ne se lève pas en te voyant arriver, parce qu'il vient seulement de trouver comment on s'y tient. « Dis rien. Je sais. Ça sert à rien, dans la neige, personne s'allonge ici, c'est sans doute pour ça qu'il traînait au fond d'une remise. Mais regarde comme il est bien fait. Le dossier, il descend tout seul. »",
       "Il sort de sa poche une radio qu'il a démontée et remontée au moins une fois de trop, avec une antenne en fil de fer qui file jusqu'au toit. « Je t'ai fait venir pour la Gorge. La nuit, ici, le ciel est propre, on entend tout, et la nuit, les sondes de Triptolème parlent au Bureau. Toutes les nuits, depuis trois cents ans, et personne leur répond. » Il renifle. « Sauf que moi, j'ai gardé l'état de la Gorge sur un écran, à côté. Grise. Et chaque fois qu'une sonde parle, elle clignote. Une fraction de seconde. Ouverte. »",
       "« Elle est pas fermée, ta Gorge. Elle trie. Elle laisse passer ce qui se présente comme il faut, et ce qui se présente comme il faut, c'est une sonde. » Il compte sur ses doigts gantés et s'embrouille dans les gants. « Toi, t'es pas une sonde. La première fois, t'avais une route officielle, recopiée au Perchoir ; je crois qu'elle servait qu'une fois, et c'est moi qui l'ai gâchée. Alors cette fois, faut que ton vaisseau dise ce que disent les sondes, mot pour mot. Le problème, c'est que c'est de l'ancien, et moi l'ancien, je connais que le jargon du service. »",
-      "« Bardane, la sonde qui dérive du côté de Mousseron, elle est assez près pour que tu l'entendes en entier. Va écouter ce qu'elle dit au Bureau, et rapporte-moi les mots exacts, dans l'ordre. Moi, je refais ta route avec. » Il se laisse aller en arrière, prudemment, et le dossier du transat suit le mouvement. Il a l'air ravi. « Et si tu en vois un, de l'autre côté. Un transat. Tu me le rapportes. On sait jamais. »"
+      "« Bardane, la sonde qui dérive du côté de Mousseron, elle est assez près pour que tu l'entendes en entier. Va écouter ce qu'elle dit au Bureau, et rapporte-moi les mots exacts, dans l'ordre. Moi, je refais ta route avec. » Il se laisse aller en arrière, prudemment, et le dossier du transat suit le mouvement. Il a l'air ravi. « Et si tu en vois un, de l'autre côté. Un transat. Tu me le rapportes. On sait jamais. Ah, et fais le plein au Perchoir, avant. De l'autre côté, personne te vendra rien. Enfin, j'en sais rien. Personne en sait rien. Fais le plein. »"
     ],
     etapes:[
 
@@ -4006,6 +4006,1061 @@ const QUETES = [
        pour l'arc de Cérès). Gains des choix : comme Q20 (veilleurs 120 XP · assembleurs
        1 composant avancé + 40 XP · langues 300 ₡), serveur v223. */
     recompense:{ credits:2400, xp:420, pa:1, flags:{ ceres:true } }
+  }
+  ,
+
+  /* ---------------- Q32 — Une sonde qui s'arrête (K96, K150 → K155) ----------------
+     Donneurs : Aruns ET Dagon, au Nid (lieuPrise:"nid"), à parts égales (K150) :
+     Aruns mène les étapes 1 et 3, Dagon les étapes 2 et 5, le choix est partagé.
+     Lot 1 : on ne se comprend pas (K80, K134) — ils parlent l'ancien, ÉCRIVENT en glyphes,
+     dessinent, font des gestes ; aucune de leurs répliques n'est traduite (leurs noms seuls).
+     Le Nid (K154) : un village OUVERT sur son dos (toiles, passerelles, lanternes) autour d'un
+     seul bâtiment fermé, le vieux module des équipages, où l'on garde les réserves.
+     La Couronne relaie jusqu'au Nid ce qu'elle reçoit (K153) : ils ont entendu le vaisseau
+     entrer en disant l'en-tête des sondes (Q31). Ils attendent « le retour » (K78).
+     Épreuves : glyphes · attente · énigme · choix · scène. Aucune ne reprend un type de Q31
+     (message, ordre, saut). Son nouveau : TOUR (Σ barré), dans RE·TOUR (RE connu).
+     Fin : le module s'ouvre, la boutique du Nid aussi (K155, `etat.nidOuvert`).
+     ⚠ Secrets (🔒 LORE §8 bis) : rien sur ce qu'elle est, ni sur l'accident de Dagon ; les
+     creux ne sont qu'un interdit (K149). Jamais « bestiole », « œil », « paupière ». */
+  {
+    id:"q32",
+    nom:"Une sonde qui s'arrête",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    /* v1.93l : la règle du lendemain. Personne ne parle notre langue : pas de réplique,
+       une scène (le joueur n'a encore rencontré personne). */
+    lendemain:{ texte:"À ton approche, les lanternes du Nid s'éteignent une à une. Les passerelles se vident, les toiles retombent, et personne ne vient. Quelque part, quelqu'un t'a vu, et a eu peur." },
+    intro:[
+      "Vu de la Gorge, le Nid n'était qu'une poignée de lumières posées sur une grande forme sombre, qui s'allumaient et s'éteignaient sans rythme. De près, ce sont des lanternes. Le village tient tout entier sur son dos : des toiles tendues entre des perches, des passerelles de plaques et de cordages jetées de l'une à l'autre, et des gens qui vont et viennent, leur lanterne à la main. Les lumières ne clignotaient pas : elles marchaient.",
+      "Au milieu des toiles se dresse un seul bâtiment, un bloc de métal ancien, rond et bas, sans une fenêtre, posé là comme un rocher dans un champ. Tu poses ton vaisseau à l'écart et tu descends : sous tes semelles, la surface est tiède, à peine souple, et il y a de l'air, mince et doux, que tu respires sans savoir d'où il vient. Une douzaine de personnes t'attendent à l'entrée du village, en uniformes reprisés jusqu'à la trame. Aujourd'hui, nul ne se cache. Assis au bord d'une passerelle, les jambes dans le vide, un homme à la peau bleue te regarde approcher en te jaugeant de la tête aux pieds, avec l'air de quelqu'un qui a déjà parié contre toi.",
+      "Un grand garçon blond se détache du groupe. Deux mains l'attrapent par la manche, puis une troisième ; il s'en dégage sans même se retourner et vient droit sur toi, un vieil écusson AREPO délavé sur l'épaule. Il parle. C'est la voix des balises, les mêmes sons plats, mais vivante, pressée, traversée d'un rire, et tu n'en saisis pas un mot. Tu lui expliques qui tu es et d'où tu viens, en désignant la Gorge ; il penche la tête, aussi perdu que toi.",
+      "Alors il se frappe la poitrine, deux fois. « Aruns. » L'homme bleu lève une main paresseuse sans quitter sa place et donne son nom à son tour, comme une évidence : « Dagon. » Les bouts de ses tresses s'allument, puis s'éteignent, et son sourcil levé dit assez qu'il n'est pas convaincu par le tien. Aruns a déjà tourné les talons ; il revient en courant avec une plaque de métal noircie et un morceau de craie, s'agenouille à tes pieds et se met à écrire."
+    ],
+    etapes:[
+
+      /* ---- 1. La plaque — GLYPHES (ratable) : RE·TOUR, un son nouveau (Aruns) ---- */
+      { indice:"Le Nid. Lis ce qu'Aruns écrit sur sa plaque.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q32/1.png",
+        arrivee:[
+          "Aruns écrit d'une main sûre, la craie tenue ferme entre trois doigts, et les glyphes de l'ancien s'alignent sous sa main : ceux des panneaux du quai, ceux des sondes. Quatre lignes. À la fin de chacune, il trace un petit signe sans réfléchir, en guise d'étiquette : une antenne, une flèche qui file, une autre qui monte, une dernière qui revient sur elle-même.",
+          "Les deux premières lignes, tu les connais par cœur : ton vaisseau les a dites dans la Gorge. La troisième, tu l'as lue au fond de la station d'Ancolie. La dernière commence par un son familier et finit par un autre que tu n'as jamais vu. Dagon s'est levé pour lire par-dessus l'épaule d'Aruns ; il pose un doigt sur cette ligne-là, le pointe ensuite vers toi, et hausse les sourcils."
+        ],
+        defi:{ type:"glyphes",
+          texte:["La plaque d'Aruns : quatre lignes d'ancien, quatre petits dessins."],
+          consigne:"Rends à chaque ligne son sens. Le son que tu ne connais pas se devine par le reste.",
+          paires:[
+            /* ⚠ LORE §11 bis : TOUR est NOUVEAU (glyphes.js, Σ barré) ; RE est connu (H43).
+               ⇪ = Embarquement, comme en Q27 ; ↩ ne sert à aucun autre mot. */
+            { picto:"📡", sons:["RE","LAI"],             sens:"Relais" },
+            { picto:"➹", sons:["DES","TIN","ATION"],     sens:"Destination" },
+            { picto:"⇪", sons:["EM","BARQUE","MENT"],    sens:"Embarquement" },
+            { picto:"↩", sons:["RE","TOUR"],             sens:"Retour" }
+          ],
+          distracteurs:["Départ","Conservation","Rassemblement"],
+          echec:"Tu te trompes de ligne, et ça se lit sur leurs visages. Aruns efface la plaque du plat de la main, sans colère, et la garde contre lui. Il la réécrira dans 8 h.",
+          reussite:[
+            "Relais. Destination. Embarquement. Et la dernière, RE·TOUR : le retour. Ils ont entendu ton vaisseau entrer dans la Gorge en prononçant la phrase des sondes, comme ils en entendent passer chaque nuit depuis trois cents ans. Seulement, une sonde file droit, parle au Bureau et ne s'arrête jamais. La tienne a tourné ; elle a ralenti, et elle est venue se poser chez eux.",
+            "Aruns souligne <i>Retour</i> d'un trait de craie, puis <i>Embarquement</i>, et lève les yeux vers toi ; dans son dos, le groupe retient son souffle. Ils te demandent si c'est toi : si tu es le retour, celui qu'on attend, et s'ils peuvent monter. Tu lui fais comprendre que non, aussi doucement que possible : ton vaisseau vient de l'autre côté de la Gorge, il est petit, et tu voyages seul.",
+            "Les autres ont compris avant lui. Ni cri ni plainte : quelqu'un s'éloigne, puis un deuxième, et une femme tend la main vers la plaque pour l'effacer. Aruns la retient. Il efface tout lui-même, sauf la dernière ligne. Dagon souffle par le nez, quelque chose qui ressemble à un rire et n'en est pas un. Il te regarde, toi, puis ton petit vaisseau, puis le ciel vide derrière, et hausse une épaule : évidemment que ce n'était pas toi. Qui aurait pu croire le contraire ?"
+          ] } },
+
+      /* ---- 2. La radio — ATTENTE (1 h) : rien ne revient ; elle « respire » (Dagon) ---- */
+      { indice:"Le Nid. Appelle Asulf, devant eux.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q32/2.png",
+        arrivee:[
+          "Montrer où se trouve ton monde, tu ne saurais pas le dessiner. Alors tu fais la seule chose qui te vient : tu ouvres la radio de bord, la porte du vaisseau rabattue pour qu'ils entendent, et tu appelles Asulf. Le grésillement déborde sur la passerelle, épais, égal, le même qu'à la sortie de la Gorge. Tu appelles encore. Les gens du Nid se sont assis en demi-cercle, à distance, comme autour d'un musicien dont on ne connaîtrait pas l'instrument.",
+          "Dagon, lui, s'est installé tout contre le haut-parleur, le menton sur les genoux. Il écoute le grésillement avec un sérieux immense, hoche la tête de temps à autre comme si on lui confiait un secret passionnant, et quand tu le regardes, il lève un doigt : chut. Sur ton écran, la radio continue de chercher. Sur Silène, il arrive qu'un appel revienne longtemps après."
+        ],
+        defi:{ type:"attente", duree:3600*1000,
+          texte:["Laisse la radio ouverte et attends : peut-être qu'Asulf finira par répondre.",
+                 "Tu peux t'éloigner et revenir : elle cherche toute seule."],
+          reussite:[
+            "Rien. Une heure de grésillement, sans un seul mot dedans, pas même un morceau. Dagon a fini par emprunter la craie d'Aruns. Dans un coin de la plaque, il t'a dessiné, toi, tout petit, la bouche béante devant une radio énorme, et en face, rien : un grand vide qu'il a pris soin de laisser bien vide. À côté, il s'est ajouté lui-même, assis, qui bâille. Il te présente son œuvre sans un sourire, et attend que tu admettes qu'elle est ressemblante.",
+            "C'est alors que tout s'arrête. Sous vous, la grande forme se soulève, très lentement, à la façon d'une poitrine, et redescend. Autour de toi, tous ont posé les mains à plat sur le sol, en silence, une sorte de salut. Sous la peau de Dagon, ses veines se sont allumées d'un coup, une lumière pâle qui court jusqu'aux bouts de ses tresses. Un temps. Puis elle respire de nouveau comme avant, c'est-à-dire pas du tout, et la lumière se retire de lui à la manière d'une marée.",
+            "Personne ne t'explique rien. Dagon a déjà repris la craie : à côté du petit bonhomme qui crie, il ajoute une flèche qui part vers la Gorge et s'interrompt net au milieu du métal. Puis il hausse les épaules, l'air de dire que ça, au Nid, tout le monde le sait."
+          ] } },
+
+      /* ---- 3. Le dessin — ÉNIGME : La Couronne, et l'encoche vide (Aruns ; K153) ---- */
+      { indice:"Le Nid. Aruns veut te dessiner quelque chose.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q32/3.png",
+        arrivee:[
+          "Cette flèche a fait bondir Aruns. Il reprend la craie des doigts de Dagon et balaie le petit bonhomme d'un revers de manche, malgré son auteur qui lève les bras au ciel. Puis il dessine à sa place, en appuyant fort. Un rond noir dans un coin : la Gorge, tu la reconnais. Des flèches qui en jaillissent et filent vers le centre, vers un anneau d'arcs posés autour d'une lueur, qu'il fait briller en frottant la craie de biais.",
+          "D'autres flèches repartent de l'anneau en sens inverse ; celles-là, il les barre, une à une. Sur l'anneau, du côté d'où elles partent, il laisse une encoche vide et l'entoure deux fois. À côté, en ancien : RE·LAI. Il frappe du doigt ta radio, les flèches barrées, l'encoche, et recommence, toujours plus pressé, à croire que la vitesse finira par suffire. Dagon a sorti un bout de craie de sa poche ; il ajoute ton vaisseau, minuscule, près de l'anneau, puis, après réflexion, une petite flèche qui le fait passer à côté. Il te regarde, l'air de demander si tu tiens le pari."
+        ],
+        defi:{ type:"enigme",
+          texte:["Sur la plaque : la Gorge, des flèches qui entrent, un anneau, des flèches qui ressortent, barrées, et un trou dans l'anneau."],
+          question:"Ce qu'il dessine, tu l'as déjà vu sur ta carte de Cérès. Où faut-il aller ?",
+          motsCles:["couronne"],
+          indice:"Des arcs sombres, et au milieu, une lueur bleue.",
+          reussite:[
+            "La Couronne. Tu la retrouves parmi les lieux de Cérès, ses arcs sombres autour de leur lueur, et le dessin d'Aruns se met en place d'un coup. Tout ce qui entre dans Cérès par la Gorge passe par elle : les sondes, leur phrase de chaque nuit, celle qui t'a ouvert le passage. Et tout ce qui devrait en sortir aussi. Seulement, du côté qui renvoie, il manque quelque chose, et depuis, plus rien ne ressort.",
+            "Ta radio n'est pas cassée. Elle n'a pas de route, voilà tout. Asulf peut bien t'appeler toutes les nuits du haut de son toit, avec son fil de fer : rien de ce que tu lui dirais ne repasserait la Gorge dans l'autre sens.",
+            "Aruns pose le doigt sur l'encoche, sur toi, sur lui-même, sur ton vaisseau, et fait un pas vers la passerelle. Trois de ses compagnons le rattrapent avant le deuxième. Il proteste, ils tiennent bon, et Dagon observe la scène sans bouger, un coin de la bouche relevé, comme quelqu'un qui l'avait prédite mot pour mot. Par-dessus leurs bras, il te tend la plaque. Tu la prends."
+          ] } },
+
+      /* ---- 4. Le premier soir — CHOIX de Cercle (partagé : Dagon, Aruns, les deux) ---- */
+      { indice:"Le Nid, le soir venu.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q32/4.png",
+        arrivee:[
+          "Le soir, si l'on peut appeler soir l'heure où les lanternes s'éteignent l'une après l'autre et où les toiles se referment contre la lumière bleue de La Lanterne, on t'a fait une place sous une toile, à la lisière du village. Une couverture, un bol de quelque chose de chaud, un peu sucré, dont tu ignores le nom, et un pan de toile qu'on soulève pour voir la Gorge. La plaque repose près de toi, avec la seule ligne qu'il n'a pas effacée.",
+          "On ne te laisse pas seul longtemps. Aruns passe la tête sous la toile, l'écusson de travers, et t'invite à le suivre d'un mouvement du menton ; Dagon attend dehors, une craie dans chaque main, avec la tête d'un homme qui a eu une mauvaise idée et compte bien s'en servir."
+        ],
+        defi:{ type:"choix",
+          texte:["Ton premier soir au Nid. Tu…"],
+          options:[
+            { texte:"Suivre Dagon au bord du village, les jambes dans le vide comme lui, et compter avec lui les sondes qui entrent par la Gorge cette nuit.",
+              cercles:{ veilleurs:5 },
+              journal:"Il les comptait sur ses doigts, à voix haute, dans sa langue ; tu as appris à dire quatre en ancien sans savoir l'écrire. À la quatrième, il t'a montré quatre doigts, puis toi, et en a levé un cinquième." },
+            { texte:"Démonter ta radio avec Aruns, et chercher avec lui à quoi ressemblerait la pièce qui manque.",
+              cercles:{ assembleurs:5 },
+              journal:"Vous avez tout démonté, puis tout remonté : ta radio n'avait rien. Aruns a redessiné l'encoche sur la plaque et, à côté, en grand, la pièce qui devrait la combler, à peu près de la taille d'une main ouverte. Il y a posé la sienne pour te montrer." },
+            { texte:"Rester avec eux deux, une plaque entre vous trois : l'un écrit en ancien, l'autre dessine, et toi, tu dis le mot de chez toi.",
+              cercles:{ langues:5 },
+              journal:"Vous avez rempli trois plaques. Aruns écrivait, Dagon dessinait, tu disais. Dagon a répété ton mot pour <i>radio</i> une dizaine de fois, avec une grimace chaque fois plus appuyée, comme s'il fallait te pardonner de l'avoir inventé." }
+          ],
+          reussite:[
+            "Tard, quand toutes les lanternes sont éteintes, des pas résonnent encore sur les passerelles. Au matin, la plaque est toujours près de ta couverture, et quelqu'un a repassé à la craie le mot qu'Aruns avait gardé, pour qu'il ne s'efface pas."
+          ] } },
+
+      /* ---- 5. Le repli, puis le module — SCÈNE (Dagon, puis Aruns ; K149, K155) ---- */
+      { indice:"Le Nid, au matin. Retourne à ton vaisseau.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q32/5.png",
+        arrivee:[
+          "Au matin, tu regagnes ton vaisseau par un autre chemin que les passerelles, en longeant le dos de la grande forme là où le village s'arrête. Le sol y est plus chaud. Quelques pas plus loin, il se creuse en un repli large et doux, pareil à un lit défait, d'où monte une tiédeur qui donne envie de s'y asseoir, juste un instant.",
+          "Tu n'as pas fait deux pas qu'une poigne t'attrape par le col et te tire en arrière. C'est Dagon. Pour une fois, il ne plaisante pas, et il ne dessine rien non plus. Il te ramène jusqu'aux premières toiles sans te lâcher, puis frappe deux fois le sol du talon : ici. Son bras se tend vers le repli, la paume à plat, comme on pose un interdit : là, non. Ses veines, sous sa peau bleue, luisent à peine, et il évite de les regarder.",
+          "Aruns ne t'attend pas près de ton vaisseau, mais devant le bâtiment rond, au cœur du village. Il a tout vu, et ne fait aucun signe, ni à Dagon ni à toi. À ses côtés, un homme et une femme plus âgés, qui lui ressemblent, gardent l'entrée, les bras croisés, et longtemps rien ne bouge. Puis Aruns leur parle, très bas. La femme finit par soupirer, et pose la main sur la porte.",
+          "La porte glisse. Dedans, il fait froid et sombre, et ça sent le vieux métal. Des rangées de bidons montent jusqu'au plafond, alignés avec un soin de trois siècles, chacun avec son étiquette en ancien ; tu n'en lis que le premier son, PRO, et tu n'as pas besoin du reste. Aruns en tapote un, puis désigne ton vaisseau, là-bas : désormais, tu pourras faire le plein ici. Dagon siffle entre ses dents, longuement ; lui non plus n'avait jamais vu ce module ouvert. Quand tu repars, Aruns lève le bras vers le ciel, du côté où tournent les arcs de La Couronne, et le garde levé jusqu'à ce que tu sois remonté à bord."
+        ],
+        defi:{ type:"scene", bouton:"Remonter à bord" } }
+    ],
+    /* K151 : récompenses PROVISOIRES (revues à la fin du jeu avec les paliers de niveaux).
+       Pas de PA (K111 : Q31 et Q45 seulement). K155 : la boutique du Nid s'ouvre.
+       Gains des choix (serveur v252) : veilleurs 110 XP · assembleurs 3 composants
+       simples · langues 280 ₡. */
+    recompense:{ credits:2500, xp:440, flags:{ nidOuvert:true } }
+  }
+  ,
+
+  /* ---------------- Q33 — L'encoche (K150, K151, K156) ----------------
+     Donneurs : Aruns et Dagon, au Nid (lieuPrise:"nid"). K156 : Aruns se glisse à bord (une
+     vieille combinaison d'AREPO roulée dans sa couverture) ; Dagon reste au Nid et parle par la
+     radio — à l'intérieur de Cérès, tout circule (K153) ; le décodeur de bord écrit en glyphes
+     ce qu'il entend (Q31). Aruns ne quitte pas Cérès (K79).
+     La pièce (K96, K99) : la procédure l'a ÉJECTÉE de l'anneau ; elle dérive entre les arcs,
+     prise dans leur rotation. Morte ; la lumière de La Lanterne y fait passer une lueur (→ Q34).
+     Épreuves : brouillage · choix (« compétence » du lot : Force / Agilité / Intelligence) ·
+     ronde · nœud · scène. Aucune ne reprend un type de Q32 (glyphes, attente, énigme).
+     Aucun son nouveau : RE·TOUR (Q32) et DÉ·LAI (Q9) sont connus. Lot 1 : rien de traduit. */
+  {
+    id:"q33",
+    nom:"L'encoche",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Le lendemain, le Nid a perdu quelqu'un. Les lanternes vont et viennent plus vite que d'habitude, des voix s'appellent d'une toile à l'autre, et un homme et une femme que tu reconnais, ceux qui gardaient la porte du module, soulèvent chaque pan de toile en répétant le même nom. Aruns n'est nulle part.",
+      "Dagon, lui, ne cherche personne. Il t'attend sur la passerelle où tu l'as vu le premier jour, la plaque d'Aruns posée sur les genoux. Sans un mot, il redessine l'anneau, les arcs, l'encoche vide, et tend le bras vers La Couronne. Puis il laisse traîner un long regard sur ton vaisseau, sur la trappe de ta soute, et revient à toi avec l'air le plus innocent du monde.",
+      "Il te rend la plaque et te pousse vers le vaisseau d'une main dans le dos, avec la tête de quelqu'un qui envoie un enfant faire une course un peu trop grande pour lui."
+    ],
+    etapes:[
+
+      /* ---- 1. La voix du Nid — BROUILLAGE (ratable) : Aruns sort de la soute ---- */
+      { indice:"La Couronne. Approche-toi des arcs.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q33/1.png",
+        arrivee:[
+          "La Couronne grandit dans le hublot : des arcs sombres, immenses, disposés en cercle autour d'une lueur bleue, qui tournent sans un bruit, chacun à sa vitesse. Plus tu approches, plus tes instruments grésillent. C'est alors que, dans la soute, une couverture se met à bouger toute seule.",
+          "Aruns en sort à quatre pattes, de la poussière plein les cheveux, une combinaison d'AREPO roulée sous le bras, avec un sourire immense et pas l'ombre d'un remords. Il salue le hublot, la lueur, les arcs, comme de vieilles connaissances. Puis il montre ta radio, désigne le Nid loin derrière vous, et fait le geste de quelqu'un qu'on étrangle : là-bas, on doit le chercher encore.",
+          "Seulement, si près de La Couronne, ta radio ne rend plus qu'un chuintement qui couvre tout. Pour joindre le Nid, il faut caler ton onde sur la sienne, et la tenir."
+        ],
+        defi:{ type:"brouillage", tenir:6, duree:60, motDuree:"passage", bouton:"Chercher le Nid à la radio",
+          texte:["L'onde de La Couronne, en rouge, et la tienne, en vert. Cale-toi dessus, et suis-la."],
+          consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant la fin du passage.",
+          echec:"La Couronne reprend le dessus, et le chuintement noie tout. Aruns se laisse tomber sur ton siège en soupirant, en homme qui a tout son temps. Nouvelle tentative dans 8 h.",
+          fini:"La voix du Nid passe.",
+          reussite:[
+            "Les deux ondes se recouvrent, et le chuintement s'écarte comme un rideau. Une voix passe : celle de Dagon, tranquille, faussement aimable. Ton décodeur l'écrit en glyphes au fur et à mesure, et cette fois, tu sais tout lire : RE·TOUR — DÉ·LAI ? Derrière lui, très loin, deux autres voix parlent en même temps, beaucoup moins tranquilles.",
+            "Retour, quand ? Aruns a lu par-dessus ton épaule. Il fait mine de ne rien avoir vu, se découvre un intérêt soudain pour la lueur bleue, puis finit par se pencher vers le micro pour y glisser une phrase courte et très douce, que ton décodeur n'arrive pas à suivre. À l'autre bout, Dagon répond d'un seul mot, sec, et Aruns rougit jusqu'aux oreilles."
+          ] } },
+
+      /* ---- 2. Avant de sortir — CHOIX « compétence » (Force / Agilité / Intelligence) ---- */
+      { indice:"La Couronne. La pièce dérive entre les arcs.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q33/2.png",
+        arrivee:[
+          "Aruns l'a repérée avant toi. Le front collé au hublot, il pointe un éclat terne, de la taille d'une main ouverte, qui dérive entre deux arcs. Elle ne flotte pas au hasard : chaque fois qu'un arc la frôle, il la relance, et elle repart dans sa ronde, prisonnière de leur rotation depuis trois siècles. Sur l'anneau, tu retrouves l'encoche vide d'où elle a été éjectée, aussi nette que si on l'avait retirée hier.",
+          "Aruns déroule la combinaison qu'il a apportée, une vieille tenue d'AREPO rapiécée aux coudes, et l'enfile en sautillant sur un pied. Il fouille ta soute, en revient avec un rouleau de ligne, se l'attache à la taille d'un nœud que tu n'as jamais vu faire, et te tend l'autre bout. Il veut sortir la chercher lui-même ; tu as vu, hier, ce qu'il a fallu de bras pour le retenir."
+        ],
+        defi:{ type:"choix",
+          texte:["Aruns va sortir. Pour l'aider, tu choisis de…"],
+          options:[
+            { texte:"Rester au sas et tenir sa ligne à deux mains, les pieds calés contre le bord, pour qu'aucun arc ne l'emporte.",
+              cercles:{ racines:5 },
+              journal:"Tu as tenu la ligne tout du long. Quand un arc l'a tirée d'un coup sec, tu n'as pas lâché, et tes mains t'ont fait mal jusqu'au soir." },
+            { texte:"Sortir avec lui, attaché à la même ligne, pour attraper la pièce à deux s'il le faut.",
+              cercles:{ eclats:5 },
+              journal:"Vous êtes sortis ensemble, encordés l'un à l'autre. Il se déplaçait dans le vide comme on nage ; toi, tu as appris vite." },
+            { texte:"Rester aux commandes, observer la rotation des arcs et caler le vaisseau sur leur rythme, pour qu'il n'ait que le bras à tendre.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as calé le vaisseau sur la rotation, au plus juste. Aruns n'a eu qu'à tendre le bras, et il t'a fait signe à travers le hublot, ravi, comme si tout le mérite lui revenait." }
+          ],
+          reussite:[
+            "Aruns ferme son casque, cogne deux fois du poing contre la vitre pour te montrer que tout tient, et entre dans le sas. L'air s'en va dans un long sifflement, la porte extérieure s'ouvre sur le noir, et il se laisse glisser dehors, la ligne filant derrière lui."
+          ] } },
+
+      /* ---- 3. La pièce — RONDE (ratable) : compter les arcs pour Aruns ---- */
+      { indice:"La Couronne. Compte pour Aruns.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q33/3.png",
+        arrivee:[
+          "Dehors, Aruns flotte au bout de sa ligne, minuscule à côté des arcs. Ils passent près de lui sans bruit, chacun sur son tour, et la pièce danse entre eux sans jamais s'arrêter. S'il avance la main au mauvais moment, un arc la lui arrache, et lui avec.",
+          "Il se tourne vers toi, derrière la vitre de son casque, et attend. Il a compris que, d'où tu es, tu vois mieux que lui : il te laisse compter."
+        ],
+        defi:{ type:"ronde", nom:"Pointe", nb:2, observe:9, avance:3,
+          texte:["Deux arcs tournent autour de la pièce. Suis leurs pointes, et compte."],
+          consigne:"Observe la rotation des pointes, puis devine où sera chacune trois pas plus tard : entre elles, la voie sera libre, et c'est là qu'Aruns pourra la saisir.",
+          echec:"Une pointe passe là où tu ne l'attendais pas. Aruns se rejette en arrière juste à temps, la ligne vibre comme une corde trop tendue, et la pièce repart dans sa ronde. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Les deux pointes passent, l'une après l'autre, exactement où tu l'avais dit, et dans l'espace qu'elles laissent, Aruns tend la main. Il referme les doigts sur la pièce, la serre contre sa poitrine, et se retourne vers ton hublot en levant le poing, si fort qu'il en part à la renverse au bout de sa ligne."
+          ] } },
+
+      /* ---- 4. La ligne — NŒUD (non ratable) ; la pièce est morte, La Lanterne l'effleure ---- */
+      { indice:"La Couronne. La ligne d'Aruns s'est prise dans les arcs.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q33/4.png",
+        arrivee:[
+          "Il revient en tirant sur la ligne, et la ligne ne vient pas. En partant à la renverse, il l'a fait passer par-dessus un arc, puis sous un autre, et chaque tour la serre un peu plus. Pour la première fois depuis que tu le connais, Aruns ne sourit plus.",
+          "Dans la radio, la voix de Dagon revient, et ton décodeur s'affole à la suivre. Tu n'en lis rien ; tu n'en as pas besoin. Il parle lentement, sans s'arrêter, du ton qu'on prend pour rassurer quelqu'un qui a peur, ou pour se rassurer soi-même."
+        ],
+        defi:{ type:"noeud",
+          texte:["La ligne fait trois tours autour des arcs. Le passage se resserre à chaque fois."],
+          consigne:"Guide la ligne du doigt ou de la souris, du point plein au cercle, sans lever ni sortir du couloir.",
+          glisse:"La ligne frotte contre un arc, et tout tressaute au bout ; Aruns se plaque contre sa pièce. Tu recommences ce tour.",
+          fini:"Le dernier tour se défait d'un coup.",
+          reussite:[
+            "La ligne se libère, et Aruns revient à bord en se halant sur la ligne, main après main, bien plus vite qu'il n'était parti. Le sas se referme, l'air revient en sifflant, et il s'assoit par terre sans rien dire, la pièce sur les genoux. Dans la radio, Dagon s'est tu. Un temps.",
+            "La pièce est froide, lisse, sombre, avec en son milieu une sorte de fenêtre trouble où rien ne bouge. Aruns la retourne, la secoue, souffle dessus. Rien. Elle est morte, ou endormie, depuis trois cents ans.",
+            "Puis le vaisseau pivote, et la lumière bleue de La Lanterne entre par le hublot et la traverse de part en part. Une lueur court dans la fenêtre, à peine, le temps d'un battement, et s'éteint. Aruns l'a vue. Il lève les yeux vers l'étoile, puis vers toi, et son sourire revient d'un coup, tout entier."
+          ] } },
+
+      /* ---- 5. Le retour — SCÈNE : la famille, Dagon, l'étoile dessinée (→ Q34) ---- */
+      { indice:"Le Nid. Ramène Aruns chez lui.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q33/5.png",
+        arrivee:[
+          "Tout le Nid t'attend sur les passerelles. Au premier rang, la mère d'Aruns marche vers lui avant même que le sas soit ouvert, le serre à l'étouffer, puis le tient à bout de bras et le secoue, longuement, en lui disant des choses que tu n'as pas besoin de comprendre. Son père se tient derrière elle, les bras croisés, et ne dit rien, ce qui est pire.",
+          "Dagon, perché sur une pile de caisses, regarde la mère secouer son fils avec l'attention d'un connaisseur, en hochant la tête à chaque secousse. Quand Aruns passe près de lui, toujours tenu par le bras, il lui présente sa paume, et Aruns y claque la sienne sans s'arrêter. Puis il te jette un regard qui dit très clairement que la prochaine fois, c'est toi qu'on secouera.",
+          "Avant qu'on l'emmène, il parvient à se dégager une seconde. Il prend la plaque, dessine une étoile en trois traits et, dessous, la pièce avec sa petite fenêtre ; il relie les deux d'un trait, pose le doigt sur l'étoile et te regarde. La Lanterne. Puis il te met la pièce dans les mains, et sa mère le reprend par la manche."
+        ],
+        defi:{ type:"scene", bouton:"Ranger la pièce à bord" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Quête « compétence » du lot : gains des
+       choix (serveur v253) — racines +1 Force · éclats +1 Agilité · veilleurs +1 Intelligence. */
+    recompense:{ credits:2600, xp:460, flags:{ pieceCouronne:true } }
+  }
+  ,
+
+  /* ---------------- Q34 — La Lanterne (K150, K151, K157) ----------------
+     Donneurs : Aruns et Dagon, au Nid. K157 : personne à bord ; Aruns est consigné par ses parents
+     (après Q33), Dagon guide par la radio (le décodeur ne traduit rien : lot 1). Aruns n'apparaît
+     que par son dessin (introduction) et sa voix volée au micro (étape 5) ; Dagon mène.
+     La pièce (Q33) se recharge à La Lanterne (K96) : elle boit la lumière par gorgées, quand les
+     pulsations de l'étoile, sa fenêtre et la rotation du vaisseau coïncident.
+     Épreuves : traversée · calques · attente · choix · scène. Aucune ne reprend un type de Q33
+     (brouillage, ronde, nœud). Aucun son nouveau : RE·LAI (Q16) est connu. */
+  {
+    id:"q34",
+    nom:"La Lanterne",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Ce matin, au Nid, une toile reste fermée. C'est celle de la famille d'Aruns, et son père est assis devant, sur une caisse, les bras croisés, à regarder passer les gens comme une sentinelle. De l'intérieur ne sort aucun bruit. Personne ne s'en approche.",
+      "Dagon t'attend un peu plus loin, la plaque sous le bras. Pendant la nuit, quelqu'un y a dessiné l'étoile bleue, la pièce tenue face à elle, et tout autour une spirale de boucles qui se resserrent : approche-toi, mais doucement. Le trait est vif, appuyé, impatient. Dagon ne dit pas qui l'a fait ; il jette seulement un regard vers la toile fermée, puis vers toi, et hausse les épaules.",
+      "Il tapote ensuite la radio accrochée à sa ceinture, puis son oreille, et pointe La Lanterne : il te suivra d'ici. Avant que tu partes, il pose deux doigts sur la pièce, très vite, comme pour lui souhaiter bonne chance. À elle. Pas à toi."
+    ],
+    etapes:[
+
+      /* ---- 1. L'approche — TRAVERSÉE (ratable) : les jets de l'étoile (Dagon à la radio) ---- */
+      { indice:"La Lanterne. Approche-toi, doucement.",
+        cible:{ lieu:"e2_etoile_bleue" },
+        image:"images/quetes/q34/1.png",
+        arrivee:[
+          "De loin, La Lanterne n'est qu'une étoile bleue, petite, presque jolie. De près, elle crache. Des jets de lumière blanche en jaillissent sans prévenir, courts, droits, si brûlants que l'espace autour en tremble, puis s'éteignent comme ils sont venus. Ta coque se met à tiquer de chaleur bien avant que tu sois assez près.",
+          "Dans la radio, Dagon parle. Ton décodeur aligne des glyphes que tu ne sais pas lire, mais tu reconnais le ton : moqueur d'abord, celui qu'on prend pour encourager quelqu'un qui se lance dans une bêtise. Puis un premier jet passe tout près de toi, et le ton change."
+        ],
+        defi:{ type:"traversee", colonnes:7, lignes:9, lave:19, plaques:3, icone:"✴",
+          texte:["Autour de l'étoile, des zones où les jets jaillissent. Chaque zone franchie te dit combien de jets la touchent."],
+          consigne:"Atteins le bord du haut. Un chiffre = le nombre de zones brûlantes qui touchent celle-ci. 3 écrans thermiques — après, tu fais demi-tour pour 8 h. Quand rien ne permet de savoir où passer, tu peux tenter ta chance sans perdre d'écran ; mais une erreur que les chiffres permettaient d'éviter en coûte un.",
+          pariForce:"Un jet jaillit là où rien ne l'annonçait ; tu l'avais deviné, et tu l'évites de justesse. Ton écran tient.",
+          brulant:"Un jet te frôle : un écran thermique fond sur ta coque.",
+          echec:"Le dernier écran thermique cède, et l'alarme de coque hurle. Tu rebrousses chemin plein moteur, pendant que la radio crie dans une langue que tu ne comprends pas. Nouvelle tentative dans 8 h.",
+          fini:"Tu es assez près.",
+          reussite:[
+            "Tu passes le dernier jet et coupes les moteurs. Ici, la lumière est partout : elle entre par le hublot, traverse tes mains, et tu en vois les os, en ombre, comme sur une vieille radiographie. Au micro, Dagon souffle longuement, et ne dit plus rien de moqueur."
+          ] } },
+
+      /* ---- 2. La lumière — CALQUES (ratable) : trois rythmes à faire coïncider ---- */
+      { indice:"La Lanterne. Trouve comment la pièce boit la lumière.",
+        cible:{ lieu:"e2_etoile_bleue" },
+        image:"images/quetes/q34/2.png",
+        arrivee:[
+          "Tu sors la pièce et la tiens face à l'étoile. Rien, d'abord. Puis un éclair dans sa petite fenêtre, bref, et plus rien. Un autre, un peu plus tard. Elle ne prend pas la lumière comme une pierre chauffe au soleil : elle la boit par gorgées, à certains instants seulement, et laisse filer tout le reste.",
+          "Tu observes. La Lanterne bat à son propre rythme, à la façon d'un cœur. Ton vaisseau tourne lentement sur lui-même. Et les éclairs de la pièce tombent tantôt sur l'un, tantôt sur l'autre, jamais sur les deux. Il faut que les trois battent ensemble."
+        ],
+        defi:{ type:"calques",
+          noms:["Les pulsations de La Lanterne","La fenêtre de la pièce","Ta rotation"],
+          texte:["Trois rythmes, sur trois bandes. Quand ils coïncident, elle boit."],
+          echec:"Ça ne coïncide pas, et la fenêtre de la pièce reste noire. L'étoile a changé de rythme : il faudra attendre qu'elle revienne au premier. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Les trois bandes n'en font plus qu'une. Tu cales ta rotation sur les battements de l'étoile, et à chaque pulsation, la fenêtre de la pièce s'éclaire un peu plus longtemps, s'éteint un peu moins vite, comme quelqu'un qui reprend son souffle après une longue apnée."
+          ] } },
+
+      /* ---- 3. La charge — ATTENTE (1 h) : Dagon remplit le silence ---- */
+      { indice:"La Lanterne. Tiens la position.",
+        cible:{ lieu:"e2_etoile_bleue" },
+        image:"images/quetes/q34/3.png",
+        arrivee:[
+          "Maintenant, il faut tenir. Le vaisseau pointé sur La Lanterne, la rotation calée sur son rythme, la pièce dans le berceau que tu lui as fait d'une couverture, contre le hublot. La coque tique, l'air de la cabine sent le métal chaud. Tu ne bouges plus.",
+          "Dagon, lui, a décidé que le silence ne lui convenait pas. Il parle longuement, sans attendre de réponse, et le décodeur suit comme il peut. Il raconte peut-être une histoire, ou le Nid, ou rien du tout. De temps en temps, il s'interrompt, comme pour te laisser le temps de rater quelque chose, puis reprend, presque déçu."
+        ],
+        defi:{ type:"attente", duree:3600*1000,
+          texte:["Garde le cap sur l'étoile, le temps que la pièce se charge.",
+                 "Tu peux quitter l'écran : le pilote automatique garde la rotation."],
+          reussite:[
+            "Au bout d'une heure, la fenêtre de la pièce ne s'éteint plus entre deux pulsations. Elle brille d'un bleu calme, égal, qui ne doit plus rien à l'étoile. Dagon parlait encore quand c'est arrivé ; il s'arrête au milieu d'un mot. Un temps.",
+            "Puis sa voix revient, plus basse, et cette fois le décodeur n'essaie même plus de suivre. Tu n'as pas besoin de comprendre pour savoir qu'il ne plaisante pas. Quand il se tait de nouveau, c'est pour de bon, et pendant un long moment il n'y a plus dans la cabine que la lumière."
+          ] } },
+
+      /* ---- 4. Pendant la charge — CHOIX (Veilleurs, Éclats, Langues) ---- */
+      { indice:"La Lanterne. La pièce finit de se charger.",
+        cible:{ lieu:"e2_etoile_bleue" },
+        image:"images/quetes/q34/4.png",
+        arrivee:[
+          "La charge n'est pas tout à fait finie : la lueur gagne encore, par vagues, et tu as un moment devant toi avant de reprendre la route du Nid. La lumière de l'étoile a envahi la cabine ; tes mains, posées sur la console, sont presque transparentes."
+        ],
+        defi:{ type:"choix",
+          texte:["Le temps que la charge s'achève, tu choisis de…"],
+          options:[
+            { texte:"Regarder la lueur grandir dans la fenêtre, sans la quitter des yeux, jusqu'à ce qu'elle ne tremble plus du tout.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu l'as regardée jusqu'au bout. Au dernier moment, la lueur a cessé de trembler d'un coup, comme une flamme qu'on abrite enfin du vent." },
+            { texte:"Gratter, du bout de l'ongle, la crasse de trois siècles sur la fenêtre de la pièce, pour que la lumière passe mieux.",
+              cercles:{ eclats:5 },
+              journal:"Sous la crasse, la fenêtre était rayée, fendue même, sur un bord. Mais elle tenait. Une fois propre, elle a laissé passer deux fois plus de lumière." },
+            { texte:"Répondre à Dagon, au micro, avec les quelques sons d'ancien que tu sais dire.",
+              cercles:{ langues:5 },
+              journal:"Tu as dit RE, puis TOUR, puis tout ce que tu savais. Après un silence, il a répété derrière toi, très lentement, en exagérant chaque son, et il a ri si fort que le décodeur a renoncé." }
+          ],
+          reussite:[
+            "La lueur se stabilise enfin. Tu enveloppes la pièce dans sa couverture, la gardes contre toi, et fais pivoter le vaisseau vers le Nid."
+          ] } },
+
+      /* ---- 5. La nuit — SCÈNE, au Nid : Aruns vole le micro (RE·LAI → Q35) ---- */
+      { indice:"Rentre au Nid.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q34/5.png",
+        arrivee:[
+          "Quand tu approches du Nid, toutes les lanternes sont éteintes et les toiles fermées contre la lumière bleue. Le village dort. Dans ton haut-parleur, Dagon fredonne à mi-voix quelque chose de lent, sans fin, pour te guider jusqu'au bord.",
+          "Puis il se tait d'un coup. Un choc, un frottement, une exclamation étouffée, et une autre voix prend le micro, essoufflée, beaucoup trop près : Aruns, échappé de sa toile. Il parle vite, d'une traite, et ton décodeur ne retient qu'un seul mot, qu'il crie deux fois en riant : RE·LAI. Il pense déjà à La Couronne.",
+          "Derrière lui, une voix de femme approche. Un bruit de lutte, le micro qui tombe et roule, et au loin Dagon qui commente l'affaire d'une voix égale, comme on commente une course dont on connaît déjà le vainqueur. Puis le grésillement, tout simple. Sur tes genoux, la pièce luit doucement."
+        ],
+        defi:{ type:"scene", bouton:"Se poser au Nid" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v254) :
+       veilleurs 115 XP · éclats 1 composant avancé + 40 XP · langues 290 ₡. */
+    recompense:{ credits:2700, xp:480, flags:{ pieceChargee:true } }
+  }
+  ,
+
+  /* ---------------- Q35 — Ça passe (K150, K151, K158) — fin du lot 1 ----------------
+     Donneurs : Aruns et Dagon, au Nid. Le père d'Aruns lui rend la permission (et la combinaison).
+     La pièce rechargée (Q34) est reposée dans l'encoche ; la moitié qui émet se rallume.
+     K158 : La Couronne envoie D'ELLE-MÊME vers Maar un long message automatique, illisible
+     (glyphes trop rapides) — la levée de la quarantaine, que personne ne reçoit (dossier Maar
+     classé). RIEN ne change dans le jeu : le Protocole, les sondes, tout reste comme c'est ;
+     à Q45, le joueur comprend seulement ce qu'il a vu passer. Jamais le mot « quarantaine ».
+     K134 : à partir d'ici, Asulf traduit (mal) ; Dagon passe par lui. K91 : les transats.
+     K159 : le transat (la chaise pliante de Dagon) devient un OBJET DE QUÊTE LIÉ, gardé dans le
+     sac comme la bouture, à rendre plus tard à Asulf.
+     Épreuves : goupilles · réaction · attente · choix · scène. Aucune ne reprend un type de Q34
+     (traversée, calques). Aucun son nouveau. Pas de PA (K111). */
+  {
+    id:"q35",
+    nom:"Ça passe",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Au Nid, ce matin, la toile de la famille d'Aruns est ouverte. Son père en sort le premier, une main posée sur l'épaule de son fils, et marche droit vers ton vaisseau, sans se presser, à la manière de quelqu'un qui vient rendre une chose empruntée. Aruns, pour une fois, ne dit rien. Il regarde ses pieds, et il a du mal à ne pas sourire.",
+      "Devant toi, le père s'arrête. Il tend à Aruns la vieille combinaison d'AREPO, pliée avec soin, la retient un moment de plus que nécessaire, puis la lâche et pousse son fils vers la passerelle d'une petite tape entre les omoplates. Cette fois, il a le droit. Sur sa pile de caisses, Dagon applaudit, lentement, en détachant chaque coup.",
+      "Tu sors la pièce de sa couverture. Dans sa fenêtre, la lueur bleue n'a pas faibli de la nuit."
+    ],
+    etapes:[
+
+      /* ---- 1. L'encoche — GOUPILLES (ratable) : les verrous grippés (Aruns) ---- */
+      { indice:"La Couronne. Remets la pièce à sa place.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q35/1.png",
+        arrivee:[
+          "La Couronne tourne comme au premier jour, lente, muette. Aruns sort encordé, la pièce serrée contre lui, et se laisse porter le long de l'anneau jusqu'à l'encoche. Tu le suis depuis le hublot. Il présente la pièce devant le vide qui l'attend : elle en a exactement la forme.",
+          "Mais elle n'entre pas. Autour de l'encoche, cinq verrous devaient la tenir, et le froid de trois siècles les a soudés à moitié. Aruns frappe le premier du plat de la main ; rien. Il se tourne vers toi et lève les mains, paumes ouvertes : à toi de lui dire quand taper."
+        ],
+        defi:{ type:"goupilles", nb:5, felures:2,
+          texte:["Cinq verrous grippés par le froid. Un coup juste les libère ; un coup de travers les grippe davantage."],
+          consigne:"Dis à Aruns de taper au bon moment : quand le curseur passe dans le vert.",
+          libelle:"Verrou", bouton:"Commencer", boutonCoup:"Taper",
+          fele:"Le coup tombe à faux, et le métal grince sous le gant d'Aruns. Le verrou tient encore. Reprends depuis le premier, plus doucement.",
+          echec:"Un coup de trop : le verrou se bloque tout à fait, et Aruns secoue sa main engourdie. Il faudra que le métal se détende. Nouvelle tentative dans 8 h.",
+          fini:"Le cinquième verrou lâche.",
+          reussite:[
+            "Le dernier verrou cède, et la pièce glisse dans l'encoche avec un claquement que tu sens jusque dans la coque, sans l'entendre. Les cinq verrous se referment d'eux-mêmes autour d'elle. Aruns pose les deux mains à plat sur l'anneau, comme on salue au Nid, et reste là un moment sans bouger."
+          ] } },
+
+      /* ---- 2. La moitié qui émet — RÉACTION (ratable) ; le message automatique (K158) ---- */
+      { indice:"La Couronne. Rallume la moitié qui émet.",
+        cible:{ lieu:"e2_cercles_bleus" },
+        image:"images/quetes/q35/2.png",
+        arrivee:[
+          "La pièce est en place, et sa fenêtre brille. Pourtant, toute la moitié de l'anneau qui devrait renvoyer reste éteinte. Ta radio, elle, a trouvé La Couronne : sur son écran s'affiche un schéma que tu n'avais jamais vu, des bornes reliées par des pistes, presque toutes grises.",
+          "Aruns, revenu à bord, se penche par-dessus ton épaule, les cheveux encore collés par le casque. Il compte les bornes du bout du doigt, puis lève trois doigts, l'air désolé : c'est tout ce que la pièce peut donner en une seule fois. Il faudra bien choisir où."
+        ],
+        defi:{ type:"reaction", colonnes:7, lignes:5, impulsions:3, bornes:8, portee:2, essais:2,
+          texte:["Huit bornes à rallumer, des pistes à moitié mortes, et trois impulsions à donner."],
+          consigne:"Choisis où donner tes impulsions (touche un point ; encore une fois pour l'enlever), puis lance.",
+          bouton:"Donner les impulsions",
+          fini:"Tout l'anneau s'éclaire.",
+          echec:"Les bornes clignotent à moitié, puis retombent. La pièce s'est vidée tout entière ; il faut la laisser reprendre sa lueur. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Les bornes s'allument une à une, et sur tout le côté éteint de l'anneau, des lumières se réveillent l'une après l'autre, comme une rangée de fenêtres au crépuscule. La Couronne émet de nouveau. Tu tends la main vers le micro pour appeler Asulf.",
+            "Ton décodeur te devance. D'un coup, il se remplit de glyphes : des lignes et des lignes, serrées, qui défilent bien trop vite pour que tu en saisisses un seul son, et qui partent toutes dans la même direction, vers la Gorge, vers Maar. Puis elles s'arrêtent net, et l'écran redevient vide.",
+            "Aruns a vu, lui aussi. Il fronce les sourcils, regarde l'écran, la Gorge au loin, puis toi. Tu n'en sais pas plus que lui. Il hausse les épaules, et son sourire revient : La Couronne parle, et le reste peut attendre. Il montre le Nid."
+          ] } },
+
+      /* ---- 3. L'appel — ATTENTE (30 min), au Nid : Asulf répond ---- */
+      { indice:"Le Nid. Appelle Asulf, devant tout le village.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q35/3.png",
+        arrivee:[
+          "Quand tu te poses, tout le Nid est là. On a tiré ta radio de bord jusqu'au milieu du village, sur une caisse, et les gens se sont assis autour en cercle serré, leurs lanternes posées par terre. Aruns s'est assis devant, sa mère à côté de lui. Dagon s'est réservé la meilleure place, à deux doigts du haut-parleur, et réclame le silence d'un geste, ce qu'il est le seul à ne pas respecter.",
+          "Tu appelles Asulf. Cette fois, ton appel ne s'écrase pas sur le grésillement : il part, tu le sens partir, vers La Couronne, puis la Gorge, puis plus loin. Il ne reste qu'à attendre qu'il arrive à destination, et que quelqu'un, là-bas, soit encore assis sur un toit."
+        ],
+        defi:{ type:"attente", duree:1800*1000,
+          texte:["Ton appel est parti. Attends la réponse.",
+                 "Tu peux t'éloigner et revenir : le Nid garde l'oreille collée à la radio."],
+          reussite:[
+            "Il faut une demi-heure. Puis le haut-parleur crachote, tousse, et une voix en sort, déformée, lointaine, mais que tu reconnaîtrais entre mille. « … allô ? Allô ? C'est toi ? Mais t'es OÙ, là ? Ça fait des jours ! J'ai cru que la Gorge t'avait… enfin. J'ai rien cru. J'ai attendu. Sur mon toit. Réglementairement. »",
+            "Autour de toi, personne ne bouge. Pendant trois cents ans, rien n'est venu d'au-delà de la Gorge ; et voilà qu'une voix sort d'une caisse, au cœur du village, et parle une langue qu'aucun d'eux ne comprend. La mère d'Aruns a porté une main à sa bouche. Un temps."
+          ] } },
+
+      /* ---- 4. La traduction — CHOIX (Langues, Veilleurs, Racines) : Asulf traduit, mal (K134) ---- */
+      { indice:"Le Nid. Dagon veut parler à Asulf.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q35/4.png",
+        arrivee:[
+          "Dagon n'y tient plus. Il se penche sur le micro et parle longtemps, de sa voix tranquille, en articulant chaque mot comme pour un enfant. À l'autre bout, un silence, puis Asulf, très concentré : « Attends. Attends, je connais des mots. C'est du jargon de registre, ça, enfin, à peu près. Il dit que… que t'es une sonde. Non. Une sonde qui… mange ? Une sonde qui mange chez eux. C'est ça ? T'as mangé chez des gens ? »",
+          "Dagon reprend, plus lentement encore, et Asulf traduit à mesure, en se trompant une fois sur deux, en se corrigeant, en inventant le reste. Le Nid ne comprend pas ce qu'Asulf raconte, mais il comprend très bien que ce n'est pas ce que Dagon a dit, et le rire monte, d'abord au premier rang, puis partout."
+        ],
+        defi:{ type:"choix",
+          texte:["Pour cette première conversation d'un côté à l'autre de la Gorge, tu choisis de…"],
+          options:[
+            { texte:"Laisser Dagon et Asulf se parler, et rectifier pour l'un ce que tu as compris de l'autre.",
+              cercles:{ langues:5 },
+              journal:"Tu as passé la soirée à démêler les malentendus. À la fin, Dagon disait une chose, Asulf en traduisait une autre, et tu en racontais une troisième ; tout le monde avait l'air content." },
+            { texte:"Reprendre le micro et raconter à Asulf, dans l'ordre, tout ce que tu as vu à Cérès.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu lui as tout raconté : le Nid, La Couronne, l'étoile, la pièce. Il ne t'a interrompu qu'une fois, pour demander si les gens du Nid étaient « inventoriés ». Tu n'as pas su quoi répondre." },
+            { texte:"Passer le micro à Aruns et à sa famille, pour qu'ils disent à quelqu'un, de l'autre côté, qu'ils sont là.",
+              cercles:{ racines:5 },
+              journal:"Aruns a parlé le premier, puis sa mère, puis d'autres, l'un après l'autre. Asulf n'a rien traduit. Il a écouté jusqu'au bout, et à la fin il a dit, tout bas : « Je note. Je note tout. »" }
+          ],
+          reussite:[
+            "La nuit est bien avancée quand les voix se calment. Les lanternes ont presque fini de brûler autour de la caisse, et personne n'a envie d'aller dormir."
+          ] } },
+
+      /* ---- 5. Les transats — SCÈNE (K91) : fin du lot 1 ---- */
+      { indice:"Le Nid. Asulf a encore une question.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q35/5.png",
+        arrivee:[
+          "Au moment où tu vas couper, Asulf se racle la gorge. « Attends. Avant. J'ai une question. La seule, en vrai. » Un silence, lourd de sens. « Est-ce qu'il y a des transats, là-bas ? »",
+          "Tu ne sais pas comment dire ça en ancien. Tu essaies avec les mains : tu t'assois dans le vide, tu bascules en arrière, tu croises les bras derrière la tête. Aruns reste perplexe. Dagon, lui, a compris tout de suite.",
+          "Il se lève, disparaît sous une toile et revient en traînant une vieille chaise pliante d'AREPO, toile délavée, armature tordue, qu'il déplie en trois gestes devant la radio. Il s'y allonge de tout son long, les mains croisées sous la nuque, et pousse un long soupir d'aise, bien fort, tout près du micro.",
+          "« Quoi ? Qu'est-ce qui se passe ? C'est quoi, ce bruit ? Il y en a un ? IL Y EN A UN ? » Personne ne lui répond. Autour de la caisse, le Nid rit, et Dagon ne se relève pas.",
+          "Au matin, la chaise pliante t'attend au pied de ta passerelle, repliée, sanglée avec soin. Personne ne l'a vue arriver. Sur la toile, quelqu'un a dessiné à la craie un petit bonhomme allongé, l'air très content de lui, et une flèche qui pointe vers chez toi. Elle est pour Asulf."
+        ],
+        defi:{ type:"scene", bouton:"Laisser Asulf se poser la question" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v255) :
+       langues 120 XP · veilleurs 300 ₡ · racines 3 composants simples + 40 XP. */
+    recompense:{ credits:2800, xp:500, objets:{ transat:1 }, flags:{ radioGorge:true } }
+  }
+  ,
+
+  /* ---------------- Q36 — Le quai (lot 2 : K160 → K162) ----------------
+     Lot 2 « ceux qui sont restés » : l'histoire de l'attente (K160). Donneurs : Aruns et Dagon, au
+     Nid ; Aruns mène (son père l'a laissé partir en Q35), Dagon à l'introduction et à la radio.
+     K134 : au lot 2, la traduction est presque normale — Asulf traduit en continu depuis son toit ;
+     les répliques d'Aruns et de Dagon s'écrivent entre guillemets, un mot intraduisible de temps en
+     temps. Le joueur ne parle toujours pas entre guillemets (K68).
+     Le Terminus : le quai de la correspondance (K78), fermé par la procédure (K99) ; le registre des
+     arrivées, une date de départ prévue passée depuis trois siècles, le nom du premier Aruns (K160) ;
+     la navette de service, sortie (K161 → Q37). Jamais « quarantaine » : « procédure ».
+     Épreuves : séquence · labyrinthe · piratage · choix · scène. Aucune ne reprend un type de Q35
+     (goupilles, réaction). */
+  {
+    id:"q36",
+    nom:"Le quai",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Depuis la nuit des transats, Asulf n'a plus lâché sa radio. Il traduit tout, tout le temps, depuis son toit de La Toundra, avec la conviction de quelqu'un qui a enfin trouvé sa vocation. Ce que dit le Nid te parvient maintenant presque entier, avec de temps en temps un « là, j'ai pas de mot » et un long reniflement.",
+      "Ce matin, Aruns t'attend au bord du village, la combinaison déjà sur le dos. « Le Terminus. » Il pointe l'anneau de glace, au loin, et ses yeux brillent. « Le quai où devait arriver le retour. Personne n'y est allé depuis l'installation. Personne. » Derrière lui, son père hoche la tête une seule fois, et pour une fois il n'y a pas de dispute.",
+      "Sur sa pile de caisses, Dagon lève un doigt. « Essaie de revenir. Et si tu y arrives, rapporte-moi quelque chose de doré. » Asulf traduit, après réflexion : « Il dit… revenir, c'est bien. Et un doré. Un poisson ? Je sais pas. Un truc doré. » Dagon n'a pas compris un mot de la traduction, mais il en a compris le ton, et il pousse un soupir de martyr."
+    ],
+    etapes:[
+
+      /* ---- 1. L'approche — SÉQUENCE (ratable) : répondre à la balise d'accostage ---- */
+      { indice:"Le Terminus. Approche-toi du quai.",
+        cible:{ lieu:"e2_planete_glace_doree" },
+        image:"images/quetes/q36/1.png",
+        arrivee:[
+          "De près, le Terminus est une planète pâle prisonnière d'un anneau de glace si large qu'on y poserait une ville. Le long de l'anneau, les structures dorées se suivent à intervalles réguliers, toutes pareilles, toutes éteintes : des quais, des passerelles, des bras d'amarrage repliés comme des insectes endormis. Aruns a le nez collé au hublot et ne dit plus rien, ce qui ne lui ressemble pas.",
+          "Une seule lueur, sur un bras d'amarrage : une balise qui clignote encore, faiblement, toujours le même motif. « Elle demande qui vous êtes », lâche Asulf, qui ne traduit rien du tout puisque personne n'a parlé ; il a seulement reconnu le genre. « Les quais, ça veut des réponses. Fais comme elle. »"
+        ],
+        defi:{ type:"sequence", longueur:8,
+          texte:["La balise d'accostage allume ses feux l'un après l'autre. Rends-lui la même séquence, jusqu'au bout."],
+          echec:"Un feu de trop, ou de travers : la balise s'éteint, et met longtemps à se rallumer. Aruns se cache le visage dans les mains. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Le dernier feu se rallume et reste allumé. Le long du bras d'amarrage, d'autres lumières suivent, une à une, jusqu'à un sas qui s'entrouvre en crachant du givre. Le quai t'accepte. Aruns pousse un cri de joie qui sature la radio, et Asulf s'en plaint longuement."
+          ] } },
+
+      /* ---- 2. Les coursives — LABYRINTHE : le bureau d'embarquement ---- */
+      { indice:"Le Terminus. Trouve le bureau d'embarquement.",
+        cible:{ lieu:"e2_planete_glace_doree" },
+        image:"images/quetes/q36/2.png",
+        arrivee:[
+          "Dedans, il fait un froid qui mord à travers les gants. Les coursives du quai partent dans tous les sens, tapissées de givre, éclairées seulement par vos lampes. Sur les murs, des flèches et des panneaux en ancien, que ton décodeur lit à peu près : ACCUEIL, CONTRÔLE, ATTENTE, EMBARQUEMENT.",
+          "Aruns touche à tout. Il ouvre chaque trappe, lit chaque plaque, frotte le givre de chaque panneau avec sa manche et te l'annonce comme une victoire. Il veut trouver l'endroit où l'on montait à bord : « C'est là qu'ils écrivaient les noms. » Asulf traduit sans rien changer, pour une fois."
+        ],
+        defi:{ type:"labyrinthe", colonnes:7, lignes:8,
+          texte:["Les coursives givrées du quai, dans le noir."],
+          consigne:"Quelque part dans le quai, le bureau ◆ : à toi de le trouver.",
+          bloque:"Une cloison effondrée te barre le chemin : fais le tour. Avance case par case.",
+          fini:"Une porte, sous le givre : EMBARQUEMENT.",
+          reussite:[
+            "Le bureau est une petite pièce ronde : un comptoir, une console éteinte, et des sièges alignés face à une grande baie qui donne sur l'anneau. Des sièges pour attendre. Sur l'un d'eux, quelqu'un a oublié un gant, il y a trois siècles ; le givre l'a gardé exactement comme il était tombé."
+          ] } },
+
+      /* ---- 3. Le registre — PIRATAGE (ratable) : le matricule MAAR-12/42 (Q28) ---- */
+      { indice:"Le Terminus. Réveille le registre.",
+        cible:{ lieu:"e2_planete_glace_doree" },
+        image:"images/quetes/q36/3.png",
+        arrivee:[
+          "La console se réveille à moitié quand tu l'effleures : un écran pâle, une seule ligne, ACCÈS : MATRICULE. Elle veut savoir qui consulte. Toi, tu en as un : MAAR-12/42, celui que tu as fait graver sur ta coque, à la station d'Ancolie.",
+          "« Donne-lui le tien, pas le mien », grogne Asulf. « Le mien, il est imputé de partout. » La console ne l'acceptera qu'au bon moment, quand son curseur passe, et pas une seconde à côté."
+        ],
+        defi:{ type:"piratage", manches:4, vitesse:1700,
+          texte:["Le registre accepte un matricule si on le lui donne au bon moment. Saisis-le quatre fois de suite."],
+          fini:"Matricule accepté.",
+          echec:"Ton matricule arrive trop tard, ou trop tôt : la console se rendort en ronronnant. Aruns tapote l'écran, vexé pour toi. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "L'écran s'allume en entier, et le registre défile. Asulf lit avec toi, ligne après ligne, dans ce jargon de registre qu'il connaît mieux que personne : TERMINUS DE MAAR — CORRESPONDANCE DE RETOUR. Puis des équipages, des dizaines, venus d'autres secteurs : MAAR-3, MAAR-7, MAAR-9… À chaque ligne, le même mot à la fin : EN ATTENTE.",
+            "« Il y a une date », dit Asulf, plus doucement. « Départ prévu. » Il te la lit. Elle est passée depuis trois cents ans. Personne, au Nid, ne la connaissait.",
+            "Aruns a cessé de toucher à tout. Il fait défiler lui-même, lentement, jusqu'à une ligne qu'il lit, puis relit, du bout du doigt : ARUNS — EN ATTENTE. Il ne dit rien. Un temps. Puis il lève les yeux vers toi avec l'air de quelqu'un à qui un personnage de légende vient de serrer la main.",
+            "Tout en bas du registre, après le dernier nom, une ligne de plus, sans nom, sans équipage : QUAI : FERMETURE — PROCÉDURE. Asulf la lit deux fois. « Procédure », répète-t-il. « Chez nous aussi, on dit ça quand on veut pas dire pourquoi. »"
+          ] } },
+
+      /* ---- 4. Les noms — CHOIX (Veilleurs, Assembleurs, Racines) ---- */
+      { indice:"Le Terminus. Les noms sont là.",
+        cible:{ lieu:"e2_planete_glace_doree" },
+        image:"images/quetes/q36/4.png",
+        arrivee:[
+          "Des centaines de noms, sur un écran qui peut s'éteindre au premier coup de froid. Aruns ne veut pas partir sans eux. Toi non plus."
+        ],
+        defi:{ type:"choix",
+          texte:["Avant de quitter le bureau, tu choisis de…"],
+          options:[
+            { texte:"Recopier tous les noms, un à un, pour les rapporter au Nid.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as recopié les noms pendant des heures, les doigts gourds. Aruns te dictait ; il connaissait déjà les premiers par cœur." },
+            { texte:"Remettre en état la lampe de la console, pour qu'elle ne s'éteigne plus.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as remplacé un fusible grillé et un câble cuit par le froid. Quand vous êtes partis, l'écran brillait toujours, seul dans le bureau, comme une veilleuse." },
+            { texte:"Lire les noms à la radio, un par un, pour que tout le Nid les entende.",
+              cercles:{ racines:5 },
+              journal:"Tu as lu, et Asulf a relayé. Au Nid, on t'a raconté plus tard qu'à chaque nom, quelqu'un levait la main : un descendant, presque à chaque fois." }
+          ],
+          reussite:[
+            "Quand tu te lèves enfin, Aruns est déjà à la baie, le front contre la vitre. Il regarde vers l'extrémité de l'anneau."
+          ] } },
+
+      /* ---- 5. Le bout du quai — SCÈNE : la navette de service, sortie (K161 → Q37) ---- */
+      { indice:"Le Terminus. Le bout du quai.",
+        cible:{ lieu:"e2_planete_glace_doree" },
+        image:"images/quetes/q36/5.png",
+        arrivee:[
+          "Tout au fond, les bras d'amarrage se succèdent, tous occupés par du vide et du givre, sauf le dernier. Celui-là est différent : plus petit, plus proche, fait pour un engin qui allait et venait. Il est vide aussi, mais autrement, ses pinces ouvertes, comme une main qui a lâché quelque chose.",
+          "Sur la plaque, en ancien : NAVETTE DE SERVICE — SORTIE. Pas RENTRÉE. Pas RANGÉE. SORTIE, et rien après. Aruns pose la main sur la plaque et se tourne vers la radio. « Il y avait une navette ? »",
+          "Personne ne répond. Au Nid, Dagon, qui a un mot pour tout, se tait. Asulf aussi. Par la baie, au loin, le Trouble roule ses nuées violettes, sans un bruit."
+        ],
+        defi:{ type:"scene", bouton:"Rentrer au Nid" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v256) :
+       veilleurs 125 XP · assembleurs 3 composants simples + 40 XP · racines 310 ₡. */
+    recompense:{ credits:2900, xp:520, flags:{ registreTerminus:true } }
+  }
+  ,
+
+  /* ---------------- Q37 — Ce qui entre (lot 2 : K160, K161, K163, K164) ----------------
+     Donneurs : Aruns et Dagon, au Nid ; Dagon mène, à la radio (il ne quitte pas la bestiole) ;
+     Aruns, retenu par sa famille (les noms du Terminus), donne l'indicatif de la navette.
+     Quête « compétence » du lot 2 (Force / Agilité / Intelligence).
+     K161 : la navette de service du Terminus, perdue dans le Trouble. K164 : la Gorge l'a refusée
+     parce qu'elle lit l'IMMATRICULATION (une navette du Terminus, « d'ici »), pas les passagers ;
+     le vaisseau du joueur, immatriculé MAAR-12 (Q28), repasse. « Un registre lit des cases, pas des
+     gens » (Q25). Jamais « quarantaine » ; rien ne change dans le monde (K158).
+     Épreuves : brouillage · choix · crevasse · attente · scène. Aucune ne reprend un type de Q36
+     (séquence, labyrinthe, piratage). */
+  {
+    id:"q37",
+    nom:"Ce qui entre",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Au Nid, ce matin, la famille d'Aruns a étalé sur une caisse les noms rapportés du Terminus, et elle les relit à voix haute, un par un, comme on fait l'appel. Aruns est assis au milieu ; il ne peut pas partir, il le sait, et il ne le demande même pas. Quand il te voit, il se lève juste le temps de te glisser un bout de plaque : l'indicatif de la navette, recopié au quai, d'une écriture appliquée qu'on ne lui connaissait pas.",
+      "C'est Dagon qui a pris la radio. « Le Trouble. » Il laisse traîner le mot, ravi de son effet. « Personne n'en est jamais revenu. Mais toi, bien sûr, tu seras le premier. » Asulf traduit, et ajoute de lui-même, après une pause : « Je crois que c'était pas un compliment. »",
+      "« Je te guiderai quand même », reprend Dagon. « Pour voir. » Asulf cherche, hésite, et rend ça comme il peut : « Il dit qu'il veut voir. Voir quoi, il dit pas. Je pense qu'il parle de ta chute. »"
+    ],
+    etapes:[
+
+      /* ---- 1. La balise — BROUILLAGE (ratable) : l'indicatif de la navette sous le bruit du gaz ---- */
+      { indice:"Le Trouble. Cherche la balise de la navette.",
+        cible:{ lieu:"e2_planete_violette" },
+        image:"images/quetes/q37/1.png",
+        arrivee:[
+          "De près, le Trouble n'a pas de surface. Ce sont des nuées violettes, épaisses comme du lait tourné, qui roulent les unes sur les autres sans un souffle de vent, et sous elles d'autres nuées, plus sombres, à perte de vue. Rien où se poser, rien où s'accrocher. Ta radio, elle, n'a jamais été aussi bavarde : le gaz grésille sur toutes les fréquences à la fois.",
+          "Et dessous, très loin, presque rien : un signal qui revient, toujours le même, à intervalles réguliers. Tu ressors le morceau de métal d'Aruns. C'est l'indicatif de la navette, et il répète depuis trois cents ans qu'elle est là."
+        ],
+        defi:{ type:"brouillage", tenir:6, duree:60, motDuree:"signal", bouton:"Chercher la balise",
+          texte:["Le grésillement du Trouble, et sous lui, la balise, en rouge. Ton onde, en vert. Cale-toi dessus, et suis-la."],
+          consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant que le signal ne se perde.",
+          echec:"Le gaz recouvre tout, et la balise disparaît sous le bruit. « Déjà ? » demande Dagon, à peine surpris. Nouvelle tentative dans 8 h.",
+          fini:"La balise ne te lâche plus.",
+          reussite:[
+            "Tu tiens la balise, et elle te donne ce qu'elle a : une direction, droit vers le fond, dans les nuées les plus sombres. À la radio, Dagon émet un petit bruit approbateur, aussitôt corrigé : « Une fois n'est pas coutume. » Asulf traduit, très fier d'avoir trouvé l'expression."
+          ] } },
+
+      /* ---- 2. Comment plonger — CHOIX « compétence » (Force / Agilité / Intelligence) ---- */
+      { indice:"Le Trouble. Il faut plonger.",
+        cible:{ lieu:"e2_planete_violette" },
+        image:"images/quetes/q37/2.png",
+        arrivee:[
+          "La balise est sous toi, quelque part dans le violet le plus épais. Les nuées tournent en courants lents et lourds, qui t'emporteraient sans effort si tu te laissais faire. Dagon a cessé de parler ; il attend de voir ce que tu vas tenter, et son silence en dit long sur ce qu'il en pense."
+        ],
+        defi:{ type:"choix",
+          texte:["Pour plonger dans le Trouble, tu choisis de…"],
+          options:[
+            { texte:"Forcer à travers les courants, la barre à deux mains, sans leur laisser le dessus.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as tenu la barre à t'en faire blanchir les jointures. Le vaisseau a protesté de partout, mais il est passé où tu voulais." },
+            { texte:"Louvoyer entre les nuées, au plus près, en profitant de chaque trouée.",
+              cercles:{ eclats:5 },
+              journal:"Tu as glissé d'une trouée à l'autre, jamais deux fois au même endroit. Dagon a fini par dire quelque chose qu'Asulf a traduit par « pas mal », en précisant que ça lui coûtait." },
+            { texte:"Lire les courants sur tes instruments, et ne bouger qu'à coup sûr.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu as regardé les courants tourner jusqu'à en saisir le rythme, puis tu t'es glissé dedans au bon moment. Dagon a trouvé ça lent. Il n'a rien trouvé d'autre à redire." }
+          ],
+          reussite:[
+            "Tu pousses le nez du vaisseau vers le bas, et le Trouble se referme au-dessus de toi."
+          ] } },
+
+      /* ---- 3. Dans les nuées — CREVASSE (ratable) : quelques mètres de visibilité ---- */
+      { indice:"Le Trouble. Descends jusqu'à l'épave.",
+        cible:{ lieu:"e2_planete_violette" },
+        image:"images/quetes/q37/3.png",
+        arrivee:[
+          "Dedans, plus de ciel, plus d'étoiles, plus de haut ni de bas : du violet, partout, si dense que tes phares n'y percent qu'un trou de quelques mètres. Les nuées s'écartent devant toi comme un rideau et se referment derrière. Seule la balise, en bas, te dit encore où aller.",
+          "« Tu vas te perdre », annonce Dagon, d'un ton égal. « Je le dis maintenant, pour qu'on ne vienne pas me reprocher de n'avoir rien dit. » Asulf traduit, puis te confie, à mi-voix, qu'il a un cousin comme ça."
+        ],
+        defi:{ type:"crevasse", n:11, rayon:1, marge:1.5,
+          texte:["Les nuées du Trouble, à travers tes phares. Quelques mètres devant toi, jamais plus."],
+          consigne:"Rejoins l'épave, en bas. Chaque manœuvre compte : le gaz ronge ta coque.",
+          echec:"Ta coque gémit, tes phares faiblissent, et le gaz se referme partout à la fois. Tu remontes à l'aveugle, en suivant la balise à l'envers. « Ah », dit seulement Dagon. Nouvelle tentative dans 8 h.",
+          fini:"Sous toi, une forme dorée, immobile dans le violet.",
+          reussite:[
+            "L'épave est là, posée sur rien, au fond d'une poche de gaz plus calme. Elle est petite, à peine plus grande que ton vaisseau, et dorée sous la crasse, comme les structures du Terminus. Pas une trace de choc. Elle n'est pas tombée : elle a seulement cessé d'avancer, et le Trouble l'a gardée."
+          ] } },
+
+      /* ---- 4. Le journal — ATTENTE (30 min) : la Gorge a refusé la navette (K164) ---- */
+      { indice:"Le Trouble. Vide la mémoire de l'épave.",
+        cible:{ lieu:"e2_planete_violette" },
+        image:"images/quetes/q37/4.png",
+        arrivee:[
+          "Tu t'arrimes contre son flanc et branches ta console sur la sienne. Il lui reste un filet d'énergie, juste assez pour se souvenir. Sa mémoire de bord commence à passer dans la tienne, lentement, ligne par ligne, comme quelqu'un qui reprend la parole après s'être tu très longtemps.",
+          "Dagon ne dit rien. Asulf non plus. Pour une fois, tout le monde attend la même chose."
+        ],
+        defi:{ type:"attente", duree:1800*1000,
+          texte:["Ses souvenirs passent dans ta console. Laisse-les venir.",
+                 "Tu peux t'éloigner et revenir : ta console reste branchée."],
+          reussite:[
+            "C'est un journal de bord, court, en ancien. Asulf le lit pour toi, et pour le Nid qui écoute : départ du quai du Terminus, cinq à bord, cap sur la Gorge. Puis la Gorge elle-même, le noir, la pression, la coque qui chante. Puis rien : la navette ressort du même côté, renvoyée comme une balle contre un mur.",
+            "« INDICATIF NON RECONNU — ORIGINE : TERMINUS. » Asulf s'arrête. « Toi, elle te laisse repasser chaque fois. Ton vaisseau est immatriculé chez nous, MAAR-12. Le leur était d'ici. » Il renifle. « Elle lit l'étiquette, pas ce qu'il y a dedans. Comme tous les registres. » Les entrées suivantes sont plus courtes : un deuxième essai, un troisième, puis plus de quoi en tenter un quatrième, et les courants du Trouble qui les prennent, doucement, sans méchanceté.",
+            "La dernière ligne tient en quelques mots. Asulf la lit deux fois, comme au Terminus, et sa voix n'est plus tout à fait la même : DIRE AUX AUTRES DE NE PAS ESSAYER. Le message est toujours là, prêt à partir. Il n'est jamais parti. Un temps."
+          ] } },
+
+      /* ---- 5. Quelque chose de doré — SCÈNE, au Nid : la plaque de la navette, pour Dagon ---- */
+      { indice:"Rentre au Nid.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q37/5.png",
+        arrivee:[
+          "Avant de quitter l'épave, tu as détaché sa plaque d'identification : un rectangle de métal doré, gravé de l'indicatif, terni par trois siècles de gaz. Au Nid, tu la poses sur la caisse, devant Dagon. Il t'avait demandé quelque chose de doré.",
+          "Il la regarde longtemps sans y toucher. Ses tresses s'allument follement, puis s'éteignent brusquement. Quand il la prend enfin, il la retourne, l'examine de près, et la déclare rayée, d'une voix faussement désinvolte alors que son regard brille. Puis il la glisse sous son châle, et ne te la rend pas.",
+          "Aruns lit le dernier message par-dessus ton épaule, sur ta console, et pâlit. Tu vois qu'il comprend, d'un coup, pourquoi personne au Nid n'a jamais réessayé de partir : ceux qui ont essayé n'ont pas pu le dire, et ceux qui sont restés n'ont jamais su pourquoi ils ne revenaient pas."
+        ],
+        defi:{ type:"scene", bouton:"Laisser Dagon garder la plaque" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Quête « compétence » du lot 2 : gains des
+       choix (serveur v257) — assembleurs +1 Force · éclats +1 Agilité · veilleurs +1 Intelligence. */
+    recompense:{ credits:3000, xp:540, flags:{ epaveTrouble:true } }
+  }
+  ,
+
+  /* ---------------- Q38 — Le passage (lot 2 : K160, K162, K163) ----------------
+     Donneurs : Aruns et Dagon, au Nid ; les deux (Aruns à l'introduction et à la fin, Dagon à la radio
+     et au trait). K162 : la Fugueuse (`e2_comete`) n'est sur la carte que LE DIMANCHE (jour de jeu,
+     Paris) ; la quête se prend n'importe quel jour, ses étapes sur la comète attendent son passage.
+     Le calendrier du Nid : un trait par passage, gravé sur le module. Sur la comète, une BALISE HORAIRE
+     d'AREPO (son tic, relayé par La Couronne, K153) : PROCHAINE CORRESPONDANCE : AUCUNE (→ Q40 :
+     annulée). Rien ne change dans le monde (K158). Jamais « quarantaine ».
+     Épreuves : piratage · cadenas · choix · scène. Aucune ne reprend un type de Q37 (brouillage,
+     crevasse). */
+  {
+    id:"q38",
+    nom:"Le passage",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Aruns t'emmène de l'autre côté du module, celui qu'on ne voit pas depuis les passerelles. Toute la paroi est couverte de traits gravés, courts, serrés par paquets, si nombreux que de loin le métal paraît gris. « Un trait par passage », dit-il, et Asulf traduit d'une voix étrangement respectueuse. « Depuis l'installation. Tous les passages de la Fugueuse. »",
+      "« Elle devait arriver au passage d'après. La correspondance. On l'a toujours dit. » Il pose la main à plat sur les traits les plus anciens, tout en bas, à hauteur d'enfant. « Personne n'a jamais touché la Fugueuse. On la regarde passer, c'est tout. »",
+      "Sur sa pile de caisses, Dagon ne lève même pas les yeux. « Rien dessus. De la glace. Il n'y a jamais rien, nulle part. » Asulf traduit, puis ajoute pour toi : « Elle passe le dimanche, ta comète. Moi je dis ça, je dis rien. »"
+    ],
+    etapes:[
+
+      /* ---- 1. La rattraper — PIRATAGE (ratable) : caler sa vitesse sur la sienne (dimanche) ---- */
+      { indice:"La Fugueuse. Elle ne passe que le dimanche.",
+        cible:{ lieu:"e2_comete" },
+        image:"images/quetes/q38/1.png",
+        arrivee:[
+          "Elle arrive comme on la décrit au Nid : une comète bleue, petite, qui file bien trop vite pour sa taille, une traîne de givre derrière elle. Tu te glisses dans son sillage, et ton vaisseau se met à trembler. Pour te poser, il faudra coller à sa vitesse exactement, sans rien de moins ni de plus.",
+          "« Tu vas la rater », dit Dagon à la radio, avec une certitude tranquille. « Tout le monde la rate. » Asulf traduit, et te fait remarquer qu'au Nid, personne n'a pu essayer, donc personne ne l'a ratée."
+        ],
+        defi:{ type:"piratage", manches:3, vitesse:1900,
+          texte:["Elle accélère, ralentit, accélère encore. Cale ta vitesse sur la sienne, trois fois de suite, au bon moment."],
+          fini:"Tes patins touchent la glace.",
+          echec:"Tu la dépasses, ou c'est elle qui te dépasse, et son sillage glacé t'aveugle. Le temps de faire demi-tour, elle est loin. « Je l'avais dit », constate Dagon. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Tu te poses. La glace craque sous tes patins, puis tient. Autour de toi, la comète n'est qu'un champ blanc et bleu, strié de fissures, qui file entre les étoiles en t'emportant avec elle. Au loin, le Nid défile, minuscule, avec ses lanternes."
+          ] } },
+
+      /* ---- 2. La balise — CADENAS (ratable) : PROCHAINE CORRESPONDANCE : AUCUNE ---- */
+      { indice:"La Fugueuse. Quelque chose est pris dans la glace.",
+        cible:{ lieu:"e2_comete" },
+        image:"images/quetes/q38/2.png",
+        arrivee:[
+          "Tu n'as pas fait dix pas que tu le vois : sous la glace transparente, un boîtier de métal carré, plus vieux que tout ce que tu as croisé à Cérès, le sigle d'AREPO sur le flanc. Il en part un fil très fin, qui s'enfonce dans la comète comme une racine. Il fait tic. Tu le sens sous tes semelles plus que tu ne l'entends.",
+          "« C'est le tic », souffle Aruns à la radio, et pour une fois Asulf traduit sans un mot de trop. « Celui qu'on entend au Nid, par La Couronne, à chaque passage. On a toujours cru que c'était elle. » Le panneau du boîtier est verrouillé ; il te faut sa combinaison."
+        ],
+        defi:{ type:"cadenas", longueur:4, symboles:["❄","◆","●","▲","✦"], essais:8, distincts:3,
+          texte:["Quatre logements, cinq signes possibles. Le panneau dit combien sont à la bonne place, et combien sont seulement dans la combinaison."],
+          echec:"Le panneau se verrouille, et un givre fin recouvre les signes. Il faudra attendre qu'il se réchauffe. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Le panneau s'ouvre. Derrière, un écran s'allume en clignotant, avec une seule ligne en ancien, qu'Asulf lit à mesure : BALISE HORAIRE — CULTURES. Puis un nombre, très long, qui augmente d'un pendant que tu le regardes : le numéro du passage.",
+            "Et en dessous, une ligne qui ne change pas : PROCHAINE CORRESPONDANCE : AUCUNE. Asulf la lit une fois, puis se tait. Au Nid, tu entends quelqu'un poser une question, et personne ne lui répondre."
+          ] } },
+
+      /* ---- 3. Avant de repartir — CHOIX (Racines, Veilleurs, Langues) ---- */
+      { indice:"La Fugueuse. Avant qu'elle ne t'emporte trop loin.",
+        cible:{ lieu:"e2_comete" },
+        image:"images/quetes/q38/3.png",
+        arrivee:[
+          "La comète t'emporte, et le Nid rapetisse. Il te reste un peu de temps avant de devoir décoller, si tu ne veux pas faire tout le tour avec elle."
+        ],
+        defi:{ type:"choix",
+          texte:["Avant de quitter la Fugueuse, tu choisis de…"],
+          options:[
+            { texte:"Tailler un bloc de sa glace, pour la fête du Nid.",
+              cercles:{ racines:5 },
+              journal:"Tu as taillé un bloc de glace bleue, gros comme une tête. Au Nid, on l'a posé au milieu du village, et les enfants sont venus le toucher l'un après l'autre, comme on touche quelque chose qui vient de très loin." },
+            { texte:"Rester assis sur la glace, et regarder passer les lanternes du Nid.",
+              cercles:{ veilleurs:5 },
+              journal:"De là-haut, le Nid était tel qu'eux ne l'ont jamais vu : tout petit, au loin, une poignée de lumières sur une grande forme sombre. Exactement comme toi, le premier jour." },
+            { texte:"Enregistrer la balise, ligne par ligne, pour qu'Asulf la lise en entier.",
+              cercles:{ langues:5 },
+              journal:"Asulf a tout lu, deux fois. Il n'y avait rien de plus : un numéro qui avance, et une correspondance qui ne vient pas. « Au moins, c'est clair », a-t-il dit. Il n'avait pas l'air content de l'être." }
+          ],
+          reussite:[
+            "Tu décolles. Derrière toi, la Fugueuse file vers sa boucle, et son tic s'éloigne."
+          ] } },
+
+      /* ---- 4. Le trait — SCÈNE, au Nid ---- */
+      { indice:"Rentre au Nid.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q38/4.png",
+        arrivee:[
+          "De retour au village, on t'attendait devant le mur. Pas pour la balise, pas encore : pour le trait. Chaque fois qu'elle repasse, quelqu'un grave le sien, et cette fois, ils ont décidé que ce serait toi. C'est le premier trait jamais gravé par quelqu'un qui n'est pas d'ici.",
+          "Aruns te tend l'outil, une pointe d'acier usée jusqu'au manche. Dagon, adossé au module, croise les bras. « Pas de travers. » Tu graves. Le métal crisse, la ligne sort un peu plus longue que les autres, et chacun fait semblant de ne pas l'avoir remarqué, sauf Dagon, qui le remarque à voix haute.",
+          "Puis Aruns se penche sur ta console, où l'écran de la balise est resté ouvert. Il lit le dernier mot, AUCUNE, et ne dit rien. Il regarde le mur, tous ces traits, puis toi. Un temps."
+        ],
+        defi:{ type:"scene", bouton:"Rester un moment près des traits" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v258) :
+       racines 130 XP · veilleurs 320 ₡ · langues 3 composants simples + 40 XP. */
+    recompense:{ credits:3100, xp:560, flags:{ baliseFugueuse:true } }
+  }
+  ,
+
+  /* ---------------- Q39 — Ce qu'elle regarde (lot 2 : K160, K163) ----------------
+     Donneurs : Aruns et Dagon, au Nid ; Dagon à la radio (il mène la fin), Aruns ouvre la quête (l'équipe
+     des sondes : Silène par morceaux). La Vigie (`e2_oeil_espace`) regarde Silène depuis trois siècles :
+     sa mémoire (cinq vues, LORE §2 et §5), puis Silène en direct, la ligne de silène qui brille.
+     Sa fiche : CULTURE MAAR — OBJET SUIVI : LIGNE DE SILÈNE — DESTINATAIRE : BUREAU DES CULTURES —
+     ACCUSÉ DE RÉCEPTION : AUCUN. 🔒 La silène est au cœur du motif (Q45) : ici, on voit seulement que le
+     Bureau la surveillait. Jamais « quarantaine » ; rien ne change dans le monde (K158). Jamais « œil ».
+     Épreuves : tuyauterie · ordre · choix · scène. Aucune ne reprend un type de Q38 (piratage, cadenas). */
+  {
+    id:"q39",
+    nom:"Ce qu'elle regarde",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Au Nid, Aruns t'attend avec une pile de plaques couvertes d'images grises, granuleuses, à demi effacées : ce que son équipe reçoit de Silène depuis trois siècles. « Des morceaux », dit-il, et Asulf traduit. « Toujours en retard, toujours de travers. Un bout de champ, un toit, la moitié d'une ville. On ne l'a jamais vue d'un seul tenant. »",
+      "Il pointe, sur ta carte, la boule de câbles. « La Vigie, elle, la regarde. Tout le temps. Elle ne fait que ça. » Il ne sait pas comment il le sait ; on l'a toujours dit, au Nid, comme on dit qu'il ne faut pas marcher dans les replis.",
+      "« Une boule qui regarde ailleurs depuis toujours », résume Dagon à la radio. « Tu vas bien t'entendre avec elle. » Asulf traduit, et avoue qu'il ne voit pas du tout ce que ça veut dire, et que c'est sans doute pour ça que c'est vexant."
+    ],
+    etapes:[
+
+      /* ---- 1. Le branchement — TUYAUTERIE : le tressage jusqu'à la console ---- */
+      { indice:"La Vigie. Branche-toi sur elle.",
+        cible:{ lieu:"e2_oeil_espace" },
+        image:"images/quetes/q39/1.png",
+        arrivee:[
+          "De près, la Vigie est plus grande que tu ne pensais : une sphère de métal tressé, comme un panier de câbles noués serré, et au centre, la lentille orange, large comme ton vaisseau. Elle ne te suit pas. Tu passes devant, tu repasses, tu t'arrêtes juste en face : elle regarde à travers toi, vers un point que tu ne vois pas, et ne bouge pas d'un cheveu.",
+          "Le tressage, ce sont des conduits. Certains vivent encore ; tu sens leur courant à travers tes gants quand tu poses la main dessus. Si tu les raccordes à ta console, ses images passeront chez toi. « Tu vas te faire griller », note Dagon. Asulf traduit, puis te conseille, de sa propre initiative, de garder tes gants."
+        ],
+        defi:{ type:"tuyauterie", colonnes:5, lignes:5,
+          texte:["Remets les tronçons du tressage dans le bon sens, de la lentille jusqu'au vaisseau."],
+          reussite:[
+            "Le dernier tronçon tourne, et ton écran de bord s'allume d'une lumière orange, puis s'emplit d'images. Pas une : des centaines, empilées, en désordre, comme un tiroir qu'on aurait renversé."
+          ] } },
+
+      /* ---- 2. Sa mémoire — ORDRE (ratable) : cinq vues de Silène, puis Silène en direct ---- */
+      { indice:"La Vigie. Remets sa mémoire en ordre.",
+        cible:{ lieu:"e2_oeil_espace" },
+        image:"images/quetes/q39/2.png",
+        arrivee:[
+          "Ce sont des vues de Silène, toutes prises de haut, toutes depuis ici. La Vigie les garde depuis le premier jour, mais trois siècles les ont mélangées, et l'écran refuse d'afficher la suite tant qu'elles ne sont pas remises en ordre. Tu en reconnais certaines. Tu n'as jamais vu ton monde comme ça.",
+          "Aruns, à la radio, ne tient plus en place : « Elles sont nettes ? Vraiment nettes ? » Il réclame qu'on les lui décrive toutes. Dagon, lui, veut savoir si, de là-haut, on aperçoit le toit d'Asulf, et combien de transats il y a dessus. Asulf ne traduit que la première question."
+        ],
+        defi:{ type:"ordre",
+          texte:["Cinq images, prises de là-haut au fil des siècles, mélangées par la mémoire de la Vigie."],
+          consigne:"Remets-les dans l'ordre où elles ont été prises.",
+          elements:[
+            "Des carrés de terre retournée, parfaitement alignés, sur une planète encore nue.",
+            "Des serres, des silhouettes d'ouvriers, et une ligne pâle qui commence à pousser à travers un seul secteur.",
+            "Un quai, et devant lui des silhouettes en uniforme, alignées, immobiles, qui attendent.",
+            "Des lumières qui s'allument loin du quai, l'une après l'autre : les premières villes.",
+            "Aujourd'hui : des villes partout, et la ligne qui brille d'un bout à l'autre."
+          ],
+          echec:"La console refuse la suite, et les vues se mélangent de nouveau sous tes yeux. La Vigie, elle, n'a pas bougé. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "La dernière vue se met en place, et ta console bascule d'elle-même sur l'image du moment. Silène. En entier, en couleurs, sous un ciel sans nuages, tournant lentement sous toi : les champs, les villes, les routes entre elles, et en travers du secteur, la ligne de silène qui brille, pâle et nette, comme un fil tendu sur la planète.",
+            "Tu cherches, et tu la trouves : ta ville. Un point de lumière à peine plus gros que les autres. Vu d'ici, on ne voit ni toi, ni personne. On voit seulement que ça vit. Au Nid, tu entends Aruns retenir son souffle, et quelqu'un, derrière lui, demander à voix basse si c'est loin."
+          ] } },
+
+      /* ---- 3. Devant Silène — CHOIX (Veilleurs, Éclats, Assembleurs) ---- */
+      { indice:"La Vigie. Silène, en direct.",
+        cible:{ lieu:"e2_oeil_espace" },
+        image:"images/quetes/q39/3.png",
+        arrivee:[
+          "L'image ne bouge que très lentement, au rythme de la planète. Tu pourrais la regarder des heures. Au Nid, plus personne ne parle."
+        ],
+        defi:{ type:"choix",
+          texte:["Devant Silène, tu choisis de…"],
+          options:[
+            { texte:"Chercher ta ville, et la regarder longtemps.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu l'as regardée jusqu'à ce qu'elle passe de l'autre côté de la planète, dans la nuit. Dagon a demandé si c'était là que tu habitais ; tu as dit oui, et il a dit qu'il s'en doutait, que ça se voyait." },
+            { texte:"Nettoyer la lentille, ternie par trois siècles de poussière.",
+              cercles:{ eclats:5 },
+              journal:"Tu es sorti frotter la lentille à pleines mains, lentement, sans qu'elle bouge d'un rien. Ensuite, l'image était si nette qu'Aruns a cru que quelqu'un avait allumé une lampe là-bas." },
+            { texte:"Enregistrer l'image pour l'équipe d'Aruns, qui n'a jamais rien eu d'aussi net.",
+              cercles:{ assembleurs:5 },
+              journal:"Tu as tout enregistré, la planète entière, une rotation complète. L'équipe des sondes l'a regardée en boucle toute la nuit, et au matin, quelqu'un avait déjà commencé à la recopier à la craie." }
+          ],
+          reussite:[
+            "Quand tu relèves la tête, la Vigie regarde toujours au même endroit. Sur ta console, sous l'image, une ligne de texte attend depuis le début que quelqu'un la lise."
+          ] } },
+
+      /* ---- 4. Sa fiche — SCÈNE : OBJET SUIVI : LIGNE DE SILÈNE ; ACCUSÉ DE RÉCEPTION : AUCUN ---- */
+      { indice:"La Vigie. Sa fiche.",
+        cible:{ lieu:"e2_oeil_espace" },
+        image:"images/quetes/q39/4.png",
+        arrivee:[
+          "C'est sa fiche, en ancien, et Asulf la lit dans son jargon de registre, sans se presser : VIGIE — OBSERVATION — CULTURE MAAR. OBJET SUIVI : LIGNE DE SILÈNE. Puis, plus bas : DESTINATAIRE : BUREAU DES CULTURES. Et la dernière ligne, qu'il lit deux fois : ACCUSÉ DE RÉCEPTION : AUCUN.",
+          "« Elle n'a jamais regardé les villes », dit Asulf, lentement. « Ni les gens. Elle regarde la plante. Elle envoie tout ça, et personne n'a jamais répondu. » Il renifle. « Trois cents ans d'envois. Ça en fait, des formulaires. »",
+          "À la radio, un silence, puis la voix de Dagon, plus basse qu'à l'ordinaire : « Elle et nous, on a ça en commun. On regarde, et personne ne répond. » Un temps. Puis, plus vite, comme pour rattraper ce qu'il vient de dire : « Bon. Reviens avant qu'elle t'adopte. » Tu n'as pas besoin de le voir pour savoir que ses tresses brillent."
+        ],
+        defi:{ type:"scene", bouton:"Rentrer au Nid" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v259) :
+       veilleurs 135 XP · éclats 1 composant avancé + 40 XP · assembleurs 330 ₡. */
+    recompense:{ credits:3200, xp:580, flags:{ vigieSilene:true } }
+  }
+  ,
+
+  /* ---------------- Q40 — La fête du passage (fin du lot 2 : K160, K162, K165) ----------------
+     Donneurs : Aruns et Dagon, au Nid (n'importe quel jour) ; Asulf tient le milieu (Triptolème).
+     K165 : le transat est rendu à Asulf à La Toundra (`rendre:"transat"`, RPC `transat_rendre`, v260).
+     Les registres du Protocole, à la station d'Ancolie : « MAAR — CORRESPONDANCE : ANNULÉE — DOSSIER
+     CLASSÉ — MOTIF : [masqué] » (K92). Les deux dernières étapes ne se jouent que LE DIMANCHE (la fête du
+     passage, K162 : `cible.dimanche`). Jamais « quarantaine » ; rien ne change dans le monde (K158).
+     Épreuves : scène · labyrinthe · mémoire · choix · scène. Aucune ne reprend un type de Q39
+     (tuyauterie, ordre). */
+  {
+    id:"q40",
+    nom:"La fête du passage",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Le Nid prépare la fête du prochain passage. On tend des toiles neuves, on compte les lanternes, on sort de quelque part des bidons qui ne contiennent pas de carburant. Mais depuis la balise de la Fugueuse et la fiche de la Vigie, le village ne parle plus que d'une chose, à voix basse, sous chaque toile : pourquoi personne n'est jamais venu.",
+      "Aruns te prend à part. « Les registres. Ceux de chez vous. S'il y a une réponse, elle est écrite quelque part, et pas ici. » Il hésite, puis ajoute, très vite, comme pour ne pas avoir le temps de le regretter : « Reviens pour la fête. Dimanche. »",
+      "Sur sa pile de caisses, Dagon désigne du menton ta soute, où le transat attend, sanglé. « Et rapporte-lui sa chaise, qu'il nous lâche avec ça. » À la radio, Asulf fait semblant de ne pas avoir entendu, puis demande, d'une voix parfaitement neutre, l'heure exacte de ton arrivée."
+    ],
+    etapes:[
+
+      /* ---- 1. Le transat — SCÈNE, à La Toundra : il quitte le sac (K165, transat_rendre) ---- */
+      { indice:"La Toundra. Asulf t'attend.",
+        cible:{ x:1920, y:355, r:100 },
+        image:"images/quetes/q40/1.png",
+        arrivee:[
+          "Asulf t'attend sur son toit, au milieu de sa collection : des transats alignés au cordeau, de toutes les formes, de toutes les couleurs, dont un, au bout, qui n'a visiblement jamais servi qu'à être regardé. Il y a une place vide au milieu de la rangée. Il l'a balayée.",
+          "Tu poses le transat du Nid devant lui. Il le déplie, le replie, le redéplie à l'envers, refuse ton aide d'un geste sec, se pince un doigt, refuse encore ton aide, et finit par le dresser au milieu de la rangée, exactement à la place vide. Il recule de trois pas pour juger de l'effet. Puis il revient, s'y allonge lentement, croise les mains sur son ventre, et pousse le soupir d'un homme qui vient d'atteindre le but de sa vie.",
+          "« Le petit bonhomme à la craie, je le garde », annonce-t-il sans ouvrir les yeux. « C'est réglementaire. Pièce d'origine. » Puis, au bout d'un moment : « Bon. Les registres. J'arrive. Laisse-moi encore une minute. » Il en prend dix."
+        ],
+        defi:{ type:"scene", rendre:"transat", bouton:"Laisser Asulf profiter de son transat" } },
+
+      /* ---- 2. Les archives — LABYRINTHE, à la station d'Ancolie ---- */
+      { indice:"La station d'Ancolie. Les archives du fond.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q40/2.png",
+        arrivee:[
+          "À la station, Asulf ne passe pas par le bar. Il te fait signe de le suivre vers une porte que tu n'avais jamais remarquée, derrière les réserves, et l'ouvre avec une clé qu'il n'est pas censé avoir. Derrière, des couloirs étroits, des étagères de boîtiers scellés jusqu'au plafond, et une odeur de poussière et de vieux plastique.",
+          "« Les dossiers classés », chuchote-t-il, bien que personne ne puisse vous entendre. « Je connais le chemin. Enfin, je connaissais. Ils ont rangé depuis. » Il ajoute, pour être tout à fait honnête, qu'il n'a jamais eu le droit d'y venir, et que ça ne l'a jamais arrêté."
+        ],
+        defi:{ type:"labyrinthe", colonnes:7, lignes:8,
+          texte:["Les couloirs des archives, entre les étagères scellées."],
+          consigne:"Quelque part au fond, la console des dossiers classés ◆ : trouve-la.",
+          bloque:"Une étagère effondrée bloque le passage : fais le tour. Avance case par case.",
+          fini:"Au bout du couloir, une console éteinte, et une chaise que quelqu'un a usée.",
+          reussite:[
+            "La console est vieille, sale, et Asulf la caresse du plat de la main comme un animal qu'on retrouve. Sur le dossier de la chaise, quelqu'un a gravé un matricule au couteau. Tu ne demandes pas lequel."
+          ] } },
+
+      /* ---- 3. La ligne — MÉMOIRE (ratable) : ANNULÉE ; Asulf sur son transat ---- */
+      { indice:"La station. Lis vite.",
+        cible:{ carte:"ancolie", lieu:"station", r:160 },
+        image:"images/quetes/q40/3.png",
+        arrivee:[
+          "Asulf entre son matricule. L'écran s'allume, hésite, puis affiche en haut une ligne rouge qui clignote : ACCÈS EN COURS DE VÉRIFICATION. « On a quelques secondes », dit-il. « Après, ça coupe. Mon matricule, il est imputé de partout. Lis. Lis tout. »"
+        ],
+        defi:{ type:"memoire", duree:7000,
+          texte:["Le registre s'ouvre. Quelques secondes, pas plus."],
+          info:[
+            "REGISTRE DE TRANSIT — SECTEUR MAAR",
+            "MAAR-3 — ÉQUIPAGES EN ATTENTE AU TERMINUS",
+            "MAAR-7 — ÉQUIPAGES EN ATTENTE AU TERMINUS",
+            "MAAR-9 — ÉQUIPAGES EN ATTENTE AU TERMINUS",
+            "MAAR — CORRESPONDANCE : ANNULÉE — DOSSIER CLASSÉ — MOTIF : [masqué]"
+          ],
+          question:"« Alors ? La correspondance ? »",
+          reponses:["annulée","annulé","annulées","annule"],
+          echec:"L'écran se coupe avant que tu aies tout retenu, et une alarme se met à sonner quelque part, très loin, très mollement. Asulf hausse les épaules : elle sonne pour lui depuis des années. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Tu lui répètes le mot. Asulf ne répond pas tout de suite. Il est retourné chercher son transat dans le couloir, l'a déplié devant la console, et s'est assis dessus, les coudes sur les genoux, ce qui n'est pas du tout la manière réglementaire de s'asseoir dans un transat.",
+            "« Annulée », dit-il à son tour, très bas. « Pas retardée. Pas reportée. Annulée, et classée. Et le motif, masqué. » Il renifle. « Je connais ce genre de ligne. On en met une quand quelqu'un, très haut, a décidé quelque chose, et ne veut pas qu'on sache pourquoi. » Un temps.",
+            "Puis il se relève, replie le transat avec un soin infini, et te regarde. « Il faut leur dire. Dimanche. C'est leur fête, non ? »"
+          ] } },
+
+      /* ---- 4. Comment le dire — CHOIX, au Nid, LE DIMANCHE (Racines, Veilleurs, Langues) ---- */
+      { indice:"Le Nid. La fête est dimanche.",
+        cible:{ lieu:"e2_base", dimanche:true },
+        image:"images/quetes/q40/4.png",
+        arrivee:[
+          "C'est dimanche, et le Nid a sorti tout ce qu'il avait : des lanternes à chaque perche, des toiles fraîchement tendues, les fameux bidons, et au milieu du village, devant le mur des traits, l'espace nu où l'on gravera celui du jour. Les enfants guettent le ciel. La Fugueuse n'est pas encore là.",
+          "Aruns t'a vu arriver. Il ne demande rien ; il a compris à ta tête que tu avais une réponse, et que ce n'était pas la bonne. Dagon, sur ses caisses, s'est tu au milieu d'une phrase."
+        ],
+        defi:{ type:"choix",
+          texte:["Pour annoncer ce que tu as lu, tu choisis de…"],
+          options:[
+            { texte:"Le dire à tout le Nid, pendant la fête, au pied du mur.",
+              cercles:{ racines:5 },
+              journal:"Tu l'as dit devant tout le monde, simplement. Personne n'a crié. Une femme a posé la main à plat sur le mur, comme on salue ici, et d'autres ont fait pareil, l'un après l'autre, jusqu'à ce que le mur soit couvert de mains." },
+            { texte:"Le dire d'abord à Aruns et à Dagon, seuls, à l'écart des lanternes.",
+              cercles:{ veilleurs:5 },
+              journal:"Tu leur as dit à l'écart. Aruns a voulu savoir qui avait annulé, et pourquoi ; tu n'avais pas de réponse. Dagon n'a rien voulu savoir du tout. Il a seulement dit que, comme ça, au moins, on arrêterait d'attendre. Ses tresses disaient le contraire." },
+            { texte:"Laisser Asulf l'annoncer à la radio, dans son jargon, et traduire avec lui.",
+              cercles:{ langues:5 },
+              journal:"Asulf a lu la ligne mot pour mot, et tu as traduit avec lui, phrase après phrase. Au bout, il a ajouté de lui-même : « Je suis désolé. Au nom du registre. » Personne ne le lui avait demandé. Ça a compté." }
+          ],
+          reussite:[
+            "Quand tu te tais, personne ne bouge. Puis quelqu'un lève le bras vers le ciel : elle arrive."
+          ] } },
+
+      /* ---- 5. Le passage — SCÈNE, au Nid, LE DIMANCHE : le trait quand même ; la Bogue (→ lot 3) ---- */
+      { indice:"Le Nid. Le passage.",
+        cible:{ lieu:"e2_base", dimanche:true },
+        image:"images/quetes/q40/5.png",
+        arrivee:[
+          "La Fugueuse passe au-dessus du village, bleue, rapide, avec sa traîne de givre, comme elle passe depuis trois siècles. Son tic arrive par La Couronne, régulier, indifférent. Le Nid la regarde filer, en silence, sans la fête qu'on avait prévue, et pourtant personne ne rentre sous les toiles.",
+          "Une vieille femme s'avance vers le mur avec l'outil. Elle grave le trait du jour, lentement, bien droit, comme on l'a toujours fait. Personne ne lui demande pourquoi. Personne ne l'en empêche.",
+          "À côté de toi, Aruns ne regarde ni le mur ni la comète : il regarde, au loin, la fausse planète au cœur rouge, celle qu'on appelle la Bogue, fermée depuis toujours. « Le pourquoi, il est là-dedans. » Dagon cherche quelque chose de moqueur à dire, ne trouve rien, et finit quand même par trouver : « Évidemment. Le seul endroit qui ne s'ouvre pas. »"
+        ],
+        defi:{ type:"scene", bouton:"Regarder la Fugueuse s'éloigner" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q31 et Q45). Gains des choix (serveur v260) :
+       racines 140 XP · veilleurs 340 ₡ · langues 1 composant avancé + 40 XP. */
+    recompense:{ credits:3300, xp:600, flags:{ correspondanceAnnulee:true } }
   }
 
 

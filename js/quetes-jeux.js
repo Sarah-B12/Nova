@@ -674,14 +674,16 @@ function _brouPhaseOk(d, cd){ return Math.abs(((d - cd) % (2 * Math.PI) + 3 * Ma
 QUETES_JEUX.brouillage = {
   html(d){
     const T = d.tenir || 6, D = d.duree || 60;
-    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} <b>${D} s d'appel, ${T} s calé en tout.</b></p>
+    /* v2.33 — `d.motDuree` : ce que mesure la durée (Q33 : « passage » ; défaut : l'appel de Q29). */
+    const M = d.motDuree || "appel", De = /^[aeéèêiouy]/i.test(M) ? `d'${M}` : `de ${M}`;
+    return `<div class="quete-etape">${_par(d.texte)}<p class="quete-indice">${d.consigne || ""} <b>${D} s ${De}, ${T} s calé en tout.</b></p>
       <div id="qj-brou">
         <svg id="qj-br-svg" viewBox="0 0 300 100" style="width:100%;max-width:340px;background:rgba(90,168,230,.06);border:1px solid var(--line);border-radius:8px">
           <path id="qj-br-appel" stroke="#ff5257" stroke-width="3" fill="none"/><path id="qj-br-moi" stroke="#7bc47f" stroke-width="3" fill="none"/></svg>
         <div class="mi-ligne"><span>Fréquence</span><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="0.6" disabled></div>
         <p class="vide" id="qj-br-fetat" style="margin:2px 0 6px">Fréquence : à caler.</p>
         <div class="mi-ligne"><span>Décalage</span><input type="range" id="qj-br-d" min="0" max="6.28" step="0.01" value="0" disabled></div>
-        <p class="vide" id="qj-br-etat">Calé : 0,0 s / ${T} s · appel : ${D} s</p>
+        <p class="vide" id="qj-br-etat">Calé : 0,0 s / ${T} s · ${M} : ${D} s</p>
         <div class="quete-rep"><button class="mini" id="qj-br-go">${d.bouton || "Commencer l'émission"}</button></div>
       </div></div>`;
   },
@@ -715,7 +717,7 @@ QUETES_JEUX.brouillage = {
         P.cible = { f:P.fc, d:_brouDecalage(P.s) };
         if(P.fCalee && _brouPhaseOk(P.d, P.cible.d)) P.tenu += dt;     // v1.93k : cumulé, jamais remis à zéro
         dessiner();
-        et.textContent = `Calé : ${P.tenu.toFixed(1).replace(".", ",")} s / ${T} s · appel : ${Math.max(0, D - P.s).toFixed(0)} s`;
+        et.textContent = `Calé : ${P.tenu.toFixed(1).replace(".", ",")} s / ${T} s · ${d.motDuree || "appel"} : ${Math.max(0, D - P.s).toFixed(0)} s`;
         if(P.tenu >= T){ P.fini = true; _seqFin(); journal(d.fini || "C'est passé.", "gain"); reussirDefi(); return; }
         if(P.s >= D){ P.fini = true; _seqFin(); echouerDefi(d.echec || `L'appel est fini. Nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
         const id = setTimeout(pas, 40); if(typeof _queteTO !== "undefined") _queteTO.push(id);

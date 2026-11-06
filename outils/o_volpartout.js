@@ -3,6 +3,7 @@
 // propres tests (PostgreSQL) ; ici, le client. Tout ce qui est noté « vrai » doit l'être.
 (async function(){
   await new Promise(x=>setTimeout(x,1200));
+  fugueuseLa = () => true;   // v2.38 (K162) : la Fugueuse n'est là que le dimanche ; le banc la veut toujours (résultats stables)
   const r = {}, msgs = [], appels = [];
   journal = (m) => msgs.push(String(m)); sauverMaintenant = async () => {}; sauvegarder = () => {};
   const orig = sb.rpc.bind(sb); sb.rpc = (n, a) => { appels.push(n); return orig(n, a); };
