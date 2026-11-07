@@ -78,7 +78,7 @@ const CARTES_ESPACE = {
            sortie:"Rentrée vers Silène : depuis le Perchoir uniquement." },
   ceres: { id:"ceres", nom:"Cérès", base:"e2_base",
            img:(typeof ESPACE2_IMG !== "undefined") ? ESPACE2_IMG : "images/espace2/",
-           lieux:() => (typeof ESPACE2_LIEUX !== "undefined") ? ESPACE2_LIEUX.filter(l => l.id !== "e2_comete" || fugueuseLa()) : [],   // v2.38 (K162) : la Fugueuse, le dimanche
+           lieux:() => (typeof ESPACE2_LIEUX !== "undefined") ? (_majBogue(), ESPACE2_LIEUX.filter(l => l.id !== "e2_comete" || fugueuseLa())) : [],   // v2.38 (K162) : la Fugueuse, le dimanche ; v2.41 : la Bogue après Q41
            fond:() => (typeof ESPACE2_FOND !== "undefined") ? ESPACE2_FOND : ESPACE_FOND,
            monde:() => (typeof ESPACE2_MONDE !== "undefined") ? ESPACE2_MONDE : ESPACE_MONDE,
            sortie:"Retour vers Triptolème : par la Gorge uniquement." }
@@ -87,6 +87,14 @@ function enCeres(){ return !!(etat && etat.secteur === "ceres"); }
 /* v2.38 (K162) — la Fugueuse (`e2_comete`) ne passe que LE DIMANCHE, jour de jeu (heure de Paris,
    `jourDeJeu()`), de minuit à minuit. Les autres jours, elle n'est ni dessinée, ni atteignable, ni
    repérée par une quête (Q38). Rien côté serveur. */
+/* v2.41 (K166) — après Q41 (`bogueDepot`), la Bogue montre sa trappe : description et texte « sur place ». */
+function _majBogue(){
+  const B = (typeof ESPACE2_LIEUX !== "undefined") && ESPACE2_LIEUX.find(l => l.id === "e2_planete_oeil"); if(!B) return;
+  if(!B._orig) B._orig = { desc:B.desc, ici:B.ici };
+  const ouverte = !!(etat && etat.bogueDepot);
+  B.desc = ouverte ? "Une boule de plaques serrées. Sur l'une d'elles, une trappe éclairée : DÉPÔT." : B._orig.desc;
+  B.ici  = ouverte ? "La trappe du dépôt passe et repasse avec la rotation. Elle s'ouvre aux sondes, et à toi." : B._orig.ici;
+}
 function fugueuseLa(ts){
   if(typeof jourDeJeu !== "function") return true;
   return new Date(jourDeJeu(ts) + "T12:00:00Z").getUTCDay() === 0;

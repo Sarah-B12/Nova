@@ -48,13 +48,20 @@ const GLYPHES_ANCIEN = {
   // — v1.98 : Q31, l'en-tête de la sonde Bardane (« Cultures », CUL·TURE) —
   CUL:["P","barre"],
   // — v2.32 : Q32, la plaque d'Aruns (« Retour », RE·TOUR ; RE connu) —
-  TOUR:["S","barre"]
+  TOUR:["S","barre"],
+  // — v2.42 : Q42, la note du Bureau (« Rencontre », RAN·CON·TRE ; CON et TRE connus) — 1/3 de QUA·RAN·TAINE (K167) —
+  RAN:["O","trait"],
+  // — v2.43 : Q43, l'ordre du Bureau dans le Muet (« Quatre », QUA·TRE ; TRE connu) — 2/3 de QUA·RAN·TAINE (K167) —
+  QUA:["I","barre"],
+  // — v2.44 : Q44, le plan de reprise (« Centaine », CEN·TAINE ; CEN connu) — 3/3 de QUA·RAN·TAINE (K167) —
+  TAINE:["S","trait"]
 };
 /* Formes ENCORE SANS SON (pour les prochains) : à choisir parmi les variantes
    nettement distinctes. Prises depuis : Λ barré (DES), Ω barré (TIN), en v1.96
    les « traversées » Π, Χ, Δ, Λ (PUL, SION, CEN, TRÉ), en v1.98 Ψ barré (CUL),
-   en v2.32 Σ barré (TOUR). ⚠ Il n'en reste que TROIS bien distinctes :
-   ["I","barre"] (Π barré), ["O","trait"] (Ω traversé), ["S","trait"] (Σ traversé).
+   en v2.32 Σ barré (TOUR), en v2.42 Ω traversé (RAN), en v2.43 Π barré (QUA), en v2.44 Σ traversé (TAINE).
+   ⚠ Il n'en reste AUCUNE bien distincte : tout son nouveau demandera une nouvelle famille de variantes
+   (à décider avec l'autrice, LORE §11 bis).
    ["D","miroir"] non (symétrique). Au-delà, il faudra une nouvelle famille de
    variantes (à décider avec l'autrice, LORE §11 bis).
    À éviter : ["T","trait"] (Θ traversé, trop proche de Φ au doigt), et les
