@@ -58,7 +58,7 @@ const EQUIP_EFFETS = {
   fab_lame_a_singularite:  { force:12, agi:8, o2:1 },
   fab_canon_a_singularite: { force:30, o2:2 },    // v1.93n : 18 → 30 (deux mains > deux lames à singularité, +24)
   fab_drone_de_combat:     { force:8 },
-  fab_drone_recuperateur:  { double:15 },
+  fab_drone_recuperateur:  { double:5 },         // v2.51 (K179) : 15 → 5 ; la trouvaille doublée est rebranchée (minage, récolte, tonte)
   fab_implant_de_force:    { force:10 },
   fab_implant_d_agilite:   { agi:10 },
   fab_implant_maitre:      { force:5, agi:5, int:5 }
@@ -169,7 +169,7 @@ function effetTexte(id){
   if(e.int)     p.push(`+${e.int} Intelligence`);
   if(e.degats)  p.push(`dégâts subis −${Math.round((1-e.degats)*100)} %`);
   if(e.esquive) p.push(`+${e.esquive} % esquive`);
-  if(e.double)  p.push(`+${e.double} % double trouvaille`);
+  if(e.double)  p.push(`+${e.double} % de trouvailles doublées (mine, récolte, tonte)`);
   if(e.o2)      p.push(`+${e.o2} O₂/action`);
   const m = munitionDe(id);
   if(m && typeof item==="function" && item(m)){

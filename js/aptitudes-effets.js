@@ -23,6 +23,9 @@ function aptZoneThermique(){
   const froid = _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide();
   return (chaud || froid) ? 0.85 : 1;
 }
+/* v2.52 (K185) — la Survie adoucie : Endurance −10 % (était −15 %), Récupération +1 %/h (était +2).
+   ⚠ DUPLIQUÉ au serveur : _terrain_cout (sv4 0,90) et energie_serveur (sv2 +1), v271. */
+const APT_ENDURANCE = 0.90, APT_RECUP_H = 1;
 /* ⚠ v0.59 — Endurance (sv4) n'était appliquée qu'à l'AFFICHAGE : les actions
    débitaient COUT_TERRAIN brut. agirServeur() l'applique désormais aux motifs
    d'action (voir MOTIFS_ACTION, inventaire.js). */
@@ -30,12 +33,12 @@ function aptZoneThermique(){
    point de branchement par effet, comme pour les aptitudes. `_boi` vaut 1
    (neutre) tant qu'aucune boisson n'est active. */
 function _boi(cle){ return (typeof boissonMod==="function") ? boissonMod(cle, 1) : 1; }
-function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * aptZoneThermique() * _boi("energie_cout"))); }                                  // Endurance −15 %
-/* v1.33g — Endurance SEULE (−15 %). Pour les coûts calculés hors des trois
+function aptEnergieAction(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? APT_ENDURANCE : 1) * aptZoneThermique() * _boi("energie_cout"))); }                                  // Endurance −15 %
+/* v1.33g — Endurance SEULE (−15 % ; −10 % depuis la v2.52, K185). Pour les coûts calculés hors des trois
    fonctions ci-dessus : saut en atmosphère (descente/décollage La Braise, Le
    Suaire, Silène ⇄ Triptolème) et vols de vaisseau dans Triptolème (orbite.js). Retour testeur :
    Endurance ne marchait pas en entrant en atmosphère. */
-function aptEndurance(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }
+function aptEndurance(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? APT_ENDURANCE : 1))); }
 /* v1.34b/c — Sauts en atmosphère (descente/décollage La Braise, Le Suaire,
    Silène ⇄ Triptolème) ET vols de vaisseau dans Triptolème (v1.34c) :
    Endurance −15 % et Pas léger −20 % (décisions de l'autrice, 28/09). */
@@ -43,10 +46,10 @@ function aptEndurance(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ?
    saut sont des DÉPLACEMENTS : ils suivent `energie_depl` (Trouble ×0,8, Poussière de route
    ×0,75), comme la marche. `energie_cout` (« par action » : Remontant ×1,25, Gel sec ×1,2,
    Huile claire ×0,8…) reste pour les actions (vol, terrain, mine, sondes…), comme avant. */
-function aptSaut(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1) * (_apt("om3") ? 0.8 : 1) * _boi("energie_depl"))); }
-function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? 0.85 : 1))); }        // Endurance (v1.25 : Repérage n'agit plus ici)
+function aptSaut(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? APT_ENDURANCE : 1) * (_apt("om3") ? 0.8 : 1) * _boi("energie_depl"))); }
+function aptEnergieExplore(cout){ return Math.max(1, Math.round(cout * (_apt("sv4") ? APT_ENDURANCE : 1))); }        // Endurance (v1.25 : Repérage n'agit plus ici)
 function aptEnergieDeplacement(cout){ let m = 1; if(_apt("om3")) m *= 0.8;   // v1.26 : Voyageur (no4) agit sur le carburant (aptCarburant)
-  if(_apt("sv4")) m *= 0.85; m *= aptZoneThermique(); m *= _boi("energie_depl");
+  if(_apt("sv4")) m *= APT_ENDURANCE; m *= aptZoneThermique(); m *= _boi("energie_depl");
   return Math.max(1, Math.round(cout * m)); }   // Pas léger · Endurance · zones (multiplicatif) — Repérage = O₂ seulement
 /* v1.26 — Voyageur (no4, Nomades) : −20 % de carburant pour les vols et les
    sauts du vaisseau (décision de l'autrice : il doublait Pas léger). Le
@@ -61,7 +64,7 @@ function intelBonusVaisseau(){
 function aptCarburant(litres){ return Math.max(1, Math.ceil(litres * (_apt("no4") ? 0.8 : 1) * (1 - intelBonusVaisseau()))); }
 /* O₂ d'un déplacement à découvert : Repérage (om2) −10 %, zones thermiques −15 %. */
 function aptO2Deplacement(c){ return Math.max(1, Math.round(c * (_apt("om2") ? 0.9 : 1) * aptZoneThermique() * _boi("o2_cout"))); }
-function aptRegenEnergie(){ return (_apt("sv2") ? 2 : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)
+function aptRegenEnergie(){ return (_apt("sv2") ? APT_RECUP_H : 0) + (_apt("cu4") ? 1 : 0); }                                                   // Récupération + Organisme (+%/h)
 
 /* ---------- Oxygène ---------- */
 function aptO2Bonus(){ return _apt("sv1") ? 1 : 0; }                            // Poumons d'acier −1 (appliqué dans coutO2)
@@ -104,7 +107,7 @@ function aptCombatBonusProtocole(){ return 0; }   // v1.25 : Fléau du Protocole
 /* v1.26 — Cœur de forge (ig4) : +5 Force tant qu'une ARME est équipée
    (l'Ordinateur de hacking n'en est pas une). Même règle côté serveur dans
    force_combat_serveur (expéditions, défense). */
-const APT_FORGE_FORCE = 5;
+const APT_FORGE_FORCE = 15;   // v2.52 (K183) : 5 → 15 ; dupliqué : force_combat_serveur (v271). Pas l'Arène (force_duel_serveur ne le compte pas).
 function aptForceForge(){
   if(!_apt("ig4") || !etat.equipement) return 0;
   const hack = (typeof ITEM_HACK!=="undefined") ? ITEM_HACK : "fab_ordinateur_de_hacking";
@@ -137,7 +140,11 @@ function aptMoinsCendrite(){ return _apt("pr3") ? 16 : 0; }                     
 function aptMineLot(n){ const m=(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? 1.25 : 1;
   return Math.max(1, Math.round(n * m * _boi("mine"))); }                                                          // Fournaise +25 % · boisson
 function aptGivriteForcee(){ return _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.15; }    // Isolation : +Givrite
-function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.05; }     // Veine de cristal
+/* v2.52 (K184) — la Veine de cristal donne un Cristal de SÉLÉNITE (la Sélénite vient du froid ; était : Cristal de
+   Nyx), à 2,5 % (était 5 %) : même valeur en crédits qu'avant. ⚠ Le serveur (terrain_miner, v271) n'accepte plus
+   que `selenite` comme cristal de mine, hors réserve et jamais doublé (K179). */
+const APT_VEINE_ITEM = "selenite", APT_VEINE_CHANCE = 0.025;
+function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < APT_VEINE_CHANCE; }     // Veine de cristal
 
 /* ---------- Soin (consommables) ---------- */
 function aptSoin(soin){ return Math.round(soin * (_apt("cu1") ? 1.3 : 1)); }                                      // Autarcie +30 %

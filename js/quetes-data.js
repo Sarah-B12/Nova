@@ -148,7 +148,7 @@ const QUETES = [
             "« Bon. T'as ce que je voulais. Rentre. » Puis, plus bas, alors que tu crois la liaison coupée : « Toutes unités. C'est à qui qu'ils parlent, bon sang, depuis trois cents ans ? »"
           ] } }
     ],
-    recompense:{ credits:120, xp:25, flags:{} }
+    recompense:{ credits:120, xp:20, flags:{} }
   },
 
   {
@@ -276,7 +276,7 @@ const QUETES = [
             "Un cliquetis : il te vire ta paie avant que tu dises quoi que ce soit. « Rentre. Et va pas t'imaginer qu'on est amis. »"
           ] } }
     ],
-    recompense:{ credits:250, xp:40, pa:1, flags:{} }   // v1.01 : PA (répartition irrégulière, voir APT en tête d'aptitudes-data)
+    recompense:{ credits:250, xp:35, pa:1, flags:{} }   // v1.01 : PA (répartition irrégulière, voir APT en tête d'aptitudes-data)
   },
 
   {
@@ -541,7 +541,7 @@ const QUETES = [
             "Un silence très long. Puis, presque pour lui-même : « Y en a une qui est jamais partie. »"
           ] } }
     ],
-    recompense:{ credits:500, xp:80, flags:{} }   // v1.01 : plus de PA
+    recompense:{ credits:500, xp:70, flags:{} }   // v1.01 : plus de PA
   },
 
   {
@@ -675,7 +675,7 @@ const QUETES = [
        vaisseau au marché. La Navette de réserve débloque le vol TOUT DE SUITE,
        et disparaît en dix jours : le métier de Constructeur garde sa clientèle,
        et le joueur découvre l'orbite avant de devoir payer. */
-    recompense:{ credits:800, xp:120, pa:1, objets:{ navette_reserve:1 }, flags:{ permisVaisseau:true, espace1:true } }
+    recompense:{ credits:800, xp:85, pa:1, objets:{ navette_reserve:1 }, flags:{ permisVaisseau:true, espace1:true } }
   },
 
   /* ===========================================================
@@ -790,7 +790,7 @@ const QUETES = [
             "« Reviens quand tu veux », dit Galm sans se retourner. « J'ai toujours quelque chose à découper. »"
           ] } }
     ],
-    recompense:{ credits:900, xp:140, flags:{} }
+    recompense:{ credits:900, xp:105, flags:{} }
   },
 
   /* ===========================================================
@@ -905,7 +905,7 @@ const QUETES = [
             "La liaison se coupe. Le Muet, derrière toi, continue d'émettre vers le vide."
           ] } }
     ],
-    recompense:{ credits:1000, xp:160, flags:{} }
+    recompense:{ credits:1000, xp:120, flags:{} }
   },
 
   /* ===========================================================
@@ -1050,7 +1050,7 @@ const QUETES = [
             "Galm, dans la radio, quand tu décolles : « Ton vieux Sorn, il faudra lui dire. Pour la couche de cendre. » La radio crachote. « Moi je lui dirai pas. C'est pas à moi de lui apprendre ce que \"fermer\" veut dire. »"
           ] } }
     ],
-    recompense:{ credits:1100, xp:180, pa:1, flags:{} }   // v1.01 : PA (1re descente)
+    recompense:{ credits:1100, xp:135, pa:1, flags:{} }   // v1.01 : PA (1re descente)
   },
 
   /* ===========================================================
@@ -1210,7 +1210,7 @@ const QUETES = [
             "« Gamin. » Sorn, avant de couper. « Un truc me tourne dans la tête. \"Pas de confirmation sans le personnel embarqué.\" » Il respire fort dans le micro. « Chez nous, il en manquait quatre-vingts, sur le manifeste. » Il ne dit pas la suite. Il ne la connaît pas encore. Toi non plus."
           ] } }
     ],
-    recompense:{ credits:1200, xp:200, flags:{} }
+    recompense:{ credits:1200, xp:150, flags:{} }
   },
 
   /* ===========================================================
@@ -1365,7 +1365,7 @@ const QUETES = [
             "Dans ta radio, avant que tu repartes, une voix que tu n'attendais pas : Sorn. Galm a dû lui passer les relevés. « Deux bouts », dit-il simplement. « Et personne chez nous va jamais à l'est. » Puis, comme une évidence : « Faudra bien que quelqu'un y aille, un jour. »"
           ] } }
     ],
-    recompense:{ credits:1300, xp:220, flags:{} }
+    recompense:{ credits:1300, xp:170, flags:{} }
   },
 
   /* ===========================================================
@@ -1460,7 +1460,7 @@ const QUETES = [
           ],
         defi:{ type:"combat",
           nom:"Automate de garde du ber",
-          puissance:77,
+          puissance:62,   // v2.50 (K177) : 77 → 62, recalé sur la pente des récompenses (K174)
           gain:2,
           xp:15,
           texte:["Il ne frappe pas vite, mais il frappe fort, et il ne recule jamais d'un pas : c'est sa consigne."],
@@ -1538,7 +1538,7 @@ const QUETES = [
             "Galm, quand tu t'amarres à la Carcasse, t'attend sur la passerelle, les bras croisés. « Alors ? » Tu lui dis. Elle écoute jusqu'au bout. Puis elle hoche la tête, lentement. « Un vaisseau entier. Pour eux. Qui dort depuis trois cents ans à deux heures de vol du Perchoir. » Elle rentre dans son atelier sans rien ajouter, et tu l'entends, pour la première fois, ne pas découper quoi que ce soit."
           ] } }
     ],
-    recompense:{ credits:1400, xp:240, flags:{} }
+    recompense:{ credits:1400, xp:185, flags:{} }
   },
 
   /* ===========================================================
@@ -1694,7 +1694,7 @@ const QUETES = [
             "Adaya ne dit rien. Mais tu l'entends respirer, et elle ne coupe pas la liaison."
           ] } }
     ],
-    recompense:{ credits:1500, xp:260, pa:1, flags:{} }   // v1.01 : PA (2e descente)
+    recompense:{ credits:1500, xp:200, pa:1, flags:{} }   // v1.01 : PA (2e descente)
   },
 
   /* ===========================================================
@@ -1866,7 +1866,7 @@ const QUETES = [
             "« Il y a un endroit », dit Sorn, quand tu retrouves ton vaisseau, « où tous ces morceaux vont ensemble. La réponse coincée au Muet. La procédure de La Braise. Le vaisseau qui dort. La note de Vareck. » Il aligne tout ça, et conclut : « Le Perchoir. Le relais de la base. C'est là que tout passait. Si quelqu'un a entendu ce que Vareck et les autres ont décidé ensuite, c'est lui. »"
           ] } }
     ],
-    recompense:{ credits:1600, xp:280, flags:{} }
+    recompense:{ credits:1600, xp:220, flags:{} }
   },
 
   /* ===========================================================
@@ -2050,7 +2050,7 @@ const QUETES = [
             "« Emporte la bouture d'Adaya. Là-bas, elle devrait se réveiller. »"
           ] } }
     ],
-    recompense:{ credits:1700, xp:300, pa:1, flags:{} }   // v1.01 : PA (l'émission)
+    recompense:{ credits:1700, xp:235, pa:1, flags:{} }   // v1.01 : PA (l'émission)
   },
 
   /* ===========================================================
@@ -2244,7 +2244,7 @@ const QUETES = [
         ],
         defi:{ type:"scene", bouton:"Rendre la bouture et terminer", rendre:"bouture" } }
     ],
-    recompense:{ credits:1800, xp:320, pa:1, flags:{} }   // v1.01 : PA (la bête)
+    recompense:{ credits:1800, xp:250, pa:1, flags:{} }   // v1.01 : PA (la bête)
   },
 
   /* ===========================================================
@@ -2318,7 +2318,7 @@ const QUETES = [
           ],
         defi:{ type:"combat",
           nom:"Bras de défense de la sonde Chardon",
-          puissance:94,
+          puissance:82,   // v2.50 (K177) : 94 → 82, recalé sur la pente des récompenses (K174)
           gain:3,
           xp:18,
           texte:["Il frappe à intervalles réguliers, comme celui d'Ortie, mais plus fort et plus vite : Chardon a eu trois siècles pour s'entretenir."],
@@ -2419,7 +2419,7 @@ const QUETES = [
             "Quand tu ressors, ta bête se déplie de sous le rang et trotte derrière toi, comme si elle avait compris que la discussion était finie."
           ] } }
     ],
-    recompense:{ credits:1900, xp:340, flags:{} }   // K35, K39 : pas de PA
+    recompense:{ credits:1900, xp:270, flags:{} }   // K35, K39 : pas de PA
   },
 
   /* ---------------- Q17 — Le rappel (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -2531,7 +2531,7 @@ const QUETES = [
             "Galm coupe court : elle va te le remonter, ton vieux. Puis, après un raclement de gorge qui ressemble presque à un rire : « Il commence à aimer ça, je crois. »"
           ] } }
     ],
-    recompense:{ credits:2000, xp:350, flags:{} }
+    recompense:{ credits:2000, xp:285, flags:{} }
   },
 
   /* ---------------- Q18 — La table (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -2615,7 +2615,7 @@ const QUETES = [
             "« T'y vas, hein. » Ce n'est pas une question. « Je te dirais bien de pas y aller. Mais moi, toute ma vie, on m'a dit de pas aller au bout du bras est, et t'as vu ce qu'il y avait au bout. » Il hausse les épaules, ce qui fait glisser le casque un peu plus. « Va voir Galm. Avant de sauter dans un trou, on vérifie ses rivets. »"
           ] } }
     ],
-    recompense:{ credits:2100, xp:360, flags:{} }
+    recompense:{ credits:2100, xp:300, flags:{} }
   },
 
   /* ---------------- Q19 — Ce que la coque encaisse (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -2680,7 +2680,7 @@ const QUETES = [
           ],
         defi:{ type:"combat",
           nom:"Sonde de garde de la Gorge",
-          puissance:102,
+          puissance:97,   // v2.50 (K177) : 102 → 97, recalé sur la pente des récompenses (K174)
           gain:3,
           xp:18,
           texte:["Elle tourne autour de toi en resserrant le cercle à chaque passage, et elle tire à chaque tour."],
@@ -2714,7 +2714,7 @@ const QUETES = [
             "Elle hésite, ce qui ne lui ressemble pas. « Reviens me voir avant. Que je te le redise. »"
           ] } }
     ],
-    recompense:{ credits:2200, xp:370, flags:{} }
+    recompense:{ credits:2200, xp:315, flags:{} }
   },
 
   /* ---------------- Q20 — La Gorge (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -2834,7 +2834,7 @@ const QUETES = [
        levé en fin de Q30) — v1.87l, K54 : parce que 42-U1F a CASSÉ le calculateur de saut
        en détournant le vaisseau (il ne connaît plus que Maar), pas parce qu'il le
        retient ; il le réparera par le réseau à la fin de Q30. K39 : un PA, quête clé. */
-    recompense:{ credits:2300, xp:400, pa:1, flags:{ ancolie:true, verrouMaar:true } }
+    recompense:{ credits:2300, xp:335, pa:1, flags:{ ancolie:true, verrouMaar:true } }
   },
 
   /* ===========================================================
@@ -2953,7 +2953,7 @@ const QUETES = [
             "Sous tes pieds, le C-409 siffle sa note fausse. Dehors, les automates taillent l'ancolie le long des allées. Ta bête s'est couchée sous un banc, ses marques éteintes ; elle a l'air de bouder."
           ] } }
     ],
-    recompense:{ credits:2400, xp:420, flags:{} }   // K35, K39 : pas de PA
+    recompense:{ credits:2400, xp:350, flags:{} }   // K35, K39 : pas de PA
   },
 
   /* ---------------- Q22 — La zone chaude (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -3052,7 +3052,7 @@ const QUETES = [
             "La trappe se referme tout à fait. Ta bête reste à la regarder un moment, ses marques allumées, puis elle te suit."
           ] } }
     ],
-    recompense:{ credits:2500, xp:440, flags:{} }
+    recompense:{ credits:2500, xp:365, flags:{} }
   },
 
   /* ---------------- Q23 — Ce qui brille sous la glace (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -3144,7 +3144,7 @@ const QUETES = [
           ] } }
     ],
     /* K48 : le gisement de Sélénite (au lac gelé) devient visible ; l'aiguille pousse (selenite.js). */
-    recompense:{ credits:2600, xp:460, flags:{ seleniteConnue:true } }
+    recompense:{ credits:2600, xp:385, flags:{ seleniteConnue:true } }
   },
 
   /* ---------------- Q24 — Les automates (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -3248,7 +3248,7 @@ const QUETES = [
             "Puis, plus bas : « Le réseau rame, depuis qu'on a débouché le C-409. Il passe plus de choses par la station, faudra trier. Pendant l'appel. » Il hésite. « Je pourrai pas t'aider, pendant l'appel. »"
           ] } }
     ],
-    recompense:{ credits:2700, xp:480, flags:{} }
+    recompense:{ credits:2700, xp:400, flags:{} }
   },
 
   /* ---------------- Q25 — Radié (couche 2, K31) (réécrit le 22/10, v1.92 : K53, texte seul) ----------------
@@ -3349,7 +3349,7 @@ const QUETES = [
             "Il se tait encore, puis : « Moi, je bouge pas. » Et, comme si ça lui coûtait de l'ajouter : « Je peux pas. Maintenant, tu sais. »"
           ] } }
     ],
-    recompense:{ credits:2800, xp:500, flags:{} }   // K39 : pas de PA avant Q30
+    recompense:{ credits:2800, xp:415, flags:{} }   // K39 : pas de PA avant Q30
   },
   /* ===========================================================
      v1.93 — LOT 3 (Q26 → Q30). K33, K53 ; K59 → K62 (22/10).
@@ -3467,7 +3467,7 @@ const QUETES = [
               "« Ce gamin, là-bas. » Il regarde vers l'ouest, vers l'anneau, ou plus loin. « Il est coincé dedans comme nous on est coincés dehors. Va voir ce qu'il veut, vraiment. Pas ses corvées. Ce qu'il veut. »"
             ] } }
     ],
-    recompense:{ credits:2900, xp:520, flags:{} }   // K35, K39 : pas de PA avant Q30
+    recompense:{ credits:2900, xp:435, flags:{} }   // K35, K39 : pas de PA avant Q30
   },
   /* ---------------- Q27 — Le dernier manifeste ----------------
      Couche 3 (K22, K23) : au fond de la station, les archives et le DERNIER MANIFESTE de
@@ -3515,7 +3515,7 @@ const QUETES = [
           ],
         defi:{ type:"combat",
           nom:"Automate de sécurité des archives",
-          puissance:117,
+          puissance:114,   // v2.50 (K177) : 117 → 114, recalé sur la pente des récompenses (K174)
           gain:3,
           xp:20,
           texte:["Il ne cherche pas à te chasser : il se met entre toi et le pupitre, et il frappe tout ce qui avance."],
@@ -3585,7 +3585,7 @@ const QUETES = [
             "« Bon. » Il renifle, et c'est un reniflement de soulagement. « Alors demain, on présente ton vaisseau à AREPO. Faut qu'il ait un indicatif, comme un vrai appareil, avec un vrai numéro. » Il réfléchit. « Il va falloir de la peinture. »"
           ] } }
     ],
-    recompense:{ credits:3000, xp:540, flags:{} }   // K35, K39 : pas de PA avant Q30
+    recompense:{ credits:3000, xp:450, flags:{} }   // K35, K39 : pas de PA avant Q30
   },
   /* ---------------- Q28 — Immatriculé ----------------
      Un manifeste exige un appareil connu d'AREPO : le vaisseau, posé devant la station (le
@@ -3669,7 +3669,7 @@ const QUETES = [
             "Dans la radio, Asulf s'entraîne à prononcer l'indicatif comme un contrôleur, en se trompant de mots et en se reprenant. « MAAR-12/42, autorisé à… euh. À partir. Voilà. Autorisé à partir. » Il répète la phrase pour lui, tout bas, une fois de plus."
           ] } }
     ],
-    recompense:{ credits:3100, xp:560, flags:{ immatricule:"MAAR-12/42" } }   // K35, K39 : pas de PA avant Q30
+    recompense:{ credits:3100, xp:465, flags:{ immatricule:"MAAR-12/42" } }   // K35, K39 : pas de PA avant Q30
   },
   /* ---------------- Q29 — Une ligne de registre ----------------
      Le nom (K25) : la case est vide, « Mets celui que tu dis » → ASULF devient une ligne de
@@ -3763,7 +3763,7 @@ const QUETES = [
             "Puis l'écran s'éteint, doucement, comme on éteint la lampe d'une pièce qu'on va quitter."
           ] } }
     ],
-    recompense:{ credits:3200, xp:580, flags:{ habilitation:true } }   // K35, K39 : pas de PA avant Q30 ; K62 : les réserves
+    recompense:{ credits:3200, xp:480, flags:{ habilitation:true } }   // K35, K39 : pas de PA avant Q30 ; K62 : les réserves
   },
   /* ---------------- Q30 — Une personne évacuée ----------------
      Fin de l'arc (K18, K24, K54, K59). Asulf répare le calculateur (sa part du marché, K54) ;
@@ -3811,7 +3811,7 @@ const QUETES = [
           ],
         defi:{ type:"combat",
           nom:"Sentinelle de la trappe de visite",
-          puissance:122,
+          puissance:117,   // v2.50 (K177) : 122 → 117, recalé sur la pente des récompenses (K174)
           gain:3,
           xp:22,
           texte:["Lente, lourde, patiente : elle avance d'un mètre à chaque coup, et elle ne recule jamais."],
@@ -3876,7 +3876,7 @@ const QUETES = [
             "Le soir, en remontant à bord, tu essaies une route au hasard : Triptolème. Le calculateur l'accepte sans un mot. Silène, Ancolie, et maintenant tout le reste, sauf la Gorge, qui reste grise. Tu as ton ciel. Il a son froid."
           ] } }
     ],
-    recompense:{ credits:3300, xp:600, pa:1, flags:{ verrouMaar:false, asulfToundra:true } }   // K39 : le PA de l'arc ; K54 : la réparation ; K59
+    recompense:{ credits:3300, xp:500, pa:1, flags:{ verrouMaar:false, asulfToundra:true } }   // K39 : le PA de l'arc ; K54 : la réparation ; K59
   }
   ,
 
@@ -4005,7 +4005,7 @@ const QUETES = [
        PA : comme Q20 (la Gorge, Ancolie), Q31 ouvre une carte — quête clé (K39, à confirmer
        pour l'arc de Cérès). Gains des choix : comme Q20 (veilleurs 120 XP · assembleurs
        1 composant avancé + 40 XP · langues 300 ₡), serveur v223. */
-    recompense:{ credits:2400, xp:420, pa:1, flags:{ ceres:true } }
+    recompense:{ credits:2400, xp:515, pa:1, flags:{ ceres:true } }
   }
   ,
 
@@ -4146,7 +4146,7 @@ const QUETES = [
        Pas de PA (K111 : Q31 et Q45 seulement). K155 : la boutique du Nid s'ouvre.
        Gains des choix (serveur v252) : veilleurs 110 XP · assembleurs 3 composants
        simples · langues 280 ₡. */
-    recompense:{ credits:2500, xp:440, flags:{ nidOuvert:true } }
+    recompense:{ credits:2500, xp:530, flags:{ nidOuvert:true } }
   }
   ,
 
@@ -4267,7 +4267,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Quête « compétence » du lot : gains des
        choix (serveur v253) — racines +1 Force · éclats +1 Agilité · veilleurs +1 Intelligence. */
-    recompense:{ credits:2600, xp:460, flags:{ pieceCouronne:true } }
+    recompense:{ credits:2600, xp:550, flags:{ pieceCouronne:true } }
   }
   ,
 
@@ -4382,7 +4382,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v254) :
        veilleurs 115 XP · éclats 1 composant avancé + 40 XP · langues 290 ₡. */
-    recompense:{ credits:2700, xp:480, flags:{ pieceChargee:true } }
+    recompense:{ credits:2700, xp:565, flags:{ pieceChargee:true } }
   }
   ,
 
@@ -4508,7 +4508,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v255) :
        langues 120 XP · veilleurs 300 ₡ · racines 3 composants simples + 40 XP. */
-    recompense:{ credits:2800, xp:500, objets:{ transat:1 }, flags:{ radioGorge:true } }
+    recompense:{ credits:2800, xp:580, objets:{ transat:1 }, flags:{ radioGorge:true } }
   }
   ,
 
@@ -4626,7 +4626,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v256) :
        veilleurs 125 XP · assembleurs 3 composants simples + 40 XP · racines 310 ₡. */
-    recompense:{ credits:2900, xp:520, flags:{ registreTerminus:true } }
+    recompense:{ credits:2900, xp:600, flags:{ registreTerminus:true } }
   }
   ,
 
@@ -4752,7 +4752,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Quête « compétence » du lot 2 : gains des
        choix (serveur v257) — assembleurs +1 Force · éclats +1 Agilité · veilleurs +1 Intelligence. */
-    recompense:{ credits:3000, xp:540, flags:{ epaveTrouble:true } }
+    recompense:{ credits:3000, xp:615, flags:{ epaveTrouble:true } }
   }
   ,
 
@@ -4849,7 +4849,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v258) :
        racines 130 XP · veilleurs 320 ₡ · langues 3 composants simples + 40 XP. */
-    recompense:{ credits:3100, xp:560, flags:{ baliseFugueuse:true } }
+    recompense:{ credits:3100, xp:630, flags:{ baliseFugueuse:true } }
   }
   ,
 
@@ -4951,7 +4951,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111). Gains des choix (serveur v259) :
        veilleurs 135 XP · éclats 1 composant avancé + 40 XP · assembleurs 330 ₡. */
-    recompense:{ credits:3200, xp:580, flags:{ vigieSilene:true } }
+    recompense:{ credits:3200, xp:645, flags:{ vigieSilene:true } }
   }
   ,
 
@@ -5069,7 +5069,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q31 et Q45). Gains des choix (serveur v260) :
        racines 140 XP · veilleurs 340 ₡ · langues 1 composant avancé + 40 XP. */
-    recompense:{ credits:3300, xp:600, flags:{ correspondanceAnnulee:true } }
+    recompense:{ credits:3300, xp:665, flags:{ correspondanceAnnulee:true } }
   }
   ,
 
@@ -5180,7 +5180,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q45). Gains des choix (serveur v261) :
        veilleurs 145 XP · assembleurs 350 ₡ · éclats 3 composants simples + 40 XP. */
-    recompense:{ credits:3400, xp:620, flags:{ bogueDepot:true } }
+    recompense:{ credits:3400, xp:680, flags:{ bogueDepot:true } }
   }
   ,
 
@@ -5278,7 +5278,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q45). Gains des choix (serveur v262) :
        langues 150 XP · racines 360 ₡ · éclats 1 composant avancé + 40 XP. */
-    recompense:{ credits:3500, xp:640, flags:{ noteBureau:true } }
+    recompense:{ credits:3500, xp:695, flags:{ noteBureau:true } }
   }
   ,
 
@@ -5385,7 +5385,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q45). Gains des choix (serveur v263) :
        veilleurs 155 XP · langues 370 ₡ · assembleurs 3 composants simples + 40 XP. */
-    recompense:{ credits:3600, xp:660, flags:{ ordreCoupure:true } }
+    recompense:{ credits:3600, xp:715, flags:{ ordreCoupure:true } }
   }
   ,
 
@@ -5501,7 +5501,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q45). Gains des choix (serveur v264) :
        racines 160 XP · veilleurs 380 ₡ · langues 3 composants simples + 40 XP. */
-    recompense:{ credits:3700, xp:680, flags:{ planReprise:true } }
+    recompense:{ credits:3700, xp:730, flags:{ planReprise:true } }
   }
   ,
 
@@ -5611,7 +5611,7 @@ const QUETES = [
     ],
     /* K151 : récompenses PROVISOIRES. K111 : 1 PA (fin de l'arc à 10 PA). Gains des choix (serveur v265) :
        racines 165 XP · langues 390 ₡ · veilleurs 1 composant avancé + 40 XP. */
-    recompense:{ credits:4000, xp:700, pa:1, flags:{ motifLu:true } }
+    recompense:{ credits:4000, xp:745, pa:1, flags:{ motifLu:true } }
   }
 
 

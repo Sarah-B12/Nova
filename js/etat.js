@@ -35,8 +35,13 @@ function nouvelEtat(){
 /* ---------- Utilitaires ---------- */
 function alea(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
 function bonusCredits(){ return Math.floor(intelligenceEffective()/5); }
-// Chance de « doubler une trouvaille » = Intelligence (jusqu'à ~20 % à 200) + Drone récupérateur (+15 %). Plafond 40 %.
-function chanceDouble(){ return Math.min(0.40, intelligenceEffective()/1000 + (typeof equipDouble==="function" ? equipDouble() : 0)/100); }
+/* Chance de « doubler une trouvaille ». v2.51 (K179, option A) : REBRANCHÉE sur le minage, la récolte et la
+   tonte (elle n'était plus lue que par l'ancienne action Explorer, retirée). Intelligence ÷ 2000 (10 % à 200)
+   + Drone récupérateur équipé (+5 %), plafond 15 % (avant : ÷ 1000, +15 %, 40 %).
+   ⚠ C'EST LE SERVEUR QUI TIRE (_chance_trouvaille, v269) : ce calcul ne sert qu'à l'affichage.
+   Dupliqué : _chance_trouvaille (Intelligence de donnees + boissons + equip_bonus.intel, moral à 0 → ×0,30). */
+const TROUVAILLE_MAX = 0.15;
+function chanceDouble(){ return Math.min(TROUVAILLE_MAX, intelligenceEffective()/2000 + (typeof equipDouble==="function" ? equipDouble() : 0)/100); }
 // Compétences effectives = compétence de base + bonus d'équipement (helpers définis dans equipement.js).
 // Moral à 0 (ou moins) : très grosse pénalité (−70 %) sur Force/Agilité/Intelligence — sans « mort ».
 function penaliteMoral(){ return (etat.jauges && etat.jauges.moral <= 0) ? 0.30 : 1; }

@@ -27,7 +27,7 @@ function afficher(){
   document.querySelector("#stat-niveau").textContent = etat.niveau;
   document.querySelector("#stat-age").textContent = ageJours() + " j";
   document.querySelector("#stat-credits").textContent = etat.credits;
-  document.querySelector("#stat-xp").textContent = `${etat.xp}/${seuilXp(etat.niveau)}`;
+  document.querySelector("#stat-xp").textContent = (typeof NIVEAU_MAX === "number" && etat.niveau >= NIVEAU_MAX) ? "niveau max" : `${etat.xp}/${seuilXp(etat.niveau)}`;   // v2.50 (K178)
 
   // ⚠ L'O₂ plein en zone de faction est désormais appliqué PAR LE SERVEUR
   // (agir() et jauges_lire() connaissent la position). Le client ne l'écrit plus.

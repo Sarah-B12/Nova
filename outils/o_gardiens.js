@@ -2,7 +2,7 @@
 (async function(){
   await new Promise(x=>setTimeout(x,1200));
   const r = { erreurs:[] };
-  const VISES = { q11:[77,15], q16:[94,20], q19:[102,23], q27:[117,28], q30:[122,30] };
+  const VISES = { q11:[62,14], q16:[82,17], q19:[97,21], q27:[114,27], q30:[117,28] };   // v2.50 (K177) : recalés sur la pente (K174) ; avant 77/15, 94/20, 102/23, 117/28, 122/30
   // Meilleure compétence d'un joueur « moyen » au niveau L : 10 + 2 points par niveau + la meilleure arme utilisable.
   const arme = L => L >= 20 ? 18 : (L >= 15 ? 16 : (L >= 5 ? 8 : 0));
   const moyen = L => 10 + 2*(L-1) + arme(L), maxi = L => 10 + 3*(L-1) + arme(L);

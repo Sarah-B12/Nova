@@ -291,10 +291,13 @@ const TIR_CELLULE = "fab_cellule_d_energie";
 let _tirCanon = 0;
 function _tirSalves(){ return TIR_SALVES + ((typeof _apt==="function" && _apt("tr1")) ? 1 : 0) + _tirCanon; }
 function _tirCellules(){ return (etat && etat.sac && etat.sac[TIR_CELLULE]) || 0; }
+/* v2.51 (K182, option A) — la grille rétrécit d'une case tous les 50 points d'Intelligence, jusqu'à 200 :
+   7 sous 50, 6 de 50 à 99, 5 de 100 à 149, 4 dès 150 (+2 au tir durci, Cérès : de 9 à 6).
+   Avant : 7, 6 dès 30, 5 dès 55, puis plus rien. Client seul (le tir est un mini-jeu local). */
+const TIR_TAILLES = [[150, 4], [100, 5], [50, 6]];   // [Intelligence minimale, côté de la grille] ; sinon 7
 function _tirTaille(){
   const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
-  if(i >= 55) return 5;
-  if(i >= 30) return 6;
+  for(const [seuil, n] of TIR_TAILLES) if(i >= seuil) return n;
   return 7;
 }
 

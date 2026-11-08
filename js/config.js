@@ -28,7 +28,7 @@ const COMPETENCES = [
      compétence, pas ses formules. Les chiffres changent, ces textes non. */
   { id:"force", nom:"Force", desc:"Fait de toi un combattant qu'on évite : tu l'emportes plus souvent, tu encaisses moins, et tu pèses lourd dans les expéditions de ta faction." },
   { id:"agilite", nom:"Agilité", desc:"Te rend vif et discret : tu ménages ton oxygène en chemin, tu esquives les coups, tu passes sous le nez des patrouilles et tu as la main leste." },
-  { id:"intelligence", nom:"Intelligence", desc:"Aiguise ton flair : meilleure négociation, récoltes plus généreuses, chapardage plus rentable et systèmes qui cèdent plus vite." }
+  { id:"intelligence", nom:"Intelligence", desc:"Aiguise ton flair : trouvailles parfois doublées (mine, récolte, tonte), chapardage plus rentable et systèmes qui cèdent plus vite." }   // v2.51 (K179) : « meilleure négociation » n'existait pas
 ];
 const FACTIONS = [
   { id:"ignis",        nom:"Ignis",        avantage:"Zones chaudes moins coûteuses",            couleur:"#f2743a" },

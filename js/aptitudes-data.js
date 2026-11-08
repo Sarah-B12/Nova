@@ -24,8 +24,8 @@ const APT_TRONC = [
        Récupération. La migration (aptitudes.js, _aptMigrer) rend les PA
        d'une chaîne cassée par l'inversion. */
     { id:"sv3", nom:"Métabolisme",     effet:"Quand une patrouille a le dessus sur toi, tu perds 25 % de santé et de moral en moins." },
-    { id:"sv2", nom:"Récupération",    effet:"Régénération d'énergie +2 %/h (base 10 %/h ; au total 13,5 %/h au plus, avec Organisme et les racines de ta cité)." },
-    { id:"sv4", nom:"Endurance",       effet:"Énergie −15 % : terrain, mine, chantiers, déplacements (à pied, en vol, en atmosphère), gravier, sondes et choix de quête." }
+    { id:"sv2", nom:"Récupération",    effet:"Régénération d'énergie +1 %/h (base 10 %/h ; au total 12,5 %/h au plus, avec Organisme et les racines de ta cité)." },   // v2.52 (K185) : +2 → +1
+    { id:"sv4", nom:"Endurance",       effet:"Énergie −10 % : terrain, mine, chantiers, déplacements (à pied, en vol, en atmosphère), gravier, sondes et choix de quête." }   // v2.52 (K185) : −15 → −10 %
   ]},
   { id:"prospecteur", nom:"Prospection", noeuds:[
     { id:"pr1", nom:"Filon profond",   effet:"Nouvelles mines : réserve +50 % (500 → 750)." },
@@ -68,19 +68,19 @@ const APT_FACTIONS = {
     { id:"ig1", nom:"Sang de magma", effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone chaude (autour de la Forge)." },
     { id:"ig2", nom:"Fournaise",     effet:"En zone chaude : minage +25 % et butin de patrouille +25 %." },
     { id:"ig3", nom:"Combustion",    effet:"+6 points de chance de victoire contre les patrouilles.", deblocage:true },
-    { id:"ig4", nom:"Cœur de forge", effet:"+5 de Force tant qu'une arme est équipée (patrouilles, expéditions, défense).", deblocage:true }
+    { id:"ig4", nom:"Cœur de forge", effet:"+15 de Force tant qu'une arme est équipée : patrouilles, expéditions et défense (pas l'Arène).", deblocage:true }   // v2.52 (K183) : +5 → +15
   ]},
   cultivateurs: { nom:"Le Rhizome — Symbiose & Bio", noeuds:[
     { id:"cu1", nom:"Autarcie",      effet:"Consommables et plantes soignent +30 %." },
     { id:"cu2", nom:"Verger",        effet:"Bio-dôme : récolte 5-9 → 7-11." },
     { id:"cu3", nom:"Photosynthèse", effet:"Régénère +5 O₂ par heure (la flore recycle l'air)." },
-    { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60 ; énergie : 13,5 %/h au plus en tout).", deblocage:true }
+    { id:"cu4", nom:"Organisme",     effet:"Régénération passive : +1 santé, +1 moral et +1 énergie par heure (santé/moral plafonnés à 60 ; énergie : 12,5 %/h au plus en tout).", deblocage:true }
   ]},
   toundra: { nom:"La Toundra — Givre & Endurance", noeuds:[
     { id:"to1", nom:"Isolation",       effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone froide ; +chance de Givrite au minage." },
     { id:"to2", nom:"Trempe",          effet:"Quand une patrouille a le dessus sur toi, tu perds 10 % de santé et de moral en moins." },   // v1.36r : précisé
     { id:"to3", nom:"Réserves d'hiver",effet:"+2 places de coffre par palier de maison (stockage accru)." },
-    { id:"to4", nom:"Veine de cristal",effet:"5 % de chance d'extraire un Cristal de Nyx à chaque minage en zone froide.", deblocage:true }
+    { id:"to4", nom:"Veine de cristal",effet:"2,5 % de chance d'extraire un Cristal de Sélénite à chaque minage en zone froide.", deblocage:true }   // v2.52 (K184) : Nyx 5 % → Sélénite 2,5 %
   ]},
   rouage: { nom:"Le Rouage — Machines & Récup", noeuds:[
     { id:"ro1", nom:"Réparateur", effet:"Mines +30 % de réserve." },

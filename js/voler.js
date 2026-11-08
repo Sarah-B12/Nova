@@ -15,9 +15,14 @@ const VOL_ENERGIE     = 15;
 /* v1.21 — 30 % → 20 % (décision de l'autrice, 27/09) : le plafond absolu de
    500 ₡ protégeait déjà les grosses fortunes ; c'étaient les PETITES que 30 %
    vidaient. Formule inchangée : 12 % + Intelligence/1000, donc 20 % atteints
-   dès 80 d'Intelligence. Le texte de l'encart HACKER lit cette constante. */
-const VOL_CAP_CREDITS = 0.20;
-const VOL_CAP_ABS     = 500;    // plafond absolu de crédits par hack (anti-jackpot)
+   dès 80 d'Intelligence. Le texte de l'encart HACKER lit cette constante.
+   v2.51 (K181, autrice) — 6 % + 0,02 % par point d'Intelligence, au plus 10 % (à 200), plafond 2 000 ₡
+   (avant : 12 % + 0,1 %/pt, 20 % dès 80, plafond 500 ₡). Les 2 000 ₡ ne se prennent qu'à une victime
+   d'au moins 20 000 ₡ ; les petites fortunes perdent moins qu'avant, les grosses davantage.
+   ⚠ DUPLIQUÉ au serveur : vol_conclure (v270). Ici : TEXTES seulement. */
+const VOL_PART_BASE   = 0.06, VOL_PART_PAR_INT = 0.0002;
+const VOL_CAP_CREDITS = 0.10;
+const VOL_CAP_ABS     = 2000;   // plafond absolu de crédits par hack (anti-jackpot)
 const VOL_CAP_OBJETS  = 3;
 /* v1.36k — XP du vol et du hack (proposition, à valider par l'autrice) :
    réussi avec butin, réussi mais vide, raté. Crédité comme partout
@@ -617,7 +622,7 @@ function majVoler(){
       </div>
       <div class="vol-carte">
         <h3>Hacker <span class="qte">· crédits</span></h3>
-        <p>Meilleur butin : jusqu'à ${Math.round(VOL_CAP_CREDITS*100)}% des crédits (max ${VOL_CAP_ABS} ₡), via un <b>mini-jeu</b>. Tu restes anonyme <b>${Math.round(CHANCE_ANONYMAT_HACK*100)} % du temps</b> — sinon ta signature passe. Et l'échec coûte cher : <b>${Math.round(RISQUE_PRISON_HACK*100)} % de risque de prison</b>.</p>
+        <p>Meilleur butin : de ${Math.round(VOL_PART_BASE*100)} à ${Math.round(VOL_CAP_CREDITS*100)} % des crédits selon ton Intelligence (max ${VOL_CAP_ABS.toLocaleString("fr-FR")} ₡), via un <b>mini-jeu</b>. Tu restes anonyme <b>${Math.round(CHANCE_ANONYMAT_HACK*100)} % du temps</b> — sinon ta signature passe. Et l'échec coûte cher : <b>${Math.round(RISQUE_PRISON_HACK*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Intelligence = plus de temps). Prérequis : Ordinateur équipé ${_ordiEquipe()?"✅":"❌"} + Intrusion ${aIntrusion()?"✅":"❌"}.</p>
         <button class="mini" id="vol-hacker" ${dH&&e>=_coutVol()?"":"disabled"}>Hacker</button>
       </div>

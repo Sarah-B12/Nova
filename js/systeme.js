@@ -415,6 +415,11 @@ function seuilXp(n){ return xpCumulPour((n|0) + 1) - xpCumulPour(n|0); }
    ⚠ Le serveur ne la connaît pas (niveau_monter croit le niveau annoncé) :
      à dupliquer le jour où il vérifiera l'XP (chantier anti-triche). */
 function xpCumulPour(n){ return Math.max(10*n*(n-1), n*n*(n-1)/2); }
+/* v2.50 (K178) — NIVEAU MAXIMUM : 80 (252 800 XP), demande de l'autrice : une borne sûre si le jeu
+   n'est pas mis à jour à temps. L'XP continue de s'additionner en base (profils.xp), mais le niveau
+   s'arrête là : plus de points de compétence ni d'énergie offerte au-delà. Le serveur ne la connaît
+   pas (niveau_monter croit le niveau annoncé ; la console monte au plus au niveau 60). */
+const NIVEAU_MAX = 80;
 
 /* v1.33 — NIVEAU REQUIS POUR UTILISER UN OBJET (fixé à la main par l'autrice).
    Absent = sans condition. On peut tout faire d'un objet trop fort (posséder,
@@ -455,7 +460,7 @@ function mentionNiveauHtml(id){
 }
 function niveauDeXp(total){
   let n = 1;
-  while(n < 999 && (total|0) >= xpCumulPour(n+1)) n++;
+  while(n < NIVEAU_MAX && (total|0) >= xpCumulPour(n+1)) n++;   // v2.50 (K178) : 999 → NIVEAU_MAX
   return n;
 }
 function xpDansNiveau(total){ return (total|0) - xpCumulPour(niveauDeXp(total)); }

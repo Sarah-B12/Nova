@@ -344,6 +344,55 @@ function ptsFab(nom){
   return 5;
 }
 
+/* ===========================================================
+   v2.49 (K173) — L'XP D'ATELIER : seulement les GROS objets.
+   Demande de l'autrice : de l'XP en fabriquant, mais sur les gros objets (vaisseaux,
+   armures lourdes, drones, implants…), pour donner une raison d'en fabriquer et de les
+   vendre. « Gros » = utilisable dès le niveau 20 ou plus (NIVEAUX_OBJETS, systeme.js :
+   fusil à ions, armures lourdes, armes à singularité, drones, implants, cargo, maître).
+   XP = 15 par Cristal de Sélénite + 8 par Cristal de Nyx contenus dans l'objet (recettes
+   décomposées, comme _coutFab), 15 au moins (fusil à ions et cargo n'en ont pas).
+   ⚠ Pas de plafond par recette, contrairement aux points de formation : c'est la rareté
+     des cristaux qui limite (une aiguille de Sélénite tous les 4 jours par joueur).
+   ⚠ Production en série : le second objet rapporte aussi son XP.
+   ⚠ Barème CLIENT SEUL, comme toute l'XP d'action (gagnerXp → xp_gagner) : rien à
+     dupliquer au serveur. Simulation : outils/o_sim_xp.js (lit ces constantes).
+   =========================================================== */
+const XP_ATELIER_NIV = 20, XP_ATELIER_SEL = 15, XP_ATELIER_NYX = 8, XP_ATELIER_MIN = 15;
+let _cristauxMemo = null;
+function _cristauxFab(nom){
+  if(!_cristauxMemo){
+    _cristauxMemo = {}; const R = {};
+    for(const f of Object.values(FORMATIONS)) for(const [, n, ing] of f.recettes){
+      const m = String(n).match(/×\s*(\d+)/); R[normNom(n)] = { ing, lot: m ? +m[1] : 1 }; }
+    const calc = (n, pile) => {
+      const k = normNom(n);
+      if(k === "cristal de nyx") return { sel:0, nyx:1 };
+      if(k === "cristal de selenite") return { sel:1, nyx:0 };
+      if(_cristauxMemo[k]) return _cristauxMemo[k];
+      const r = R[k]; if(!r || pile.has(k)) return { sel:0, nyx:0 };   // matière première
+      pile.add(k);
+      const a = { sel:0, nyx:0 };
+      for(const part of String(r.ing).split(",")){
+        const m = part.trim().match(/^(\d+)\s+(.*)$/); if(!m) continue;
+        const lot = (R[normNom(m[2])] && R[normNom(m[2])].lot) || 1, b = calc(m[2], pile);
+        a.sel += +m[1] * b.sel / lot; a.nyx += +m[1] * b.nyx / lot;
+      }
+      pile.delete(k);
+      return (_cristauxMemo[k] = a);
+    };
+    for(const k of Object.keys(R)) calc(k, new Set());
+  }
+  return _cristauxMemo[normNom(nom)] || { sel:0, nyx:0 };
+}
+function xpAtelier(nom){
+  const p = PROD_PAR_NOM[normNom(nom)]; if(!p) return 0;
+  const niv = (typeof niveauRequis === "function") ? niveauRequis(p.id) : 0;
+  if(niv < XP_ATELIER_NIV) return 0;
+  const c = _cristauxFab(nom);
+  return Math.max(XP_ATELIER_MIN, Math.round(XP_ATELIER_SEL * c.sel + XP_ATELIER_NYX * c.nyx));
+}
+
 const PROD_PAR_NOM = {};  // clé normalisée -> { id, nom, cle, seuil }
 const RAW_PAR_NOM  = {};  // clé normalisée -> id d'une matière première
 const ALIAS        = {};  // clé normalisée d'une référence générique -> id concret
@@ -472,7 +521,9 @@ async function fabriquer(seuil){
 
   const gagne = Math.min(ptsFab(nom) + aptFabPoints(), CAP_RECETTE - (f.fait[seuil]||0));
   if(gagne > 0){ f.fait[seuil] = (f.fait[seuil]||0) + gagne; f.points += gagne; }
-  journal(`Fabriqué : ${nom}${bonus2?" ×2 (série)":""}.` + (rendu?` Récup : +1 ${rendu}.`:"") + (gagne > 0 ? ` +${gagne} pt${gagne>1?"s":""} de formation.` : " (recette épuisée, +0 pt)"), "gain");
+  const xpA = xpAtelier(nom) * (bonus2 ? 2 : 1);   // v2.49 (K173) : les gros objets rapportent de l'XP
+  journal(`Fabriqué : ${nom}${bonus2?" ×2 (série)":""}.` + (rendu?` Récup : +1 ${rendu}.`:"") + (gagne > 0 ? ` +${gagne} pt${gagne>1?"s":""} de formation.` : " (recette épuisée, +0 pt)") + (xpA > 0 ? ` +${xpA} XP.` : ""), "gain");
+  if(xpA > 0 && typeof gagnerXp === "function") gagnerXp(xpA);   // après la ligne : un « Niveau N atteint » vient ensuite
   /* v1.86 — retour de l'autrice : la liste remontait tout en haut après chaque
      fabrication (on enchaîne vingt lingots de Givrite tout en bas). On note le
      défilement des conteneurs AVANT le redessin et on le rend APRÈS. */
@@ -507,7 +558,7 @@ function renderAtelier(corps){
     `<p style="margin:0 0 4px"><b>${fo.nom}</b> <span class="qte">${palierDe(f.points, f.cle)}</span></p>
      <div class="form-progress"><div class="form-progress-tete"><span><b class="or">${f.points}</b> pts</span><span>max ${dernier}</span></div>
        <div class="form-barre"><div class="form-remplissage" style="width:${Math.min(100, Math.round(f.points / dernier * 100))}%"></div></div></div>
-     <p class="vide" style="margin:6px 0 10px">Fabriquer range l'objet dans ton sac et rapporte des points de formation, selon ce que coûte l'objet : de 1 pt (un lingot) à 5 pts (les pièces les plus lourdes). Chaque recette est plafonnée à ${CAP_RECETTE} pts — on progresse en variant.</p>`;
+     <p class="vide" style="margin:6px 0 10px">Fabriquer range l'objet dans ton sac et rapporte des points de formation, selon ce que coûte l'objet : de 1 pt (un lingot) à 5 pts (les pièces les plus lourdes). Chaque recette est plafonnée à ${CAP_RECETTE} pts — on progresse en variant. Les gros objets (utilisables dès le niveau ${XP_ATELIER_NIV}) rapportent aussi de l'XP à chaque fabrication, selon les cristaux qu'ils contiennent.</p>`;
   corps.appendChild(tete);
 
   const liste = document.createElement("div"); liste.className = "recette-liste atelier-liste";
@@ -533,7 +584,7 @@ function renderAtelier(corps){
     const l = document.createElement("div"); l.className = "recette-ligne ok";
     l.innerHTML =
       `<span class="recette-seuil">${seuil}</span>
-       <span class="recette-corps"><b class="recette-nom">${nom}</b>${_mentionNivFab(nom)} <small class="recette-gain">+${ptsFab(nom)} pt${ptsFab(nom)>1?"s":""}</small><span class="recette-ing">${ingHtml}</span>
+       <span class="recette-corps"><b class="recette-nom">${nom}</b>${_mentionNivFab(nom)} <small class="recette-gain">+${ptsFab(nom)} pt${ptsFab(nom)>1?"s":""}${xpAtelier(nom) > 0 ? ` · +${xpAtelier(nom)} XP` : ""}</small><span class="recette-ing">${ingHtml}</span>
        ${inconnu ? '<span class="recette-note">intermédiaire d\'un autre métier requis</span>' : (epuise ? '<span class="recette-note">recette épuisée (+0 pt)</span>' : "")}</span>`;
     const b = document.createElement("button"); b.className = "mini"; b.textContent = "Fabriquer";
     b.disabled = manque;

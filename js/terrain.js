@@ -216,6 +216,16 @@ async function demolir(i){
   apresAction();
 }
 
+/* v2.51 (K179) — la trouvaille doublée : le SERVEUR tire (Intelligence, Drone récupérateur ; 15 % au plus)
+   et renvoie ce qu'il a ajouté en plus dans `double` (hors réserve de la mine, jamais le cristal de la Veine ; sac
+   plein : ce qui rentre). Le sac renvoyé (etat) le compte déjà : ici, on ne fait que l'annoncer. */
+function _journalDouble(r){
+  const d = (r && r.double) || {};
+  const morceaux = Object.entries(d).filter(([, n]) => n > 0)
+    .map(([id, n]) => `+${n} ${(typeof item === "function" && item(id) && item(id).nom) || id}`);
+  if(morceaux.length) journal(`Trouvaille doublée ! ${morceaux.join(", ")}.`, "gain");
+}
+
 // --- MINE : réserve finie 500 → 0, puis à démolir ---
 async function recolterMine(i){
   if(_refusTerrain()||_refusHS(i)) return;
@@ -224,14 +234,15 @@ async function recolterMine(i){
   const n=Math.min(lot, stock, placesLibres());
   if(n<=0){ journal(stock<=0?"Mine épuisée — démolis-la puis reconstruis-en une.":"Sac plein.","alerte"); return; }
   const gains={}; for(let k=0;k<n;k++){ const m=aptGivriteForcee() ? "givrite" : tirerMatiere(0, aptMoinsCendrite()); gains[m]=(gains[m]||0)+1; }
-  const cristal = aptVeineCristal();                    // Veine de cristal (to4) : hors réserve de la mine
-  if(cristal) gains.cristal = (gains.cristal||0) + 1;
+  const cristal = aptVeineCristal();                    // Veine de cristal (to4) : hors réserve de la mine ; v2.52 : Sélénite
+  if(cristal) gains[APT_VEINE_ITEM] = (gains[APT_VEINE_ITEM]||0) + 1;
   const r=await terrainRpc("terrain_miner", { p_plot:i, p_gains:gains });   // tirage borné par le serveur
   if(!r) return;
-  const pr=Object.entries(r.ajoutes||{}).filter(([k])=>k!=="cristal").reduce((a,[,b])=>a+b,0);
-  if(cristal && (r.ajoutes||{}).cristal) journal("Veine de cristal : +1 Cristal de Nyx !","gain");
+  const pr=Object.entries(r.ajoutes||{}).filter(([k])=>k!==APT_VEINE_ITEM).reduce((a,[,b])=>a+b,0);
+  if(cristal && (r.ajoutes||{})[APT_VEINE_ITEM]) journal("Veine de cristal : +1 Cristal de Sélénite !","gain");
   gagnerXp(3);
   journal(`Mine : +${pr} minerai(s). Réserve : ${r.stock}/${r.max||rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
+  _journalDouble(r);   // v2.51 (K179)
   apresAction(); majStruct();
 }
 
@@ -266,7 +277,7 @@ async function recolterCase(ci){
   if(!res) return;
   const pr=(res.ajoutes||{})[c.plante]||0;
   gagnerXp(2);
-  journal(`Récolte : +${pr} ${nom}.`,"gain"); apresAction(); majStruct();
+  journal(`Récolte : +${pr} ${nom}.`,"gain"); _journalDouble(res); apresAction(); majStruct();
 }
 
 /* v1.34h — ABANDON (plante 2 jours, animal 3 jours sans soin ; rien pendant
@@ -319,7 +330,7 @@ async function tondreCase(ci){
   let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${res.tontes}/${TONTES_MAX}.`;
   if(res.retraite) msg+=` Le ${a.nom} a pris sa retraite.`;
   gagnerXp(2);
-  journal(msg,"gain"); apresAction(); majStruct();
+  journal(msg,"gain"); _journalDouble(res); apresAction(); majStruct();
 }
 
 // --- Modale d'une structure (mine / bio-dôme / enclos) ---

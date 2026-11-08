@@ -298,11 +298,26 @@ function _hackP3(){
   });
 }
 
+/* v2.51 (K180, option A) — l'Agilité compte JUSQU'À 200. Avant : risque 60 % − 3 points par point
+   d'Agilité, au moins 10 % (atteint à 17) ; durée 100 % − 3 % par point, au moins 40 % (atteint à 20) :
+   au-delà de 20, l'Agilité ne servait plus à rien ici. Le début ne change pas ; ensuite le risque
+   continue de baisser jusqu'à 2 % à 200, la durée jusqu'à 20 % (droites, sans palier).
+   Client seul : le serveur (emprisonner) accepte toute durée d'au moins 1 s (BACKEND_PLAN, tableau des garde-fous). */
+function espionRisquePrison(agi){
+  agi = Math.max(0, +agi || 0);
+  if(agi <= 17) return Math.max(0.10, 0.6 - agi*0.03);
+  return Math.max(0.02, 0.10 - (agi - 17) * (0.08 / 183));
+}
+function espionDureePrison(agi){
+  agi = Math.max(0, +agi || 0);
+  if(agi <= 20) return Math.max(0.40, 1 - agi*0.03);
+  return Math.max(0.20, 0.40 - (agi - 20) * (0.20 / 180));
+}
 function _prisonEspion(cible){
   const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
-  const pPrison=Math.max(0.1, 0.6 - agi*0.03);
+  const pPrison=espionRisquePrison(agi);
   if(Math.random() < pPrison){
-    const facteur=Math.max(0.4, 1 - agi*0.03);
+    const facteur=espionDureePrison(agi);
     const ms=Math.round(((typeof _vjm==="function")?_vjm():86400000)*facteur);
     if(typeof emprisonnerJoueur==="function") emprisonnerJoueur(cible, ms);
     else { etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=cible; if(typeof sauvegarder==="function") sauvegarder(); }
