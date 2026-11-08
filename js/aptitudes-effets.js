@@ -129,7 +129,7 @@ function aptCombatBonusVictoire(){
 /* v1.36r — Cuirasse (tr2) a quitté les patrouilles (décision de l'autrice,
    01/10) : elle réduit désormais les pertes des expéditions et des attaques du
    Protocole, AU SERVEUR (_cuirasse, v158). Restent ici Trempe et Métabolisme. */
-function aptCombatDegats(d){ let m = 1; if(_apt("to2")) m *= 0.9; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Trempe + Métabolisme
+function aptCombatDegats(d){ let m = 1; if(_apt("sv3")) m *= 0.75; return Math.max(1, Math.round(d * m)); } // Métabolisme (v2.54, K188 : Trempe retirée)
 // (Discrétion agit désormais sur le taux de patrouille dans patrouille.js — voir chancePatrouille().)
 
 /* ---------- Minerai / rareté ---------- */
@@ -168,8 +168,8 @@ function aptBoutiqueSurcout(prix){ return Math.round(prix * 1.1); }             
 
 /* ---------- Structures (terrain) ---------- */
 /* ⚠ v1.35 — trois effets n'existent plus QUE côté serveur (BACKEND_PLAN §51-52),
-   car c'est lui qui les applique : réserve de mine (pr1 ×1,5, ro1 ×1,3,
-   terrain_batir), recyclage (ro3 50 %, terrain_demolir), croissance (pr2
+   car c'est lui qui les applique : réserve de mine (pr1 ×1,5, terrain_batir ; ro1 ×1,3 jusqu'à la v2.55, K189 : ro1
+   rend maintenant la RÉPARATION moins chère, integrite.js / reparer_structure), recyclage (ro3 50 %, terrain_demolir), croissance (pr2
    ×1,25, terrain_arroser et terrain_drones). Les tirages ci-dessous restent
    ici et sont BORNÉS par le serveur avec les mêmes formules. */
 function aptCoutStructure(prix){ return Math.round(prix * (_apt("ro2") ? 0.75 : 1)); }                             // Chantier −25 %

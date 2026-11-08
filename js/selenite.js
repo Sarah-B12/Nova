@@ -19,6 +19,9 @@
    tester vite (piège n°16 : jamais deux échelles de temps pour une même échéance).
    =========================================================== */
 const SELENITE_POUSSE_J = 4;      // jours pour mûrir
+/* v2.54 (K188) — Cœur de givre (to5, dernier nœud de la Toundra) : 3 jours au lieu de 4. Tout passe par _selPousseJ()
+   (l'aiguille vit dans la sauvegarde : rien au serveur). Prendre l'aptitude en cours de pousse avance l'aiguille d'autant. */
+function _selPousseJ(){ return SELENITE_POUSSE_J - ((typeof _apt === "function" && _apt("to5")) ? 1 : 0); }
 const SELENITE_GRACE_J  = 2;      // jours de grâce, mûre, avant que le gel la fende
 const SELENITE_REPRISE  = 0.5;    // après une fêlure : elle repart de la moitié
 const SELENITE_DOUBLE   = 0.25;   // chance d'en tirer deux
@@ -36,7 +39,7 @@ function coutSelenite(){ return (typeof aptEndurance === "function" ? aptEnduran
 /* L'état de l'aiguille, gel compris (appliqué à la lecture : rien ne tourne en fond). */
 function seleniteEtat(){
   if(!etat.selenite || typeof etat.selenite.debut !== "number") etat.selenite = { debut:Date.now(), gels:0 };
-  const S = etat.selenite, J = _selJour(), pousse = SELENITE_POUSSE_J * J, grace = SELENITE_GRACE_J * J;
+  const S = etat.selenite, J = _selJour(), pousse = _selPousseJ() * J, grace = SELENITE_GRACE_J * J;
   // Chaque fois qu'elle a passé sa grâce, le gel l'a fendue : elle est repartie de la moitié.
   let n = 0;
   while(Date.now() >= S.debut + pousse + grace && n < 50){
@@ -47,7 +50,7 @@ function seleniteEtat(){
   if(n && typeof sauvegarder === "function") sauvegarder();
   return S;
 }
-function selenitePousse(){ const S = seleniteEtat(); return Math.max(0, Math.min(1, (Date.now() - S.debut) / (SELENITE_POUSSE_J * _selJour()))); }
+function selenitePousse(){ const S = seleniteEtat(); return Math.max(0, Math.min(1, (Date.now() - S.debut) / (_selPousseJ() * _selJour()))); }
 function seleniteMure(){ return selenitePousse() >= 1; }
 
 function _selDescription(p){
@@ -80,7 +83,7 @@ function majSelenite(z){
   h += `<p class="quete-dial">${_selDescription(p)}</p>
     <div class="garage-etat">
       <div><span>Pousse</span><b>${Math.floor(p * 100)} %</b></div>
-      ${mure ? `<div><span>Avant le gel</span><b>${typeof _fmtDuree === "function" ? _fmtDuree(S.debut + (SELENITE_POUSSE_J + SELENITE_GRACE_J) * J - Date.now()) : "bientôt"}</b></div>` : ""}
+      ${mure ? `<div><span>Avant le gel</span><b>${typeof _fmtDuree === "function" ? _fmtDuree(S.debut + (_selPousseJ() + SELENITE_GRACE_J) * J - Date.now()) : "bientôt"}</b></div>` : ""}
       <div><span>La dégager</span><b>−${coutSelenite()} % d'énergie · ${SELENITE_COUPS} coups</b></div>
     </div>`;
   if(!mure){
@@ -119,7 +122,7 @@ async function seleniteDegager(z){
       return true;
     },
     rate: () => {
-      etat.selenite = Object.assign({}, etat.selenite, { debut:Date.now() - SELENITE_POUSSE_J * _selJour() * SELENITE_REPRISE });
+      etat.selenite = Object.assign({}, etat.selenite, { debut:Date.now() - _selPousseJ() * _selJour() * SELENITE_REPRISE });
       journal("Un coup de travers. L'aiguille se fend net : la moitié du haut tombe, mate et morte. Le reste repoussera.", "alerte", "minage");
       if(typeof sauvegarder === "function") sauvegarder();
       setTimeout(() => majSelenite(z), 50);

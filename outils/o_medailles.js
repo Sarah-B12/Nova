@@ -32,7 +32,7 @@
   const L = await medaillesDe("22222222-2222-2222-2222-222222222222", true);
   r.autre = { demande: demande && demande.p_profil, n: L.length };
   r.pageProfil = /id="pp-medailles"/.test(ouvrirPageProfil.toString() + (typeof _rendrePageProfil === "function" ? _rendrePageProfil.toString() : "")) || /pp-medailles/.test(document.documentElement.innerHTML) || "à voir";
-  r.taille = /\.med-img\{ width:46px; height:46px/.test((document.querySelector("#med-style") || {}).textContent || "");
+  r.taille = /\.med-img\{ width:72px; height:72px/.test((document.querySelector("#med-style") || {}).textContent || "");   // v2.59 : 46 → 72 px (demande de l'autrice)
   r.noms = Object.keys(MEDAILLES).flatMap(id => [1,2,3].map(p => `${id}_${p}.png`)).length;   // 18
   sb.rpc = vraiRpc;
   return r;

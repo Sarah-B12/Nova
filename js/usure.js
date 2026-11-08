@@ -24,7 +24,8 @@ const DUREE_VIE_ITEM = {
   navette_reserve:10,                // ⚠ SOURCE UNIQUE de la durée du cadeau de Q5 (lue par vaisseau.js)
   mousse_amie:7,                     // v1.63 : flétrit si elle n'est pas plantée sous 7 jours (B4)
   cape_voleur:15,                    // v1.67 : 15 jours depuis sa récupération (C14, H63)
-  selenite:35                        // v2.47 (K170) : 35 jours (30 pour les autres minerais) — le vaisseau maître en demande 30 jours sans raté
+  selenite:35,                       // v2.47 (K170) : 35 jours (30 pour les autres minerais) — le vaisseau maître en demande 30 jours sans raté
+  fab_vaisseau_maitre:45             // v2.57 (K192) : 45 jours (54 avec Entretien) — le seul vaisseau qui demande des cristaux (10 Sélénite, 7 Nyx)
   // lingots, composants, armes, armures, implants, pièces et vaisseaux : 30 j (défaut)
 };
 /* v2.04 — ENTRETIEN (K117) : remplace l'Apprentissage (`ar3`, même place dans la voie
@@ -36,7 +37,7 @@ const DUREE_VIE_ITEM = {
    périme (`perimer`). */
 const ENTRETIEN_BONUS = 0.20;
 /* v2.47 (K170) — objets dont la durée propre dépasse USURE_MAX (30 j), volontairement. */
-const DUREE_VIE_HORS_PLAFOND = new Set(["selenite"]);
+const DUREE_VIE_HORS_PLAFOND = new Set(["selenite", "fab_vaisseau_maitre"]);   // v2.57 (K192) : + le vaisseau maître
 function dureeViePerso(id){
   const d = dureeVie(id);
   if(id === "navette_reserve" || typeof _apt !== "function" || !_apt("ar3")) return d;
@@ -44,7 +45,7 @@ function dureeViePerso(id){
   return equipable ? Math.round(d * (1 + ENTRETIEN_BONUS)) : d;
 }
 function dureeVie(id){
-  /* v2.47 (K170) — le cristal de sélénite passe le plafond commun de 30 jours (35 j) : seule exception. */
+  /* v2.47 (K170) — le cristal de sélénite passe le plafond commun de 30 jours (35 j) ; v2.57 (K192) : le vaisseau maître aussi (45 j). */
   if(DUREE_VIE_ITEM[id]!=null) return DUREE_VIE_HORS_PLAFOND.has(id) ? DUREE_VIE_ITEM[id] : Math.min(USURE_MAX, DUREE_VIE_ITEM[id]);
   const it=item(id); if(!it) return USURE_MAX;
   return Math.min(USURE_MAX, DUREE_VIE_CAT[it.cat] ?? DUREE_VIE_CAT[it.type] ?? USURE_MAX);

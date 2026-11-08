@@ -62,6 +62,9 @@ const REPARATION = {
   maison:  { cendrite:1, sylve:1 }      // × palier du logement
 };
 const REPARATION_ENERGIE = 5;           // par réparation, quelle que soit l'ampleur
+/* v2.55 (K189) — Réparateur (ro1, 1er nœud des Rouages) : matières × 0,7 arrondies au plus proche, au moins 1 de
+   chaque ; énergie 5 → 4. Pas de décimales (K187). ⚠ DUPLIQUÉ : reparer_structure (v272). */
+const REPARATEUR_MATIERES = 0.7, REPARATEUR_ENERGIE = 4;
 
 function coutReparation(plot){
   const p = etat.terrain.parcelles[plot]; if(!p) return null;
@@ -70,8 +73,9 @@ function coutReparation(plot){
   const tranches = Math.ceil(manque/25);
   const mult = (p.type==="maison") ? Math.max(1, etat.maison.palier||1) : 1;
   const matieres = {};
-  for(const k in base) matieres[k] = base[k]*tranches*mult;
-  return { matieres, energie:REPARATION_ENERGIE, manque };
+  const ro1 = (typeof _apt === "function") && _apt("ro1");
+  for(const k in base) matieres[k] = ro1 ? Math.max(1, Math.round(base[k]*tranches*mult*REPARATEUR_MATIERES)) : base[k]*tranches*mult;
+  return { matieres, energie: ro1 ? REPARATEUR_ENERGIE : REPARATION_ENERGIE, manque };
 }
 function texteCoutReparation(plot){
   const c = coutReparation(plot); if(!c) return "";

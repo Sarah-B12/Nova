@@ -17,7 +17,7 @@ const VAISSEAUX = {
      Le maître passe aussi à 2 L/u (~4 fois, autonomie 50) : il se paie en énergie (3/u). */
   fab_navette_legere:  { nom:"Navette légère",  soute:5,  img:"images/vaisseaux/navette_legere.png",  carb:"fab_biocarburant",         reservoir:40,  conso:1, energie:1, pv:120 },
   fab_vaisseau_cargo:  { nom:"Vaisseau Cargo",  soute:20, img:"images/vaisseaux/vaisseau_cargo.png",  carb:"fab_biocarburant_raffine", reservoir:200, conso:2, energie:2, pv:260 },   // v1.93d : conso 6 → 2 (autrice, choix A)
-  fab_vaisseau_maitre: { nom:"Vaisseau maître", soute:10, img:"images/vaisseaux/vaisseau_maitre.png", carb:"fab_biocarburant_raffine", reservoir:100, conso:2, energie:3, pv:340, canon:1 }    // v1.93d : conso 3 → 2 · v1.93e : canon de bord (+1 salve contre les sondes)
+  fab_vaisseau_maitre: { nom:"Vaisseau maître", soute:10, img:"images/vaisseaux/vaisseau_maitre.png", carb:"fab_biocarburant_raffine", reservoir:100, conso:1.5, energie:3, pv:340, canon:1 }    // v1.93d : conso 3 → 2 · v1.93e : canon de bord (+1 salve contre les sondes) · v2.56 (K190) : conso 2 → 1,5
 };
 /* ===========================================================
    NAVETTE DE RÉSERVE — cadeau de fin de Q5 (v0.91)
@@ -412,7 +412,7 @@ function majVaisseau(){
         <div class="vais-stats">
           <div><span>Soute</span><b>${itemsSoute()}/${v.soute}</b></div>
           <div><span>PV (coque)</span><b style="color:${pvRatio()<=0?"#ff5257":(vaisseauAvarie()?"#ff8a3d":"inherit")}">${pvVaisseau()}/${pvMax()} PV${vaisseauCloue()?" — CLOUÉ":(vaisseauAvarie()?" — avarie":"")}</b></div>
-          <div><span>Conso carburant</span><b>${v.conso} L/u${vaisseauAvarie()?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}${regulateurActif()?` <span style="color:var(--ok,#7bc47f)">−20 %</span>`:""}</b></div>
+          <div><span>Conso carburant</span><b>${String(v.conso).replace(".", ",")} L/u${vaisseauAvarie()?` <span style="color:var(--coral,#ff5257)">×${PV_MALUS_CARBURANT}</span>`:""}${regulateurActif()?` <span style="color:var(--ok,#7bc47f)">−20 %</span>`:""}</b></div>
           <div><span>Conso énergie</span><b>${v.energie}/u</b></div>
           <div><span>Durée de vie</span><b>${jr!=null?Math.ceil(jr)+" j":"—"}</b></div>
           ${v.canon ? `<div><span>Armement</span><b>Canon de bord · une cellule d'énergie par tir</b></div>` : ""}
@@ -437,7 +437,9 @@ function majVaisseau(){
     </div>`;
   const bd=z.querySelector("#vais-desequiper"); if(bd){ bd.disabled=plein; bd.addEventListener("click",desequiperVaisseau); }
   _brancherVaisseauxSac(z);   // v2.47
-  const bp=z.querySelector("#vais-plein"); if(bp){ bp.disabled = (carb>=v.reservoir) || ((etat.sac[v.carb]||0)<=0); bp.addEventListener("click", ravitailler); }
+  /* v2.58 — BOGUE (signalé le 08/11) : le bouton se grisait dès que le SAC était vide, alors que ravitailler()
+     sait remonter un bidon de la SOUTE (v0.91). Il regarde maintenant les deux. */
+  const bp=z.querySelector("#vais-plein"); if(bp){ bp.disabled = (carb>=v.reservoir) || (((etat.sac[v.carb]||0) + ((etat.soute && etat.soute[v.carb])||0)) <= 0); bp.addEventListener("click", ravitailler); }
   const br=z.querySelector("#vais-regulateur"); if(br) br.addEventListener("click", installerRegulateur);   // v1.64
   const bm=z.querySelector("#vais-module"); if(bm) bm.addEventListener("click", installerModule);   // v1.68
 

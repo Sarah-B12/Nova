@@ -21,11 +21,20 @@ function aptEtat(){
    (2 PA rendus) ; dans chaque chaîne, tout nœud pris APRÈS un trou est rendu
    (au coût de sa nouvelle position). Marqueur `v` dans l'objet aptitudes
    lui-même : une sauvegarde plus ancienne rechargée repasse ici. */
-const APT_VERSION = 125;
+/* v2.54 (K188) — 2ᵉ remaniement : la voie de la Toundra. Trempe (to2, 2ᵉ nœud, 1 PA) disparaît : 1 PA rendu ;
+   la Veine de cristal (to4) passe de 4ᵉ (2 PA) à 3ᵉ (1 PA) : 1 PA rendu à qui l'avait. Puis la règle des trous (nouvel
+   ordre). Qui avait toute l'ancienne voie (5 PA) garde Isolation, Réserves d'hiver, Veine (3 PA) et retrouve 2 PA :
+   de quoi prendre Cœur de givre. */
+const APT_VERSION = 254;
 function _aptMigrer(e){
   if((e.v|0) >= APT_VERSION || typeof APT_TRONC==="undefined") return;
+  const v0 = e.v|0;
   let rendu = 0;
-  if(e.pris.includes("tr4")){ e.pris = e.pris.filter(x=>x!=="tr4"); rendu += 2; }
+  if(v0 < 125 && e.pris.includes("tr4")){ e.pris = e.pris.filter(x=>x!=="tr4"); rendu += 2; }
+  if(v0 < 254){
+    if(e.pris.includes("to2")){ e.pris = e.pris.filter(x=>x!=="to2"); rendu += 1; }
+    if(e.pris.includes("to4")) rendu += 1;
+  }
   for(const c of aptToutesChaines()){
     let trou = false;
     c.noeuds.forEach((n, i)=>{

@@ -64,10 +64,11 @@ setInterval(() => { if(typeof etat !== "undefined" && etat && etat.faction) majM
   if(typeof document === "undefined" || document.querySelector("#med-style")) return;
   const st = document.createElement("style"); st.id = "med-style";
   st.textContent = `
-    .medailles{ display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; margin:6px 0 4px; }
+    /* v2.59 — demande de l'autrice (08/11) : plus grandes encore. 46 → 72 px (icône de repli 34 → 52). */
+    .medailles{ display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap; margin:8px 0 6px; }
     .medailles[hidden]{ display:none; }
-    .med-img{ width:46px; height:46px; object-fit:contain; display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
-    .med-ic{ font-size:34px; line-height:1; display:block; }
+    .med-img{ width:72px; height:72px; object-fit:contain; display:block; filter:drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+    .med-ic{ font-size:52px; line-height:1; display:block; }
   `;
   document.head.appendChild(st);
 })();

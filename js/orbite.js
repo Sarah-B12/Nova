@@ -41,20 +41,25 @@ const SECTEUR_NOM = "Triptolème";
 /* Coût du saut Silène ⇄ Triptolème. C'est une SORTIE D'ATMOSPHÈRE, pas un vol
    d'orbite : distance fixe, donc coût fixe en unités de vol. Le carburant
    dépend du vaisseau (conso × unités), l'énergie du pilote.
-      Navette légère  : 18 L sur 40  → 2 allers-retours par plein
-      Vaisseau maître : 54 L sur 100 → 1 aller-retour (+ un peu)
-      Cargo           : 108 L sur 200 → 1 aller-retour (il est lourd) */
+      Navette légère  : 18 L sur 40  → 1 aller-retour par plein (2 sauts)
+      Vaisseau maître : 27 L sur 100 → 1 aller-retour et demi (v2.56, K190 : conso 1,5 ; 36 L avant)
+      Cargo           : 36 L sur 200 → 2 allers-retours et plus
+      (⚠ corrigé le 08/11 : ce commentaire disait encore 54 et 108 L, les chiffres d'avant la v1.93d) */
 const SAUT_UNITES  = 18;
 const SAUT_ENERGIE = 12;
+/* v2.56 (K191) — LA GORGE coûte moins d'énergie qu'une sortie d'atmosphère : il n'y a pas de planète à quitter.
+   Base 6 au lieu de 12 (+2 par point d'« énergie » du vaisseau, comme le saut). Le carburant ne change pas
+   (18 étapes × conso). coutSaut(true) = le passage de la Gorge. */
+const GORGE_ENERGIE = 6;
 
-function coutSaut(){
+function coutSaut(gorge){
   const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
   if(!v) return null;
   /* v0.91 — la majoration d'avarie s'applique aussi au saut : sinon on
      décollerait indéfiniment avec une coque en ruine sans rien sentir. */
   const l = Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1));
   return { litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
-           energie: (typeof aptSaut==="function" ? aptSaut : (x=>x))(SAUT_ENERGIE + (v.energie||0) * 2),   // v1.34b : Endurance −15 % et Pas léger −20 %
+           energie: (typeof aptSaut==="function" ? aptSaut : (x=>x))((gorge ? GORGE_ENERGIE : SAUT_ENERGIE) + (v.energie||0) * 2),   // v1.34b : Endurance −15 % et Pas léger −20 %
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
 
@@ -399,7 +404,7 @@ function ouvrirDistancesEspace(){
     h += `<div class="dist-ligne${j.ok?"":" ko"}"><b>${espaceNom(d.l)}</b><span>${d.c.energie} % · ${d.c.litres} L</span></div>`;
   }
   h += `</div>`;
-  h += `<p class="vide" style="margin:10px 0 0">Trajets <b>directs</b>${v?`, ${v.nom} (conso ${v.conso} L/u)`:""}.
+  h += `<p class="vide" style="margin:10px 0 0">Trajets <b>directs</b>${v?`, ${v.nom} (conso ${String(v.conso).replace(".", ",")} L/u)`:""}.
     En rouge : pas de quoi <b>aller ET revenir ${_alaBaseTxt()}</b>.</p>`;
 
   z.querySelector("#distances-corps").innerHTML = h;
@@ -716,7 +721,7 @@ async function passerLaGorge(){
   if(!ceresConnue() || !gorgeOuverte()){ journal("La Gorge est fermée. Rien ne passe, pas même la lumière.","alerte","voyage"); return; }
   if(!surGorgeTriptoleme()){ journal("Pour passer la Gorge, rejoins-la d'abord sur la carte de Triptolème.","alerte","voyage"); return; }
   if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : tu n'entreras pas dans la Gorge comme ça.","alerte"); return; }
-  const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const cs = coutSaut(true); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }   // v2.56 (K191) : le prix de la Gorge
   const auto = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
   /* v2.18 — le retour, c'est le saut ET le trajet de la bouche au Perchoir (repasserLaGorge
      l'exige) : on n'entre plus avec juste deux sauts, qui laissaient coincé de l'autre côté. */
@@ -741,7 +746,7 @@ async function repasserLaGorge(){
   if(!enCeres()) return;
   if(!surGorgeCeres()){ journal("Pour rentrer à Triptolème, rejoins d'abord la Gorge, sur la carte de Cérès.","alerte","voyage"); return; }
   if(typeof vaisseauCloue==="function" && vaisseauCloue()){ journal("Coque hors service : tu n'entreras pas dans la Gorge comme ça.","alerte"); return; }
-  const cs = coutSaut(); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
+  const cs = coutSaut(true); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }   // v2.56 (K191)
   const t = espaceLieu("trou_noir"), b = espaceLieu("base");
   const versPerchoir = (t && b) ? coutVol({ x:b.x, y:b.y }, { x:t.x, y:t.y }) : null;
   const besoin = cs.litres + (versPerchoir ? versPerchoir.litres : 0);
@@ -795,7 +800,7 @@ function majBoutonOrbite(){
   const verrou = (typeof verrouMaar === "function" && verrouMaar());
   const base = (typeof surBase === "function") && surBase();
   const station = (typeof aLaStation === "function") && ici === "ancolie" && aLaStation();
-  const csT = coutSaut(), csA = (typeof coutSautSurface === "function" && typeof SURFACES !== "undefined") ? coutSautSurface(SURFACES.ancolie) : null;
+  const csT = coutSaut(), csG = coutSaut(true), csA = (typeof coutSautSurface === "function" && typeof SURFACES !== "undefined") ? coutSautSurface(SURFACES.ancolie) : null;
   const decolle = "décolle d'abord";
   /* v1.96 — CÉRÈS : on n'en sort que par la Gorge, vers Triptolème. Le bouton de
      Triptolème y passe (depuis la Gorge) ; Silène et Ancolie restent grisés. */
@@ -804,14 +809,14 @@ function majBoutonOrbite(){
     const gorge = surGorgeCeres();
     _boutonNav("#ouvrir-carte", "Partir pour Silène", "par la Gorge", false);
     _montrer("#ouvrir-orbite", true);
-    _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, gorge ? `la Gorge · ${_txtCout(csT)}` : "depuis la Gorge", gorge);
+    _boutonNav("#ouvrir-orbite", `Partir pour ${SECTEUR_NOM}`, gorge ? `la Gorge · ${_txtCout(csG)}` : "depuis la Gorge", gorge);
     const okA2 = (typeof ancolieConnue === "function") && ancolieConnue() && !!etat.vaisseau; _montrer("#ouvrir-ancolie", okA2);
     if(okA2) _boutonNav("#ouvrir-ancolie", "Partir pour Ancolie", "par la Gorge", false);
     _boutonNav("#ouvrir-ceres", "Carte de Cérès", "tu y es", true);
     return;
   }
   if(okC){
-    if(ici === "ecart"){ const g = surGorgeTriptoleme(); _boutonNav("#ouvrir-ceres", "Partir pour Cérès", g ? `la Gorge · ${_txtCout(csT)}` : "depuis la Gorge", g); }
+    if(ici === "ecart"){ const g = surGorgeTriptoleme(); _boutonNav("#ouvrir-ceres", "Partir pour Cérès", g ? `la Gorge · ${_txtCout(csG)}` : "depuis la Gorge", g); }
     else _boutonNav("#ouvrir-ceres", "Partir pour Cérès", "par la Gorge", false);
   }
   // Silène

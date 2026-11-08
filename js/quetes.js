@@ -1073,7 +1073,7 @@ function _cercleCombat(st, cerclesMap){
   return tetes[Math.floor(Math.random() * tetes.length)];   // égalité de réputation : au hasard
 }
 function _combatStats(){
-  const f = (typeof forceEffective==="function") ? forceEffective() : (etat.competences.force||0);
+  const f = (typeof forceEffective==="function") ? forceEffective(true) : (etat.competences.force||0);   // v2.52b (K186) : sans le Cœur de forge
   const a = (typeof agiliteEffective==="function") ? agiliteEffective() : (etat.competences.agilite||0);
   const i = (typeof intelligenceEffective==="function") ? intelligenceEffective() : (etat.competences.intelligence||0);
   const best = (f>=a && f>=i) ? "force" : (a>=i ? "agilite" : "intelligence");
