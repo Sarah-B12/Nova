@@ -358,6 +358,31 @@ function _vaisMonterStyle(){
    la salve de plus contre une sonde se charge au début du duel (sonde.js) ; contre le
    Fléau, « charger le canon » est un choix à chaque passe (fleau.js, serveur v231). */
 function canonVaisseau(){ const v = etat && etat.vaisseau && VAISSEAUX[etat.vaisseau]; return (v && v.canon) || 0; }
+/* v2.47 — ÉQUIPER DEPUIS L'ONGLET VAISSEAU (suggestion d'une testeuse) : comme pour l'équipement, qui se
+   fait depuis le sac OU depuis l'onglet Équipement. Les vaisseaux du sac sont listés ici, chacun avec son
+   bouton ; c'est `equiperVaisseau()`, la même que le menu du sac (permis, niveau, soute vide, sac plein :
+   mêmes règles, mêmes messages). */
+function _vaisseauxAuSac(){ return Object.keys(etat.sac || {}).filter(id => (etat.sac[id] || 0) > 0 && typeof estVaisseau === "function" && estVaisseau(id) && id !== etat.vaisseau); }
+function _htmlVaisseauxSac(){
+  const L = _vaisseauxAuSac(); if(!L.length) return "";
+  const soutePleine = !!etat.vaisseau && itemsSoute() > 0;
+  const lignes = L.map(id => {
+    const v = VAISSEAUX[id] || {}, j = (typeof joursRestants === "function") ? joursRestants(id) : null;
+    const niv = (typeof mentionNiveauHtml === "function") ? mentionNiveauHtml(id) : "";
+    return `<div class="vais-sac-ligne" style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <span class="picker-ic">${typeof iconeItem === "function" ? iconeItem(id) : ""}</span>
+      <span style="flex:1;min-width:0"><b>${item(id).nom}</b>${(etat.sac[id] || 0) > 1 ? ` <span class="qte">×${etat.sac[id]}</span>` : ""}
+        <span class="itip-gris" style="display:block;font-size:12px">Soute ${v.soute || 0} · réservoir ${v.reservoir || 0} L${j != null ? ` · ${j} j` : ""}</span>${niv}</span>
+      <button class="mini" data-vais-eq="${id}"${soutePleine ? " disabled" : ""} style="touch-action:manipulation">${etat.vaisseau ? "Équiper à la place" : "Équiper"}</button></div>`;
+  }).join("");
+  return `<div class="sous-carte" style="margin:14px 0 0"><h3>${etat.vaisseau ? "Autres vaisseaux dans ton sac" : "Vaisseaux dans ton sac"}</h3>
+    ${soutePleine ? `<p class="vide" style="margin:0 0 6px">Vide d'abord la soute de ton vaisseau actuel pour en changer.</p>` : ""}${lignes}</div>`;
+}
+function _brancherVaisseauxSac(z){
+  z.querySelectorAll("[data-vais-eq]").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true; try{ await equiperVaisseau(b.dataset.vaisEq); } finally { if(typeof majVaisseau === "function") majVaisseau(); }
+  }));
+}
 /* v1.93 — Q28 : l'indicatif MAAR-12/42 (etat.immatricule) s'affiche sous le nom du vaisseau. */
 function majVaisseau(){
   const z=document.querySelector("#vaisseau-vue"); if(!z) return;
@@ -367,6 +392,10 @@ function majVaisseau(){
     return;
   }
   if(!etat.vaisseau){
+    if(_vaisseauxAuSac().length){   // v2.47 : on équipe d'ici
+      z.innerHTML = `<p class="vide">Aucun vaisseau équipé. Choisis-en un dans ton sac :</p>${_htmlVaisseauxSac()}`;
+      _brancherVaisseauxSac(z); return;
+    }
     z.innerHTML=`<p class="vide">Aucun vaisseau équipé. Construis-en un (métier <b>Constructeur</b>), puis clique-le dans ton sac pour l'équiper. Sa soute te permettra de transporter davantage d'objets.</p>`;
     return;
   }
@@ -401,11 +430,13 @@ function majVaisseau(){
         <button class="mini" id="vais-desequiper">${plein?"Vide la soute pour ranger":"Ranger dans le sac"}</button>
       </div>
     </div>
+    ${_htmlVaisseauxSac()}
     <div class="rangee2" style="margin-top:14px">
       <div class="sous-carte" style="margin:0"><h3>Soute <span class="qte">${itemsSoute()}/${v.soute}</span></h3><div class="sac-grille" id="soute-grille"></div></div>
       <div class="sous-carte" style="margin:0"><h3>À charger (sac)</h3><div id="soute-depot"></div></div>
     </div>`;
   const bd=z.querySelector("#vais-desequiper"); if(bd){ bd.disabled=plein; bd.addEventListener("click",desequiperVaisseau); }
+  _brancherVaisseauxSac(z);   // v2.47
   const bp=z.querySelector("#vais-plein"); if(bp){ bp.disabled = (carb>=v.reservoir) || ((etat.sac[v.carb]||0)<=0); bp.addEventListener("click", ravitailler); }
   const br=z.querySelector("#vais-regulateur"); if(br) br.addEventListener("click", installerRegulateur);   // v1.64
   const bm=z.querySelector("#vais-module"); if(bm) bm.addEventListener("click", installerModule);   // v1.68

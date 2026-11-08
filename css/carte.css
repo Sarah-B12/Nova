@@ -23,8 +23,12 @@
      quand on cliquait un objet (ligne de coût + bouton) et `.zone-carte`, en
      `flex:1`, rendait la place : la carte se redimensionnait dans l'autre sens.
      Une hauteur fixe rend le bandeau totalement neutre. */
-  #orbite-info { height:3.8em; overflow:hidden; box-sizing:border-box; }
-  @media (max-width:520px){ #orbite-info { height:5.2em; } }
+  #orbite-info { height:3.8em; overflow-x:hidden; overflow-y:auto; box-sizing:border-box; }
+  /* v2.47 — sur tablette (iPad), le texte d'un lieu tenait sur trois lignes et la dernière était coupée
+     (retour de l'autrice) : hauteur toujours FIXE (la carte ne bouge pas), mais plus grande, et le
+     bandeau défile s'il le faut. */
+  @media (max-width:1366px){ #orbite-info { height:5.2em; } }
+  @media (max-width:520px){ #orbite-info { height:6.4em; } }
   .corps-carte { display:flex; gap:14px; flex:1; min-height:0; }
   .menu-carte { flex:0 0 148px; display:flex; flex-direction:column; gap:6px; }
   .lien-carte { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; text-align:left; color:var(--sourdine); background:rgba(16,41,78,.5); border:1px solid var(--line); border-left:2px solid var(--line); border-radius:var(--r-s); padding:9px 12px; cursor:pointer; }

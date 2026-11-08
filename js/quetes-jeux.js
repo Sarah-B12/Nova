@@ -680,9 +680,9 @@ QUETES_JEUX.brouillage = {
       <div id="qj-brou">
         <svg id="qj-br-svg" viewBox="0 0 300 100" style="width:100%;max-width:340px;background:rgba(90,168,230,.06);border:1px solid var(--line);border-radius:8px">
           <path id="qj-br-appel" stroke="#ff5257" stroke-width="3" fill="none"/><path id="qj-br-moi" stroke="#7bc47f" stroke-width="3" fill="none"/></svg>
-        <div class="mi-ligne"><span>Fréquence</span><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="0.6" disabled></div>
+        <div class="mi-ligne"><span>Fréquence</span><button class="mini qj-br-pm" data-br="f-" disabled aria-label="Fréquence moins">−</button><input type="range" id="qj-br-f" min="0.5" max="3" step="0.01" value="0.6" disabled><button class="mini qj-br-pm" data-br="f+" disabled aria-label="Fréquence plus">+</button></div>
         <p class="vide" id="qj-br-fetat" style="margin:2px 0 6px">Fréquence : à caler.</p>
-        <div class="mi-ligne"><span>Décalage</span><input type="range" id="qj-br-d" min="0" max="6.28" step="0.01" value="0" disabled></div>
+        <div class="mi-ligne"><span>Décalage</span><button class="mini qj-br-pm" data-br="d-" disabled aria-label="Décalage moins">−</button><input type="range" id="qj-br-d" min="0" max="6.28" step="0.01" value="0" disabled><button class="mini qj-br-pm" data-br="d+" disabled aria-label="Décalage plus">+</button></div>
         <p class="vide" id="qj-br-etat">Calé : 0,0 s / ${T} s · ${M} : ${D} s</p>
         <div class="quete-rep"><button class="mini" id="qj-br-go">${d.bouton || "Commencer l'émission"}</button></div>
       </div></div>`;
@@ -699,15 +699,33 @@ QUETES_JEUX.brouillage = {
     const caler = () => {                           // trouvée une fois = verrouillée
       if(P.fCalee || Math.abs(P.f - P.fc) >= 0.12) return;
       P.fCalee = true; P.f = P.fc; f.value = String(P.fc); f.disabled = true;
+      z.querySelectorAll('[data-br^="f"]').forEach(b => { b.disabled = true; });
       fet.textContent = "Fréquence calée ✓ — elle ne bougera plus. Suis le décalage.";
     };
     f.addEventListener("input", () => { P.f = +f.value; caler(); });
     dd.addEventListener("input", () => { P.d = +dd.value; });
+    /* v2.46 — boutons − et + (téléphone, tablette) : un appui = un petit pas ; appui maintenu = le curseur
+       avance tout seul, plus vite que la dérive (0,8 rad/s contre 0,35), pour suivre le décalage au doigt. */
+    const PM = { "f-":[f,-0.02,0.5,3], "f+":[f,0.02,0.5,3], "d-":[dd,-0.04,0,6.28], "d+":[dd,0.04,0,6.28] };
+    const pousser = k => { const [el, pas, lo, hi] = PM[k]; if(el.disabled) return;
+      let v = +el.value + pas;
+      if(el === dd){ if(v > hi) v -= hi; if(v < lo) v += hi; } else v = Math.min(hi, Math.max(lo, v));
+      v = Math.round(v * 100) / 100; el.value = String(v);
+      if(el === f){ P.f = v; caler(); } else P.d = v; };
+    z.querySelectorAll(".qj-br-pm").forEach(b => {
+      let rep = null; const stop = () => { if(rep){ clearInterval(rep); rep = null; } };
+      b.style.touchAction = "manipulation"; b.style.minWidth = "36px";
+      b.addEventListener("pointerdown", e => { e.preventDefault(); pousser(b.dataset.br); stop(); rep = setInterval(() => { if(P.fini) return stop(); pousser(b.dataset.br); }, 50); });
+      ["pointerup","pointerleave","pointercancel"].forEach(t => b.addEventListener(t, stop));
+      b.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); pousser(b.dataset.br); } });
+    });
+    P.pousser = pousser;                            // pour le banc d'essai
     P.regler = (fr, dc) => { if(fr != null && !P.fCalee){ P.f = fr; f.value = String(fr); caler(); } if(dc != null){ P.d = dc; dd.value = String(dc); } };   // banc
     const dessiner = () => { appel.setAttribute("d", _brouOnde(P.fc, P.cible.d)); moi.setAttribute("d", _brouOnde(P.f, P.d)); };
     dessiner();
     go.addEventListener("click", () => {
       go.disabled = true; f.disabled = false; dd.disabled = false;
+      z.querySelectorAll(".qj-br-pm").forEach(b => { b.disabled = (b.dataset.br[0] === "f") ? P.fCalee : false; });
       const t0 = Date.now(); let der = t0;
       const pas = () => {
         if(P.fini) return;

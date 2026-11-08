@@ -203,6 +203,9 @@ function _avScrollsEcrire(m, pos){
 function _renderAvModal(){
   const m=_avModal(); const a=_avBrouillon; if(!a) return; const g=a.genre||"h";
   const _pos = _avScrollsLire(m);
+  /* v2.47 — la position VERTICALE aussi (retour de l'autrice : la fenêtre remontait à chaque choix). */
+  const _cadre0 = m && m.querySelector(".av-cadre");
+  const _vert = { m: m ? m.scrollTop : 0, c: _cadre0 ? _cadre0.scrollTop : 0 };
   const fige = !!(_avEtatServeur && _avEtatServeur.defini);   // genre choisi à l'inscription = figé à vie
   const e = _avEtatServeur || {};
   const tarif = _avObligatoire ? `Choisis ton visage. <b>Le genre est définitif</b> et l'apparence sera verrouillée 6 mois.`
@@ -227,6 +230,7 @@ function _renderAvModal(){
   h+=_avRangee("Accessoire","accessoire", AV_ACCESSOIRE[g]||0, true, g);
   h+=`</div>`;
   m.innerHTML=h;
+  { m.scrollTop = _vert.m; const c1 = m.querySelector(".av-cadre"); if(c1) c1.scrollTop = _vert.c; }   // v2.47
   _majAvPortrait();
   const bfe=m.querySelector("[data-fermer]"); if(bfe) bfe.addEventListener("click", _fermerAvatar);
   const bok=m.querySelector("#av-valider"); if(bok) bok.addEventListener("click", _validerAvatar);

@@ -324,12 +324,19 @@ async function _areneRepondre(id, accepte, bouton){
       /* ⚠ v0.92c — plus de forces affichées : `sa_force` n'est d'ailleurs plus
          renvoyée par le serveur. On garde la sienne, qui n'apprend rien sur
          l'adversaire et situe le joueur. */
-      journal(`⚔️ ${issue} contre ${data.adversaire}.${rep}${bis}`,   // v1.99 : plus de « ta force : N » (ça renseignait sur le calcul)
-              data.gagne ? "gain" : "alerte", "combat");
-      /* L'XP est déposée dans `effets_combat` : c'est la synchro habituelle qui
-         la ramène et qui gère la montée de niveau. On ne l'ajoute pas ici. */
-      if(typeof syncEffetsCombat==="function") await syncEffetsCombat();
-      else if(typeof apresAction==="function") apresAction();
+      /* v2.47 — UNE SEULE LIGNE par duel (retour de l'autrice : « Victoire contre Vortex », « Expérience de
+         campagne : +6 XP », « Duel contre Vortex : victoire. +6 XP » — trois fois la même chose). La synchro
+         ci-dessous ramène l'XP et le compte rendu du serveur ; `_duelLocal` lui demande de les taire et de
+         nous rendre le gain, qu'on écrit ici, dans la même phrase. */
+      _duelLocal = { adv: String(data.adversaire || ""), xp: 0 };
+      try{
+        if(typeof syncEffetsCombat==="function") await syncEffetsCombat();
+        else if(typeof apresAction==="function") apresAction();
+      } finally {
+        const xp = _duelLocal ? _duelLocal.xp : 0; _duelLocal = null;
+        journal(`⚔️ ${issue} contre ${data.adversaire}.${xp > 0 ? ` +${xp} XP.` : ""}${rep}${bis}`,   // v1.99 : plus de « ta force : N »
+                data.gagne ? "gain" : "alerte", "combat");
+      }
     }
   }catch(e){
     if(typeof _catchLog==="function") _catchLog(e, "arene.js#3");

@@ -13,7 +13,7 @@
   reussirDefi = () => { ok++; }; echouerDefi = (m) => { ko++; dernierEchec = m || ""; };
   const z = document.createElement("div"); document.body.appendChild(z);
 
-  r.types = q.etapes.map(e => e.defi.type).join(",");                                   // labyrinthe,message,attente,choix,scene
+  r.types = q.etapes.map(e => e.defi.type).join(",");                                   // crevasse,message,attente,choix,scene (v2.46)
   q.etapes.forEach((e, i) => { a.etape = i; a._lab = null; a._qj = null;
     try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi);
          if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${i} : épreuve inconnue ${e.defi.type}`);
@@ -24,7 +24,18 @@
   const types = id => new Set(queteData(id).etapes.map(e => e.defi.type).filter(t => !["choix","attente","scene","combat"].includes(t)));
   r.repetitionAvecQ43 = [...types("q44")].filter(t => types("q43").has(t));             // []
   r.ratables = q.etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).map(e => e.defi.type).join(",");   // message
-  r.labyrinthe = { fini: q.etapes[0].defi.fini, ratable: DEFIS_UNTRY.has("labyrinthe") };
+  // v2.46 : le fond du dépôt est une crevasse (était un labyrinthe) : le plus court chemin gagne ; tourner en rond perd.
+  { const dC = q.etapes[0].defi; a.etape = 0;
+    ok = 0; a._qj = null; z.innerHTML = _defiHTML(dC); const G = a._qj, n = G.n, fin = (n - 1) * n + G.ce;
+    const prev = Array(n*n).fill(-1), dir = Array(n*n).fill(""); prev[G.cs] = G.cs; const f = [G.cs];
+    while(f.length){ const i = f.shift(); for(const [b, p, k] of [[1,-n,"N"],[2,1,"E"],[4,n,"S"],[8,-1,"O"]]) if(G.cases[i] & b && prev[i+p] < 0){ prev[i+p] = i; dir[i+p] = k; f.push(i+p); } }
+    const chemin = []; for(let i = fin; i !== G.cs; i = prev[i]) chemin.unshift(dir[i]);
+    const m0 = msgs.length; for(const k of chemin){ z.innerHTML = _defiHTML(dC); _defiWire(z, dC); z.querySelector(`[data-qcv="${k}"]`).click(); }
+    const gagne = ok === 1 && msgs.slice(m0).some(m => /REPRISE/.test(m));
+    ko = 0; dernierEchec = ""; a._qj = null; z.innerHTML = _defiHTML(dC);
+    const ouvert = k => { const b = { N:1, E:2, S:4, O:8 }[k]; return a._qj && (a._qj.cases[a._qj.pos] & b); };
+    for(let s2 = 0; s2 < 400 && !ko; s2++){ z.innerHTML = _defiHTML(dC); _defiWire(z, dC); const k = ["N","O","E","S"].find(ouvert) || "N"; z.querySelector(`[data-qcv="${k}"]`).click(); }
+    r.crevasse = { n: dC.n, gagne, perdu: ko === 1 && /guide juste/.test(dernierEchec), ratable: DEFIS_UNTRY.has("crevasse") }; }
 
   // Message : CEN·[?] ; TAINE gagne, BLO perd (son texte).
   const dM = q.etapes[1].defi; a.etape = 1;

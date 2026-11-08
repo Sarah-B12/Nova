@@ -4583,7 +4583,7 @@ const QUETES = [
           fini:"Matricule accepté.",
           echec:"Ton matricule arrive trop tard, ou trop tôt : la console se rendort en ronronnant. Aruns tapote l'écran, vexé pour toi. Nouvelle tentative dans 8 h.",
           reussite:[
-            "L'écran s'allume en entier, et le registre défile. Asulf lit avec toi, ligne après ligne, dans ce jargon de registre qu'il connaît mieux que personne : TERMINUS DE MAAR — CORRESPONDANCE DE RETOUR. Puis des équipages, des dizaines, venus d'autres secteurs : MAAR-3, MAAR-7, MAAR-9… À chaque ligne, le même mot à la fin : EN ATTENTE.",
+            "L'écran s'allume en entier, et le registre défile. Asulf lit avec toi, ligne après ligne, dans ce jargon de registre qu'il connaît mieux que personne : TERMINUS DE MAAR — CORRESPONDANCE DE RETOUR. Puis des équipages, des dizaines, venus d'autres secteurs : MAAR-3, MAAR-7, MAAR-9. À chaque ligne, le même mot à la fin : EN ATTENTE.",
             "« Il y a une date », dit Asulf, plus doucement. « Départ prévu. » Il te la lit. Elle est passée depuis trois cents ans. Personne, au Nid, ne la connaissait.",
             "Aruns a cessé de toucher à tout. Il fait défiler lui-même, lentement, jusqu'à une ligne qu'il lit, puis relit, du bout du doigt : ARUNS — EN ATTENTE. Il ne dit rien, longtemps. Puis il lève les yeux vers toi avec l'air de quelqu'un à qui un personnage de légende vient de serrer la main.",
             "Tout en bas du registre, après le dernier nom, une ligne de plus, sans nom, sans équipage : QUAI : FERMETURE — PROCÉDURE. Asulf la lit deux fois. « Procédure », répète-t-il. « Chez nous aussi, on dit ça quand on veut pas dire pourquoi. »"
@@ -4638,8 +4638,8 @@ const QUETES = [
      parce qu'elle lit l'IMMATRICULATION (une navette du Terminus, « d'ici »), pas les passagers ;
      le vaisseau du joueur, immatriculé MAAR-12 (Q28), repasse. « Un registre lit des cases, pas des
      gens » (Q25). Jamais « quarantaine » ; rien ne change dans le monde (K158).
-     Épreuves : brouillage · choix · crevasse · attente · scène. Aucune ne reprend un type de Q36
-     (séquence, labyrinthe, piratage). */
+     Épreuves : brouillage · choix · crevasse · ordre (v2.46, était une attente) · scène. Aucune ne reprend
+     un type de Q36 (séquence, labyrinthe, piratage). */
   {
     id:"q37",
     nom:"Ce qui entre",
@@ -4713,20 +4713,29 @@ const QUETES = [
             "L'épave est là, posée sur rien, au fond d'une poche de gaz plus calme. Elle est petite, à peine plus grande que ton vaisseau, et dorée sous la crasse, comme les structures du Terminus. Pas une trace de choc. Elle n'est pas tombée : elle a seulement cessé d'avancer, et le Trouble l'a gardée."
           ] } },
 
-      /* ---- 4. Le journal — ATTENTE (30 min) : la Gorge a refusé la navette (K164) ---- */
+      /* ---- 4. Le journal — ORDRE (ratable ; v2.46, était une attente) : la Gorge a refusé la navette (K164) ---- */
       { indice:"Le Trouble. Vide la mémoire de l'épave.",
         cible:{ lieu:"e2_planete_violette" },
         image:"images/quetes/q37/4.png",
         arrivee:[
-          "Tu t'arrimes contre son flanc et branches ta console sur la sienne. Il lui reste un filet d'énergie, juste assez pour se souvenir. Sa mémoire de bord commence à passer dans la tienne, lentement, ligne par ligne, comme quelqu'un qui reprend la parole après s'être tu très longtemps.",
+          "Tu t'arrimes contre son flanc et branches ta console sur la sienne. Il lui reste un filet d'énergie, juste assez pour se souvenir. Sa mémoire de bord passe dans la tienne, mais en désordre, les entrées mélangées par le temps, comme quelqu'un qui reprend la parole après s'être tu très longtemps et ne sait plus par où commencer.",
           "Dagon ne dit rien. Asulf non plus. Pour une fois, tout le monde attend la même chose."
         ],
-        defi:{ type:"attente", duree:1800*1000,
-          texte:["Ses souvenirs passent dans ta console. Laisse-les venir.",
-                 "Tu peux t'éloigner et revenir : ta console reste branchée."],
+        defi:{ type:"ordre",   // v2.46 : était une attente de 30 min (audit, option C)
+          texte:["Six entrées de journal, dans le désordre."],
+          consigne:"Remets les entrées du journal dans l'ordre où elles ont été écrites.",
+          elements:[
+            "Départ du quai du Terminus. Cinq à bord. Cap sur la Gorge.",
+            "Entrée dans la Gorge. La pression, le noir, la coque qui chante.",
+            "Ressortis du même côté. Elle ne nous reconnaît pas. On recommence.",
+            "Deuxième essai. Même chose. Troisième essai. Pareil.",
+            "Plus de quoi tenter un quatrième. Les courants nous prennent.",
+            "Dire aux autres de ne pas essayer."
+          ],
+          echec:"L'histoire ne tient pas dans cet ordre-là, et la console de l'épave se rendort, à bout de souffle. Il faudra lui laisser le temps de reprendre des forces. Nouvelle tentative dans 8 h.",
           reussite:[
-            "C'est un journal de bord, court, en ancien. Asulf le lit pour toi, et pour le Nid qui écoute : départ du quai du Terminus, cinq à bord, cap sur la Gorge. Puis la Gorge elle-même, le noir, la pression, la coque qui chante. Puis rien : la navette ressort du même côté, renvoyée comme une balle contre un mur.",
-            "« INDICATIF NON RECONNU — ORIGINE : TERMINUS. » Asulf s'arrête. « Toi, elle te laisse repasser chaque fois. Ton vaisseau est immatriculé chez nous, MAAR-12. Le leur était d'ici. » Il renifle. « Elle lit l'étiquette, pas ce qu'il y a dedans. Comme tous les registres. » Les entrées suivantes sont plus courtes : un deuxième essai, un troisième, puis plus de quoi en tenter un quatrième, et les courants du Trouble qui les prennent, doucement, sans méchanceté.",
+            "Les entrées se remettent en place, et Asulf les relit d'un trait, pour toi et pour le Nid qui écoute. Une navette, cinq personnes, une porte qui ne s'ouvre que dans un sens.",
+            "« INDICATIF NON RECONNU — ORIGINE : TERMINUS. » Asulf s'arrête sur cette ligne-là. « Toi, elle te laisse repasser chaque fois. Ton vaisseau est immatriculé chez nous, MAAR-12. Le leur était d'ici. » Il renifle. « Elle lit l'étiquette, pas ce qu'il y a dedans. Comme tous les registres. »",
             "La dernière ligne tient en quelques mots. Asulf la lit deux fois, comme au Terminus, et sa voix n'est plus tout à fait la même : DIRE AUX AUTRES DE NE PAS ESSAYER. Le message est toujours là, prêt à partir. Il n'est jamais parti. À la radio, personne ne trouve quoi dire."
           ] } },
 
@@ -5387,8 +5396,8 @@ const QUETES = [
      MAAR. **TAINE** appris dans CEN·TAINE (K167 ; Σ traversé, la dernière forme libre). Le passage 12 est
      parmi les premiers traits : on devait venir les chercher presque tout de suite. Pas un abandon : un dossier
      classé (Q40, K94). Jamais « quarantaine » ni « levée » (« reprise ») ; pas de « Un temps » (K168).
-     Épreuves : labyrinthe · message · attente · choix · scène. Aucune ne reprend un type de Q43
-     (réaction, glyphes). */
+     Épreuves : crevasse (v2.46, était un labyrinthe) · message · attente · choix · scène. Aucune ne reprend
+     un type de Q43 (réaction, glyphes). */
   {
     id:"q44",
     nom:"Au passage d'après",
@@ -5403,7 +5412,7 @@ const QUETES = [
     ],
     etapes:[
 
-      /* ---- 1. Le fond du dépôt — LABYRINTHE, dans la Bogue (Aruns ; Dagon guide de travers) ---- */
+      /* ---- 1. Le fond du dépôt — CREVASSE (ratable ; v2.46, était un labyrinthe), dans la Bogue (Aruns ; Dagon guide de travers) ---- */
       { indice:"La Bogue. Le fond du dépôt.",
         cible:{ lieu:"e2_planete_oeil" },
         image:"images/quetes/q44/1.png",
@@ -5411,10 +5420,10 @@ const QUETES = [
           "Au-delà des dernières rangées éclairées, le dépôt continue dans le noir. Les lumières d'appoint refusent de s'allumer plus loin, comme si la Bogue estimait que personne n'avait rien à y faire. Vos lampes découpent des allées de casiers plus anciens, plus serrés, aux étiquettes à demi effacées.",
           "À la radio, Dagon guide. « À droite. » Aruns tourne à droite, et tombe sur un mur. « Pardon, l'autre droite. » Asulf traduit, puis fait remarquer, sans la moindre ironie, que Dagon le fait exprès. Dagon ne dément pas."
         ],
-        defi:{ type:"labyrinthe", colonnes:7, lignes:9,
-          texte:["Les allées sombres, au-delà des lumières."],
-          consigne:"Quelque part dans le noir, le casier marqué REPRISE ◆ : trouve-le.",
-          bloque:"Un empilement de casiers effondrés bloque l'allée : fais le tour. Avance case par case.",
+        defi:{ type:"crevasse", n:9, rayon:1, marge:1.6,   // v2.46 : était un labyrinthe (audit, option C)
+          texte:["Les allées sombres, au-delà des lumières. Ta lampe n'éclaire que quelques casiers autour de toi."],
+          consigne:"Trouve le casier marqué REPRISE, au fond. Chaque pas compte : la batterie de vos lampes baisse.",
+          echec:"Les lampes faiblissent, puis s'éteignent l'une après l'autre. Vous revenez à tâtons vers les rangées éclairées, en suivant la voix de Dagon, qui pour une fois guide juste. Nouvelle tentative dans 8 h.",
           fini:"Une étiquette, sous la poussière : REPRISE.",
           reussite:[
             "Le casier est petit, à hauteur d'homme, et il ne contient qu'un seul document, rangé avec plus de soin que tout le reste du dépôt. Aruns l'ouvre avec deux doigts, comme on ouvre une lettre qui n'est pas pour soi."
@@ -5445,7 +5454,7 @@ const QUETES = [
         image:"images/quetes/q44/3.png",
         arrivee:[
           "Au Nid, tu montres le plan. « Passage numéro douze », lit Asulf. Aruns se tourne vers le module, dont la paroi est couverte de traits du sol jusqu'en haut, et pour une fois, il ne sait pas par où commencer. Le seul calendrier capable de dire ce que vaut ce douze, c'est ce mur.",
-          "C'est Dagon qui se lève. On ne l'a jamais vu quitter ses caisses pour autre chose qu'un repas, et quelques têtes se tournent. Il s'accroupit devant les premiers paquets de traits, tout en bas, pose un doigt sur le plus ancien, et commence à compter tout haut, en commentant chaque trait de travers : « Celui-là, il tremblait. Celui-là, il avait bu. Celui-là, il savait pas compter jusqu'à un. »"
+          "C'est Dagon qui se lève. Il quitte rarement ses caisses, et jamais pour compter quoi que ce soit ; quelques têtes se tournent. Il s'accroupit devant les premiers paquets de traits, tout en bas, pose un doigt sur le plus ancien, et commence à compter tout haut, en commentant chaque trait de travers : « Celui-là, il tremblait. Celui-là, il avait bu. Celui-là, il savait pas compter jusqu'à un. »"
         ],
         defi:{ type:"attente", duree:1800*1000,
           texte:["Dagon compte les traits, paquet par paquet. Attends.",
@@ -5493,6 +5502,116 @@ const QUETES = [
     /* K151 : récompenses PROVISOIRES. Pas de PA (K111 : Q45). Gains des choix (serveur v264) :
        racines 160 XP · veilleurs 380 ₡ · langues 3 composants simples + 40 XP. */
     recompense:{ credits:3700, xp:680, flags:{ planReprise:true } }
+  }
+  ,
+
+  /* ---------------- Q45 — Le motif (fin de l'arc de Cérès : K94, K158, K166, K167) ----------------
+     Donneurs : Aruns et Dagon, au Nid ; Asulf à la radio ; les trois RÉAGISSENT au mot, aucun ne le dit.
+     Le panneau de la porte du Bureau (dans la Bogue) lit le matricule MAAR-12/42 (Q28) : un secteur du
+     dossier → il affiche l'état du dossier Maar. Le joueur lit et ÉCRIT lui-même le motif : QUA·RAN·TAINE
+     (K167 ; énigme, mot en glyphes). Le message automatique de Q35 était la LEVÉE (K158) : rien ne change
+     dans le monde ; on comprend. AREPO n'est pas méchante (K94). Le titre ne dit pas le mot. Pas de « Un
+     temps » (K168). 1 PA (K111 : on finit l'arc à 10 PA).
+     Épreuves : piratage · énigme · scène · choix · scène. Aucune ne reprend un type de Q44 (labyrinthe,
+     message, attente). */
+  {
+    id:"q45",
+    nom:"Le motif",
+    donneur:"Aruns et Dagon",
+    donneurImg:"images/quetes/aruns_dagon.png",
+    donneurRepli:"images/quetes/q31/5.png",
+    donneurLieu:"Le Nid",
+    lieuPrise:"nid",
+    intro:[
+      "Le village sait presque tout, maintenant : qu'on l'a coupé du reste, qu'on devait revenir le chercher très tôt, et qu'un dossier rangé quelque part a tout figé. Il ne lui manque qu'un mot, celui qui dit de quoi on avait peur, là-bas, au Bureau. Ce matin, personne ne travaille. On attend que tu partes.",
+      "Aruns a passé la nuit à fouiller sa mémoire, et il y a trouvé quelque chose. « La porte du fond, celle qui brille rouge. Sous les lettres, il y avait un panneau. Éteint. Je n'y ai pas fait attention, j'étais trop occupé à poser le front contre la porte. » Il le dit sans sourire, ce qui ne lui ressemble pas.",
+      "Sur sa pile de caisses, Dagon tend le menton vers ta console, où tes trois sons nouveaux attendent, l'un sous l'autre : RAN, QUA, TAINE. « Trois bouts de mot que personne ici ne connaît. Si c'est encore une façon savante de dire \"plus tard\", je le grave à l'envers sur le mur. » Asulf, à la radio, ne dit rien ; on l'entend seulement remuer dans son transat."
+    ],
+    etapes:[
+
+      /* ---- 1. Le panneau — PIRATAGE (ratable) : MAAR-12/42 → l'état du dossier Maar ---- */
+      { indice:"La Bogue. Le panneau de la porte.",
+        cible:{ lieu:"e2_planete_oeil" },
+        image:"images/quetes/q45/1.png",
+        arrivee:[
+          "La trappe du dépôt t'accepte comme les autres fois, sans poser de question. Au fond, la porte du Bureau n'a pas bougé, avec sa lueur rouge au bord et ses lettres : ACCÈS : BUREAU — FERMÉ. Et dessous, Aruns avait raison : un petit panneau sombre, que personne n'a jamais regardé.",
+          "Quand tu l'effleures, il s'allume, à peine, et une seule ligne apparaît : ACCÈS : MATRICULE. Comme au Terminus. Tu as le tien, MAAR-12/42 ; il ne passera qu'au bon moment."
+        ],
+        defi:{ type:"piratage", manches:4, vitesse:1600,
+          texte:["Le panneau accepte un matricule si on le lui donne au bon moment. Saisis-le quatre fois de suite."],
+          fini:"Matricule lu.",
+          echec:"Ton matricule arrive à côté, et le panneau s'éteint d'un coup, comme une porte qu'on referme au nez de quelqu'un. Nouvelle tentative dans 8 h.",
+          reussite:[
+            "Le panneau lit ton matricule, et s'arrête sur le début : MAAR-12. Un secteur du dossier. Alors, au lieu de te refuser, il fait ce que font les machines du Bureau quand quelqu'un d'un dossier se présente : il en affiche l'état. Une fiche courte, en ancien, se déploie sous tes yeux."
+          ] } },
+
+      /* ---- 2. Le mot — ÉNIGME : le joueur lit et écrit QUA·RAN·TAINE (K167) ---- */
+      { indice:"La Bogue. Le motif.",
+        cible:{ lieu:"e2_planete_oeil" },
+        image:"images/quetes/q45/2.png",
+        arrivee:[
+          "Asulf la lit à la radio, mot à mot, dans son jargon : DOSSIER MAAR — ÉTAT : CLASSÉ — LEVÉE : À LA DÉCISION. Et entre les deux, une ligne qu'il ne lit pas : MOTIF, suivi d'un mot en glyphes, un seul, en trois sons.",
+          "Aruns se penche, et secoue la tête : c'est un mot du Bureau, pas un mot de chez eux ; personne au Nid ne l'a jamais prononcé. Asulf se tait. Toi, tu reconnais les trois signes. Tu les as appris un par un, dans une note, dans un relais, dans un plan, sans savoir qu'ils finiraient ensemble."
+        ],
+        defi:{ type:"enigme",
+          texte:["Le motif, sur le panneau :"],
+          glyphes:[ ["QUA","RAN","TAINE"] ],
+          question:"Lis le mot. Qu'est-ce qui est écrit ?",
+          motsCles:["quarantaine"],
+          indice:"Les trois sons, dans l'ordre où ils sont écrits : QUA, puis RAN, puis TAINE.",
+          reussite:[
+            "Quarantaine. Tu l'écris, et tu le dis tout haut, pour le Nid qui écoute. Le mot reste un moment dans la radio, sans que personne ne le reprenne."
+          ] } },
+
+      /* ---- 3. Tout se met en place — SCÈNE : la quarantaine, la levée (Q35), rien ne change ---- */
+      { indice:"La Bogue. Ce que ça veut dire.",
+        cible:{ lieu:"e2_planete_oeil" },
+        image:"images/quetes/q45/3.png",
+        arrivee:[
+          "Tout se met en place, comme les trois copies de la note quand elles se sont recouvertes. Le Bureau a vu que la silène capte les signaux et les brouille. Il a eu peur que le défaut voyage par les ondes, d'un monde à l'autre. Alors il a mis Maar en quarantaine, quatre secteurs, et Cérès avec, parce qu'elle les écoutait. Pas pour punir : pour protéger le reste. Et il comptait la lever, au douzième passage, après une décision qui n'est jamais venue.",
+          "Et la levée, tu l'as vue partir. Ce long message qui a jailli de La Couronne quand tu lui as rendu sa pièce, ces lignes trop rapides pour être lues : c'était elle. La machine la gardait prête depuis trois siècles, et elle l'a envoyée dès qu'on lui a rendu la parole, à un Bureau qui ne lit plus ce dossier-là. Rien n'a changé. La Gorge laisse toujours entrer, et ne rend toujours rien de ce qui vient d'ici. Mais maintenant, on sait.",
+          "Aruns ne pose plus de question. Il regarde la porte, puis toi, longtemps. À la radio, Dagon cherche quelque chose à dire, et cette fois, il ne trouve rien du tout ; tu n'as pas besoin de le voir pour savoir ce que font ses tresses. C'est Asulf qui parle le premier, à voix basse : « Une quarantaine. Ça se lève, normalement. C'est fait pour. » Il renifle. « Je vais le noter quelque part. Que quelqu'un l'ait noté, au moins. »"
+        ],
+        defi:{ type:"scene", bouton:"Rentrer au Nid" } },
+
+      /* ---- 4. Le mot, pour eux — CHOIX (Racines, Langues, Veilleurs), au Nid ---- */
+      { indice:"Le Nid. Le mot, pour eux.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q45/4.png",
+        arrivee:[
+          "Au Nid, personne ne dort. Le mot a fait le tour des toiles avant toi. On t'attend devant la paroi gravée, en silence, comme si c'était à toi de décider de ce qu'on en fait."
+        ],
+        defi:{ type:"choix",
+          texte:["Le mot, tu choisis de…"],
+          options:[
+            { texte:"Le graver en haut du mur des traits, au-dessus de trois siècles d'attente.",
+              cercles:{ racines:5 },
+              journal:"Tu l'as gravé tout en haut, en ancien, là où les traits s'arrêtent. Il fallait monter sur une caisse. C'est Dagon qui l'a tenue, en assurant qu'il ne faisait ça que pour te voir tomber. Tu n'es pas tombé." },
+            { texte:"L'écrire en clair et en ancien, côte à côte, pour que les enfants du Nid sachent le lire.",
+              cercles:{ langues:5 },
+              journal:"Tu l'as écrit deux fois sur une plaque, dans ta langue et dans la leur. Le soir même, trois enfants savaient le lire, et un quatrième le prononçait de travers exprès, pour faire rire les autres." },
+            { texte:"Aller voir la Gorge avec Aruns, cette porte par où plus personne n'arrivera.",
+              cercles:{ veilleurs:5 },
+              journal:"Vous êtes restés longtemps devant la Gorge, Aruns et toi, sans parler. Au bout d'un moment, il a dit qu'au moins, maintenant, il savait à quoi ressemblait une porte que personne ne viendra ouvrir. Puis il a ajouté que ça ne l'empêcherait pas de la regarder." }
+          ],
+          reussite:[
+            "Puis la nuit vient. Quelque part, la balise de la Fugueuse attend son prochain passage."
+          ] } },
+
+      /* ---- 5. Le passage suivant — SCÈNE : l'épilogue de l'arc ---- */
+      { indice:"Le Nid. Le passage suivant.",
+        cible:{ lieu:"e2_base" },
+        image:"images/quetes/q45/5.png",
+        arrivee:[
+          "Au passage suivant, quelqu'un grave le trait, comme toujours, bien droit, au bout de la rangée. Personne ne l'a demandé, et personne ne l'en empêche. Seulement, on ne le grave plus pour compter les jours jusqu'au retour. On le grave pour ne pas oublier qu'on a attendu, et pourquoi.",
+          "Dagon, perché à sa place habituelle, a retrouvé sa voix, et sa pique, un peu plus douce que d'habitude : « Trois cents ans à attendre, et tout ça parce qu'une plante écoutait aux portes. On aurait pu nous prévenir. » Aruns éclate de rire, pour la première fois depuis des jours. À la radio, Asulf annonce qu'il a gardé une place libre dans sa rangée de transats, au milieu, « au cas où quelqu'un passerait par là ». Il ne dit pas qui.",
+          "Quand tu remontes à bord, personne ne te retient. La Gorge te laissera passer, toi : ton immatriculation est d'ailleurs. Derrière toi, les lanternes du Nid vont et viennent sur le dos de la grande forme sombre, et de loin, on dirait encore qu'elles clignotent. Tu sais maintenant qu'elles marchent."
+        ],
+        defi:{ type:"scene", bouton:"Repartir" } }
+    ],
+    /* K151 : récompenses PROVISOIRES. K111 : 1 PA (fin de l'arc à 10 PA). Gains des choix (serveur v265) :
+       racines 165 XP · langues 390 ₡ · veilleurs 1 composant avancé + 40 XP. */
+    recompense:{ credits:4000, xp:700, pa:1, flags:{ motifLu:true } }
   }
 
 

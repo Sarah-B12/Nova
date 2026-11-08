@@ -67,18 +67,21 @@ function majHub(){
   { const bl=document.querySelector('.hub-lien[data-hub="descente"]'), c=(typeof surfaceCfg==="function"&&typeof surOrbitePlanete==="function")?surfaceCfg(surOrbitePlanete()):null; if(bl && c) bl.textContent=c.nom; }
   const vide = { terrain:false, inn:false, centre:false, poste:false, marche:false, voler:false, boutique:false, quete:false, garage:false, gisement:false, arene:false, descente:false, fleau:false };
   const qEnCours = (typeof queteActive==="function" && !!queteActive());
+  /* v2.47 — BOUTIQUE MOBILE (no1, « depuis n'importe où ») : elle manquait à La Braise, en surface (Ancolie),
+     à La Carcasse, au Gravier et au Fléau (retour d'un testeur). Partout, désormais, à +10 % hors des villes. */
+  const mobile = (typeof aptBoutiquePartout==="function") && aptBoutiquePartout();
   const dispo = auDessusBraise
-    ? { ...vide, descente:true, quete:qEnCours }
+    ? { ...vide, descente:true, quete:qEnCours, boutique:mobile }
     : (typeof enSurface==="function" && enSurface())
     /* v0.98 : au sol d'une planète, pas de service. v1.87 : en Ancolie, à la station,
        42-U1F donne ses quêtes (lieuPrise:"station") ; au lac gelé, le gisement de Sélénite. */
-    ? { ...vide, quete:qEnCours || ((typeof aLaStation==="function") && aLaStation()),
+    ? { ...vide, boutique:mobile, quete:qEnCours || ((typeof aLaStation==="function") && aLaStation()),
         gisement:(typeof surSelenite==="function") && surSelenite(),
         bar:(typeof barStation==="function") && barStation() }   // v1.88 : K55, la buvette de la station
     : carcasse
-    ? { ...vide, garage:true, quete:true }   // v0.97 : Galm donne les quêtes Q6→
+    ? { ...vide, garage:true, quete:true, boutique:mobile }   // v0.97 : Galm donne les quêtes Q6→
     : gravier
-    ? { ...vide, gisement:true, quete:(typeof queteActive==="function" && !!queteActive()) }
+    ? { ...vide, gisement:true, quete:(typeof queteActive==="function" && !!queteActive()), boutique:mobile }
     : nid
     /* v1.96 — Le Nid : la Boutique, réduite au carburant (boutique.js). Le remorquage
        n'a pas d'onglet : c'est le secours (orbite.js) qui y dépose une coque clouée.
@@ -86,7 +89,7 @@ function majHub(){
     ? { ...vide, boutique:(typeof nidOuvert==="function") && nidOuvert(),   // v2.32 (K155) : fermée avant la fin de Q32
         quete:qEnCours || (typeof queteProchaine==="function" && !!queteProchaine() && queteProchaine().lieuPrise==="nid") }   // v2.32 : Q32 s'y prend
     : fleau
-    ? { ...vide, fleau:true, quete:qEnCours }   // v2.06 : le combat du jour et le classement
+    ? { ...vide, fleau:true, quete:qEnCours, boutique:mobile }   // v2.06 : le combat du jour et le classement
     : base
     /* v0.92 — L'ARÈNE n'existe qu'au Perchoir. `arene_adversaires()` refuse de
        toute façon ceux qui n'ont pas fini Q5, mais l'onglet ne doit pas

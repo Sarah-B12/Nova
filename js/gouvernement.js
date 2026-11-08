@@ -764,15 +764,31 @@ async function _expResoudre(){
   if(typeof afficher==="function") afficher();
   if(typeof majCentre==="function") majCentre();
 }
+/* v2.47 — un duel ne s'écrit plus trois fois. On lit les comptes rendus AVANT d'appliquer l'XP :
+   · « Duel contre X : victoire. +N XP. » (serveur) dit déjà l'XP → pas de ligne « Expérience de campagne »
+     pour ces N XP-là (`_xpDejaDit`) ;
+   · le duel que le joueur vient d'accepter (`_duelLocal`, arene.js) : son compte rendu serveur est retiré,
+     et son XP rendue à arene.js, qui écrit une seule phrase. */
+let _xpDejaDit = 0;
+var _duelLocal = (typeof _duelLocal !== "undefined") ? _duelLocal : null;
+function _xpDuDuel(texte){ const m = /^Duel contre .*?\+(\d+) XP/.exec(String(texte || "")); return m ? +m[1] : 0; }
 async function syncEffetsCombat(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
-  try{ const { data } = await sb.rpc("consommer_effets");
-    await _effetsAppliquer(data);
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
-  // Comptes rendus déposés par le serveur (expéditions résolues hors ligne).
-  try{ const { data:evs } = await sb.rpc("consommer_evenements");
-    await _evenementsAppliquer(evs);
-  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
+  let data = null, evs = null;
+  try{ ({ data } = await sb.rpc("consommer_effets")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
+  // Comptes rendus déposés par le serveur (expéditions résolues hors ligne, duels).
+  try{ ({ data:evs } = await sb.rpc("consommer_evenements")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
+  if(Array.isArray(evs)){
+    _xpDejaDit = evs.reduce((s, ev) => s + _xpDuDuel(ev && ev.texte), 0);
+    if(_duelLocal && _duelLocal.adv){
+      const debut = `Duel contre ${_duelLocal.adv} :`;
+      evs = evs.filter(ev => { const t = String((ev && ev.texte) || "");
+        if(t.startsWith(debut)){ _duelLocal.xp += _xpDuDuel(t); return false; } return true; });
+    }
+  }
+  try{ await _effetsAppliquer(data); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
+  finally{ _xpDejaDit = 0; }
+  try{ await _evenementsAppliquer(evs); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
 }
 /* v2.09 — ce que syncEffetsCombat faisait des effets et du journal serveur, inchangé, sorti en deux
    fonctions pour que la veille (veille.js) l'applique de la même façon. */
@@ -792,7 +808,10 @@ async function _effetsAppliquerFond(data){
          ligne arrivait seule, loin du compte rendu de l'expédition (déposé par
          le serveur en catégorie « combat »). Un testeur ne voyait donc que
          « +5 XP », sans savoir qui avait été attaqué ni qui avait gagné. */
-      journal(`Expérience de campagne : +${data.xp} XP.`,"gain","combat");
+      /* v2.47 — tue si un compte rendu de duel dit déjà exactement cette XP (voir syncEffetsCombat). */
+      const dejaDit = _xpDejaDit > 0 && _xpDejaDit === data.xp;
+      if(_duelLocal && !dejaDit && !_duelLocal.xp) _duelLocal.xp = data.xp;   // le duel que le joueur vient d'accepter : son XP va dans SA ligne
+      else if(!dejaDit) journal(`Expérience de campagne : +${data.xp} XP.`,"gain","combat");
       // L'XP est en base ; ce qui doit être écrit ici, ce sont les POINTS
       // crédités par la montée de niveau, qui vivent dans donnees.
       if(typeof sauverMaintenant==="function") await sauverMaintenant();

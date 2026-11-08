@@ -736,7 +736,10 @@ const ENIG_SEUIL = 3;
 let _enigEchecs = 0;
 function _htmlEnigme(d){
   _enigEchecs = 0;
-  return `<div class="quete-etape">${_par(d.texte)}
+  /* v2.45 — `d.glyphes` : des mots en glyphes de l'ancien, affichés sous le texte (Q45 : le motif). */
+  const gly = (d.glyphes && typeof glyphesMot === "function")
+    ? `<p class="q-enig-gly" style="text-align:center;margin:10px 0;font-size:1.6em">${d.glyphes.map(glyphesMot).join(" ")}</p>` : "";
+  return `<div class="quete-etape">${_par(d.texte)}${gly}
     <p class="quete-indice">${d.question}</p>
     <div class="quete-rep"><input id="q-enig-champ" placeholder="Ta réponse…" autocomplete="off"><button class="mini" id="q-enig-btn">Valider</button></div>
     ${d.indice?`<p class="vide" id="q-enig-txt" hidden style="margin:8px 0 0">💡 ${d.indice}</p>`:""}

@@ -13,7 +13,7 @@
   reussirDefi = () => { ok++; }; echouerDefi = (m) => { ko++; dernierEchec = m || ""; };
   const z = document.createElement("div"); document.body.appendChild(z);
 
-  r.types = q.etapes.map(e => e.defi.type).join(",");                                   // brouillage,choix,crevasse,attente,scene
+  r.types = q.etapes.map(e => e.defi.type).join(",");                                   // brouillage,choix,crevasse,ordre,scene (v2.46)
   q.etapes.forEach((e, i) => { a.etape = i; a._qj = null;
     try{ z.innerHTML = _defiHTML(e.defi); _defiWire(z, e.defi); _seqFin();
          if(/à venir/.test(z.innerHTML)) r.erreurs.push(`${i} : épreuve inconnue ${e.defi.type}`);
@@ -23,7 +23,7 @@
   r.lieux = q.etapes.map(e => e.cible.lieu).join(",");                                  // e2_planete_violette ×4, e2_base
   const types = id => new Set(queteData(id).etapes.map(e => e.defi.type).filter(t => !["choix","attente","scene","combat"].includes(t)));
   r.repetitionAvecQ36 = [...types("q37")].filter(t => types("q36").has(t));             // []
-  r.ratables = q.etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).map(e => e.defi.type).join(",");   // brouillage,crevasse
+  r.ratables = q.etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).map(e => e.defi.type).join(",");   // brouillage,crevasse,ordre
 
   // Brouillage : « signal », « Chercher la balise » ; gagné en suivant, perdu sinon.
   const dB = q.etapes[0].defi; a.etape = 0;
@@ -37,6 +37,21 @@
   }
   const bG = await brouiller(true, 20), bP = await brouiller(false, 1);
   r.brouillage = { gagne: bG.ok === 1, perdu: bP.ko === 1 && /« Déjà \? »/.test(bP.msg) };
+
+  // v2.46 : les boutons − et + (téléphone) : désactivés avant le début ; un appui = un pas ; appui maintenu =
+  // le curseur avance seul ; la fréquence calée, ses boutons se désactivent ; le décalage fait le tour.
+  { ok = 0; ko = 0; const d = Object.assign({}, dB, { duree:30, tenir:20 });
+    z.innerHTML = _defiHTML(d); _defiWire(z, d);
+    const btn = k => z.querySelector(`[data-br="${k}"]`), f = z.querySelector("#qj-br-f"), dd = z.querySelector("#qj-br-d");
+    const avant = ["f-","f+","d-","d+"].every(k => btn(k) && btn(k).disabled);
+    z.querySelector("#qj-br-go").click(); const P = QUETES_JEUX.brouillage._partie;
+    const actifs = ["f-","f+","d-","d+"].every(k => !btn(k).disabled);
+    const f0 = +f.value; btn("f+").dispatchEvent(new Event("pointerdown")); btn("f+").dispatchEvent(new Event("pointerup")); const unPas = Math.abs(+f.value - f0 - 0.02) < 1e-9;
+    const d0 = +dd.value; btn("d+").dispatchEvent(new Event("pointerdown")); await att(300); btn("d+").dispatchEvent(new Event("pointerup")); const d1 = +dd.value; await att(120); const arrete = +dd.value === d1;
+    dd.value = "6.27"; P.d = 6.27; btn("d+").dispatchEvent(new Event("pointerdown")); btn("d+").dispatchEvent(new Event("pointerup")); const tour = +dd.value < 0.1;
+    P.regler(P.fc, null); const fCalee = btn("f-").disabled && btn("f+").disabled && !btn("d+").disabled;
+    P.fini = true; _seqFin();
+    r.boutonsBrouillage = { avant, actifs, unPas, maintenu: d1 - d0 > 0.1, arrete, tour, fCalee }; }   // tout vrai
 
   // Le choix « compétence » (ordre du serveur v257).
   r.cercles = q.etapes[1].defi.options.map(o => Object.keys(o.cercles)[0]).join(",");   // assembleurs,eclats,veilleurs
@@ -59,7 +74,15 @@
   // Le journal, la plaque, la récompense.
   const jr = q.etapes[3].defi.reussite.join(" ");
   r.journal = /INDICATIF NON RECONNU — ORIGINE : TERMINUS/.test(jr) && /MAAR-12/.test(jr) && /l'étiquette, pas ce qu'il y a dedans/.test(jr) && /DIRE AUX AUTRES DE NE PAS ESSAYER/.test(jr);
-  r.attenteMs = q.etapes[3].defi.duree;                                                 // 1800000
+  // v2.46 : le journal est une épreuve d'ordre (était une attente) : 0 → 5 gagne ; un échange perd (son texte).
+  { const dO = q.etapes[3].defi; a.etape = 3;
+    ok = 0; ko = 0; z.innerHTML = _defiHTML(dO); _defiWire(z, dO);
+    for(let i = 0; i < 6; i++) z.querySelector(`.q-ordre-el[data-i="${i}"]`).click();
+    z.querySelector("#q-ordre-valider").click(); const g = ok === 1 && ko === 0;
+    ok = 0; ko = 0; dernierEchec = ""; z.innerHTML = _defiHTML(dO); _defiWire(z, dO);
+    [0,2,1,3,4,5].forEach(i => z.querySelector(`.q-ordre-el[data-i="${i}"]`).click());
+    z.querySelector("#q-ordre-valider").click();
+    r.journalOrdre = { entrees: dO.elements.length, gagne: g, perdu: ko === 1 && /à bout de souffle/.test(dernierEchec) }; }
   r.plaqueChezDagon = /ne te la rend pas/.test(q.etapes[4].arrivee.join(" ")) && !(q.recompense.objets);
   r.recompense = q.recompense;
 
@@ -81,7 +104,7 @@
   const mots = tout.toLowerCase().replace(/<[^>]+>/g, " ").replace(/[^a-zàâçéèêëîïôûùüÿœæ' -]/g, " ").split(/\s+/).filter(Boolean);
   const vu = {}; for(let i = 0; i + 2 < mots.length; i++){ const t = mots.slice(i, i+3).join(" "); vu[t] = (vu[t]||0) + 1; }
   const VIDES = new Set(["de","la","le","les","des","du","un","une","et","à","au","en","il","elle","tu","te","que","qui","ne","pas","se","sa","son","ses","sur","dans","d'","l'","qu'","s'","n'","ce","ça","pour","par","lui","plus","t'","y"]);
-  r.repetitions = Object.entries(vu).filter(([t, n]) => n > 1 && !/tentative dans/.test(t) && t.split(" ").filter(m => !VIDES.has(m)).length >= 2).map(([t, n]) => `${t} ×${n}`);
+  r.repetitions = Object.entries(vu).filter(([t, n]) => n > 1 && !/tentative dans|^(dire aux autres|aux autres de|autres de ne|de ne pas|ne pas essayer)$/.test(t) && t.split(" ").filter(m => !VIDES.has(m)).length >= 2).map(([t, n]) => `${t} ×${n}`);
   r.erreursJs = msgs.filter(m => /TypeError|ReferenceError/.test(m));
   reussirDefi = vraiR; echouerDefi = vraiE;
   return r;

@@ -1216,7 +1216,7 @@ function _devListeConstruire(){
   z.dataset.pret = "1";
   z.innerHTML = `<div class="dev-bloc"><h4>Tous les personnages</h4>
     <div class="dev-champ"><input id="dev-liste-q" placeholder="Filtrer par nom (une partie suffit)…"><button class="mini" id="dev-liste-go">Afficher</button></div>
-    <div id="dev-liste"><p class="dev-note">Clique « Afficher » (sans filtre : tous, les plus récemment actifs d'abord).</p></div></div>`;
+    <div id="dev-liste"><p class="dev-note">Clique « Afficher » (sans filtre : tous, par ordre alphabétique).</p></div></div>`;
   z.querySelector("#dev-liste-go").addEventListener("click", _devListeCharger);
   z.querySelector("#dev-liste-q").addEventListener("keydown", e => { if(e.key === "Enter") _devListeCharger(); });
 }
@@ -1233,7 +1233,8 @@ async function _devListeCharger(){
   let d = null;
   try{ const r = await sb.rpc("admin_liste_personnages", { p_recherche: q || null }); d = r.data; if(r.error) d = { ok:false, err:r.error.message }; }catch(e){ d = { ok:false, err:String(e) }; }
   if(!d || !d.ok){ zl.innerHTML = `<p class="dev-note">Échec : ${echapper((d && d.err) || "?")}</p>`; return; }
-  const L = d.liste || [];
+  /* v2.47 — par ordre alphabétique (demande de l'autrice) ; le serveur renvoie les 300 plus récemment actifs. */
+  const L = (d.liste || []).slice().sort((a, b) => String(a.nom || "").localeCompare(String(b.nom || ""), "fr", { sensitivity:"base" }));
   const etat = p => [p.en_ligne ? `<span class="dev-pastille vert">en ligne</span>` : "",
                      p.mort_le ? `<span class="dev-pastille rouge">mort</span>` : "",
                      p.pause_depuis ? `<span class="dev-pastille gris">en pause</span>` : "",

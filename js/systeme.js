@@ -80,6 +80,9 @@ let _journalStyleMonte = false;
    cas précis). v1.11 : ajout de « formation » et « faction ». */
 function _categoriser(t){
   const s=(t||"").toLowerCase();
+  /* v2.47 — les lignes des consoles ([DEV], [DEV→admin], [STAFF], [ADMIN]) vont dans Système, AVANT tout
+     le reste : « changement de faction DÉBLOQUÉ » partait dans Faction (retour de l'autrice). */
+  if(/^\s*\[(dev|staff|admin)/.test(s)) return "systeme";
   // v1.56 — les histoires d'enfant (« a fait l'étape 1 de l'histoire d'Eva ») et les
   // lettres vont dans Couple, AVANT la règle des quêtes (« étape ») ; sans « (Couple > Famille) ».
   if(/l'histoire d|petite histoire|une lettre d/.test(s)) return "couple";

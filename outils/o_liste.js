@@ -25,7 +25,10 @@
   const lignes = [...m.querySelectorAll("#dev-liste tbody tr")].map(tr => tr.textContent.replace(/\s+/g, " ").trim());
   r.lignes = lignes;
   r.entete = m.querySelector("#dev-liste .dev-note").textContent;
-  r.ip = { colonne: /1\.2\.3\.4 \(\+1 autre\)/.test(lignes[0] || ""), partage: /partage avec Mort_Test/.test(lignes[0] || ""), sansIp: /—$/.test(lignes[1] || "") };
+  // v2.47 : la liste est triée par nom (Kyraa, puis Vortex) : on retrouve chaque ligne par son nom.
+  const lv = lignes.find(l => /^Vortex/.test(l)) || "", lk = lignes.find(l => /^Kyraa/.test(l)) || "";
+  r.ip = { colonne: /1\.2\.3\.4 \(\+1 autre\)/.test(lv), partage: /partage avec Mort_Test/.test(lv), sansIp: /—$/.test(lk) };
+  r.alphabetique = lignes.map(l => l.split(/[a-zà-ÿ]*·| /)[0]).join(",");
   let cherche = null; devChercherJoueur = async () => { cherche = document.querySelector("#dev-q").value; };
   m.querySelector('[data-liste-nom="Vortex"]').click(); await att(30);
   r.clic = { fiche: cherche, ongletJoueurs: m.querySelector('.dev-onglet.actif').dataset.dev };
