@@ -61,6 +61,7 @@ const DELAIS = {
   q44: { profil: 50, sac: 50, jauges: 50 },       // v2.44 : Q44 « Au passage d'après » ; le son TAINE (o_q44.js)
   q45: { profil: 50, sac: 50, jauges: 50 },       // v2.45 : Q45 « Le motif », fin de l'arc de Cérès (o_q45.js)
   v247: { profil: 50, sac: 50, jauges: 50 },      // v2.47 : retours des testeuses (o_v247.js)
+  medailles: { profil: 50, sac: 50, jauges: 50 }, // v2.48 : les médailles du mois (o_medailles.js)
   correctifs199: { profil: 50, sac: 50, jauges: 50 },   // v1.99 : retours du 29/10 (o_correctifs199.js)
   correctifs200: { profil: 50, sac: 50, jauges: 50 },   // v2.00 : retours du 29/10, 2e série (o_correctifs200.js)
   parloir: { profil: 50, sac: 50, jauges: 50 },   // v2.01 : la prison comme un parloir, K114 (o_parloir.js)

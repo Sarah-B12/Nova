@@ -180,6 +180,7 @@ async function syncApresConnexion(){
   if(typeof cerclesRejouer==="function")   t.push(cerclesRejouer());       // v1.02 : gains de Cercle restés en attente
   if(typeof choixRejouer==="function")     t.push(choixRejouer());         // v1.79 : gains de choix restés en attente
   if(typeof chargerRacines==="function")   t.push(chargerRacines());       // v1.10 : bonus d'énergie du Cercle des Racines
+  if(typeof majMesMedailles==="function")  t.push(majMesMedailles(true));  // v2.48 (K171) : les médailles du mois
   if(typeof chargerFacteurPatrouille==="function") t.push(chargerFacteurPatrouille());   // v1.12 : heure calme ou dense
   // v1.35 : l'abandon du terrain est appliqué par le serveur (terrain_lire, via chargerIntegrite).
   if(typeof debrisCharger==="function") t.push(debrisCharger());   // v1.31 : chute de débris en cours

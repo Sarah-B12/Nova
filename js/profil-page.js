@@ -233,6 +233,7 @@ async function ouvrirPageProfil(nom){
       </div>
     </div>
     <div class="rep-badges grand" style="justify-content:center">${(typeof _badgesReput==="function")?_badgesReput(p.reputation||0, p.cercles||{}, p.faction):""}</div>
+    <div class="medailles" id="pp-medailles" hidden></div>
     <div id="pp-terrain" hidden></div>
     <div id="pp-journal-staff" hidden></div>
     <div id="pp-mouvements-staff" hidden><h3>Mouvements (objets et crédits, 7 jours)</h3><div class="pp-mvt"></div></div>
@@ -251,6 +252,10 @@ async function ouvrirPageProfil(nom){
   </div>`;
 
   m.querySelector("#pp-retour").addEventListener("click", fermerPageProfil);
+  /* v2.48 (K171) — ses médailles du mois, sous ses blasons (lues après coup : la page s'affiche sans attendre). */
+  if(p.id && typeof medaillesDe === "function") medaillesDe(p.id).then(L => {
+    const zm = document.querySelector("#pp-medailles"); if(!zm || _ppNom !== nom) return;
+    zm.innerHTML = medaillesHtml(L); zm.hidden = !L.length; });
   m.querySelectorAll("[data-pp-conjoint]").forEach(a=>a.addEventListener("click", ()=>ouvrirPageProfil(a.dataset.ppConjoint)));   // v1.36p
   const act=(sel,fn)=>{ const b=m.querySelector(sel); if(b) b.addEventListener("click",()=>fn(b.dataset.demande||b.dataset.bloq||b.dataset.debloq||b.dataset.retire)); };
   act("[data-demande]", async v=>{ await envoyerDemande(v); ouvrirPageProfil(nom); });
