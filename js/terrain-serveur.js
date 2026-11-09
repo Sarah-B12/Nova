@@ -65,6 +65,7 @@ const TERRAIN_REFUS = {
   coffre:       "Vide d'abord ton rangement avant de démolir.",
   deja:         "Déjà fait aujourd'hui — la remise à zéro est à minuit.",
   marie:        "La maison commune ne se démolit pas pendant le mariage.",          // v1.36
+  emmenagement: "Quelqu'un doit emménager dans ta maison : elle ne se démolit pas d'ici là.",   // v2.60 (v274)
   maison:       "Le logement se démolit depuis le sous-onglet Maison."
 };
 

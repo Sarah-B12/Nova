@@ -36,14 +36,21 @@
   rep.union_lire = () => ({ data: Object.assign({}, libre, { recues:[{ id:5, de:"x", nom:"Élane", il_vient:false }] }), error:null });
   await chargerUnion(); await majUnions(el);
   appels.length = 0;
-  rep.union_repondre = () => ({ data:{ ok:true, accepte:true, demenagement:{ faction:"toundra", x:300, y:300 } }, error:null });
+  // v2.60 (v274, K197) : le oui met l'union en attente ; c'est « Emménager » qui marie et déménage.
+  rep.union_repondre = () => ({ data:{ ok:true, accepte:true, emmenagement:true, je_demenage:true }, error:null });
+  rep.union_emmenager = () => ({ data:{ ok:true, demenagement:{ faction:"toundra", x:300, y:300 }, detruit:null, rembourse:0, solde:4321 }, error:null });
+  const attente = { id:5, avec:"x", nom:"Élane", hote:"x", je_demenage:true, depuis:"2026-09-30T07:59:00Z", occupee:null };
   const marie = { id:1, conjoint:"x", nom:"Élane", hote:"x", je_suis_hote:false, marie_le:"2026-09-30T08:00:00Z", complicite:50,
     en_pause:false, jour:{ mes_actions:[3,12,17,5], mon_choix:null, mon_detail:{}, son_choix:null, son_detail:{}, toujours:[9,10,20,21] },
     reserve:{ place:10, utilise:2, objets:[{ item:"cuir", qte:2, a_moi:false }] },
     ceremonie:{ texte:"", par_moi:false, maj_le:null, fige:false, fige_le:"2026-10-14T08:00:00Z", edition:null }, divorce:null };
-  rep.union_lire = () => ({ data: Object.assign({}, libre, { union: marie, moi:{ faction:"toundra", x:300, y:300, secteur:"silene" } }), error:null });
+  rep.union_lire = () => ({ data: Object.assign({}, libre, { emmenagement: attente }), error:null });
   el.querySelector('[data-u="accepter"]').click(); await dort(150);
-  r.accepte = { appel: (appels.find(a => a.nom === "union_repondre") || {}).args, faction: etat.faction,
+  r.attente = { faction: etat.faction, onglet: btC.style.display, bouton: !!el.querySelector('[data-u="emmenager"]'),
+                annuler: !!el.querySelector('[data-u="annuler-emm"]') };
+  rep.union_lire = () => ({ data: Object.assign({}, libre, { union: marie, moi:{ faction:"toundra", x:300, y:300, secteur:"silene" } }), error:null });
+  el.querySelector('[data-u="emmenager"]').click(); await dort(150);
+  r.accepte = { emmenager: (appels.find(a => a.nom === "union_emmenager") || {}).args, appel: (appels.find(a => a.nom === "union_repondre") || {}).args, faction: etat.faction,
                 terrainRelu: appels.some(a => a.nom === "terrain_lire"), onglet: btC.style.display };
 
   // 3. Onglet Couple : 4 actions + les toujours-disponibles ; une action.
@@ -106,7 +113,8 @@
 
   // 6. Divorce : avertissement pour celui qui a déménagé.
   changerCentre("unions"); await dort(80);
-  r.divorce = { avert: el.textContent.includes("terrain d'avant"), bouton: !!el.querySelector('[data-u="divorcer"]') };
+  // v2.60 (K196) : il garde son terrain, une Cabane ; plus de « terrain d'avant ».
+  r.divorce = { avert: el.textContent.includes("une Cabane"), ancien: el.textContent.includes("terrain d'avant"), bouton: !!el.querySelector('[data-u="divorcer"]') };
 
   journal = jOrig;
   return r;

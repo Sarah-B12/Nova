@@ -208,8 +208,17 @@ async function partirVersEcart(){
   const autoDep = (typeof autonomieCarburant==="function") ? autonomieCarburant() : (etat.carburant||0);
   if(csDep && autoDep < 2*csDep.litres){
     const nomCarb = (typeof item==="function" && item(csDep.carb)) ? item(csDep.carb).nom : "carburant";
-    journal(`Décollage refusé : il faut de quoi revenir. L'aller-retour coûte ${2*csDep.litres} L, tu n'as que ${Math.round(autoDep)} L en tout (réservoir + bidons). Emporte ${Math.ceil(2*csDep.litres - autoDep)} L de ${nomCarb} de plus.`,"alerte","voyage");
-    return;
+    /* v2.63 (K217, retour d'une testeuse) — au sol, la boutique ne vend pas le raffiné ; le
+       Perchoir, si. On peut donc partir avec l'ALLER seulement, si l'on a de quoi payer le
+       retour au comptoir du Perchoir. Le secours « à sec » reste le filet. */
+    const manque = 2*csDep.litres - autoDep;
+    const prixRetour = _prixPleinComptoir(csDep.carb, manque);
+    if(autoDep < csDep.litres || prixRetour == null || (etat.credits||0) < prixRetour){
+      journal(`Décollage refusé : il faut de quoi revenir. L'aller-retour coûte ${2*csDep.litres} L, tu n'as que ${Math.round(autoDep)} L en tout (réservoir + bidons). Emporte ${Math.ceil(manque)} L de ${nomCarb} de plus`
+        + (autoDep >= csDep.litres && prixRetour != null ? `, ou de quoi l'acheter au comptoir du Perchoir (${prixRetour} ₡).` : "."),"alerte","voyage");
+      return;
+    }
+    journal(`Tu pars avec l'aller seulement : pour rentrer, il faudra acheter ${Math.ceil(manque)} L de ${nomCarb} au comptoir du Perchoir (${prixRetour} ₡). Garde de quoi payer.`,"alerte","voyage");
   }
   if(!await _payerSaut("Décollage")) return;
   const base = espaceLieu("base");
@@ -535,6 +544,8 @@ function ongletLieuEspace(l){ return !!l && ["base","epave","asteroides","planet
    ⚠ Si le joueur ne peut pas payer, il descend QUAND MÊME, solde à zéro.
    On ne laisse jamais personne coincé là-haut. */
 const SECOURS_FRAIS = 200;
+const SECOURS_FRAIS_PALIER = 100;   // v2.62 (K212) : sans vaisseau, palier 25
+const SECOURS_SEC = 0.20, SECOURS_SEC_PALIER = 0.10;   // v2.62 (K208, K212) : à sec, part des crédits
 
 /* ⚠ LE SEUIL DÉPEND DU VAISSEAU, jamais d'un forfait. Une Navette se remplit
    avec du Biocarburant (320 ₡ les 20 L) et il lui faut 18 L : une unité suffit.
@@ -610,7 +621,9 @@ async function secoursOrbite(){
      après, et il joue à ce moment-là, dans le bon ordre : on se réveille à la
      base, PUIS on est rapatrié. */
   if(typeof _mortInfo !== "undefined" && _mortInfo && _mortInfo.mort) return false;
-  /* ⚠ v0.92 — LE REMORQUAGE À SEC N'A PAS LE MÊME TARIF, et ce n'est pas une
+  /* ⚠ v2.62 : la fin de ce bloc (prendre TOUT ce qu'il a) est l'ANCIENNE règle ;
+     le tarif est maintenant une part des crédits (K208, juste en dessous).
+     ⚠ v0.92 — LE REMORQUAGE À SEC N'A PAS LE MÊME TARIF, et ce n'est pas une
      punition : c'est ce qui l'empêche de devenir un taxi. Redescendre un Cargo
      brûle 108 L de raffiné, soit ~2 500 ₡ ; à 200 ₡ forfaitaires, tout le monde
      serait arrivé à sec exprès et le carburant n'aurait plus servi à rien.
@@ -620,7 +633,16 @@ async function secoursOrbite(){
      d'or est intacte, l'arbitrage ne l'est plus.
      ⚠ Un FORFAIT ne peut pas marcher, quel que soit son montant : bas, il offre
      le taxi ; haut, il laisse un pilote de Navette avec 300 ₡ coincé en haut. */
-  const frais  = aSec ? Math.max(0, etat.credits||0) : SECOURS_FRAIS;
+  /* v2.62 (K208, K212) — À SEC : 20 % des crédits, plus TOUT (l'autrice : « plus
+     cher, mais pas qu'il te ruine »). Le taxi reste fermé : ce cas ne se déclenche
+     que si l'on ne peut PAS payer le plein (vaisseauSansRetour). Palier 25 de
+     réputation : 10 % à sec, et 100 ₡ au lieu de 200 sans vaisseau — les deux cas
+     sans autre choix. Coque à zéro (cloué) : 200 ₡ pour tous (le remorquage rend
+     de la coque et épargne le retour : moins cher, il deviendrait une commodité). */
+  const p25    = (typeof repPalier === "function") && repPalier(typeof REP_PALIER_RAPATRIEMENT !== "undefined" ? REP_PALIER_RAPATRIEMENT : 25);
+  const pctSec = p25 ? SECOURS_SEC_PALIER : SECOURS_SEC;
+  const frais  = aSec ? Math.floor(Math.max(0, etat.credits||0) * pctSec)
+               : (!etat.vaisseau && p25) ? SECOURS_FRAIS_PALIER : SECOURS_FRAIS;
   const du     = Math.min(frais, Math.max(0, etat.credits||0));
   etat.credits = Math.max(0, (etat.credits||0) - frais);
   const impaye = du < frais ? " Tu n'avais pas de quoi payer : tu leur dois le reste." : "";
@@ -646,8 +668,8 @@ async function secoursOrbite(){
       etat.secteur = "silene";
       etat.pos = { x:p.x, y:p.y };
       journal(aSec
-        ? `Réservoir à sec, plus un bidon et pas de quoi en acheter. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. ${du > 0 ? `Elle te prend tout ce qu'il te restait — ${du} ₡.` : "Tu n'avais rien à donner."}`
-        : `Plus de vaisseau pour repasser la Gorge. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
+        ? `Réservoir à sec, plus un bidon et pas de quoi en acheter. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. ${du > 0 ? `−${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais rien à donner."}`
+        : `Plus de vaisseau pour repasser la Gorge. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. −${frais} ₡ de frais de secours${p25 ? " (ta faction en paie la moitié)" : ""}.${impaye}`,"alerte","voyage");
       if(typeof fermerOrbite==="function") fermerOrbite();
     }
     if(typeof sauverMaintenant==="function") await sauverMaintenant();
@@ -659,7 +681,9 @@ async function secoursOrbite(){
     const b = espaceLieu("base");
     if(b) etat.posEspace = { x:b.x, y:b.y };
     if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
-    journal(`Appel de détresse : on te remorque jusqu'au ${b?b.nom:"Perchoir"} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte","voyage");
+    /* v2.63 — « jusqu'au Le Perchoir » : le nom porte déjà son article. */
+    const jusqua = !b ? "jusqu'au Perchoir" : /^Le /.test(b.nom) ? `jusqu'au ${b.nom.slice(3)}` : /^La /.test(b.nom) ? `jusqu'à la ${b.nom.slice(3)}` : `jusqu'à ${b.nom}`;
+    journal(`Appel de détresse : on te remorque ${jusqua} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte","voyage");
     if(typeof sauverMaintenant==="function") await sauverMaintenant();
     majApresDeplacement();
     return true;
@@ -670,8 +694,8 @@ async function secoursOrbite(){
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
   journal(aSec
-    ? `Réservoir à sec, plus un bidon et pas de quoi en acheter : un cargo de passage te prend en remorque. ${du > 0 ? `Le remorquage te prend tout ce qu'il te restait — ${du} ₡.` : "Tu n'avais rien à leur donner ; ils te redescendent quand même."}`
-    : `Appel de détresse : un cargo de passage te redescend chez toi. −${SECOURS_FRAIS} ₡ de frais de secours.${impaye}`,"alerte","voyage");
+    ? `Réservoir à sec, plus un bidon et pas de quoi en acheter : un cargo de passage te prend en remorque. ${du > 0 ? `Le remorquage te coûte ${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais rien à leur donner ; ils te redescendent quand même."}`
+    : `Appel de détresse : un cargo de passage te redescend chez toi. −${frais} ₡ de frais de secours${p25 ? " (ta faction en paie la moitié)" : ""}.${impaye}`,"alerte","voyage");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();
@@ -729,8 +753,20 @@ async function passerLaGorge(){
   const versPerchoir0 = (t0 && b0) ? coutVol({ x:b0.x, y:b0.y }, { x:t0.x, y:t0.y }) : null;
   const allerRetour = 2*cs.litres + (versPerchoir0 ? versPerchoir0.litres : 0);
   if(auto < allerRetour){
-    journal(`Passage refusé : il faut de quoi revenir. Passer la Gorge, la repasser et rejoindre le Perchoir coûte ${allerRetour} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage");
-    return;
+    /* v2.63 (K217) — comme au décollage : si le Nid vend du carburant (après Q32), on peut
+       passer avec de quoi rejoindre le Nid, et les crédits pour y acheter le reste (l'aller-
+       retour Gorge ⇄ Nid compris). */
+    const g1 = espaceLieu("e2_gorge"), n1 = espaceLieu("e2_base");
+    const versNid = (g1 && n1) ? coutVol({ x:n1.x, y:n1.y }, { x:g1.x, y:g1.y }) : null;
+    const allerNid = cs.litres + (versNid ? versNid.litres : 0);
+    const total = allerRetour + 2*(versNid ? versNid.litres : 0);
+    const prixRetour = nidOuvert() ? _prixPleinComptoir(cs.carb, total - auto) : null;
+    if(auto < allerNid || prixRetour == null || (etat.credits||0) < prixRetour){
+      journal(`Passage refusé : il faut de quoi revenir. Passer la Gorge, la repasser et rejoindre le Perchoir coûte ${allerRetour} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`
+        + (nidOuvert() && auto >= allerNid && prixRetour != null ? ` Ou de quoi acheter le reste au Nid (${prixRetour} ₡).` : ""),"alerte","voyage");
+      return;
+    }
+    journal(`Tu passes avec de quoi rejoindre le Nid seulement : pour rentrer, il faudra y acheter ${Math.ceil(total - auto)} L de carburant (${prixRetour} ₡). Garde de quoi payer.`,"alerte","voyage");
   }
   if(!await _payerSaut("La Gorge", cs)) return;
   const g = espaceLieu("e2_gorge");

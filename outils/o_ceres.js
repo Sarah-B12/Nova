@@ -81,7 +81,7 @@
   const vis = [...document.querySelectorAll(".hub-lien")].filter(b => b.style.display !== "none").map(b => b.dataset.hub);
   r.ongletsNid = vis;                                                                                          // ["boutique"]
   changerHub("boutique"); const bq = document.querySelector("#boutique-vue").innerHTML;
-  r.boutiqueNid = { textes: /du Nid/.test(bq) && /ancien/.test(bq), seulCarburant: _catalogueBoutique().every(a => a.cat === "carburant") && _catalogueBoutique().length === 2,
+  r.boutiqueNid = { textes: /du Nid/.test(bq) && /ancien/.test(bq), carburantEtKit: _catalogueBoutique().map(a => a.id).join() === "fab_biocarburant,fab_biocarburant_raffine,kit_reparation",   // v2.63 : + le kit
     glyphes: (bq.match(/class="gly"/g) || []).length, pasDeTexteCarburant: !/carburant de vaisseau/.test(bq), prixPerchoir: _prixBoutique(_catalogueBoutique()[0]) === 320 };   // …, 9 glyphes
   r.sonsNouveaux = ["PUL","SION","CEN","TRE"].every(s => GLYPHES_ANCIEN[s]) &&
     new Set(Object.values(GLYPHES_ANCIEN).map(g => g.join("/"))).size === Object.keys(GLYPHES_ANCIEN).length;  // vrai : aucune forme en double

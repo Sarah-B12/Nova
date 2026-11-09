@@ -58,6 +58,11 @@
       background:#0f1830; border:1px solid var(--line); color:var(--texte); box-shadow:0 4px 12px rgba(0,0,0,.4); }
     .rep-badge:hover .rep-bulle,
     .rep-badge.ouvert .rep-bulle{ display:block; }
+    /* v2.62 (K216) — la bulle de la réputation de faction dit le prochain palier :
+       une phrase, donc à la ligne, et calée à gauche (premier blason de la rangée). */
+    .rep-bulle.rep-large{ left:0; transform:none; }
+    .rep-bulle .rep-palier{ display:inline-block; white-space:normal; width:230px; max-width:72vw;
+      margin-top:3px; font-size:11px; line-height:1.35; opacity:.85; }
     /* v1.11 — SUR LA PAGE PROFIL (la sienne et celle qu'on visite), les blasons
        sont dessinés : 34 px les rendait illisibles. Le bandeau du HUD, lui, ne
        bouge pas — il doit rester compact. La classe "grand" est posée par
@@ -125,6 +130,21 @@ function _blasonFaction(fac){
       alt="${f?f.nom:fac}" title="${f?f.nom:fac}" onerror="this.parentNode.remove()"></div>`;
 }
 
+/* v2.62 (K211 → K216) — LES PALIERS DE LA RÉPUTATION DE FACTION. Rien ne se
+   dépense : un palier atteint reste acquis tant qu'on garde la réputation.
+   ⚠ BARÈME PARTAGÉ (BACKEND_PLAN §6) : 65 et 95 sont aussi au serveur (v275 :
+   `enroler`, `_expe_facteur_zone`) ; 25 n'existe qu'ici (orbite.js). */
+const REP_PALIERS = [
+  { n:25, txt:"rapatriement moins cher quand tu n'as plus le choix (plus de vaisseau, panne sèche)" },
+  { n:65, txt:"s'enrôler coûte 3 % d'énergie de moins" },
+  { n:95, txt:"hors de ta cité, tu combats en expédition à −5 % au lieu de −10 %" },
+];
+const REP_PALIER_RAPATRIEMENT = 25, REP_PALIER_ENROLEMENT = 65, REP_PALIER_MALUS = 95;
+function repPalier(n){ return (etat.reputation || 0) >= n; }
+function _repProchainPalier(val){
+  const p = REP_PALIERS.find(x => (val || 0) < x.n);
+  return p ? `Prochain palier, ${p.n} : ${p.txt}.` : "Les trois paliers sont atteints.";
+}
 function _badgesReput(repFaction, cercles, faction){
   cercles = cercles || {};
   const fac = (typeof FACTIONS!=="undefined") ? FACTIONS.find(f=>f.id===faction) : null;
@@ -140,7 +160,8 @@ function _badgesReput(repFaction, cercles, faction){
        sous chaque blason ; ailleurs (bandeau compact), un toucher ou le survol ouvre
        une bulle avec le nom complet. */
     const court = b.id === faction || !b.id ? "Réputation" : b.nom.replace(/^Les /, "");
-    return `<div class="rep-badge" tabindex="0" role="button" aria-label="${b.nom} : ${b.val}">${vis}<span class="rep-nom">${court}</span><span class="rep-n">${b.val}</span><span class="rep-bulle">${b.nom} : ${b.val}</span></div>`;
+    const suite = (b.id === faction || !b.id) ? `<br><span class="rep-palier">${_repProchainPalier(b.val)}</span>` : "";   // v2.62 (K216)
+    return `<div class="rep-badge" tabindex="0" role="button" aria-label="${b.nom} : ${b.val}">${vis}<span class="rep-nom">${court}</span><span class="rep-n">${b.val}</span><span class="rep-bulle${suite ? " rep-large" : ""}">${b.nom} : ${b.val}${suite}</span></div>`;
   }).join("");
 }
 /* v1.88g — un toucher sur un blason ouvre sa bulle ; un autre, ou ailleurs, la ferme. */
@@ -581,8 +602,10 @@ async function majExpeditions(el){
     else if(info.moiParticipe) h+=`<p class="itip-gris" style="margin-top:6px">✓ Tu participes à cet assaut.</p>`;
   } else {
     /* v1.89 — K56 : l'énergie se paie à l'enrôlement ; plus besoin d'être chez soi le jour venu. */
-    h+=`<p class="itip-gris" style="margin-top:6px">S'enrôler coûte <b>15 % d'énergie</b> (12 % avec le Fragment de l'Élan), payés <b>tout de suite</b> — rendus si tu te désinscris ou si le Stratège annule. Le jour venu, tu combats <b>où que tu sois</b>.</p>`;
-    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire (énergie rendue)":"M'enrôler (−15 % d'énergie)"}</button></div>`;
+    /* v2.62 (K210, K214) : le palier 65 allège l'enrôlement ; hors de sa cité, −10 % (−5 % au palier 95). */
+    const allege = repPalier(REP_PALIER_ENROLEMENT);
+    h+=`<p class="itip-gris" style="margin-top:6px">S'enrôler coûte <b>${allege?12:15} % d'énergie</b> (${allege?9:12} % avec le Fragment de l'Élan${allege?" ; 3 de moins grâce à ta réputation":""}), payés <b>tout de suite</b> — rendus si tu te désinscris ou si le Stratège annule. Le jour venu, tu combats <b>où que tu sois</b> ; mais hors de la zone de ta cité, à <b>−${repPalier(REP_PALIER_MALUS)?5:10} %</b> de ta force.</p>`;
+    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire (énergie rendue)":`M'enrôler (−${allege?12:15} % d'énergie)`}</button></div>`;
   }
   h+=_htmlObjectifsExplication();
   el.innerHTML=h;

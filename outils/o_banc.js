@@ -103,6 +103,11 @@ const DELAIS = {
   niveaux: { profil: 50, sac: 50, jauges: 50 },   // v1.33 : niveau requis (o_niveaux.js)
   terrain: { profil: 50, sac: 50, jauges: 50 },   // v1.35 : terrain côté serveur (o_terrain.js)
   couple: { profil: 50, sac: 50, jauges: 50 },    // v1.36 : mariage (o_couple.js)
+  mariage_terrain: { profil: 50, sac: 50, jauges: 50 }, // v2.60 : le terrain au mariage, K194 → K200 (o_mariage_terrain.js)
+  hackpatr: { profil: 50, sac: 50, jauges: 50 },  // v2.61 : pirater une patrouille, brouiller une sonde, K201 → K203 (o_hackpatr.js)
+  reputation: { profil: 50, sac: 50, jauges: 50 }, // v2.62 : paliers de réputation, secours, résurrection, K206 → K216 (o_reputation.js)
+  quetesrecharge: { profil: 50, sac: 50, jauges: 50 }, // v2.63 : finJour et gardiens gardés au rechargement (o_quetesrecharge.js)
+  depart: { profil: 50, sac: 50, jauges: 50 },     // v2.63 : partir avec l'aller seulement (K217), le kit au Nid (o_depart.js)
   seq: { profil: 50, sac: 50, jauges: 50 },
   banq: { profil: 50, sac: 50, jauges: 50 },
   q7: { profil: 50, sac: 50, jauges: 50 },

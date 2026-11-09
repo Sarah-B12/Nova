@@ -162,7 +162,7 @@ async function changerFaction(fid){
   const p=peutChangerFaction(); if(!p.ok){ journal(p.raison,"alerte"); return; }
   const f=(typeof FACTIONS!=="undefined")?FACTIONS.find(x=>x.id===fid):null;
   if(!f || f.id===etat.faction) return;
-  if(!await confirmerJoli("Changer de faction", `Rejoindre ${f.nom} ? Tu déménages dans sa ville. Prochain changement possible seulement dans ${_facJours()} jours.`, "Rejoindre")) return;
+  if(!await confirmerJoli("Changer de faction", `Rejoindre ${f.nom} ? Tu déménages dans sa ville, et ta réputation de faction repart de zéro. Prochain changement possible seulement dans ${_facJours()} jours.`, "Rejoindre")) return;   // v2.62 (K206)
 
   const { data, error } = await sb.rpc("changer_faction", { p_faction: f.id });
   if(error){ journal("Échec : "+error.message,"alerte"); return; }
@@ -188,6 +188,7 @@ async function changerFaction(fid){
      branche d'ARRIVÉE — des points jamais dépensés. */
   const paRendus = (typeof aptRembourserFaction==="function") ? (aptRembourserFaction()||0) : 0;
   etat.faction=f.id;
+  if(typeof data.reputation==="number") etat.reputation=data.reputation;   // v2.62 (K206) : repart de zéro
   if(typeof data.x==="number" && typeof data.y==="number") etat.pos={x:data.x, y:data.y};
   journal(`Tu as rejoint ${f.nom}.`+(paRendus>0?` Les ${paRendus} PA de ta branche d'origine te sont rendus.`:""),"gain");
   if(typeof sauvegarder==="function") sauvegarder();

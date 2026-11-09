@@ -147,7 +147,7 @@ function majEcranMort(){
   bloc.classList.toggle("urgent", reste < 3*j);
   z.querySelector("#mort-ressusciter").disabled = false;
   z.querySelector("#mort-prix").textContent =
-    `Ressusciter coûte 30 % de tes crédits (${_mortInfo.cout_credits || 0} ₡) et te ramène chez toi, affaibli.`;
+    `Ressusciter coûte 10 % de tes crédits (${_mortInfo.cout_credits || 0} ₡) et te ramène chez toi, affaibli : 10 % d'énergie, santé 50, moral 20.`;   // v2.62 (K213)
 
   if(!_mortTimer){
     _mortTimer = setInterval(()=>{

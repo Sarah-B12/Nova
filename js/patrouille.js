@@ -6,6 +6,9 @@
      • Combattre        — Force + équipement (moteur resoudreCombat).
      • Se faufiler      — Agilité + Discrétion ; échec = combat en embuscade.
      • Hacker           — si Ordinateur de hacking au sac ; ↑ avec Intrusion + Intelligence.
+                          v2.61 (K201 → K203) : une sortie propre (XP, Registre), SANS butin ;
+                          30 % + Intrusion 20 + Int ÷ 5, plafond 75 % ; échec = embuscade.
+                          Même chance pour brouiller une sonde (chanceHack, sonde.js).
      • Créer une diversion — sacrifie un objet du sac, fuite assurée.
    Remplace l'ancienne action « Chasser une créature » (plus d'animaux).
    =========================================================== */
@@ -23,6 +26,15 @@ const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx 
 const XP_PATROUILLE      = 10;   // vaincue au combat (actions.js)
 const XP_PATROUILLE_HACK = 8;    // piratée sans dégâts (ici)
 const ITEM_HACK = "fab_ordinateur_de_hacking";
+/* v2.61 (K202, K203) — LA chance de pirater une patrouille ET de brouiller une
+   sonde : une seule formule, ici. Avant : 45 % + Intrusion 25, plafond 90 %
+   (Intrusion et 100 d'Intelligence suffisaient à toucher le plafond). */
+const HACK_BASE = 0.30, HACK_INTRUSION = 0.20, HACK_PLAFOND = 0.75;
+function chanceHack(){
+  const int = (typeof intelligenceEffective === "function") ? intelligenceEffective() : 10;
+  const intrusion = (typeof _apt === "function") ? _apt("om4") : false;
+  return Math.min(HACK_PLAFOND, HACK_BASE + (intrusion ? HACK_INTRUSION : 0) + int/500);
+}
 /* v1.11 — BUTIN ÉLARGI (demande de l'autrice : « que ça renfloue le marché »).
    Une patrouille vaincue lâchait 5 objets possibles ; elle en lâche désormais
    15, tous de DÉBUT ou de MILIEU de formation — lingots, fils, panneaux,
@@ -232,7 +244,7 @@ function ouvrirPatrouille(){
     <div class="patr-choix">
       <button class="patr-opt" data-p="combattre"><b>Combattre</b><span class="patr-sous">Force + équipement · butin possible</span></button>
       <button class="patr-opt" data-p="faufiler"><b>Se faufiler</b><span class="patr-sous">Agilité + Discrétion · échec = embuscade</span></button>
-      <button class="patr-opt" data-p="hacker" ${aHack?"":"disabled"}><b>Hacker la patrouille</b><span class="patr-sous">${aHack?"Ordinateur de hacking équipé · aucun dégât si réussi":"Équipe un Ordinateur de hacking"}</span></button>
+      <button class="patr-opt" data-p="hacker" ${aHack?"":"disabled"}><b>Hacker la patrouille</b><span class="patr-sous">${aHack?"Ordinateur de hacking · passer sans dégât, sans butin · échec = embuscade":"Équipe un Ordinateur de hacking"}</span></button>
       <button class="patr-opt" data-p="diversion" ${aObjet?"":"disabled"}><b>Créer une diversion</b><span class="patr-sous">${aObjet?"Sacrifie un objet du sac · fuite assurée":"Aucun objet à sacrifier"}</span></button>
     </div>
   </div>`;
@@ -257,22 +269,18 @@ async function patrouilleFaufiler(){
 async function patrouilleHacker(){
   if(!ordiHackEquipe()){ fermerPatrouille(); return; }
   fermerPatrouille();
-  const p = Math.max(0.05, Math.min(0.90, 0.45 + (_apt("om4")?0.25:0) + intelligenceEffective()/500) - patrouilleMefianceHack());   // Intrusion + Intelligence ; v1.83 : méfiance
+  const p = Math.max(0.05, chanceHack() - patrouilleMefianceHack());     // v2.61 (K202) ; v1.83 : méfiance
   if(Math.random() < p){
+    /* v2.61 (K201) — comme le brouillage d'une sonde : une sortie propre, rien
+       de plus (ni crédits ni objets), sinon l'Ordinateur de hacking rendrait le
+       combat inutile. L'XP et le point du Registre restent. */
     const R = registreEffets();                                           // v1.45 : Registre
     const xpH = Math.round(XP_PATROUILLE_HACK * R.xp);
-    if(!patrouilleAvecButin()){                                           // v1.83 : plus de butin aujourd'hui
-      gagnerXp(xpH); patrouilleCompter();
-      journal(`Patrouille piratée et neutralisée : les patrouilles se méfient de toi, rien à prendre sur celle-ci. +${xpH} XP.`, "gain");
-      registreSignaler("piratee"); apresAction(); return;
-    }
-    const g = Math.round(aptButinCombat(alea(10,22)+bonusCredits()) * R.butin); etat.credits += g;
-    const drop = await butinPatrouille(); gagnerXp(xpH);   // v1.11 : tableau
-    patrouilleCompter();
-    journal(`Patrouille piratée et neutralisée : +${g} ₡${drop.length?`, ${_butinTexte(drop)}`:""}, +${xpH} XP. Aucun dégât.`,"gain");
+    gagnerXp(xpH); patrouilleCompter();
+    journal(`Patrouille piratée : ses capteurs te perdent et elle passe son chemin. Aucun dégât, rien à prendre. +${xpH} XP.`, "gain");
     registreSignaler("piratee");
     apresAction();
-  } else { journal("Le piratage échoue — la patrouille riposte.","alerte"); await resoudreCombat({}); }
+  } else { journal("Le piratage échoue — repéré ! La patrouille te tombe dessus.","alerte"); await resoudreCombat({ embuscade:true }); }   // v2.61 (K202)
 }
 
 function patrouilleDiversionListe(){

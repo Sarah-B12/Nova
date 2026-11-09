@@ -14,6 +14,11 @@
      décidé par le conjoint (mariage accepté, couple qui change de faction)
      est appliqué ici sans recharger la page.
    ⚠ Libellés : on ne vit pas « chez » son conjoint, on vit AVEC (décision 31).
+   v2.60 (K194 → K200, serveur v274) : le « oui » ne marie plus. L'union attend
+   que celui qui déménage clique « Emménager » (`_union.emmenagement`) : il
+   garde son terrain, sa maison est remplacée par la maison commune (même
+   parcelle que chez l'autre ; ce qui l'occupe est détruit avec son accord).
+   Au divorce, il garde son terrain et retrouve une Cabane. Plus de veille.
    =========================================================== */
 
 let _union = null;                 // réponse de union_lire
@@ -70,7 +75,10 @@ const UNION_REFUS = {
   couple_en_pause:"Le couple est en pause : ta moitié est au Couloir.",
   deja:"Tu as déjà fait ton action de couple aujourd'hui.",
   action:"Cette action n'est pas disponible aujourd'hui.",
-  drones:"Retire d'abord tes drones de tes hangars.",
+  drones:"Un hangar occupe la place de la maison : retire d'abord ses drones.",   // v2.60 : à l'emménagement
+  emmenagement:"Un mariage attend déjà son emménagement.",                          // v2.60 (v274)
+  pas_a_toi:"C'est à l'autre d'emménager chez toi.",
+  occupee:"La place de la maison est occupée : relis l'écran et confirme.",
   attente:"Le divorce ne peut pas encore être prononcé.",
   aucun_choix:"Plus de choix de faction possible.",
   faction_inconnue:"Faction inconnue.",
@@ -150,6 +158,7 @@ async function chargerUnion(){
 }
 /* Déménagement décidé par le conjoint : on adopte la faction et la position. */
 function _appliquerMoiUnion(m){
+  if(m && typeof m.reputation === "number") etat.reputation = m.reputation;   // v2.62 : remise à zéro (K215) vue sans recharger
   if(!m || !m.faction || m.faction === etat.faction) return;
   etat.faction = m.faction;
   if(m.x != null && m.y != null && (m.secteur || "silene") === "silene") etat.pos = { x:m.x, y:m.y };
@@ -199,6 +208,7 @@ async function majUnions(el){
   const u = _union.union;
   let h = `<h3>Unions</h3><div class="lieu-banniere"><img src="images/lieux/unions.png" alt="" onerror="this.parentElement.remove()"></div>`;   // v1.69
   if(u) h += `<h4 class="gsec">Ton union</h4>` + _uBlocMarie(u);   // v1.82 : sections titrées
+  else if(_union.emmenagement) h += `<h4 class="gsec">Ton union</h4>` + _uBlocEmmenagement(_union.emmenagement);   // v2.60
   else {
     if(_union.choix_faction) h += _uBlocChoixFaction(_union.choix_faction);
     h += _uBlocRecues(_union.recues || []);
@@ -213,7 +223,7 @@ async function majUnions(el){
 function _uBlocMarie(u){
   let h = `<p>Tu vis avec <b>${echapper(u.nom || "?")}</b> depuis le ${_uDate(u.marie_le)}. Complicité : <b>${u.complicite} %</b>.</p>`;
   const avert = u.je_suis_hote ? "" :
-    `<p class="itip-gris">⚠ Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant, tel que tu l'as laissé. Retire d'abord tes drones.</p>`;
+    `<p class="itip-gris">Au divorce, tu gardes ton terrain ; la maison commune y redevient la tienne, au premier palier (une Cabane). Ton coffre te suit : s'il est trop plein pour une Cabane, tu pourras seulement en retirer.</p>`;   // v2.60 (K196, K198)
   const d = u.divorce;
   // v1.40 — décision de l'autrice : divorce et veuvage effacent les enfants du couple.
   if(_aDesEnfants(u)) h += `<p class="itip-gris">⚠ Au divorce, tout ce qui concerne vos enfants sera effacé : la Famille, les lettres, les cachettes.</p>`;
@@ -242,6 +252,55 @@ function _uBlocEnvoyee(e){
   return `<p>Ta demande à <b>${echapper(e.nom || "?")}</b> attend sa réponse (${e.je_viens ? "tu viendrais t'installer dans sa maison" : "il ou elle viendrait s'installer dans la tienne"}).</p>
     <div class="actions"><button class="mini" data-u="annuler">Annuler ma demande</button></div>`;
 }
+/* v2.60 (K197) — le « oui » est dit ; celui qui déménage n'a pas encore emménagé.
+   `e.occupee` (pour lui seul) : ce qui occupe, sur SON terrain, la place de la
+   maison commune (type, contenu = plantes ou bêtes, drones). */
+const _U_STRUCT = { mine:["la mine",true], biodome:["le bio-dôme",false], enclos:["l'enclos",false],
+  atelier:["l'atelier",false], hangar:["le hangar à drones",false], mousse:["la Mousse-amie",true] };
+function _uNomStructure(t){ return (_U_STRUCT[t] || [t, false])[0]; }
+function _uNomMaj(t){ const n = _uNomStructure(t); return n.charAt(0).toUpperCase() + n.slice(1); }
+function _uDetruit(t){ return (_U_STRUCT[t] || [t, false])[1] ? "détruite" : "détruit"; }
+function _uContenu(o){
+  const n = (o && o.contenu) || 0; if(!n) return "";
+  const quoi = o.type === "enclos" ? `bête${n > 1 ? "s" : ""}` : `plante${n > 1 ? "s" : ""}`;
+  return `, avec ce qu'il contient (${n} ${quoi})`;
+}
+function _uPhraseOccupee(o){
+  if(!o) return "";
+  if(o.drones) return `${_uNomMaj(o.type)} occupe la place de la maison et abrite encore des drones : retire-les d'abord (onglet Terrain).`;
+  return `${_uNomMaj(o.type)} occupe la place de la maison : en emménageant, tu acceptes sa destruction${_uContenu(o)}, comme une démolition (Recyclage rend la moitié du prix). Si tu préfères, démolis-la toi-même, vide-la ou attends une récolte, puis reviens.`;
+}
+function _uBlocEmmenagement(e){
+  const nom = `<b>${echapper(e.nom || "?")}</b>`;
+  if(!e.je_demenage) return `<p>Le oui est dit : ${nom} doit maintenant emménager chez toi. Vous serez mariés à ce moment-là.</p>
+    <p class="itip-gris">D'ici là, ta maison ne peut pas être démolie. Chacun de vous peut encore annuler.</p>
+    <div class="u-actions"><button class="mini danger" data-u="annuler-emm">Annuler le mariage</button></div>`;
+  const o = e.occupee;
+  return `<p>Le oui est dit ! Il te reste à emménager avec ${nom}. Vous serez mariés à ce moment-là.</p>
+    <p class="itip-gris">Tu gardes ton terrain : structures, mines, plantes, bêtes et drones. Ta maison actuelle disparaît, avec son palier et son chantier en cours ; tu vivras dans la maison commune, posée chez toi à la même place que chez ${nom}. Tu rejoins sa faction si ce n'est pas la tienne (ta réputation de faction repart alors de zéro). Ton coffre reste le tien.</p>`
+    + (o ? `<p class="itip-gris">⚠ ${_uPhraseOccupee(o)}</p>` : "")
+    + `<div class="actions"><button class="mini" data-u="emmenager"${o && o.drones ? " disabled" : ""}>Emménager</button>
+       <button class="mini danger" data-u="annuler-emm">Annuler le mariage</button></div>`;
+}
+async function _uEmmenager(){
+  const e = _union && _union.emmenagement; if(!e || !e.je_demenage) return false;
+  const o = e.occupee;
+  if(o && o.drones){ _jc(UNION_REFUS.drones, "alerte"); return false; }
+  const msg = `Emménager avec ${e.nom || "?"} ? Ta maison actuelle disparaît, avec son palier et son chantier en cours. Tu gardes ton terrain.`
+    + (o ? ` ${_uNomMaj(o.type)} sera ${_uDetruit(o.type)}${_uContenu(o)}.` : "");
+  if(!await confirmerJoli("Emménager", msg, "Emménager", !!o)) return false;
+  const r = await _uRpc("union_emmenager", { p_detruire:!!o });
+  if(!r){ await chargerUnion(); return true; }                     // l'écran se relit (parcelle occupée entre-temps…)
+  if(typeof r.solde === "number" && typeof appliquerSoldeServeur === "function") appliquerSoldeServeur(r.solde);
+  if(typeof r.reputation === "number"){                                // v2.62 (K215)
+    if(r.demenagement && (etat.reputation || 0) > 0) _jc("Nouvelle faction : ta réputation de faction repart de zéro.", "alerte");
+    etat.reputation = r.reputation;
+  }
+  if(r.detruit) _jc(`${_uNomMaj(r.detruit)} a été ${_uDetruit(r.detruit)}.` + (r.rembourse > 0 ? ` Recyclage : +${r.rembourse} ₡.` : ""), "alerte");
+  _jc("Tu as emménagé. Vous êtes mariés !", "gain");
+  await _uApresDemenagement(r);
+  return true;
+}
 async function _uBlocDemander(){
   if(_union.delai) return `<p class="vide">Tu pourras te remarier à partir du ${_uDate(_union.delai)}.</p>`;
   let amis = [];
@@ -261,7 +320,7 @@ async function _uBlocDemander(){
       <label><input type="radio" name="u-ou" value="je"> Je viens chez toi</label>
       <button class="mini" data-u="demander">Demander</button>
     </div>
-    <p class="itip-gris">Celui qui vient s'installer rejoint la faction de l'autre et reçoit un terrain neuf ; le sien est mis en veille, intact, jusqu'à un éventuel divorce.</p>`;
+    <p class="itip-gris">Celui qui vient s'installer rejoint la faction de l'autre et garde son terrain ; sa maison est remplacée par la maison commune, à la même place que chez l'autre (son palier est perdu).</p>`;   // v2.60 (K194, K195)
 }
 async function _uChargerTextes(z){
   if(!z) return;
@@ -289,9 +348,15 @@ function _uBrancher(el){
     } else if(a === "annuler"){ r = await _uRpc("union_annuler"); if(r) _jc("Demande annulée.", "alerte"); }
     else if(a === "refuser"){ r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:false }); if(r) _jc("Demande déclinée.", "alerte"); }
     else if(a === "accepter"){
-      if(!await confirmerJoli("Dire oui", "Dire oui ? Celui qui s'installe chez l'autre rejoint sa faction et reçoit un terrain neuf ; son terrain actuel est mis en veille.", "Oui")) return;
+      if(!await confirmerJoli("Dire oui", "Dire oui ? Ensuite, celui qui s'installe chez l'autre devra emménager : il garde son terrain, sa maison est remplacée par la maison commune (son palier est perdu) et il rejoint la faction de l'autre. D'ici là, chacun peut encore annuler.", "Oui")) return;
       r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:true });
-      if(r){ _jc("Vous êtes mariés !", "gain"); await _uApresDemenagement(r); }
+      /* v2.60 (K197) : le oui ne marie plus, rien ne déménage encore. */
+      if(r) _jc(r.je_demenage ? "Tu as dit oui ! Il te reste à emménager : bouton « Emménager », ici même." : "Tu as dit oui ! Il ou elle doit maintenant emménager.", "gain");
+    }
+    else if(a === "emmenager"){ if(!await _uEmmenager()) return; r = { ok:true }; }
+    else if(a === "annuler-emm"){
+      if(!await confirmerJoli("Annuler le mariage", "Annuler ce mariage avant l'emménagement ? L'autre sera prévenu. Rien d'autre ne change.", "Annuler le mariage", true)) return;
+      r = await _uRpc("union_annuler"); if(r) _jc("Mariage annulé avant l'emménagement.", "alerte");
     }
     else if(a === "divorcer"){
       const u = _union && _union.union;
@@ -300,7 +365,7 @@ function _uBrancher(el){
       const demande = !!(u && !u.divorce);
       const msg = (demande ? "Demander le divorce ? La Complicité perdra 50 points (sous 20 %, la réserve commune se ferme)."
                            : "Confirmer le divorce ?")
-        + ((u && !u.je_suis_hote) ? " Au divorce, tout ce que tu as construit pendant le mariage (hors maison) sera détruit ; tu retrouveras ton terrain d'avant." : "")
+        + ((u && !u.je_suis_hote) ? " Tu garderas ton terrain ; la maison commune y redeviendra la tienne, au premier palier (une Cabane)." : "")   // v2.60 (K196)
         + (_aDesEnfants(u) ? " Tout ce qui concerne vos enfants sera effacé : la Famille, les lettres, les cachettes." : "");   // v1.40 (v164)
       if(!await confirmerJoli("Divorce", msg, "Confirmer", true)) return;
       r = await _uRpc("union_divorcer");

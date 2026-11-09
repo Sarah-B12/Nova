@@ -57,11 +57,14 @@ function _etiquetteNid(id){
   const mots = NID_ETIQUETTES[id]; if(!mots || typeof glyphesMot !== "function") return "";
   return `<span class="bq-gly">${mots.map(glyphesMot).join(`<span class="bq-gly-sep">·</span>`)}</span>`;
 }
+/* v2.63 (demande de l'autrice, 09/11) — le Nid vend aussi le Kit de réparation, au prix du
+   Perchoir : une coque abîmée à Cérès n'avait pas d'autre recours que le remorquage. */
+const NID_ARTICLES = ["fab_biocarburant", "fab_biocarburant_raffine", "kit_reparation"];
 function _catalogueBoutique(){
-  if(_surNidBoutique()) return BASE_BOUTIQUE.filter(a => a.cat === "carburant");
+  if(_surNidBoutique()) return BASE_BOUTIQUE.filter(a => NID_ARTICLES.includes(a.id));
   return _surBaseBoutique() ? BASE_BOUTIQUE : BOUTIQUE; }
 function _catsBoutique(){
-  if(_surNidBoutique()) return CAT_BASE_BOUTIQUE.filter(c => c.id === "carburant");
+  if(_surNidBoutique()) return CAT_BASE_BOUTIQUE.filter(c => c.id === "carburant" || c.id === "vaisseau");
   return _surBaseBoutique() ? CAT_BASE_BOUTIQUE : CAT_BOUTIQUE; }
 function _boutiqueDehors(){
   if(_surBaseBoutique() || _surNidBoutique()) return false;  // la base (et Le Nid) SONT des comptoirs
@@ -80,7 +83,7 @@ function renderBoutique(){
   if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
   if(_surNidBoutique()){
-    html += `<p class="vide" style="margin:0 0 10px">Le module du Nid — <b>du carburant</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons, eux, se reconnaissent.
+    html += `<p class="vide" style="margin:0 0 10px">Le module du Nid — <b>du carburant et des kits de réparation</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons et les kits, eux, se reconnaissent.
       <br><span class="itip-gris">Une coque clouée dans le secteur est remorquée jusqu'ici.</span></p>`;
   } else if(_surBaseBoutique()){
     html += `<p class="vide" style="margin:0 0 10px">Comptoir du Perchoir — <b>oxygène, soins, carburant et vaisseau</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;
@@ -110,7 +113,7 @@ function renderBoutique(){
       sous = a.sous || (parts.length ? `${parts.join(", ")} à l'usage`
                                      : (a.cat === "carburant" ? "carburant de vaisseau" : ""));
     }
-    if(_surNidBoutique()) sous = _etiquetteNid(a.id) || sous;   // v1.96 : en ancien, au Nid
+    if(_surNidBoutique()) sous = _etiquetteNid(a.id);   // v1.96 : en ancien, au Nid ; v2.63 : sans étiquette, pas de ligne (on ne l'écrit pas en notre langue)
     html += `<div class="marche-ligne" data-item="${a.id}"><span class="marche-ic">${iconeItem(a.id)}</span>`
       + `<span class="marche-nom">${a.nom}<span class="qte">${sous}</span></span>`
       + `<span class="marche-prix">${_prixBoutique(a)} ₡</span>`

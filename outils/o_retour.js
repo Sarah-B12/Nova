@@ -30,7 +30,8 @@
   // 4. Entrer à Cérès : deux sauts ne suffisent plus, il faut aussi la bouche → Perchoir
   const lignes = []; const vj = journal; journal = (x, ...y) => { lignes.push(String(x)); return vj(x, ...y); };
   const rpc0 = sb.rpc.bind(sb); sb.rpc = (n, a) => n === "agir" ? Promise.resolve({ data:{ ok:true, energie:90, jauges:etat.jauges }, error:null }) : rpc0(n, a);
-  etat.secteur = "ecart"; etat.posEspace = { x:t.x, y:t.y }; etat.carburant = 2 * c.litres; etat.energie = 100;
+  // v2.63 (K217) : sans crédits — avec de quoi payer le reste au Nid, le passage est désormais permis.
+  etat.secteur = "ecart"; etat.posEspace = { x:t.x, y:t.y }; etat.carburant = 2 * c.litres; etat.energie = 100; etat.credits = 0;
   await passerLaGorge();
   r.entree = { deuxSautsRefuse: etat.secteur === "ecart" && lignes.some(l => /rejoindre le Perchoir coûte/.test(l)) };
   etat.carburant = 2 * c.litres + vp; await passerLaGorge();

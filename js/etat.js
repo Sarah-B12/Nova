@@ -121,7 +121,17 @@ function hydraterEtat(s){
                 Après une remise à zéro par le staff (quête retirée de `done`),
                 la quête repayait donc ses PA. Absent = on laisse queteEtat()
                 le reconstruire, comme avant. */
-             ...((s.quetes && Array.isArray(s.quetes.paRecu)) ? { paRecu:s.quetes.paRecu } : {}) },
+             ...((s.quetes && Array.isArray(s.quetes.paRecu)) ? { paRecu:s.quetes.paRecu } : {}),
+             /* ⚠ v2.63 — DEUX CHAMPS OUBLIÉS, retrouvés le 09/11 (une testeuse : « le verrou s'est
+                ouvert dans la même journée ») :
+                · `finJour` (v1.93l) : la date de fin de chaque quête, qui fait attendre le
+                  lendemain. Perdue au rechargement : après un F5, la quête suivante s'ouvrait
+                  le jour même ;
+                · `gardiens` (v1.93s) : la migration des gardiens ne doit jouer qu'UNE fois. Perdue
+                  au rechargement, elle rejouait à chaque fois : un joueur arrivé au gardien de
+                  Q11, Q16, Q19, Q27 ou Q30 le sautait en rechargeant la page. */
+             ...((s.quetes && s.quetes.finJour && typeof s.quetes.finJour === "object") ? { finJour:s.quetes.finJour } : {}),
+             ...((s.quetes && s.quetes.gardiens) ? { gardiens:true } : {}) },
     /* ⚠ v0.95 — `terrain` n'était reconstruit QU'AVEC `parcelles` : tout autre
        champ (futur) disparaissait au rechargement. On part de ce qui existe.
        `structures` est l'ancien nom de `parcelles` : normaliserParcelles() le lit

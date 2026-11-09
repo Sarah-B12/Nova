@@ -222,9 +222,9 @@ async function sondeDeriver(){
    inutile. Échec = riposte, comme la dérive. */
 async function sondeBrouiller(){
   if(typeof ordiHackEquipe==="function" && !ordiHackEquipe()) return;
-  const int = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
-  const bonus = (typeof aIntrusion==="function" && aIntrusion()) ? 0.25 : 0;   // Intrusion (om4)
-  const p = Math.min(0.90, 0.45 + int/500 + bonus);
+  /* v2.61 (K203) — même chance que pour pirater une patrouille (chanceHack,
+     patrouille.js) : 30 % + Intrusion 20 + Int ÷ 5, plafond 75 %. */
+  const p = (typeof chanceHack==="function") ? chanceHack() : 0.30;
   if(Math.random() < p){
     journal("Ton ordinateur noie son scanner sous de faux échos. Elle cherche, ne trouve plus rien, et s'éloigne.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
