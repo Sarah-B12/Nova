@@ -51,6 +51,23 @@
   r.deuxManquants = journ.find(t => /poste/.test(t));
   journ.length = 0; await _missionAppel("satellite_signaler", { p_mission:999 });
   r.missionInconnue = journ.find(t => /poste/.test(t));
+  // 5. v2.67 (K226 → K228) — minimum et maximum des postes.
+  const satF = { id:32, type:"satellite", difficulte:"rude", niveau_min:20, taille_min:4, taille_max:4, statut:"recrutement",
+    postes:{ hacker:1, artilleur:2, ingenieur:1 }, postes_min:{ hacker:1, artilleur:2, ingenieur:1 }, mon_groupe:10, mon_statut:"actif", mon_poste:null,
+    groupes:[{ id:10, statut:"lance", moi_fondateur:false, membres:[{ nom:"Kyraa", statut:"actif", poste:"ingenieur" }, { nom:"Lunariss", statut:"actif", poste:"hacker" },
+      { nom:"Nanamy", statut:"actif", poste:"artilleur" }, { nom:"Test1", statut:"actif", poste:null, moi:true }] }] };
+  r.fiche = _mPostesFiche(satF) + " | " + _mPostesFiche({ postes:{ porteur:4, artificier:1 }, postes_min:{ porteur:2, artificier:1 } });
+  const dg = document.createElement("div"); dg.innerHTML = _mMonGroupe(satF, satF.groupes[0]);
+  r.test1PeutPrendre = [...dg.querySelectorAll("#mi-poste option")].map(o => o.textContent);
+  satF.groupes[0].statut = "formation"; satF.groupes[0].moi_fondateur = true;
+  const df = document.createElement("div"); df.innerHTML = _mMonGroupe(satF, satF.groupes[0]);
+  r.boutonPartir = { grise: df.querySelector("[data-mi-lancer]").disabled, pourquoi: (df.querySelector(".mi-btns .vide") || {}).textContent };
+  _missions = { ok:true, missions:[satF] };
+  sb.rpc = (nom, a) => nom === "mission_lancer" ? Promise.resolve({ data:{ ok:false, err:"postes_vides", postes:"artilleur", manques:{ artilleur:1 } }, error:null })
+                     : nom === "missions_lire" ? Promise.resolve({ data:_missions, error:null }) : rpcOrig(nom, a);
+  journal = (t) => journ.push(t); journ.length = 0;
+  await _missionAppel("mission_lancer", { p_groupe:10 });
+  r.refusDepart = journ[0];
   sb.rpc = rpcOrig; journal = jOrig;
   return r;
 })();

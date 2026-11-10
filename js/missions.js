@@ -161,7 +161,8 @@ async function _missionAppel(nom, args, okTexte){
       let t = MISSION_ERREURS[err] || ("Impossible (" + (err || "?") + ").");
       if(err === "trop_peu") t = `Pas encore assez de membres : il en faut ${data.min} (vous êtes ${data.nb}).`;
       if(err === "demain") t = "La seconde tentative s'ouvre demain.";
-      if(err === "postes") t = _mPostesManquants(args);   // v2.66 : la phrase de la balise s'affichait pour toutes les missions
+      if(err === "postes") t = _mPostesManquants(args);
+      if(err === "postes_vides" && data.manques) t = `Il manque encore ${_mManquesTexte(data.manques)} avant de partir.`;   // v2.67 (K227)   // v2.66 : la phrase de la balise s'affichait pour toutes les missions
       journal(t, "alerte", "quete");
       return data;
     }
@@ -181,14 +182,29 @@ function _mMissionDeArgs(a){
   if(a && a.p_groupe) return L.find(m => (m.groupes || []).some(g => g.id === +a.p_groupe)) || null;
   return null;
 }
+/* v2.67 (K226 → K228) — le minimum et le maximum de chaque poste (mission_types.postes_min, v279). */
+function _mPosteMin(m, p){ return (m.postes_min && m.postes_min[p] != null) ? +m.postes_min[p] : 1; }
+function _mPosteMax(m, p){ return (m.postes && m.postes[p] != null) ? +m.postes[p] : 1; }
+function _mPostesCompte(g){ const c = {}; (g && g.membres || []).filter(y => y.statut === "actif" && y.poste).forEach(y => c[y.poste] = (c[y.poste] || 0) + 1); return c; }
+function _mManques(m, g){   // {poste: nombre manquant}
+  const c = _mPostesCompte(g), r = {};
+  Object.keys(m.postes || {}).forEach(p => { const n = _mPosteMin(m, p) - (c[p] || 0); if(n > 0) r[p] = n; });
+  return r;
+}
+function _mManquesTexte(manques){
+  return Object.entries(manques).map(([p, n]) => { const nom = (MISSION_POSTES[p] || p).toLowerCase(); return `${n} ${nom}${n > 1 ? "s" : ""}`; }).join(", ");
+}
+function _mPostesFiche(m){   // « Artilleur 2 · Ingénieur 1 · Hacker 1 » ; « Porteur 2 à 4 »
+  return Object.keys(m.postes || {}).map(p => { const a = _mPosteMin(m, p), b = _mPosteMax(m, p);
+    return `${MISSION_POSTES[p] || p} ${a === b ? a : `${a} à ${b}`}`; }).join(" · ");
+}
 function _mPostesManquants(a){
   const m = _mMissionDeArgs(a), g = m && _missionGroupe(m);
   if(!m || !g) return MISSION_ERREURS.postes;
-  const tenus = new Set((g.membres || []).filter(y => y.statut === "actif").map(y => y.poste).filter(Boolean));
-  const manque = Object.keys(m.postes || {}).filter(p => !tenus.has(p)).map(p => (MISSION_POSTES[p] || p).toLowerCase());
-  if(!manque.length) return MISSION_ERREURS.postes;
-  const un = manque.length === 1;
-  return `Il manque ${un ? "un poste" : "des postes"} : ${manque.join(", ")}. Un membre du groupe doit ${un ? "le" : "les"} prendre (« Ton poste », dans la mission).`;
+  const manques = _mManques(m, g);
+  if(!Object.keys(manques).length) return MISSION_ERREURS.postes;
+  const un = Object.keys(manques).length === 1 && Object.values(manques)[0] === 1;
+  return `Il manque ${_mManquesTexte(manques)}. Un membre du groupe doit ${un ? "prendre ce poste" : "prendre ces postes"} (« Ton poste », dans la mission).`;
 }
 
 /* ---------- Mise en forme ---------- */
@@ -274,6 +290,8 @@ function _mCarte(m){
     // v1.73b : plus de date de recrutement une fois MON groupe parti (il n'en a plus besoin).
     if(m.statut === "recrutement" && !(g && g.statut === "lance")) h += ` · recrutement jusqu'au ${_mDernierJour(m.recrutement_fin)} inclus`;
     h += `</p>`;
+    // v2.67 (K226) : combien de chaque poste, dès la fiche.
+    if(Object.keys(m.postes || {}).length) h += `<p class="vide" style="margin:-4px 0 8px">Postes : ${_mPostesFiche(m)}. On ne part pas tant que chaque poste n'a pas son nombre ; les membres en plus partent sans poste.</p>`;
   }
   if(m.intro) h += `<p class="quete-indice" style="margin:0 0 10px">${echapper(m.intro)}</p>`;   // v1.63
   // Casse : les mots de C20, tant qu'il n'est pas révélé.
@@ -332,7 +350,8 @@ function _mMonGroupe(m, g){
      un poste resté libre peut encore être pris ; un membre qui abandonne libère le sien. */
   const tenus = new Set(actifs.map(y => y.poste).filter(Boolean));
   if(postes.length){
-    const libres = postes.filter(p => !tenus.has(p) || p === m.mon_poste);
+    const cpt = _mPostesCompte(g);   // v2.67 : tant qu'il reste de la place (deux artilleurs au satellite)
+    const libres = postes.filter(p => (cpt[p] || 0) < _mPosteMax(m, p) || p === m.mon_poste);
     if(g.statut === "formation"){
       h += `<div class="mi-ligne"><span>Ton poste :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${postes.map(p => `<option value="${p}"${m.mon_poste === p ? " selected" : ""}>${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
       h += `<div class="mi-postes">${postes.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">${MISSION_OMBRE} Les postes se figent au départ du groupe. Chaque essai d'un jeu de poste coûte ${_mEssaiCout()} % d'énergie.</p></div>`;
@@ -352,10 +371,10 @@ function _mMonGroupe(m, g){
     h += `<div class="mi-ligne"><input id="mi-inv-nom" placeholder="Nom du joueur à inviter" maxlength="40">
           <button class="mini" data-mi-inviter="${g.id}">Inviter</button></div>`;
     if((g.invites || []).length) h += `<p class="vide" style="margin:2px 0">Invités : ${g.invites.map(echapper).join(", ")}</p>`;
-    const vides = postes.filter(p => !tenus.has(p));               // v2.10 (K130) : on part avec ses postes
-    const ok = actifs.length >= m.taille_min && !vides.length;
+    const manques = _mManques(m, g);                                 // v2.67 (K227) : le minimum de chaque poste
+    const ok = actifs.length >= m.taille_min && !Object.keys(manques).length;
     const pourquoi = actifs.length < m.taille_min ? `Il faut au moins ${m.taille_min} membres.`
-                   : vides.length ? `Il manque : ${vides.map(p => MISSION_POSTES[p] || p).join(", ")}.` : "";
+                   : Object.keys(manques).length ? `Il manque ${_mManquesTexte(manques)}.` : "";
     h += `<div class="mi-btns"><button class="mini" data-mi-lancer="${g.id}"${ok ? "" : " disabled"}>Partir</button>
           ${pourquoi ? `<span class="vide">${pourquoi}</span>` : ""}</div>`;
   } else if(g.statut === "formation"){

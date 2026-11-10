@@ -23,9 +23,9 @@
   let t = txt(_mMonGroupe(base, g0(null, null, "formation", true)));
   r.formation = { descriptions: /Crocheteur — Le jour du casse, il ouvre la serrure/.test(t) && /Guetteur — Le jour du casse, il brouille les drones/.test(t),
                   pasLesAutres: !/Encordeur|Artificier|Hacker/.test(t), ombre: /Sans poste, tu n'as pas de jeu à toi/.test(t), figeAuDepart: /se figent au départ/.test(t),
-                  partirBloque: (div.querySelector("[data-mi-lancer]") || {}).disabled === true, pourquoi: /Il manque : Crocheteur, Guetteur\./.test(t) };
+                  partirBloque: (div.querySelector("[data-mi-lancer]") || {}).disabled === true, pourquoi: /Il manque 1 crocheteur, 1 guetteur\./.test(t) };   // v2.67 : le nombre manquant de chaque poste
   h = _mMonGroupe({ ...base, mon_poste:"crocheteur" }, g0("crocheteur", null, "formation", true)); t = txt(h);
-  r.unPoste = { bloque: div.querySelector("[data-mi-lancer]").disabled, manque: /Il manque : Guetteur\./.test(t) };
+  r.unPoste = { bloque: div.querySelector("[data-mi-lancer]").disabled, manque: /Il manque 1 guetteur\./.test(t) };
   h = _mMonGroupe({ ...base, mon_poste:"crocheteur" }, g0("crocheteur", "guetteur", "formation", true)); t = txt(h);
   r.deuxPostes = { libre: !div.querySelector("[data-mi-lancer]").disabled, plusDeManque: !/Il manque/.test(t) };
   // 3. Après le départ
