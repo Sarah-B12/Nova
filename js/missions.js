@@ -88,7 +88,7 @@ const MISSION_ERREURS = {
   caillou:"On ne pose pas de racine sur un caillou.", pieces:"Tracé invalide.",
   energie:"Pas assez d'énergie.", prison:"Impossible depuis la prison.", objet_personnel:"Cet objet est personnel : il ne se vend pas et ne se donne pas.",
   // v1.64 — la balise
-  postes:"Il faut un encordeur, un éclaireur et un déchiffreur.", minimum:"Le minimum de matériel n'est pas réuni.",
+  postes:"Tous les postes de la mission ne sont pas tenus.", minimum:"Le minimum de matériel n'est pas réuni.",
   // v2.10 — les postes se figent au départ (K130)
   poste_fige:"Ton poste est fixé depuis le départ du groupe.", postes_vides:"Chaque poste doit avoir quelqu'un avant de partir.",
   deja_fait:"Ton poste est déjà fait pour cette descente.", perdu:"Tu t'es perdu dans le noir : un autre passage s'ouvre.",
@@ -112,7 +112,14 @@ async function missionsCharger(){
   _missionsEnVol = true;
   try{
     const { data, error } = await sb.rpc("missions_lire");
-    if(!error && data && data.ok) _missions = data;
+    if(!error && data && data.ok){
+      /* v2.65 (K223) — qui a déposé quoi dans chaque coffre commun (mission_coffre_qui, v278). */
+      await Promise.all((data.missions || []).filter(m => m.coffre && !m.coffre.vide).map(async m => {
+        try{ const q = await sb.rpc("mission_coffre_qui", { p_mission:m.id });
+             if(!q.error && q.data && q.data.ok) m.coffre_qui = q.data.qui; }catch(e){}
+      }));
+      _missions = data;
+    }
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#lire"); }
   finally{ _missionsEnVol = false; }
   // H18 : l'onglet Quêtes apparaît / disparaît selon les affaires en cours.
@@ -154,6 +161,7 @@ async function _missionAppel(nom, args, okTexte){
       let t = MISSION_ERREURS[err] || ("Impossible (" + (err || "?") + ").");
       if(err === "trop_peu") t = `Pas encore assez de membres : il en faut ${data.min} (vous êtes ${data.nb}).`;
       if(err === "demain") t = "La seconde tentative s'ouvre demain.";
+      if(err === "postes") t = _mPostesManquants(args);   // v2.66 : la phrase de la balise s'affichait pour toutes les missions
       journal(t, "alerte", "quete");
       return data;
     }
@@ -162,6 +170,25 @@ async function _missionAppel(nom, args, okTexte){
     return data;
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#" + nom); return null; }
   finally{ await missionsCharger(); if(typeof majQueteHub === "function") majQueteHub(); }
+}
+
+/* v2.66 — « Il faut un encordeur, un éclaireur et un déchiffreur » s'affichait aussi au satellite
+   (retour d'une testeuse) : le refus `postes` du serveur est commun à toutes les missions. On dit
+   désormais quels postes de CETTE mission ne sont tenus par personne. */
+function _mMissionDeArgs(a){
+  const L = (_missions && _missions.missions) || [];
+  if(a && a.p_mission) return L.find(m => m.id === +a.p_mission) || null;
+  if(a && a.p_groupe) return L.find(m => (m.groupes || []).some(g => g.id === +a.p_groupe)) || null;
+  return null;
+}
+function _mPostesManquants(a){
+  const m = _mMissionDeArgs(a), g = m && _missionGroupe(m);
+  if(!m || !g) return MISSION_ERREURS.postes;
+  const tenus = new Set((g.membres || []).filter(y => y.statut === "actif").map(y => y.poste).filter(Boolean));
+  const manque = Object.keys(m.postes || {}).filter(p => !tenus.has(p)).map(p => (MISSION_POSTES[p] || p).toLowerCase());
+  if(!manque.length) return MISSION_ERREURS.postes;
+  const un = manque.length === 1;
+  return `Il manque ${un ? "un poste" : "des postes"} : ${manque.join(", ")}. Un membre du groupe doit ${un ? "le" : "les"} prendre (« Ton poste », dans la mission).`;
 }
 
 /* ---------- Mise en forme ---------- */
@@ -363,6 +390,10 @@ function _mCoffre(m){
   h += `<p class="vide" style="margin:4px 0">${c.minimum ? "Le minimum est réuni." : "Le minimum n'est pas encore réuni."} Il faut au moins le minimum de chaque sorte ; au-delà, chaque unité de plus rend l'épreuve plus facile, jusqu'au maximum. Tout est consommé à la fin ; en cas de réussite, chacun est remboursé de ce qu'il a déposé.</p>`;
   const mes = Object.entries(c.mes_depots || {});
   if(mes.length) h += `<p class="vide" style="margin:2px 0">Tes dépôts : ${mes.map(([k, q]) => `${q} × ${echapper(_mNomItem(k))}`).join(", ")}</p>`;
+  /* v2.65 (K223) — qui a déposé quoi (tout le groupe). */
+  const qui = m.coffre_qui || [];
+  if(qui.length) h += `<p style="margin:8px 0 2px"><b>Qui a déposé quoi</b></p><table class="mi-coffre mi-qui"><tbody>${qui.map(x =>
+    `<tr><td><b>${echapper(x.nom || "?")}</b></td><td>${Object.entries(x.objets || {}).map(([k, q]) => `${q} × ${echapper(_mNomItem(k))}`).join(", ")}</td></tr>`).join("")}</tbody></table>`;
   if(!c.scelle){
     const sac = (typeof etat !== "undefined" && etat.sac) || {};
     // v1.64 : une unité entière d'une sorte (tous les ingrédients d'une recette d'un coup).
@@ -552,7 +583,7 @@ function _mBalise(m){
   let h = `<h4 class="gsec">La descente</h4>`;
   const postes = ["encordeur","eclaireur","dechiffreur"];
   h += `<p class="vide" style="margin:2px 0">${postes.map(p => `${MISSION_POSTES[p]} : ${echapper((v.postes_tenus || {})[p] || "—")}${faits[p] ? " ✓" : ""}`).join(" · ")}</p>`;
-  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe.");
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe. Mieux vous êtes équipés, plus la tempête tardera : chaque unité au-delà du minimum vous donne du temps pour jouer vos postes.");   // v2.65 (K219)
   if(v.phase === "remontee") h += _mEtape("Seconde tentative", `La première descente a échoué. Le matériel du coffre reste : une seconde descente peut se tenter, ${_mQuandRetenter(v)}.`);
   if(v.phase === "descente" && d && !postes.every(p => faits[p])) h += _mEtape("Étape 2 sur 3 — La descente", "La tempête approche. À la balise, chacun joue son poste avant qu'elle n'arrive : l'encordeur, l'éclaireur, le déchiffreur.");
   if(v.phase === "descente" && d && postes.every(p => faits[p])) h += _mEtape("Étape 3 sur 3 — La tourelle", "Les trois postes sont faits. Il reste à affronter la tourelle, tous ensemble.");
@@ -563,7 +594,7 @@ function _mBalise(m){
       h += `<p>Rends-toi à la balise (point marqué sur la carte du Suaire). Quand le minimum de matériel est réuni, un membre sur place lance la descente${v.phase === "preparation" ? ` — au plus tard le ${_mJourTxt(v.limite)}` : ""}.</p>`;
       return h;
     }
-    const minutes = v.tempete_min || 600;   // calculée par le serveur (préparation, Isolation)
+    const minutes = v.tempete_min || 720;   // calculée par le serveur (préparation, Isolation) ; v2.65 (K219) : 12 h de base
     const demain = v.phase === "remontee" && String(v.epreuve_jour).slice(0, 10) === String(_missions && _missions.jour).slice(0, 10);
     h += demain ? `<p class="vide">La seconde descente se fera demain.</p>`
                 : `<div class="mi-btns"><button class="mini" data-mi-descendre="${m.id}" data-mi-minutes="${minutes}"${m.coffre && m.coffre.minimum ? "" : " disabled"}>Lancer la descente</button></div>`;
@@ -652,7 +683,8 @@ function _mCrevasseHtml(m){
   const g = m.vue.crevasse; const cle = m.id + ":" + JSON.stringify(g.cases).length + ":" + g.cs + ":" + g.ce;
   if(_crev.cle !== cle) _crev = { cle, pos:g.cs, pas:"" };
   const n = g.n, r0 = Math.floor(_crev.pos / n), c0 = _crev.pos % n, R = g.rayon || 1;
-  let h = `<p style="margin:6px 0"><b>Trouve le passage dans le noir. Pas restants : ${g.pas - _crev.pas.length}.</b></p>
+  /* v2.65 (K220) — « 30 s » : une testeuse croyait à un chrono. Ce sont des PAS, sans limite de temps. */
+  let h = `<p style="margin:6px 0"><b>Trouve le passage dans le noir. Il te reste ${g.pas - _crev.pas.length} pas</b> — des pas, pas des secondes : prends tout ton temps.</p>
     <div class="mi-cv-grille" style="grid-template-columns:repeat(${n},1fr)">`;
   for(let i = 0; i < n * n; i++){
     const r = Math.floor(i / n), c = i % n, vis = Math.max(Math.abs(r - r0), Math.abs(c - c0)) <= R;
@@ -746,9 +778,10 @@ function _mInfiltration(m){
   let h = `<h4 class="gsec">L'entrepôt</h4>`;
   const porteurs = (v.porteurs || []).map(p => `${echapper(p.nom)}${p.score != null ? ` ✓ (${Math.round(p.score * 100)} %)` : ""}`).join(", ") || "—";
   h += `<p class="vide" style="margin:2px 0">Artificier : ${echapper(v.artificier || "—")}${v.breche_par ? " ✓" : ""} · Porteurs : ${porteurs}</p>`;
-  const ET_INF = { releve:["Étape 1 sur 4 — Le relevé", "L'entrée de l'entrepôt est cachée dans la zone marquée sur la carte de La Braise : elle apparaît quand l'un de vous passe tout près. Pendant ce temps, remplissez le coffre commun."],
-                   breche:["Étape 2 sur 4 — La brèche", "À l'entrepôt, l'artificier fait sauter la paroi. Le coffre commun reste ouvert jusque-là : ses charges en sortent. Une fois la brèche ouverte, il est scellé."],
-                   rangement:["Étape 3 sur 4 — Le chargement", "La brèche est ouverte : chaque porteur range une caisse."],
+  /* v2.65 (K221, K225) — les étapes, plus claires (retour d'une testeuse : « pourquoi le coffre reste ouvert ? »). */
+  const ET_INF = { releve:["Étape 1 sur 4 — Le repérage et le coffre", "Deux choses en même temps. Sur La Braise, l'un de vous cherche l'entrée de l'entrepôt dans la zone marquée : elle apparaît quand on passe tout près. Pendant ce temps, tout le monde remplit le coffre commun, à commencer par les charges de l'artificier."],
+                   breche:["Étape 2 sur 4 — La brèche", "À l'entrée de l'entrepôt, l'artificier fait sauter la paroi avec les charges du coffre. Jusque-là, vous pouvez encore compléter le coffre ; dès que la paroi saute, il est fermé pour de bon."],
+                   rangement:["Étape 3 sur 4 — Le chargement", "La brèche est ouverte : chaque porteur, à l'entrée, range une caisse. Chaque recoin laissé vide, c'est une pièce abandonnée à l'entrepôt : plus vous rangez serré, plus les caisses que chacun rapportera seront pleines."],
                    sentinelles:["Étape 4 sur 4 — La sortie", "Les sentinelles barrent la sortie : affrontez-les tous ensemble."] }[v.phase];
   if(ET_INF) h += _mEtape(ET_INF[0], ET_INF[1]);
   if(v.tentatives === 1) h += `<p>Les sentinelles vous ont repoussés. Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -820,8 +853,34 @@ function _mParoiBrancher(z){
   });
 }
 
-/* ---------- Le rangement (H52, H55) : caisse 6 × 5 ---------- */
-let _rang = { cle:null, pose:[], sel:0, rot:0 };
+/* ---------- Le rangement (H52, H55) : caisse 6 × 5 ----------
+   v2.65 (K222, retour d'une testeuse : « pas fluide sur tablette ») :
+   · la pièce se pose CENTRÉE sur la case touchée (avant : par le coin en haut à
+     gauche de son contour, souvent hors de la pièce) ;
+   · un APERÇU (vert : ça tient ; rouge : non) — au doigt, un premier toucher le
+     montre, un second au même endroit pose la pièce ; à la souris, il suit le
+     curseur ;
+   · l'aperçu ne redessine rien (des classes seulement) ; cases plus grandes. */
+let _rang = { cle:null, pose:[], sel:0, rot:0, ap:null, doigt:false };
+function _rAncre(cel){   // la case de la pièce la plus proche de son centre
+  const cx = cel.reduce((a, c) => a + c[0], 0) / cel.length, cy = cel.reduce((a, c) => a + c[1], 0) / cel.length;
+  return cel.reduce((b, c) => Math.hypot(c[0] - cx, c[1] - cy) < Math.hypot(b[0] - cx, b[1] - cy) ? c : b, cel[0]);
+}
+function _rPlacement(R, i){
+  const cel = _rCellules(R.pieces[_rang.sel], _rang.rot), [ax, ay] = _rAncre(cel);
+  const x = i % R.w - ax, y = Math.floor(i / R.w) - ay, occ = _rOccupation(R);
+  const cases = cel.map(([a, b]) => [x + a, y + b]);
+  const dedans = ([cx, cy]) => cx >= 0 && cy >= 0 && cx < R.w && cy < R.h;
+  const ok = !_rang.pose.some(p => p.p === _rang.sel) && cases.every(c => dedans(c) && occ[c[1] * R.w + c[0]] == null);
+  return { x, y, ok, idx: cases.filter(dedans).map(([cx, cy]) => cy * R.w + cx) };
+}
+function _rApercu(zone, R, i){
+  zone.querySelectorAll(".mi-rg-ap, .mi-rg-ko").forEach(c => c.classList.remove("mi-rg-ap", "mi-rg-ko"));
+  _rang.ap = i;
+  if(i == null || _rOccupation(R)[i] != null) return;
+  const pl = _rPlacement(R, i);
+  pl.idx.forEach(k => { const c = zone.querySelector(`[data-rg-case="${k}"]`); if(c) c.classList.add(pl.ok ? "mi-rg-ap" : "mi-rg-ko"); });
+}
 function _rCellules(piece, r){
   let c = piece.map(([x, y]) => [x, y]);
   for(let k = 0; k < (r || 0); k++) c = c.map(([x, y]) => [-y, x]);
@@ -835,18 +894,18 @@ function _rOccupation(R){
 }
 function _mRangementHtml(m){
   const R = m.vue.rangement; const cle = m.id + ":" + JSON.stringify(R.pieces);
-  if(_rang.cle !== cle) _rang = { cle, pose:[], sel:0, rot:0 };
+  if(_rang.cle !== cle) _rang = { cle, pose:[], sel:0, rot:0, ap:null, doigt:false };
   const occ = _rOccupation(R), poses = new Set(_rang.pose.map(p => p.p));
   const pct = Math.round(Object.keys(occ).length / (R.w * R.h) * 100);
   const coul = k => `hsl(${(k * 47) % 360} 55% 50%)`;
   let h = `<p style="margin:6px 0"><b>Range la caisse : le moins de vide possible. Une fois validé, c'est définitif.</b></p>
     <div class="mi-rg-grille" style="grid-template-columns:repeat(${R.w},1fr)">`;
   for(let i = 0; i < R.w * R.h; i++){ const k = occ[i]; h += `<div class="mi-rg-case" data-rg-case="${i}"${k != null ? ` style="background:${coul(_rang.pose[k].p)}"` : ""}></div>`; }
-  h += `</div><p class="vide" style="margin:4px 0">Rempli : ${pct} %. Choisis une pièce, tourne-la, puis touche une case pour la poser ; touche une pièce posée pour la retirer.</p><div class="mi-rg-pieces">`;
+  h += `</div><p class="vide" style="margin:4px 0">Rempli : ${pct} %. Choisis une pièce, tourne-la, puis touche une case : la pièce se pose centrée dessus. Au doigt, un premier toucher montre où elle irait, un second la pose. Touche une pièce posée pour la retirer.</p><div class="mi-rg-pieces">`;
   R.pieces.forEach((pc, k) => {
     if(poses.has(k)) return;
     const c = _rCellules(pc, k === _rang.sel ? _rang.rot : 0), w = Math.max(...c.map(p => p[0])) + 1, hh = Math.max(...c.map(p => p[1])) + 1;
-    h += `<button class="mi-rg-piece${k === _rang.sel ? " actif" : ""}" data-rg-piece="${k}" style="grid-template-columns:repeat(${w},12px);grid-template-rows:repeat(${hh},12px)">`
+    h += `<button class="mi-rg-piece${k === _rang.sel ? " actif" : ""}" data-rg-piece="${k}" style="grid-template-columns:repeat(${w},16px);grid-template-rows:repeat(${hh},16px)">`
        + c.map(([x, y]) => `<span style="grid-column:${x + 1};grid-row:${y + 1};background:${coul(k)}"></span>`).join("") + `</button>`;
   });
   h += `</div><div class="mi-btns"><button class="mini" data-rg-tourner="1">Tourner</button>
@@ -860,18 +919,29 @@ function _mRangementBrancher(z){
   const zone = z.querySelector("#mi-rangement"); if(!zone) return;
   const m = (_missions.missions || []).find(x => x.id === +zone.dataset.miMission); if(!m) return;
   const R = m.vue.rangement;
-  zone.querySelectorAll("[data-rg-piece]").forEach(b => b.addEventListener("click", () => { _rang.sel = +b.dataset.rgPiece; _rang.rot = 0; _mRangementMaj(z); }));
-  const bt = zone.querySelector("[data-rg-tourner]"); if(bt) bt.addEventListener("click", () => { _rang.rot = (_rang.rot + 1) % 4; _mRangementMaj(z); });
-  zone.querySelectorAll("[data-rg-case]").forEach(c => c.addEventListener("click", () => {
-    const i = +c.dataset.rgCase, occ = _rOccupation(R);
-    if(occ[i] != null){ _rang.pose.splice(occ[i], 1); _mRangementMaj(z); return; }
-    if(_rang.pose.some(p => p.p === _rang.sel)) return;
-    const x = i % R.w, y = Math.floor(i / R.w), cel = _rCellules(R.pieces[_rang.sel], _rang.rot);
-    if(cel.some(([a, b]) => x + a >= R.w || y + b >= R.h || occ[(y + b) * R.w + (x + a)] != null)) return;
-    _rang.pose.push({ p:_rang.sel, r:_rang.rot, x, y });
-    const libre = R.pieces.findIndex((_, k) => !_rang.pose.some(p => p.p === k)); if(libre >= 0){ _rang.sel = libre; _rang.rot = 0; }
-    _mRangementMaj(z);
-  }));
+  zone.querySelectorAll("[data-rg-piece]").forEach(b => b.addEventListener("click", () => { _rang.sel = +b.dataset.rgPiece; _rang.rot = 0; _rang.ap = null; _mRangementMaj(z); }));
+  const bt = zone.querySelector("[data-rg-tourner]"); if(bt) bt.addEventListener("click", () => {
+    _rang.rot = (_rang.rot + 1) % 4; const ap = _rang.ap; _mRangementMaj(z);
+    if(ap != null){ const zz = z.querySelector("#mi-rangement"); if(zz) _rApercu(zz, R, ap); }   // l'aperçu suit la rotation
+  });
+  const grille = zone.querySelector(".mi-rg-grille");
+  if(grille) grille.addEventListener("pointerleave", e => { if(e.pointerType === "mouse") _rApercu(zone, R, null); });
+  zone.querySelectorAll("[data-rg-case]").forEach(c => {
+    const i = +c.dataset.rgCase;
+    c.addEventListener("pointerdown", e => { _rang.doigt = e.pointerType !== "mouse"; });
+    c.addEventListener("pointerenter", e => { if(e.pointerType === "mouse") _rApercu(zone, R, i); });
+    c.addEventListener("click", () => {
+      const occ = _rOccupation(R);
+      if(occ[i] != null){ _rang.pose.splice(occ[i], 1); _rang.ap = null; _mRangementMaj(z); return; }
+      if(_rang.pose.some(p => p.p === _rang.sel)) return;
+      if(_rang.doigt && _rang.ap !== i){ _rApercu(zone, R, i); return; }   // au doigt : d'abord voir
+      const pl = _rPlacement(R, i);
+      if(!pl.ok){ _rApercu(zone, R, i); return; }
+      _rang.pose.push({ p:_rang.sel, r:_rang.rot, x:pl.x, y:pl.y });
+      const libre = R.pieces.findIndex((_, k) => !_rang.pose.some(p => p.p === k)); if(libre >= 0){ _rang.sel = libre; _rang.rot = 0; }
+      _rang.ap = null; _mRangementMaj(z);
+    });
+  });
   const bv = zone.querySelector("[data-rg-valider]");
   if(bv) bv.addEventListener("click", async () => {
     const pct = Math.round(Object.keys(_rOccupation(R)).length / (R.w * R.h) * 100);
@@ -1477,12 +1547,15 @@ function _mBrancher(z){
     .mi-msg{ display:flex; flex-wrap:wrap; gap:6px 4px; align-items:flex-end; margin:6px 0 10px; }
     .mi-msg-sep{ width:14px; }
     .mi-msg-inconnu .gly{ color:var(--orange-hi,#ffb060); }
-    .mi-rg-grille{ display:grid; gap:2px; max-width:300px; margin:4px 0; }
-    .mi-rg-case{ aspect-ratio:1; background:rgba(245,158,11,.08); border:1px solid var(--line); border-radius:3px; cursor:pointer; }
+    .mi-rg-grille{ display:grid; gap:3px; max-width:360px; margin:4px 0; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+    .mi-rg-case{ aspect-ratio:1; background:rgba(245,158,11,.08); border:1px solid var(--line); border-radius:3px; cursor:pointer; touch-action:manipulation; }
+    .mi-rg-case.mi-rg-ap{ background:rgba(123,196,127,.55); border-color:#7bc47f; }   /* v2.65 (K222) : aperçu, ça tient */
+    .mi-rg-case.mi-rg-ko{ background:rgba(255,82,87,.40); border-color:#ff5257; }     /* aperçu, ça ne tient pas */
     .mi-rg-pieces{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0; }
     .mi-rg-piece{ display:grid; gap:1px; padding:5px; background:transparent; border:1px solid var(--line); border-radius:6px; cursor:pointer; }
     .mi-rg-piece.actif{ outline:2px solid var(--bleu); }
-    .mi-rg-piece span{ display:block; width:12px; height:12px; border-radius:2px; }
+    .mi-rg-piece{ touch-action:manipulation; }
+    .mi-rg-piece span{ display:block; width:16px; height:16px; border-radius:2px; }
     .mi-ro-grille{ display:grid; grid-template-columns:repeat(6,1fr); gap:3px; max-width:300px; margin:4px 0; }
     .mi-ro-case{ aspect-ratio:1; background:rgba(207,214,223,.08); border:1px solid var(--line); border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
     .mi-ro-case span{ width:60%; height:60%; border-radius:50%; display:block; }

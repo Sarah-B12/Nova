@@ -57,7 +57,7 @@
   r.lumiere = corps().querySelectorAll(".mi-cv.vu").length === 4;   // coin (0,0), rayon 1 : 2 × 2
   const fl = d => corps().querySelector(`[data-cv="${d}"]`).click();
   fl("E");                                    // mur : pas compté
-  r.murNonCompte = txt().includes("Pas restants : 8");
+  r.murNonCompte = txt().includes("Il te reste 8 pas");   // v2.65 (K220) : des pas, pas des secondes
   fl("S"); fl("E"); fl("S"); fl("E");
   await new Promise(x => setTimeout(x, 80));
   const ac = appels.find(a => a.startsWith("balise_crevasse"));

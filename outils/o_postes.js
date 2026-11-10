@@ -60,7 +60,8 @@
   r.uneSeuleAChaqueFois = [r.casse.preparation, r.casse.casse, r.casse.unFait, r.casse.vitrines, r.casse.seconde, ...r.autres.bouture, ...r.autres.balise, ...r.autres.infiltration, ...r.autres.satellite].every(e => e.length === 1);
   // 6. v2.11 — la brèche dit quand le coffre se scelle ; une mission finie qui attend un gain le dit
   div.innerHTML = _mInfiltration({ id:3, coffre, vue:{ phase:"breche", limite:"2026-11-02" } });
-  r.brecheCoffre = /reste ouvert jusque-là/.test(div.textContent) && /il est scellé/.test(div.textContent);
+  // v2.65 (K221) : le texte de la brèche, réécrit.
+  r.brecheCoffre = /vous pouvez encore compléter le coffre/.test(div.textContent) && /il est fermé pour de bon/.test(div.textContent);
   _missions = { ...(_missions || {}), gains:[{ id:1, item:"cape", qte:1, mission:"Le satellite" }] };
   div.innerHTML = _mCarte({ id:9, type:"satellite", nom:"Le satellite", revele:true, deja:true, mon_groupe:6, mon_statut:"actif", groupes:[{ id:6, statut:"reussi", membres:[] }] });
   r.finieAvecGain = /la mission disparaîtra ensuite/.test(div.textContent);
