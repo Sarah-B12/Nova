@@ -34,7 +34,7 @@
     boutons: [...z.querySelectorAll("[data-qj-msg]")].map(b => b.dataset.qjMsg).sort().join(",") };
   z.querySelector('[data-qj-msg="CUL"]').click(); r.message.gagne = ok === 1 && ko === 0;
   ok = 0; ko = 0; a._qj = null; z.innerHTML = `<div data-qj-zone>${QUETES_JEUX.message.html(dM)}</div>`; QUETES_JEUX.message.wire(z, dM);
-  z.querySelector('[data-qj-msg="BLI"]').click(); r.message.perdu = ko === 1 && /8 h/.test(dernierEchec);
+  z.querySelector('[data-qj-msg="BLI"]').click(); r.message.perdu = ko === 1 && /5 h/.test(dernierEchec);
   // Règles du LORE §11 bis : CUL est nouveau, dans un mot qui contient un son connu (TURE) ;
   // la forme de CUL n'est prise par aucun autre son.
   r.sonCul = { existe: !!GLYPHES_ANCIEN.CUL, avecConnu: !!GLYPHES_ANCIEN.TURE,

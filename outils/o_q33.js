@@ -40,7 +40,7 @@
     _seqFin(); return { ok, ko, msg:dernierEchec };
   }
   const bG = await brouiller(true, 20), bP = await brouiller(false, 1);
-  r.brouillage = { gagne: bG.ok === 1, perdu: bP.ko === 1 && /chuintement/.test(bP.msg) && /8 h/.test(bP.msg) };
+  r.brouillage = { gagne: bG.ok === 1, perdu: bP.ko === 1 && /chuintement/.test(bP.msg) && /5 h/.test(bP.msg) };
 
   // 3. Le choix « compétence » : trois Cercles, dans l'ordre du serveur (v253).
   r.cercles = q.etapes[1].defi.options.map(o => Object.keys(o.cercles)[0]).join(",");  // racines,eclats,veilleurs
@@ -57,7 +57,7 @@
     return { ok, ko, msg:dernierEchec };
   }
   const rG = await ronde(true), rP = await ronde(false);
-  r.ronde = { gagne: rG.ok === 1, perdu: rP.ko === 1 && /pointe passe/.test(rP.msg) && /8 h/.test(rP.msg), nom: dR.nom };
+  r.ronde = { gagne: rG.ok === 1, perdu: rP.ko === 1 && /pointe passe/.test(rP.msg) && /5 h/.test(rP.msg), nom: dR.nom };
   majQueteHub = vraiMQH;
 
   // 5. Le nœud : se dessine (trois tracés) ; non ratable.

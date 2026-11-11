@@ -46,7 +46,7 @@
     z.querySelector("#qj-reac-go").click(); r.reacGagnee = ok === 1; }
   ok = 0; ko = 0; dernierEchec = ""; a._qj = null; majQueteHub();
   for(let e = 0; e < 2; e++){ const S2 = a._qj; S2.choix = [0]; majQueteHub(); if(S2.R.bornes.every(b => _reacAllume(S2.R, [0]).has(b))) break; z.querySelector("#qj-reac-go").click(); }
-  r.reacPerdue = ko === 1 && /clignotent à moitié/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  r.reacPerdue = ko === 1 && /clignotent à moitié/.test(dernierEchec) && /5 h/.test(dernierEchec);
   majQueteHub = vraiMQH;
   r.messageAutomatique = /défilent bien trop vite/.test(dR.reussite.join(" ")) && /vers Maar/.test(dR.reussite.join(" "));
 

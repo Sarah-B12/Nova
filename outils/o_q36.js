@@ -45,7 +45,7 @@
     obs.disconnect(); _seqFin(); return { ok, ko, msg:dernierEchec };
   }
   const sG = await sequence(true), sP = await sequence(false);
-  r.sequence = { gagnee: sG.ok === 1, perdue: sP.ko === 1 && /balise s'éteint/.test(sP.msg) && /8 h/.test(sP.msg) };
+  r.sequence = { gagnee: sG.ok === 1, perdue: sP.ko === 1 && /balise s'éteint/.test(sP.msg) && /5 h/.test(sP.msg) };
 
   // 3. Le labyrinthe : se dessine ; sa fin propre.
   r.labyrinthe = { fini: q.etapes[1].defi.fini, ratable: DEFIS_UNTRY.has("labyrinthe") };   // …, faux

@@ -2300,7 +2300,7 @@ const QUETES = [
         defi:{ type:"ronde", nom:"Antenne", nb:2, observe:9, avance:3,   // v1.88c : deux antennes (retour de l'autrice : trois, c'était trop dur)
           texte:[ "Deux antennes qui tournent, chacune sur son circuit. Tu les regardes faire, et tu comptes." ],
           consigne:"Observe la rotation des antennes, puis devine où sera chacune trois pas plus tard : c'est l'angle mort, et c'est là que tu t'arrimes.",
-          echec:"Une antenne te balaie de plein fouet, et le bras en dessous commence à se déplier ; tu décroches juste à temps, le cœur dans la gorge. Nouvelle tentative dans 8 h.",
+          echec:"Une antenne te balaie de plein fouet, et le bras en dessous commence à se déplier ; tu décroches juste à temps, le cœur dans la gorge. Nouvelle tentative dans 5 h.",
           reussite:[
             "Tu poses tes patins sur son flanc, juste sous la plaque, et tu attends, crispé. Rien. Elle continue de tourner, de regarder Silène, de compter ce qu'elle compte depuis trois siècles. Elle ne t'a pas vu ; elle ne voit jamais personne."
           ] } },
@@ -2451,7 +2451,7 @@ const QUETES = [
           texte:["Des coursives effondrées, des portes soudées, des couloirs qui ne mènent nulle part. Quelque part en bas : la capitainerie."],
           consigne:"Trouve la sortie, en bas de la grille, avant que ta lampe ne faiblisse.",
           fini:"Au bout du couloir, une porte gravée du carré : CAPITAINERIE.",
-          echec:"Ta lampe jaunit, puis rougit. Tu rebrousses chemin à tâtons, la main sur la paroi, en recomptant tes pas à l'envers. Nouvelle tentative dans 8 h.",   // K52 : le verrou de 8 h s'applique
+          echec:"Ta lampe jaunit, puis rougit. Tu rebrousses chemin à tâtons, la main sur la paroi, en recomptant tes pas à l'envers. Nouvelle tentative dans 5 h.",   // K52 : le verrou de 8 h s'applique
           reussite:[
             "La capitainerie est une salle basse en demi-cercle, ouverte par une grande baie sur les bers vides. Des pupitres, des registres, des sièges encore tournés vers la vitre, comme si l'équipe de quart venait de se lever pour aller voir partir quelqu'un. Tout est éteint. Mais sous tes pieds, très loin, à travers le plancher et tes semelles, tu sens battre le réacteur."
           ] } },
@@ -2489,7 +2489,7 @@ const QUETES = [
              passage), comme un vrai journal de port. Même histoire, même ordre. */
           texte:["Six blocs du registre de la capitainerie, mélangés. Remets-les dans l'ordre."],
           consigne:"Chaque bloc reprend là où le précédent s'arrête : suis le fil, de l'armement du vaisseau jusqu'au passage.",
-          echec:"Le registre ne reconnaît pas la suite : les blocs se brouillent à l'écran et la mémoire se referme. Nouvelle tentative dans 8 h.",
+          echec:"Le registre ne reconnaît pas la suite : les blocs se brouillent à l'écran et la mémoire se referme. Nouvelle tentative dans 5 h.",
           elements:[
             "Vaisseau d'évacuation affecté à MAAR-3 : armé, équipage à bord, au ber. En attente de la confirmation du quai.",
             "Confirmation du quai : délai dépassé. Relance envoyée, sans réponse. Dossier transmis à la direction.",
@@ -2901,7 +2901,7 @@ const QUETES = [
           consigne:"Éclate les pelotes au souffleur avant qu'elles ne sortent du conduit.",
           bouton:"Mettre le souffleur en marche",
           fini:"La dernière pelote éclate en pluie de pétales.",
-          echec:"Les pelotes se recollent au fond du conduit, en un seul bouchon, plus serré qu'avant. Tu ressors couvert de bleu. Nouvelle tentative dans 8 h.",
+          echec:"Les pelotes se recollent au fond du conduit, en un seul bouchon, plus serré qu'avant. Tu ressors couvert de bleu. Nouvelle tentative dans 5 h.",
           reussite:[
             "La dernière pelote éclate. Pendant une seconde, il ne se passe rien ; puis un souffle froid remonte le conduit d'un coup, comme si la station reprenait sa respiration, et le C-409 se met à siffler, une note longue, un peu fausse.",
             "« Il siffle. » La voix monte d'un ton. « Il siffle ! T'entends ? C'est beau. Enfin, c'est un sifflement. Mais c'est beau. »"
@@ -3003,7 +3003,7 @@ const QUETES = [
           consigne:"Choisis où donner tes impulsions (touche un point ; encore une fois pour l'enlever), puis lance.",
           bouton:"Donner les impulsions",
           fini:"Toutes les bornes s'allument.",
-          echec:"Les pistes crachent une gerbe d'étincelles, puis se taisent. Le cuivre a trop chauffé : il faut le laisser refroidir. Nouvelle tentative dans 8 h.",
+          echec:"Les pistes crachent une gerbe d'étincelles, puis se taisent. Le cuivre a trop chauffé : il faut le laisser refroidir. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les bornes s'allument une à une, ambre, puis vert. Le mât se redresse d'un cran en grinçant, et la petite lampe d'état passe au vert pour ne plus bouger. Au centre de la plaine, très loin, une lumière de la station cesse de clignoter et devient fixe.",
             "« Ah ! J'ai la station. J'ai tout, les portes, les automates, j'ai même une caméra que je savais pas que j'avais. Oh, c'est toi ? T'es tout petit, vu d'en haut. Et tout rouge. C'est normal, le rouge ? Vous êtes rouges, chez vous ? » Tu regardes tes mains : elles sont noires de suie, et rouges de chaleur.",
@@ -3084,7 +3084,7 @@ const QUETES = [
         defi:{ type:"triangulation", source:{ x:1780, y:600 }, minReleves:3, fouilles:3, precision:70,
           texte:["L'automate émet, faiblement, quelque part sous la neige. Son signal se lit sur ta radio."],
           trouve:"Sous une croûte de neige, une patte de métal. Puis une autre.",
-          echec:"Le vent a tout recouvert, et ton souffle est trop court pour chercher encore. Tu rentres. Nouvelle tentative dans 8 h.",
+          echec:"Le vent a tout recouvert, et ton souffle est trop court pour chercher encore. Tu rentres. Nouvelle tentative dans 5 h.",
           reussite:[
             "L'automate n°7 est là, au bord d'un lac gelé, à demi enseveli : un caisson sur six pattes, deux bras repliés, un œil rouge qui clignote faiblement, les pattes prises dans la glace jusqu'aux genoux.",
             "« Le 7 ! » Asulf a presque l'air ému. « Il est entier ? Dis-moi qu'il est entier. Il est inventorié. »"
@@ -3104,7 +3104,7 @@ const QUETES = [
           consigne:"Dégage chaque patte à petits coups, au bon moment : quand le curseur passe dans le vert.",
           libelle:"Patte", bouton:"Commencer", boutonCoup:"Frapper",
           fele:"La glace craque et une aiguille éclate en poussière blanche. La patte tient encore. Reprends depuis la première, plus doucement.",
-          echec:"Un coup de trop : la glace se fend en étoile et se referme plus serrée. Laisse le froid la ressouder. Nouvelle tentative dans 8 h.",
+          echec:"Un coup de trop : la glace se fend en étoile et se referme plus serrée. Laisse le froid la ressouder. Nouvelle tentative dans 5 h.",
           fini:"La dernière patte se libère.",
           reussite:[
             "La sixième patte se libère d'un coup. L'automate se redresse, chancelle… et se remet aussitôt à tailler la glace, là où il en était. « Non non non non. Rentre. RENTRE. » Un bruit de clavier frénétique : l'automate s'arrête, pivote, et repart vers la station sans se presser, en boitant d'une patte.",
@@ -3200,7 +3200,7 @@ const QUETES = [
           question:"« Alors, le code ? »",
           reponses:["7-B-12-409"],
           fini:"L'automate accepte le code.",
-          echec:"Le code ne passe pas. L'écran s'éteint, et l'automate se remet à tailler l'air. Il faudra qu'il se rendorme pour recommencer. Nouvelle tentative dans 8 h.",
+          echec:"Le code ne passe pas. L'écran s'éteint, et l'automate se remet à tailler l'air. Il faudra qu'il se rendorme pour recommencer. Nouvelle tentative dans 5 h.",
           reussite:[
             "Le code passe. L'automate se redresse sur ses six pattes, sans boiter, fait un pas, deux, pivote… et s'arrête face au vide, juste à côté de toi, à hauteur d'homme. Son œil rouge s'allume, puis passe au vert, et une voix plate, sans souffle, annonce : OPÉRATEUR 42-U1F — PRÉSENT.",
             "Il salue l'air. L'endroit exact où, pour lui, Asulf est debout.",
@@ -3389,7 +3389,7 @@ const QUETES = [
         defi:{ type:"ordre",
           texte:["Ce que tu rapportes d'Ancolie, en vrac sur la paillasse. Pose-le dans l'ordre."],
           consigne:"Chaque chose mène à la suivante : pars du conduit de la première corvée, et suis le fil jusqu'à la dernière ligne.",
-          echec:"Sorn se gratte la tête, Adaya fronce les sourcils : ça ne se suit pas, et ils perdent le fil. Tu ramasses tout. Nouvelle tentative dans 8 h.",
+          echec:"Sorn se gratte la tête, Adaya fronce les sourcils : ça ne se suit pas, et ils perdent le fil. Tu ramasses tout. Nouvelle tentative dans 5 h.",
           elements:[
               "Le conduit C-409, sous la station, bouché d'ancolie depuis trois siècles. Débouché, il porte le câble du réseau, jusqu'au relais du volcan.",
               "Le relais du volcan, qui décrochait tous les après-midi à cause de la chaleur. Relancé, il rend à la station ses portes et ses automates.",
@@ -3433,7 +3433,7 @@ const QUETES = [
           ],
         defi:{ type:"sequence", longueur:10, cadence:CADENCE_PERIMETRE,
           texte:["Les marques de ta bête s'allument l'une après l'autre, puis s'éteignent. Tape-les sur le micro, jusqu'au bout, deux fois de suite."],
-          echec:"Tu te trompes de marque. Dans la radio, Asulf demande si c'est grave ; ta bête, elle, s'est rendormie. Nouvelle tentative dans 8 h.",
+          echec:"Tu te trompes de marque. Dans la radio, Asulf demande si c'est grave ; ta bête, elle, s'est rendormie. Nouvelle tentative dans 5 h.",
           reussite:[
               "Tu tapes la dernière marque, et dans la radio il n'y a plus un bruit, pas même un reniflement.",
               "« C'est l'appel. » Il le dit tout bas, comme on reconnaît une voix dans une foule. « La cadence de l'appel, ça. Je la connais par cœur, je la fais tous les soirs. Ta bête… » Il cherche ses mots, et ils mettent du temps à venir. « Ta bête, elle répond à l'appel. Elle dit qu'elle est là. »",
@@ -3715,7 +3715,7 @@ const QUETES = [
         defi:{ type:"brouillage", tenir:6, duree:60,
           texte:["L'onde de l'appel, en rouge, et la tienne, en vert. Cale-toi dessus, et suis-la."],
           consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant la fin de l'appel.",   // v1.93k
-          echec:"L'appel se termine avant que le manifeste soit passé. Il faudra attendre une autre relève. Nouvelle tentative dans 8 h.",
+          echec:"L'appel se termine avant que le manifeste soit passé. Il faudra attendre une autre relève. Nouvelle tentative dans 5 h.",
           fini:"Le manifeste est parti, entre deux réponses.",
           reussite:[
             "Six secondes en tout, les deux ondes n'en font plus qu'une, et sur l'écran du milieu, entre deux réponses, passe une ligne que personne n'attendait : MANIFESTE MAAR-12/42 — ÉMIS.",
@@ -3831,7 +3831,7 @@ const QUETES = [
         defi:{ type:"crevasse", n:11, rayon:1, marge:1.5,
           texte:["Les conduits sous l'anneau, à travers la lampe de casque d'Asulf. Un pas devant lui, jamais deux."],
           consigne:"Guide-le jusqu'à la sortie, en bas. Chaque pas compte : il n'a pas l'habitude de marcher.",
-          echec:"« J'ai plus de lampe. » Il rebrousse chemin à tâtons jusqu'à son poste, en s'excusant auprès de chaque mur. La case est cochée, rien ne presse : il réessaiera à une autre relève. Nouvelle tentative dans 8 h.",
+          echec:"« J'ai plus de lampe. » Il rebrousse chemin à tâtons jusqu'à son poste, en s'excusant auprès de chaque mur. La case est cochée, rien ne presse : il réessaiera à une autre relève. Nouvelle tentative dans 5 h.",
           fini:"Au bout du conduit, une lueur, et une échelle.",
           reussite:[
             "À trois pas de la petite trappe, le talus se soulève. Une plaque ronde, plus large, couverte d'herbe, que tu n'avais jamais remarquée : une trappe de visite faite pour un homme, que personne n'a ouverte depuis trois siècles. Une main en sort, gantée, et tâtonne dans l'herbe comme si elle cherchait une marche.",
@@ -3926,7 +3926,7 @@ const QUETES = [
           mots:[ ["RE","LAI"], ["DES","TIN","ATION"], [{ inconnu:"CUL" },"TURE"], ["CON","SERV","ATION"] ],
           propositions:["CUL","BLI","DO","PLU"],
           fini:"Le mot tient : la phrase a un sens.",
-          echec:"Le mot ne tient pas, la phrase n'a plus de sens, et Bardane est déjà repartie au début. Tu l'écouteras de nouveau dans 8 h.",
+          echec:"Le mot ne tient pas, la phrase n'a plus de sens, et Bardane est déjà repartie au début. Tu l'écouteras de nouveau dans 5 h.",
           reussite:[
             "Culture. Le troisième mot, c'est Culture, et toute la phrase tombe d'un coup : relais, destination, Cultures, conservation. La sonde ne dit pas qui elle est, ni où elle est. Elle dit à qui elle parle, et pour quoi : au Bureau des Cultures, pour la conservation, comme on écrit une adresse au dos d'une enveloppe qu'on sait que personne n'ouvrira.",
             "« Culture », répète Asulf, en avalant la moitié du mot. « C'était ça, l'éternuement. » Tu notes la phrase, les quatre mots dans l'ordre, et Bardane continue de la dire derrière toi pendant que tu t'éloignes, à personne."
@@ -3944,7 +3944,7 @@ const QUETES = [
           texte:["La console attend l'en-tête, mot après mot. Les quatre mots de Bardane sont là, en ancien, mélangés."],
           consigne:"Remets-les dans l'ordre où Bardane les dit.",
           elements:[ { sons:["RE","LAI"] }, { sons:["DES","TIN","ATION"] }, { sons:["CUL","TURE"] }, { sons:["CON","SERV","ATION"] } ],
-          echec:"La console refuse la phrase. Dans le désordre, ce n'est plus une sonde, c'est une sonde cassée. Asulf range ses vis une à une dans son gant ; vous réessaierez dans 8 h.",
+          echec:"La console refuse la phrase. Dans le désordre, ce n'est plus une sonde, c'est une sonde cassée. Asulf range ses vis une à une dans son gant ; vous réessaierez dans 5 h.",
           reussite:[
             "La console accepte la phrase sans rien dire, ce qui, pour une machine d'AREPO, est une forme de compliment. Asulf la relit trois fois, du bout du doigt, sans pouvoir la lire, puis il tape le reste, la route elle-même, plus vite que tu ne peux suivre. « Voilà. Maintenant, en entrant, ton vaisseau va se présenter comme une sonde de plus. Relais, destination, Cultures, conservation. Il ira pas plus loin que ce que disent les sondes. Mais les sondes, elles entrent. »",
             "Il referme la console, compte ses vis, en trouve une de trop, et la remet dans son gant sans rien dire."
@@ -4062,7 +4062,7 @@ const QUETES = [
             { picto:"↩", sons:["RE","TOUR"],             sens:"Retour" }
           ],
           distracteurs:["Départ","Conservation","Rassemblement"],
-          echec:"Tu te trompes de ligne, et ça se lit sur leurs visages. Aruns efface la plaque du plat de la main, sans colère, et la garde contre lui. Il la réécrira dans 8 h.",
+          echec:"Tu te trompes de ligne, et ça se lit sur leurs visages. Aruns efface la plaque du plat de la main, sans colère, et la garde contre lui. Il la réécrira dans 5 h.",
           reussite:[
             "Relais. Destination. Embarquement. Et la dernière, RE·TOUR : le retour. Ils ont entendu ton vaisseau entrer dans la Gorge en prononçant la phrase des sondes, comme ils en entendent passer chaque nuit depuis trois cents ans. Seulement, une sonde file droit, parle au Bureau et ne s'arrête jamais. La tienne a tourné ; elle a ralenti, et elle est venue se poser chez eux.",
             "Aruns souligne <i>Retour</i> d'un trait de craie, puis <i>Embarquement</i>, et lève les yeux vers toi ; dans son dos, le groupe retient son souffle. Ils te demandent si c'est toi : si tu es le retour, celui qu'on attend, et s'ils peuvent monter. Tu lui fais comprendre que non, aussi doucement que possible : ton vaisseau vient de l'autre côté de la Gorge, il est petit, et tu voyages seul.",
@@ -4187,7 +4187,7 @@ const QUETES = [
         defi:{ type:"brouillage", tenir:6, duree:60, motDuree:"passage", bouton:"Chercher le Nid à la radio",
           texte:["L'onde de La Couronne, en rouge, et la tienne, en vert. Cale-toi dessus, et suis-la."],
           consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant la fin du passage.",
-          echec:"La Couronne reprend le dessus, et le chuintement noie tout. Aruns se laisse tomber sur ton siège en soupirant, en homme qui a tout son temps. Nouvelle tentative dans 8 h.",
+          echec:"La Couronne reprend le dessus, et le chuintement noie tout. Aruns se laisse tomber sur ton siège en soupirant, en homme qui a tout son temps. Nouvelle tentative dans 5 h.",
           fini:"La voix du Nid passe.",
           reussite:[
             "Les deux ondes se recouvrent, et le chuintement s'écarte comme un rideau. Une voix passe : celle de Dagon, tranquille, faussement aimable. Ton décodeur l'écrit en glyphes au fur et à mesure, et cette fois, tu sais tout lire : RE·TOUR — DÉ·LAI ? Derrière lui, très loin, deux autres voix parlent en même temps, beaucoup moins tranquilles.",
@@ -4230,7 +4230,7 @@ const QUETES = [
         defi:{ type:"ronde", nom:"Pointe", nb:2, observe:9, avance:3,
           texte:["Deux arcs tournent autour de la pièce. Suis leurs pointes, et compte."],
           consigne:"Observe la rotation des pointes, puis devine où sera chacune trois pas plus tard : entre elles, la voie sera libre, et c'est là qu'Aruns pourra la saisir.",
-          echec:"Une pointe passe là où tu ne l'attendais pas. Aruns se rejette en arrière juste à temps, la ligne vibre comme une corde trop tendue, et la pièce repart dans sa ronde. Nouvelle tentative dans 8 h.",
+          echec:"Une pointe passe là où tu ne l'attendais pas. Aruns se rejette en arrière juste à temps, la ligne vibre comme une corde trop tendue, et la pièce repart dans sa ronde. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les deux pointes passent, l'une après l'autre, exactement où tu l'avais dit, et dans l'espace qu'elles laissent, Aruns tend la main. Il referme les doigts sur la pièce, la serre contre sa poitrine, et se retourne vers ton hublot en levant le poing, si fort qu'il en part à la renverse au bout de sa ligne."
           ] } },
@@ -4324,7 +4324,7 @@ const QUETES = [
         defi:{ type:"calques",
           noms:["Les pulsations de La Lanterne","La fenêtre de la pièce","Ta rotation"],
           texte:["Trois rythmes, sur trois bandes. Quand ils coïncident, elle boit."],
-          echec:"Ça ne coïncide pas, et la fenêtre de la pièce reste noire. L'étoile a changé de rythme : il faudra attendre qu'elle revienne au premier. Nouvelle tentative dans 8 h.",
+          echec:"Ça ne coïncide pas, et la fenêtre de la pièce reste noire. L'étoile a changé de rythme : il faudra attendre qu'elle revienne au premier. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les trois bandes n'en font plus qu'une. Tu cales ta rotation sur les battements de l'étoile, et à chaque pulsation, la fenêtre de la pièce s'éclaire un peu plus longtemps, s'éteint un peu moins vite, comme quelqu'un qui reprend son souffle après une longue apnée."
           ] } },
@@ -4335,7 +4335,7 @@ const QUETES = [
         image:"images/quetes/q34/3.png",
         arrivee:[
           "Maintenant, il faut tenir. Le vaisseau pointé sur La Lanterne, la rotation calée sur son rythme, la pièce dans le berceau que tu lui as fait d'une couverture, contre le hublot. La coque tique, l'air de la cabine sent le métal chaud. Tu ne bouges plus.",
-          "Dagon, lui, a décidé que le silence ne lui convenait pas. Il parle longuement, sans attendre de réponse, et le décodeur suit comme il peut. Il raconte peut-être une histoire, ou le Nid, ou rien du tout. De temps en temps, il s'interrompt, comme pour te laisser le temps de rater quelque chose, puis reprend, presque déçu."
+          "Dagon, lui, a décidé que le silence ne lui convenait pas. Il parle longuement, sans attendre de réponse, et le décodeur suit comme il peut. De temps en temps, il s'interrompt, comme pour te laisser le temps de rater quelque chose, puis reprend, presque déçu."
         ],
         defi:{ type:"attente", duree:3600*1000,
           texte:["Garde le cap sur l'étoile, le temps que la pièce se charge.",
@@ -4426,7 +4426,7 @@ const QUETES = [
           consigne:"Dis à Aruns de taper au bon moment : quand le curseur passe dans le vert.",
           libelle:"Verrou", bouton:"Commencer", boutonCoup:"Taper",
           fele:"Le coup tombe à faux, et le métal grince sous le gant d'Aruns. Le verrou tient encore. Reprends depuis le premier, plus doucement.",
-          echec:"Un coup de trop : le verrou se bloque tout à fait, et Aruns secoue sa main engourdie. Il faudra que le métal se détende. Nouvelle tentative dans 8 h.",
+          echec:"Un coup de trop : le verrou se bloque tout à fait, et Aruns secoue sa main engourdie. Il faudra que le métal se détende. Nouvelle tentative dans 5 h.",
           fini:"Le cinquième verrou lâche.",
           reussite:[
             "Le dernier verrou cède, et la pièce glisse dans l'encoche avec un claquement que tu sens jusque dans la coque, sans l'entendre. Les cinq verrous se referment d'eux-mêmes autour d'elle. Aruns pose les deux mains à plat sur l'anneau, comme on salue au Nid, et reste là un moment sans bouger."
@@ -4445,7 +4445,7 @@ const QUETES = [
           consigne:"Choisis où donner tes impulsions (touche un point ; encore une fois pour l'enlever), puis lance.",
           bouton:"Donner les impulsions",
           fini:"Tout l'anneau s'éclaire.",
-          echec:"Les bornes clignotent à moitié, puis retombent. La pièce s'est vidée tout entière ; il faut la laisser reprendre sa lueur. Nouvelle tentative dans 8 h.",
+          echec:"Les bornes clignotent à moitié, puis retombent. La pièce s'est vidée tout entière ; il faut la laisser reprendre sa lueur. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les bornes s'allument une à une, et sur tout le côté éteint de l'anneau, des lumières se réveillent l'une après l'autre, comme une rangée de fenêtres au crépuscule. La Couronne émet de nouveau. Tu tends la main vers le micro pour appeler Asulf.",
             "Ton décodeur te devance. D'un coup, il se remplit de glyphes : des lignes et des lignes, serrées, qui défilent bien trop vite pour que tu en saisisses un seul son, et qui partent toutes dans la même direction, vers la Gorge, vers Maar. Puis elles s'arrêtent net, et l'écran redevient vide.",
@@ -4548,7 +4548,7 @@ const QUETES = [
         ],
         defi:{ type:"sequence", longueur:8,
           texte:["La balise d'accostage allume ses feux l'un après l'autre. Rends-lui la même séquence, jusqu'au bout."],
-          echec:"Un feu de trop, ou de travers : la balise s'éteint, et met longtemps à se rallumer. Aruns se cache le visage dans les mains. Nouvelle tentative dans 8 h.",
+          echec:"Un feu de trop, ou de travers : la balise s'éteint, et met longtemps à se rallumer. Aruns se cache le visage dans les mains. Nouvelle tentative dans 5 h.",
           reussite:[
             "Le dernier feu se rallume et reste allumé. Le long du bras d'amarrage, d'autres lumières suivent, une à une, jusqu'à un sas qui s'entrouvre en crachant du givre. Le quai t'accepte. Aruns pousse un cri de joie qui sature la radio, et Asulf s'en plaint longuement."
           ] } },
@@ -4581,7 +4581,7 @@ const QUETES = [
         defi:{ type:"piratage", manches:4, vitesse:1700,
           texte:["Le registre accepte un matricule si on le lui donne au bon moment. Saisis-le quatre fois de suite."],
           fini:"Matricule accepté.",
-          echec:"Ton matricule arrive trop tard, ou trop tôt : la console se rendort en ronronnant. Aruns tapote l'écran, vexé pour toi. Nouvelle tentative dans 8 h.",
+          echec:"Ton matricule arrive trop tard, ou trop tôt : la console se rendort en ronronnant. Aruns tapote l'écran, vexé pour toi. Nouvelle tentative dans 5 h.",
           reussite:[
             "L'écran s'allume en entier, et le registre défile. Asulf lit avec toi, ligne après ligne, dans ce jargon de registre qu'il connaît mieux que personne : TERMINUS DE MAAR — CORRESPONDANCE DE RETOUR. Puis des équipages, des dizaines, venus d'autres secteurs : MAAR-3, MAAR-7, MAAR-9. À chaque ligne, le même mot à la fin : EN ATTENTE.",
             "« Il y a une date », dit Asulf, plus doucement. « Départ prévu. » Il te la lit. Elle est passée depuis trois cents ans. Personne, au Nid, ne la connaissait.",
@@ -4666,7 +4666,7 @@ const QUETES = [
         defi:{ type:"brouillage", tenir:6, duree:60, motDuree:"signal", bouton:"Chercher la balise",
           texte:["Le grésillement du Trouble, et sous lui, la balise, en rouge. Ton onde, en vert. Cale-toi dessus, et suis-la."],
           consigne:"Trouve d'abord la fréquence : une fois calée, elle se verrouille. Puis suis le décalage, qui dérive. Les secondes passées calé s'additionnent : il en faut six en tout, avant que le signal ne se perde.",
-          echec:"Le gaz recouvre tout, et la balise disparaît sous le bruit. « Déjà ? » demande Dagon, à peine surpris. Nouvelle tentative dans 8 h.",
+          echec:"Le gaz recouvre tout, et la balise disparaît sous le bruit. « Déjà ? » demande Dagon, à peine surpris. Nouvelle tentative dans 5 h.",
           fini:"La balise ne te lâche plus.",
           reussite:[
             "Tu tiens la balise, et elle te donne ce qu'elle a : une direction, droit vers le fond, dans les nuées les plus sombres. À la radio, Dagon émet un petit bruit approbateur, aussitôt corrigé : « Une fois n'est pas coutume. » Asulf traduit, très fier d'avoir trouvé l'expression."
@@ -4707,7 +4707,7 @@ const QUETES = [
         defi:{ type:"crevasse", n:11, rayon:1, marge:1.5,
           texte:["Les nuées du Trouble, à travers tes phares. Quelques mètres devant toi, jamais plus."],
           consigne:"Rejoins l'épave, en bas. Chaque manœuvre compte : le gaz ronge ta coque.",
-          echec:"Ta coque gémit, tes phares faiblissent, et le gaz se referme partout à la fois. Tu remontes à l'aveugle, en suivant la balise à l'envers. « Ah », dit seulement Dagon. Nouvelle tentative dans 8 h.",
+          echec:"Ta coque gémit, tes phares faiblissent, et le gaz se referme partout à la fois. Tu remontes à l'aveugle, en suivant la balise à l'envers. « Ah », dit seulement Dagon. Nouvelle tentative dans 5 h.",
           fini:"Sous toi, une forme dorée, immobile dans le violet.",
           reussite:[
             "L'épave est là, posée sur rien, au fond d'une poche de gaz plus calme. Elle est petite, à peine plus grande que ton vaisseau, et dorée sous la crasse, comme les structures du Terminus. Pas une trace de choc. Elle n'est pas tombée : elle a seulement cessé d'avancer, et le Trouble l'a gardée."
@@ -4732,7 +4732,7 @@ const QUETES = [
             "Plus de quoi tenter un quatrième. Les courants nous prennent.",
             "Dire aux autres de ne pas essayer."
           ],
-          echec:"L'histoire ne tient pas dans cet ordre-là, et la console de l'épave se rendort, à bout de souffle. Il faudra lui laisser le temps de reprendre des forces. Nouvelle tentative dans 8 h.",
+          echec:"L'histoire ne tient pas dans cet ordre-là, et la console de l'épave se rendort, à bout de souffle. Il faudra lui laisser le temps de reprendre des forces. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les entrées se remettent en place, et Asulf les relit d'un trait, pour toi et pour le Nid qui écoute. Une navette, cinq personnes, une porte qui ne s'ouvre que dans un sens.",
             "« INDICATIF NON RECONNU — ORIGINE : TERMINUS. » Asulf s'arrête sur cette ligne-là. « Toi, elle te laisse repasser chaque fois. Ton vaisseau est immatriculé chez nous, MAAR-12. Le leur était d'ici. » Il renifle. « Elle lit l'étiquette, pas ce qu'il y a dedans. Comme tous les registres. »",
@@ -4791,7 +4791,7 @@ const QUETES = [
         defi:{ type:"piratage", manches:3, vitesse:1900,
           texte:["Elle accélère, ralentit, accélère encore. Cale ta vitesse sur la sienne, trois fois de suite, au bon moment."],
           fini:"Tes patins touchent la glace.",
-          echec:"Tu la dépasses, ou c'est elle qui te dépasse, et son sillage glacé t'aveugle. Le temps de faire demi-tour, elle est loin. « Je l'avais dit », constate Dagon. Nouvelle tentative dans 8 h.",
+          echec:"Tu la dépasses, ou c'est elle qui te dépasse, et son sillage glacé t'aveugle. Le temps de faire demi-tour, elle est loin. « Je l'avais dit », constate Dagon. Nouvelle tentative dans 5 h.",
           reussite:[
             "Tu te poses. La glace craque sous tes patins, puis tient. Autour de toi, la comète n'est qu'un champ blanc et bleu, strié de fissures, qui file entre les étoiles en t'emportant avec elle. Au loin, le Nid défile, minuscule, avec ses lanternes."
           ] } },
@@ -4806,7 +4806,7 @@ const QUETES = [
         ],
         defi:{ type:"cadenas", longueur:4, symboles:["❄","◆","●","▲","✦"], essais:8, distincts:3,
           texte:["Quatre logements, cinq signes possibles. Le panneau dit combien sont à la bonne place, et combien sont seulement dans la combinaison."],
-          echec:"Le panneau se verrouille, et un givre fin recouvre les signes. Il faudra attendre qu'il se réchauffe. Nouvelle tentative dans 8 h.",
+          echec:"Le panneau se verrouille, et un givre fin recouvre les signes. Il faudra attendre qu'il se réchauffe. Nouvelle tentative dans 5 h.",
           reussite:[
             "Le panneau s'ouvre. Derrière, un écran s'allume en clignotant, avec une seule ligne en ancien, qu'Asulf lit à mesure : BALISE HORAIRE — CULTURES. Puis un nombre, très long, qui augmente d'un pendant que tu le regardes : le numéro du passage.",
             "Et en dessous, une ligne qui ne change pas : PROCHAINE CORRESPONDANCE : AUCUNE. Asulf la lit une fois, puis se tait. Au Nid, tu entends quelqu'un poser une question, et personne ne lui répondre."
@@ -4908,7 +4908,7 @@ const QUETES = [
             "Des lumières qui s'allument loin du quai, l'une après l'autre : les premières villes.",
             "Aujourd'hui : des villes partout, et la ligne qui brille d'un bout à l'autre."
           ],
-          echec:"La console refuse la suite, et les vues se mélangent de nouveau sous tes yeux. La Vigie, elle, n'a pas bougé. Nouvelle tentative dans 8 h.",
+          echec:"La console refuse la suite, et les vues se mélangent de nouveau sous tes yeux. La Vigie, elle, n'a pas bougé. Nouvelle tentative dans 5 h.",
           reussite:[
             "La dernière vue se met en place, et ta console bascule d'elle-même sur l'image du moment. Silène. En entier, en couleurs, sous un ciel sans nuages, tournant lentement sous toi : les champs, les villes, les routes entre elles, et en travers du secteur, la ligne de silène qui brille, pâle et nette, comme un fil tendu sur la planète.",
             "Tu cherches, et tu la trouves : ta ville. Un point de lumière à peine plus gros que les autres. Vu d'ici, on ne voit ni toi, ni personne. On voit seulement que ça vit. Au Nid, tu entends Aruns retenir son souffle, et quelqu'un, derrière lui, demander à voix basse si c'est loin."
@@ -5024,7 +5024,7 @@ const QUETES = [
           ],
           question:"« Alors ? La correspondance ? »",
           reponses:["annulée","annulé","annulées","annule"],
-          echec:"L'écran se coupe avant que tu aies tout retenu, et une alarme se met à sonner quelque part, très loin, très mollement. Asulf hausse les épaules : elle sonne pour lui depuis des années. Nouvelle tentative dans 8 h.",
+          echec:"L'écran se coupe avant que tu aies tout retenu, et une alarme se met à sonner quelque part, très loin, très mollement. Asulf hausse les épaules : elle sonne pour lui depuis des années. Nouvelle tentative dans 5 h.",
           reussite:[
             "Tu lui répètes le mot. Asulf ne répond pas tout de suite. Il est retourné chercher son transat dans le couloir, l'a déplié devant la console, et s'est assis dessus, les coudes sur les genoux, ce qui n'est pas du tout la manière réglementaire de s'asseoir dans un transat.",
             "« Annulée », dit-il à son tour, très bas. « Pas retardée. Pas reportée. Annulée, et classée. Et le motif, masqué. » Il renifle. « Je connais ce genre de ligne. On en met une quand quelqu'un, très haut, a décidé quelque chose, et ne veut pas qu'on sache pourquoi. »",
@@ -5106,7 +5106,7 @@ const QUETES = [
         ],
         defi:{ type:"sequence", longueur:9,
           texte:["La Couronne allume ses feux l'un après l'autre. Rends-lui la même suite, jusqu'au bout."],
-          echec:"Un feu de travers, et La Couronne se tait. Ton en-tête reste là, sans destinataire. « Recraché avant même d'avoir frappé », note Dagon. Nouvelle tentative dans 8 h.",
+          echec:"Un feu de travers, et La Couronne se tait. Ton en-tête reste là, sans destinataire. « Recraché avant même d'avoir frappé », note Dagon. Nouvelle tentative dans 5 h.",
           reussite:[
             "Le dernier feu se rallume, et La Couronne prend ton en-tête. Tu le vois partir, mêlé à ceux des sondes qui passent ce jour-là, sans aucune différence : RELAIS — DESTINATION — CULTURES — CONSERVATION. Au loin, sur la Bogue, quelque chose vient de s'allumer."
           ] } },
@@ -5122,7 +5122,7 @@ const QUETES = [
         defi:{ type:"ronde", nom:"Trappe", nb:1, observe:8, avance:4,
           texte:["La Bogue tourne. Suis la trappe, et compte."],
           consigne:"Observe la rotation de la trappe, puis devine où elle sera quatre pas plus tard : c'est là qu'il faudra te présenter.",
-          echec:"Tu te présentes devant une plaque fermée. La trappe passe derrière toi, de l'autre côté, et s'éteint. Elle se rallumera, mais pas tout de suite. Nouvelle tentative dans 8 h.",
+          echec:"Tu te présentes devant une plaque fermée. La trappe passe derrière toi, de l'autre côté, et s'éteint. Elle se rallumera, mais pas tout de suite. Nouvelle tentative dans 5 h.",
           reussite:[
             "Tu glisses le vaisseau devant la trappe au moment exact où elle arrive. Elle s'ouvre comme on ouvre à quelqu'un qu'on attendait : sans hâte, sans question. Derrière, un sas, assez grand pour une sonde, à peine assez pour toi. Aruns serre les poings sur ses genoux pour ne pas crier."
           ] } },
@@ -5217,7 +5217,7 @@ const QUETES = [
         defi:{ type:"calques",
           noms:["La copie du tri","La copie d'archive","La copie de secours"],
           texte:["Trois copies abîmées de la même note. Quand elles se recouvrent juste, elles se complètent."],
-          echec:"Ça ne coïncide pas, et elles se brouillent les unes les autres. La console se remet à ronronner, le temps de les recharger. Nouvelle tentative dans 8 h.",
+          echec:"Ça ne coïncide pas, et elles se brouillent les unes les autres. La console se remet à ronronner, le temps de les recharger. Nouvelle tentative dans 5 h.",
           reussite:[
             "Les trois copies se recouvrent, et le gris recule. La note apparaît presque en entier, en ancien, dans ce jargon de registre qu'Asulf lit à mesure. Il ne bute que sur un seul mot, au milieu : celui-là n'est écrit nulle part ailleurs, et Asulf ne le connaît pas."
           ] } },
@@ -5236,7 +5236,7 @@ const QUETES = [
           mots:[ [{ inconnu:"RAN" },"CON","TRE"] ],
           propositions:["RAN","PLI","MOU","SOU"],
           fini:"C'est le bon son.",
-          echec:"Le mot ne tient pas, et la phrase non plus. La console efface ta proposition et attend, sans se presser : elle a le temps. Nouvelle tentative dans 8 h.",
+          echec:"Le mot ne tient pas, et la phrase non plus. La console efface ta proposition et attend, sans se presser : elle a le temps. Nouvelle tentative dans 5 h.",
           reussite:[
             "Rencontre. Tout s'éclaire d'un coup : une sonde est passée au-dessus de la plante, et ce qu'elle a envoyé au Bureau est arrivé déformé. Tu notes le son nouveau, RAN, à côté des autres."
           ] } },
@@ -5319,7 +5319,7 @@ const QUETES = [
           consigne:"Choisis où donner tes impulsions (touche un point ; encore une fois pour l'enlever), puis lance.",
           bouton:"Réveiller la mémoire",
           fini:"La mémoire s'allume.",
-          echec:"Les bornes clignotent, puis le Muet retourne à son bavardage, comme si de rien n'était. Asulf lui tapote l'antenne, vexé pour lui. Nouvelle tentative dans 8 h.",
+          echec:"Les bornes clignotent, puis le Muet retourne à son bavardage, comme si de rien n'était. Asulf lui tapote l'antenne, vexé pour lui. Nouvelle tentative dans 5 h.",
           reussite:[
             "La mémoire se réveille, et ta console se remplit. D'abord la confirmation brouillée, des milliers de fois, la même, enregistrée chaque fois qu'il l'a répétée. Asulf fait défiler, défiler encore, sans rien dire. Puis, tout au fond, plus ancienne que tout le reste, une entrée qui ne ressemble pas aux autres : courte, nette, et marquée d'un sigle que tu connais, celui du Bureau."
           ] } },
@@ -5343,7 +5343,7 @@ const QUETES = [
             { picto:"IIII", sons:["QUA","TRE"],         sens:"Quatre" }
           ],
           distracteurs:["Trois","Retour","Départ"],
-          echec:"Les mots ne tiennent pas ensemble, et Asulf secoue la tête : un relais n'y aurait rien compris non plus. Sa mémoire se rendort à moitié. Nouvelle tentative dans 8 h.",
+          echec:"Les mots ne tiennent pas ensemble, et Asulf secoue la tête : un relais n'y aurait rien compris non plus. Sa mémoire se rendort à moitié. Nouvelle tentative dans 5 h.",
           reussite:[
             "Quatre. Le premier son, c'est QUA, et le mot tient avec les trois autres. Tu notes le son nouveau à côté de RAN. Asulf, lui, a déjà repris la lecture du reste, à voix basse, et sa voix change au fil des lignes."
           ] } },
@@ -5423,7 +5423,7 @@ const QUETES = [
         defi:{ type:"crevasse", n:9, rayon:1, marge:1.6,   // v2.46 : était un labyrinthe (audit, option C)
           texte:["Les allées sombres, au-delà des lumières. Ta lampe n'éclaire que quelques casiers autour de toi."],
           consigne:"Trouve le casier marqué REPRISE, au fond. Chaque pas compte : la batterie de vos lampes baisse.",
-          echec:"Les lampes faiblissent, puis s'éteignent l'une après l'autre. Vous revenez à tâtons vers les rangées éclairées, en suivant la voix de Dagon, qui pour une fois guide juste. Nouvelle tentative dans 8 h.",
+          echec:"Les lampes faiblissent, puis s'éteignent l'une après l'autre. Vous revenez à tâtons vers les rangées éclairées, en suivant la voix de Dagon, qui pour une fois guide juste. Nouvelle tentative dans 5 h.",
           fini:"Une étiquette, sous la poussière : REPRISE.",
           reussite:[
             "Le casier est petit, à hauteur d'homme, et il ne contient qu'un seul document, rangé avec plus de soin que tout le reste du dépôt. Aruns l'ouvre avec deux doigts, comme on ouvre une lettre qui n'est pas pour soi."
@@ -5443,7 +5443,7 @@ const QUETES = [
           mots:[ ["CEN",{ inconnu:"TAINE" }] ],
           propositions:["TAINE","BLO","VI","GLE"],
           fini:"C'est le bon son.",
-          echec:"Le mot ne tient pas. Aruns secoue la tête, et le document se replie de lui-même dans son casier, comme s'il en avait assez vu. Nouvelle tentative dans 8 h.",
+          echec:"Le mot ne tient pas. Aruns secoue la tête, et le document se replie de lui-même dans son casier, comme s'il en avait assez vu. Nouvelle tentative dans 5 h.",
           reussite:[
             "Centaine. Une centaine d'équipages, au Terminus, et une reprise prévue pour eux tous. Tu notes le son nouveau, TAINE, à côté de RAN et de QUA. Puis Aruns referme le document, le serre contre sa combinaison, et regarde vers la sortie : ce douze-là, il veut savoir ce qu'il vaut."
           ] } },
@@ -5540,7 +5540,7 @@ const QUETES = [
         defi:{ type:"piratage", manches:4, vitesse:1600,
           texte:["Le panneau accepte un matricule si on le lui donne au bon moment. Saisis-le quatre fois de suite."],
           fini:"Matricule lu.",
-          echec:"Ton matricule arrive à côté, et le panneau s'éteint d'un coup, comme une porte qu'on referme au nez de quelqu'un. Nouvelle tentative dans 8 h.",
+          echec:"Ton matricule arrive à côté, et le panneau s'éteint d'un coup, comme une porte qu'on referme au nez de quelqu'un. Nouvelle tentative dans 5 h.",
           reussite:[
             "Le panneau lit ton matricule, et s'arrête sur le début : MAAR-12. Un secteur du dossier. Alors, au lieu de te refuser, il fait ce que font les machines du Bureau quand quelqu'un d'un dossier se présente : il en affiche l'état. Une fiche courte, en ancien, se déploie sous tes yeux."
           ] } },

@@ -36,7 +36,7 @@
   const dM = q.etapes[1].defi; a.etape = 1;
   const msg = rep => { ok = 0; ko = 0; dernierEchec = ""; a._qj = null; z.innerHTML = `<div data-qj-zone>${QUETES_JEUX.message.html(dM)}</div>`; QUETES_JEUX.message.wire(z, dM); if(rep) z.querySelector(`[data-qj-msg="${rep}"]`).click(); };
   msg(null); r.message = { glyphes: z.querySelectorAll(".gly").length, inconnuColore: !!z.querySelector(".mi-msg-inconnu .gly"), boutons: [...z.querySelectorAll("[data-qj-msg]")].map(b => b.dataset.qjMsg).sort().join(",") };
-  msg("RAN"); r.message.gagne = ok === 1 && ko === 0; msg("PLI"); r.message.perdu = ko === 1 && /elle a le temps/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  msg("RAN"); r.message.gagne = ok === 1 && ko === 0; msg("PLI"); r.message.perdu = ko === 1 && /elle a le temps/.test(dernierEchec) && /5 h/.test(dernierEchec);
   r.sonRan = { existe: !!GLYPHES_ANCIEN.RAN, forme: (GLYPHES_ANCIEN.RAN || []).join("/"), autresConnus: ["CON","TRE"].every(s => GLYPHES_ANCIEN[s]),
     unique: Object.values(GLYPHES_ANCIEN).filter(g => g.join("/") === (GLYPHES_ANCIEN.RAN || []).join("/")).length === 1, nbSons: Object.keys(GLYPHES_ANCIEN).length };   // O/trait, 39
   // v2.43 : les formes de QUA (Π barré) et TAINE (Σ traversé) ne servent à rien d'autre (K167).

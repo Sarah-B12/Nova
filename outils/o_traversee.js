@@ -8,7 +8,7 @@
   const d = { type:"traversee", colonnes:6, lignes:7, lave:13, plaques:2 };
   const z = document.createElement("div"); z.innerHTML = _htmlTraversee(d); document.body.appendChild(z);
   _wireTraversee(z, d);
-  r.consigne = /si tu les perds toutes, tu repars du bord/.test(z.textContent) && !/8 h/.test(z.textContent);
+  r.consigne = /si tu les perds toutes, tu repars du bord/.test(z.textContent) && !/5 h/.test(z.textContent);
   const grilleAvant = JSON.stringify(a._trav.lave);
   // marcher sur des cases brûlantes accessibles jusqu'à perdre les deux plaques
   for(let k=0; k<2; k++){

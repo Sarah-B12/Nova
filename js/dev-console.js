@@ -988,7 +988,7 @@ function _devAfficherFiche(p){
            d'un champ). Elle est à côté de son bouton, ne sert qu'à Q15, et dit pourquoi. -->
       <div class="dev-champ"><button class="mini danger" id="f-quete-btn">Rendre rejouable</button>
         <label class="dev-coche"><input type="checkbox" id="f-quete-affut"> Q15 : effacer aussi les nuits d'affût déjà tenues</label></div>
-      <p class="dev-note"><b>Lever le verrou</b> : la quête choisie (ou toutes) redevient jouable tout de suite, sans attendre les 8 h — la progression n'est pas touchée.<br>
+      <p class="dev-note"><b>Lever le verrou</b> : la quête choisie (ou toutes) redevient jouable tout de suite, sans attendre les 5 h — la progression n'est pas touchée.<br>
       <b>Rendre rejouable</b> : la quête repart à zéro (abandonnée si en cours). Les <b>PA</b> et les <b>points de Cercle</b> déjà gagnés ne seront pas reversés ; la bête reste. Le joueur connecté devra recharger sa page.<br>
       <b>Nuits d'affût</b> (Q15 seulement, l'étape où l'on tient l'affût cinq jours différents) : ces jours sont gardés par le serveur, à part. Sans la case, une Q15 rendue rejouable garde les nuits déjà tenues, et le joueur n'a pas à les refaire. Avec la case, elles sont effacées : il lui faudra cinq nouveaux jours.</p>
     </div>

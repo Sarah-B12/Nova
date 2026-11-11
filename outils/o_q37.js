@@ -69,7 +69,7 @@
     const ouvert = k => { const b = { N:1, E:2, S:4, O:8 }[k]; return a._qj && (a._qj.cases[a._qj.pos] & b); };
     for(let s = 0; s < 400 && !ko; s++){ z.innerHTML = _defiHTML(dC); _defiWire(z, dC);
       const k = ["N","O","E","S"].find(ouvert) || "N"; z.querySelector(`[data-qcv="${k}"]`).click(); }
-    r.crevassePerdue = ko === 1 && /phares faiblissent/.test(dernierEchec) && /8 h/.test(dernierEchec); }
+    r.crevassePerdue = ko === 1 && /phares faiblissent/.test(dernierEchec) && /5 h/.test(dernierEchec); }
 
   // Le journal, la plaque, la récompense.
   const jr = q.etapes[3].defi.reussite.join(" ");

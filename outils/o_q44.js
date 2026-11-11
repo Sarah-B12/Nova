@@ -41,7 +41,7 @@
   const dM = q.etapes[1].defi; a.etape = 1;
   const msg = rep => { ok = 0; ko = 0; dernierEchec = ""; a._qj = null; z.innerHTML = `<div data-qj-zone>${QUETES_JEUX.message.html(dM)}</div>`; QUETES_JEUX.message.wire(z, dM); if(rep) z.querySelector(`[data-qj-msg="${rep}"]`).click(); };
   msg(null); r.message = { glyphes: z.querySelectorAll(".gly").length, inconnuColore: !!z.querySelector(".mi-msg-inconnu .gly"), boutons: [...z.querySelectorAll("[data-qj-msg]")].map(b => b.dataset.qjMsg).sort().join(",") };
-  msg("TAINE"); r.message.gagne = ok === 1 && ko === 0; msg("BLO"); r.message.perdu = ko === 1 && /se replie de lui-même/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  msg("TAINE"); r.message.gagne = ok === 1 && ko === 0; msg("BLO"); r.message.perdu = ko === 1 && /se replie de lui-même/.test(dernierEchec) && /5 h/.test(dernierEchec);
   r.sonTaine = { existe: !!GLYPHES_ANCIEN.TAINE, forme: (GLYPHES_ANCIEN.TAINE || []).join("/"), avecConnu: !!GLYPHES_ANCIEN.CEN,
     unique: Object.values(GLYPHES_ANCIEN).filter(g => g.join("/") === (GLYPHES_ANCIEN.TAINE || []).join("/")).length === 1, nbSons: Object.keys(GLYPHES_ANCIEN).length };   // S/trait, 41
   r.quarantaineLisible = ["QUA","RAN","TAINE"].every(s => GLYPHES_ANCIEN[s]);           // vrai : prêt pour Q45

@@ -44,7 +44,7 @@
   z.querySelector("#q-ordre-valider").click(); r.ordreGagne = ok === 1 && ko === 0;
   ok = 0; ko = 0; z.innerHTML = _defiHTML(dO); _defiWire(z, dO);
   [1,0,2,3,4,5].forEach(i => z.querySelector(`.q-ordre-el[data-i="${i}"]`).click());
-  z.querySelector("#q-ordre-valider").click(); r.ordrePerdu = ko === 1 && /8 h/.test(dernierEchec);
+  z.querySelector("#q-ordre-valider").click(); r.ordrePerdu = ko === 1 && /5 h/.test(dernierEchec);
 
   // 3. Q26, la séquence : la cadence de l'appel, deux fois (10). Tempo accéléré pour le banc.
   const dS = Object.assign({}, queteData("q26").etapes[2].defi, { allume:5, pas:15 });
@@ -65,7 +65,7 @@
     _seqFin();
   }
   await jouerSeq(false); r.seq.gagnee = ok === 1 && ko === 0;
-  await jouerSeq(true);  r.seq.perdue = ko === 1 && ok === 0; r.seq.messagePropre = /radio|Asulf/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  await jouerSeq(true);  r.seq.perdue = ko === 1 && ok === 0; r.seq.messagePropre = /radio|Asulf/.test(dernierEchec) && /5 h/.test(dernierEchec);
 
   // 4. Écriture (K53) : au plus un « Un temps » ; le joueur ne parle pas (aucune réplique
   //    qui commence par « Tu dis » ou « tu réponds : « ») ; récompense.
@@ -111,7 +111,7 @@
         bF = await brouiller("frequenceSeule", 1.5, 1), bP = await brouiller("rien", 1, 1);
   r.brouillage = { gagne:bG.ok === 1, verrouille:bG.verrou, frequenceFixe:bG.fixe,
                    cumule:bA.ok === 1, frequenceNeSuffitPas:bF.ko === 1,
-                   perdu:bP.ko === 1 && /8 h/.test(bP.msg), ratable:DEFIS_UNTRY.has("brouillage") };
+                   perdu:bP.ko === 1 && /5 h/.test(bP.msg), ratable:DEFIS_UNTRY.has("brouillage") };
 
   // 8. Q30 : la crevasse sous l'anneau ; récompenses et drapeaux de fin d'arc.
   const dC = queteData("q30").etapes.find(e => e.defi.type === "crevasse").defi; r.crevasse = `${dC.n}/${dC.marge}`;

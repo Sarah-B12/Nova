@@ -40,7 +40,7 @@
     z.querySelector("#q-gly-valider").click(); };
   ok = 0; ko = 0; repondre(true);  r.plaqueGagne = ok === 1 && ko === 0;
   r.plaqueGlyphes = z.querySelectorAll(".q-gly-sym .gly").length;                     // 9 (2+3+3+2 = 10 sons)
-  ok = 0; ko = 0; repondre(false); r.plaquePerdue = ko === 1 && /Aruns efface/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  ok = 0; ko = 0; repondre(false); r.plaquePerdue = ko === 1 && /Aruns efface/.test(dernierEchec) && /5 h/.test(dernierEchec);
   r.leurres = dG.distracteurs;
 
   // 3. L'énigme : « couronne » passe (même dans une phrase), « le Nid » non.

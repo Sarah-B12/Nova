@@ -62,7 +62,7 @@
     z.querySelector("#q-calq-ok").click(); return { bouton }; };
   r.calqNoms = ["Les pulsations de La Lanterne","La fenêtre de la pièce","Ta rotation"].every(n => (z.innerHTML = _htmlCalques(dC), z.textContent.includes(n)));
   const cg = calq(true); r.calqGagne = ok === 1; r.calqRetournable = cg.bouton;
-  calq(false); r.calqPerdu = ko === 1 && /fenêtre de la pièce reste noire/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  calq(false); r.calqPerdu = ko === 1 && /fenêtre de la pièce reste noire/.test(dernierEchec) && /5 h/.test(dernierEchec);
 
   // 4. L'attente, le choix (ordre du serveur v254), la récompense.
   r.attenteMs = q.etapes[2].defi.duree;                                                 // 3600000

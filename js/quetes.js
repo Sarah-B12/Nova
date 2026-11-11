@@ -167,7 +167,7 @@ function _cleVerrou(a){ return a ? `${a.id}:${a.etape}` : null; }
    ⚠ Exprimé en FRACTION de `_jourMs()` et non en 8×3600000 : `JOUR_MS` est le
    seul interrupteur pour tester vite, un délai en dur le contournerait — c'est
    exactement le piège n°16 (deux échelles de temps pour une même échéance). */
-const VERROU_DEFI_H = 8;
+const VERROU_DEFI_H = 5;   // v2.78 (K244) : était 8 h
 function _verrouDefiMs(){ return Math.round(_jourMs() * VERROU_DEFI_H / 24); }
 
 function _purgerVerrous(){
