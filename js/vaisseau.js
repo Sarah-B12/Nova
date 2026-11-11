@@ -292,6 +292,8 @@ async function utiliserKitReparation(){
   if(!etat.vaisseau){ journal("Aucun vaisseau équipé à réparer.","alerte"); return; }
   if((etat.sac["kit_reparation"]||0) <= 0){ journal("Tu n'as pas de Kit de réparation dans ton sac.","alerte"); return; }
   if(pvVaisseau() >= pvMax()){ journal("La coque est déjà intacte.","alerte"); return; }
+  // v2.75 (K240) : pas en plein combat contre le Fléau (le serveur garde la coque du combat : le kit serait perdu).
+  if(typeof fleauCombatEnCours === "function" && fleauCombatEnCours()){ journal("Pas en plein combat contre le Fléau : finis-le ou romps-le d'abord.","alerte"); return; }
   if(!await agirServeur({ retirer:{ kit_reparation:1 }, motif:"reparer_coque" })) return;
   const gagne = reparerPv(KIT_PV);
   journal(`Coque rafistolée : +${gagne} PV (${pvVaisseau()}/${pvMax()}).`,"gain");

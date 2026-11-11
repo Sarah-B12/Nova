@@ -142,7 +142,7 @@ function _fmtDuree(ms){
 }
 
 // Mini-jeux ratables : un essai par jour.
-const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup",
+const DEFIS_UNTRY = new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","triangulation","calques","loup",   // v2.76 (K241) : « traversee » retirée — rejouable tout de suite
   "ronde","crevasse","tir","goupilles","reaction","brouillage","message"]);   // v1.98 : + message (Q31)   // v1.93 : + brouillage (Q29)   // v1.87 : les épreuves de quetes-jeux.js qui se ratent (le verrou de 8 h s'affiche)
 /* ⚠ Le verrou ne dure plus 24 h glissantes mais jusqu'au PROCHAIN MINUIT
    PARISIEN (voir jourDeJeu / prochainResetJeu dans terrain.js). Un échec à
@@ -1326,7 +1326,9 @@ function _wireCadenas(z,d){
 }
 
 /* ===========================================================
-   TRAVERSÉE (v0.97, ratable) — une croûte de lave refroidie, en grille.
+   TRAVERSÉE (v0.97 ; v2.76, K241 : REJOUABLE tout de suite) — une croûte de lave refroidie, en grille.
+   ⚠ v2.76 (l'autrice : « c'est un peu miser sur la chance ») : plus de verrou de 8 h. La dernière
+   plaque perdue, on repart du bord sur une NOUVELLE grille, aussitôt.
    On part d'une case sûre en bas ; on sonde une case VOISINE (8 directions)
    d'une case déjà franchie. Une case sûre affiche le nombre de cases brûlantes
    qui la touchent (démineur simplifié). Une case brûlante coûte une plaque de
@@ -1415,7 +1417,7 @@ function _travCaseSureExiste(C, L, lave, vus){
 function _htmlTraversee(d){
   const C=d.colonnes||6, P=d.plaques||3;
   return `<div class="quete-etape">${_par(d.texte)}
-    <p class="quete-indice">${d.consigne || `Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — après, tu rebrousses chemin pour ${VERROU_DEFI_H} h. Quand rien ne permet de savoir où poser le pied, tu peux tenter ta chance sans perdre de plaque ; mais une erreur que les chiffres permettaient d'éviter en coûte une.`}</p>
+    <p class="quete-indice">${d.consigne || `Atteins le bord du haut. Un chiffre = le nombre de cases brûlantes qui touchent cette case. ${P} plaques de protection — si tu les perds toutes, tu repars du bord, sur une croûte qui a bougé. Quand rien ne permet de savoir où poser le pied, tu peux tenter ta chance sans perdre de plaque ; mais une erreur que les chiffres permettaient d'éviter en coûte une.`}</p>
     <div class="quete-rep" style="gap:8px;flex-wrap:wrap">
       <button class="mini" id="q-trav-mode">Mode : 👣 Sonder</button>
       <span class="itip-gris" id="q-trav-pl"></span>
@@ -1464,7 +1466,14 @@ function _wireTraversee(z, d){
     }
     if(t.lave[i]){
       t.plaques--; sauvegarder();
-      if(t.plaques<=0){ dessiner(); echouerDefi(d.echec || `La croûte cède sous toi, et ta dernière plaque avec. Tu rebrousses chemin — nouvelle tentative dans ${VERROU_DEFI_H} h.`); return; }
+      if(t.plaques<=0){
+        /* v2.76 (K241) : pas de verrou — une nouvelle grille, tout de suite. */
+        const g2=_travGenerer(C, L, N);
+        Object.assign(t, { lave:g2.lave, vus:[g2.depart], marques:[], plaques:P });
+        sauvegarder(); dessiner();
+        journal(d.echec || "La croûte cède sous toi, et ta dernière plaque avec. Tu repars du bord : la croûte a bougé.","alerte");
+        return;
+      }
       journal(d.brulant || "La croûte cède — une plaque de protection fond sous tes bottes.","alerte");   // v1.87g : d.brulant
     } else if(i < C){ sauvegarder(); journal(d.fini || "Tu atteins l'autre bord !","gain"); reussirDefi(); return; }   // v2.34 : d.fini
     sauvegarder(); dessiner();

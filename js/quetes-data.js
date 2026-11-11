@@ -1410,7 +1410,7 @@ const QUETES = [
         defi:{ type:"traversee", colonnes:6, lignes:8, lave:15, plaques:3, icone:"💥",   // v1.87g : textes propres (débris)
           brulant:"Un débris en rotation t'accroche de plein fouet : une plaque de blindage s'arrache.",
           pariForce:"Un débris t'accroche — mais rien sur ton capteur ne permettait de le voir venir : tu l'esquives d'un coup de rein, et ta plaque tient.",
-          echec:"Un dernier débris arrache ta dernière plaque. Tu recules hors de l'anneau — nouvelle tentative dans 8 h.",
+          echec:"Un dernier débris arrache ta dernière plaque. Tu recules hors de l'anneau, et tu repars du bord : les débris ont bougé.",
           texte:["Traverse l'anneau de débris jusqu'à la fente. Chaque passage franchi t'indique combien de débris en rotation le bordent."],
           reussite:[
             "Tu passes la dernière rangée de débris et la fente s'ouvre devant toi, immense : des centaines de mètres de poutres arrachées, de ponts suspendus dans le vide, de hangars éventrés. Et partout, gravé sur les poutres, le carré.",
@@ -1594,7 +1594,7 @@ const QUETES = [
         defi:{ type:"traversee", colonnes:7, lignes:8, lave:17, plaques:3, icone:"🕳",   // v1.87g : textes propres (ponts creux)
           brulant:"Le pont de neige s'effondre sous toi ; ton harnais te rattrape, mais une plaque y reste.",
           pariForce:"Le pont de neige s'effondre — mais rien ne permettait de le deviner : tu t'y attendais, et tu te rattrapes au bord. Ta plaque tient.",
-          echec:"Le dernier pont cède, et ta dernière plaque avec. Tu remontes, les bras tremblants — nouvelle tentative dans 8 h.",
+          echec:"Le dernier pont cède, et ta dernière plaque avec. Tu remontes, les bras tremblants, et tu repars du bord : les ponts ont bougé.",
           texte:["Franchis la crevasse de bloc en bloc. Chaque bloc solide t'indique combien de ponts creux le bordent."],
           reussite:[
             "Tu prends pied sur l'autre lèvre de la crevasse, et tu te retournes : le dernier pont que tu as évité vient de s'effondrer dans le vide, sans un bruit.",
@@ -2660,7 +2660,7 @@ const QUETES = [
         defi:{ type:"traversee", colonnes:7, lignes:9, lave:20, plaques:3, icone:"🌀",   // v1.87g : textes propres (courants)
           brulant:"Un courant te happe : la coque se tord, et une jointure de Cristal saute.",
           pariForce:"Un courant te happe — mais rien sur tes capteurs ne l'annonçait : tu redresses à temps, et la coque encaisse sans rien perdre.",
-          echec:"Un dernier courant arrache ta dernière protection. Tu te dégages du bord à pleine poussée — nouvelle tentative dans 8 h.",
+          echec:"Un dernier courant arrache ta dernière protection. Tu te dégages du bord à pleine poussée, et tu repars : les courants ont changé.",
           texte:["Traverse le bord de la Gorge jusqu'au dernier point de la route. Chaque zone franchie t'indique combien de courants la touchent."],
           reussite:[
             "Tu touches le dernier point de la route, et tu tiens. La coque grince, les jointures chauffent, mais rien ne casse. Devant toi s'ouvre la Gorge : pas un trou, une absence, et tu as la sale impression qu'elle te regarde aussi.",
@@ -4304,10 +4304,10 @@ const QUETES = [
         ],
         defi:{ type:"traversee", colonnes:7, lignes:9, lave:19, plaques:3, icone:"✴",
           texte:["Autour de l'étoile, des zones où les jets jaillissent. Chaque zone franchie te dit combien de jets la touchent."],
-          consigne:"Atteins le bord du haut. Un chiffre = le nombre de zones brûlantes qui touchent celle-ci. 3 écrans thermiques — après, tu fais demi-tour pour 8 h. Quand rien ne permet de savoir où passer, tu peux tenter ta chance sans perdre d'écran ; mais une erreur que les chiffres permettaient d'éviter en coûte un.",
+          consigne:"Atteins le bord du haut. Un chiffre = le nombre de zones brûlantes qui touchent celle-ci. 3 écrans thermiques — si tu les perds tous, tu repars du bord, sur un passage qui a changé. Quand rien ne permet de savoir où passer, tu peux tenter ta chance sans perdre d'écran ; mais une erreur que les chiffres permettaient d'éviter en coûte un.",
           pariForce:"Un jet jaillit là où rien ne l'annonçait ; tu l'avais deviné, et tu l'évites de justesse. Ton écran tient.",
           brulant:"Un jet te frôle : un écran thermique fond sur ta coque.",
-          echec:"Le dernier écran thermique cède, et l'alarme de coque hurle. Tu rebrousses chemin plein moteur, pendant que la radio crie dans une langue que tu ne comprends pas. Nouvelle tentative dans 8 h.",
+          echec:"Le dernier écran thermique cède, et l'alarme de coque hurle. Tu rebrousses chemin plein moteur, pendant que la radio crie dans une langue que tu ne comprends pas. Les zones brûlantes ont bougé : tout est à refaire.",
           fini:"Tu es assez près.",
           reussite:[
             "Tu passes le dernier jet et coupes les moteurs. Ici, la lumière est partout : elle entre par le hublot, traverse tes mains, et tu en vois les os, en ombre, comme sur une vieille radiographie. Au micro, Dagon souffle longuement, et ne dit plus rien de moqueur."

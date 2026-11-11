@@ -4,7 +4,7 @@ eval(fs.readFileSync("js/quetes-data.js","utf8").replace(/^const QUETES/m,"globa
 const g=fs.readFileSync("js/glyphes.js","utf8").split("(function(){")[0];eval(g.replace(/^const /gm,"var "));
 const R={};
 // 1. types par quête, répétitions consécutives, ratables
-const UNTRY=new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","traversee","triangulation","calques","loup","ronde","crevasse","tir","goupilles","reaction","brouillage","message"]);
+const UNTRY=new Set(["piratage","glyphes","ordre","cadenas","sequence","memoire","combat","triangulation",   /* v2.76 : traversee rejouable */"calques","loup","ronde","crevasse","tir","goupilles","reaction","brouillage","message"]);
 const typ=q=>q.etapes.map(e=>e.defi&&e.defi.type);
 R.consecutifs=[];R.sansRatable=[];
 QUETES.forEach((q,i)=>{const T=new Set(typ(q).filter(t=>!["choix","attente","scene","combat"].includes(t)));

@@ -327,10 +327,10 @@ const BAR_JEUX = [
     gains:"jusqu'à ×5,4 · le jeton marqué prend tout" },
   { id:"bonneteau",  nom:"Le bonneteau", dispo:true,
     desc:"Trois gobelets, une bille, des mains trop rapides. Personne n'a jamais prouvé qu'il trichait.",
-    gains:"×2 (si tu suis bien)" },
-  { id:"puissance4", nom:"Quatre alignés", dispo:false,
-    desc:"Contre la maison, sur une grille rayée par vingt ans de verres.",
-    gains:"×2 · nul remboursé" }
+    gains:"×2 (si tu suis bien… et s'il ne triche pas)" },   // v2.73 (K236) : le tenancier triche une partie sur trois
+  { id:"puissance4", nom:"Quatre alignés", dispo:true,   // v2.74 (K237 → K239)
+    desc:"Contre la maison, sur une grille rayée par vingt ans de verres. La maison joue toujours le premier coup.",
+    gains:"le tenancier ×1,2 · l'habitué ×1,8 · le vieux du fond ×3 · nul remboursé" }   // K239 (option B)
 ];
 function _barBlocTexte(code){
   return { ok:"", jeu_24h:"Déjà joué — reviens dans 24 h.",
@@ -384,6 +384,7 @@ async function majBarJeux(el, fid){
     if(b.dataset.jeu==="des")       _tableDes(z);
     if(b.dataset.jeu==="cuve")      _tableCuve(z);
     if(b.dataset.jeu==="bonneteau") _tableBonneteau(z);
+    if(b.dataset.jeu==="puissance4") _tableQuatre(z);   // v2.74
   }));
 }
 
@@ -713,19 +714,150 @@ async function _bonPlateau(z, d){
     if(error||!r||!r.ok){ res.textContent="La main du croupier s'est figée. Réessaie."; table.classList.remove("fini"); table.classList.add("choix"); return; }
     if(typeof appliquerSoldeServeur==="function" && typeof r.solde==="number") appliquerSoldeServeur(r.solde);
     // La bille va sous le bon gobelet (ce que le serveur a rejoué), puis on soulève tout.
-    Object.values(gobs).forEach(x=>x.classList.remove("a-bille")); place[r.bon].classList.add("a-bille");
+    /* v2.73 (K236) : une partie sur trois, le tenancier triche — la bille n'est sous aucun gobelet (r.bon = null). */
+    Object.values(gobs).forEach(x=>x.classList.remove("a-bille")); if(!r.triche && place[r.bon]) place[r.bon].classList.add("a-bille");
     g.classList.add("designe");
     Object.values(place).forEach(x=>x.classList.add("leve"));
     res.innerHTML = r.gagne ? `<span style="color:#8bd450">La bille est là. Gagné : +${r.net} ₡.</span>`
+                  : r.triche ? `<span style="color:#ff6b6b">Les trois gobelets se lèvent : pas de bille. Le tenancier hausse les épaules. Personne n'a jamais prouvé qu'il trichait… Perdu : −${r.mise} ₡.</span>`
                             : `<span style="color:#ff6b6b">Raté : elle était sous le gobelet ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.</span>`;
     _barRafraichirTables();   // v1.90
     journal(r.gagne ? `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]}, et la bille y est. Gagné : +${r.net} ₡.`
+            : r.triche ? `Bonneteau (mise ${r.mise} ₡) : les trois gobelets se lèvent, et pas de bille. Le tenancier hausse les épaules. Perdu : −${r.mise} ₡.`
                     : `Bonneteau (mise ${r.mise} ₡) : tu désignes le gobelet ${BON_NOMS[choix]} ; la bille était sous celui ${BON_NOMS[r.bon]}. Perdu : −${r.mise} ₡.`,
             r.gagne?"gain":"alerte","eco");
     if(typeof afficher==="function") afficher();
   }));
 }
 
+
+/* ===========================================================
+   v2.74 (K237 → K239) — QUATRE ALIGNÉS, la 4ᵉ table. Le SERVEUR joue la maison
+   (quatre_ouvrir / quatre_jouer, v281) : le client n'affiche que la grille qu'il reçoit.
+   Trois adversaires ; la maison joue toujours le premier coup ; nul : mise rendue.
+   ⚠ BARÈME PARTAGÉ : les gains de QUATRE_NIVEAUX = ceux de `_q4_niveau` (serveur).
+   Grille : 42 cases, indice y*7+x (y = 0 en bas) ; 0 vide, 1 toi, 2 la maison.
+   =========================================================== */
+const QUATRE_NIVEAUX = [
+  { id:"tenancier", nom:"Le tenancier",     mult:1.2, desc:"Il joue vite et pense à autre chose." },
+  { id:"habitue",   nom:"L'habitué",        mult:1.8, desc:"Il a usé la grille avant toi. Il voit venir." },
+  { id:"vieux",     nom:"Le vieux du fond", mult:3, desc:"Il ne dit rien. Il ne perd presque jamais." },
+];
+function _q4Erreur(d){
+  const er = d && d.err;
+  return er==="mise" ? `Mise entre ${d.min} et ${d.max} ₡.` : er==="fonds" ? "Crédits insuffisants."
+       : er==="jeu_24h" ? "Tu as déjà joué à Quatre alignés aujourd'hui." : er==="deux_par_jour" ? "Deux jeux par jour, pas plus."
+       : er==="partie_en_cours" ? "Une partie est déjà ouverte." : er==="prison" ? "Tu es en prison." : er==="mort" ? "Impossible pour l'instant."
+       : er==="colonne_pleine" ? "Cette colonne est pleine." : `Refusé (${er||"erreur"}).`;
+}
+function _q4Ligne(g){   // les 4 cases alignées, s'il y en a (pour les mettre en valeur)
+  for(let i=0;i<42;i++){ const p=g[i]; if(!p) continue; const x=i%7, y=(i-x)/7;
+    for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]]){ const L=[i];
+      for(let k=1;k<4;k++){ const a=x+k*dx, b=y+k*dy; if(a<0||a>6||b<0||b>5||g[b*7+a]!==p) break; L.push(b*7+a); }
+      if(L.length===4) return L; } }
+  return [];
+}
+function _q4Grille(g, opts){
+  const ligne = opts && opts.fini ? _q4Ligne(g) : [];
+  let h = `<div class="q4-grille${opts && opts.actif ? " actif" : ""}">`;
+  for(let x=0;x<7;x++){
+    h += `<button class="q4-col" data-q4-col="${x}" ${opts && opts.actif && !g[35+x] ? "" : "disabled"} aria-label="Colonne ${x+1}">`;
+    for(let y=5;y>=0;y--){ const i=y*7+x, v=g[i];
+      h += `<span class="q4-case${v===1?" moi":v===2?" maison":""}${i===(opts&&opts.dernier)?" dernier":""}${ligne.includes(i)?" ligne":""}"></span>`; }
+    h += `</button>`;
+  }
+  return h + `</div>`;
+}
+function _q4Style(){
+  if(document.querySelector("#q4-style")) return;
+  const st = document.createElement("style"); st.id = "q4-style";
+  st.textContent = `
+    .q4-grille{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; max-width:340px; padding:8px; border-radius:10px;
+      background:#1d3557; touch-action:manipulation; }
+    .q4-col{ display:grid; grid-template-rows:repeat(6,1fr); gap:4px; padding:2px; border:0; border-radius:6px; background:transparent; cursor:pointer; }
+    .q4-col:disabled{ cursor:default; }
+    .q4-grille.actif .q4-col:not(:disabled):hover{ background:rgba(255,255,255,.08); }
+    .q4-case{ display:block; aspect-ratio:1; border-radius:50%; background:#0b1626; box-shadow:inset 0 2px 3px rgba(0,0,0,.6); }
+    .q4-case.moi{ background:#facc15; }
+    .q4-case.maison{ background:#ff5257; }
+    .q4-case.dernier{ outline:2px solid #fff; outline-offset:-2px; }
+    .q4-case.ligne{ box-shadow:0 0 0 3px #fff, 0 0 12px #fff; }
+    .q4-niveaux{ display:flex; flex-wrap:wrap; gap:8px; }
+    .q4-niveaux button.actif{ outline:2px solid var(--bleu,#5aa8e6); }`;
+  document.head.appendChild(st);
+}
+async function _tableQuatre(z){
+  if(!z) return; _q4Style();
+  let e; try{ ({data:e}=await sb.rpc("quatre_etat")); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#q40"); }
+  if(e && e.ok && e.partie){ _q4Plateau(z, e, null); return; }
+  const max=(_barJeux&&_barJeux.mise_max)||200, min=(_barJeux&&_barJeux.mise_min)||50;
+  let niv = "tenancier";
+  z.innerHTML=`<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:10px">
+      <b>Quatre alignés</b>
+      <span class="bar-desc">Une grille rayée par vingt ans de verres. Aligne quatre jetons — en ligne, en colonne ou en diagonale — avant ton adversaire.</span>
+      <span class="itip-gris">Choisis contre qui tu joues. La maison pose toujours le premier jeton. Partie nulle : ta mise t'est rendue. Une fois lancée, la partie ne s'annule pas.</span>
+      <div class="q4-niveaux">${QUATRE_NIVEAUX.map(n => `<button class="mini${n.id===niv?" actif":""}" data-q4-niv="${n.id}" title="${n.desc}">${n.nom} · ×${String(n.mult).replace(".", ",")}</button>`).join("")}</div>
+      <span class="itip-gris" id="q4-niv-desc">${QUATRE_NIVEAUX[0].desc}</span>
+      <div class="actions" style="gap:8px;align-items:center">
+        <label class="itip-gris">Mise <input id="q4-mise" type="number" min="${min}" max="${max}" step="10" value="${min}" style="width:90px"></label>
+        <button class="mini" id="q4-go">S'asseoir face à lui</button>
+      </div>
+      <div id="q4-res" class="itip-gris"></div>
+    </div>`;
+  z.querySelectorAll("[data-q4-niv]").forEach(b => b.addEventListener("click", () => {
+    niv = b.dataset.q4Niv; z.querySelectorAll("[data-q4-niv]").forEach(x => x.classList.toggle("actif", x === b));
+    z.querySelector("#q4-niv-desc").textContent = (QUATRE_NIVEAUX.find(n => n.id === niv) || {}).desc || "";
+  }));
+  z.querySelector("#q4-go").addEventListener("click", async()=>{
+    const b=z.querySelector("#q4-go"); if(b.disabled) return; b.disabled=true;
+    const mise=parseInt(z.querySelector("#q4-mise").value,10)||0;
+    let d,error; try{ ({data:d,error}=await sb.rpc("quatre_ouvrir",{p_niveau:niv,p_mise:mise})); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#q41"); }
+    if(error||!d||!d.ok){ const msg=_q4Erreur(d); z.querySelector("#q4-res").textContent=msg; journal(msg,"alerte"); b.disabled=false; return; }
+    if(typeof appliquerSoldeServeur==="function" && typeof d.solde==="number") appliquerSoldeServeur(d.solde);
+    if(typeof afficher==="function") afficher();
+    _barRafraichirTables();   // la partie compte dès la mise
+    _q4Plateau(z, d, d.coup_maison);
+  });
+}
+function _q4Plateau(z, p, coupMaison){
+  const n = QUATRE_NIVEAUX.find(x => x.id === p.niveau) || QUATRE_NIVEAUX[0];
+  let g = (p.grille || []).map(Number);
+  const dernierDe = (grille, col) => { if(col==null) return null; for(let y=5;y>=0;y--) if(grille[y*7+col]) return y*7+col; return null; };
+  const dessiner = (msg, fini) => {
+    z.innerHTML = `<div class="bar-carte" style="flex-direction:column;align-items:stretch;gap:10px">
+      <b>Quatre alignés — contre ${n.nom.charAt(0).toLowerCase() + n.nom.slice(1)}</b>
+      <span class="itip-gris">Mise ${p.mise} ₡ · gain ×${String(n.mult).replace(".", ",")} · toi : jaune · ${n.nom.toLowerCase()} : rouge</span>
+      ${_q4Grille(g, { actif:!fini, dernier:dernierDe(g, coupMaison), fini })}
+      <div id="q4-res">${msg}</div>
+      ${fini ? "" : `<div class="actions"><button class="mini danger" id="q4-abandon">Abandonner (mise perdue)</button></div>`}
+    </div>`;
+    if(fini) return;
+    z.querySelectorAll("[data-q4-col]").forEach(b => b.addEventListener("click", () => jouer(+b.dataset.q4Col)));
+    const ab = z.querySelector("#q4-abandon");
+    if(ab) ab.addEventListener("click", async () => {
+      if(typeof confirmerJoli === "function" && !await confirmerJoli("Abandonner", `Te lever de table ? Ta mise de ${p.mise} ₡ est perdue.`, "Abandonner", true)) return;
+      let r; try{ ({data:r}=await sb.rpc("quatre_abandonner")); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#q43"); }
+      if(r && r.ok){ journal(`Quatre alignés : tu te lèves de table. Perdu : −${p.mise} ₡.`, "alerte", "eco"); _tableQuatre(z); _barRafraichirTables(); }
+    });
+  };
+  const jouer = async (col) => {
+    z.querySelectorAll("[data-q4-col]").forEach(b => b.disabled = true);
+    const res = z.querySelector("#q4-res"); if(res) res.textContent = `${n.nom} réfléchit…`;
+    let r,error; try{ ({data:r,error}=await sb.rpc("quatre_jouer",{p_col:col})); }catch(err){ if(typeof _catchLog==="function") _catchLog(err,"bar.js#q42"); }
+    if(error||!r||!r.ok){ dessiner(`<span style="color:#ff6b6b">${_q4Erreur(r)}</span>`, false); return; }
+    g = (r.grille || []).map(Number); coupMaison = r.coup_maison;
+    if(!r.fini){ dessiner("À toi.", false); return; }
+    if(typeof appliquerSoldeServeur==="function" && typeof r.solde==="number") appliquerSoldeServeur(r.solde);
+    const txt = r.fini === "gagne" ? `Quatre jetons alignés : tu bats ${n.nom.toLowerCase()}. Gagné : +${r.net} ₡.`
+              : r.fini === "nul"   ? `La grille est pleine, personne n'a gagné. Ta mise de ${r.mise} ₡ t'est rendue.`
+                                   : `${n.nom} aligne ses quatre jetons. Perdu : −${r.mise} ₡.`;
+    dessiner(`<span style="color:${r.fini === "gagne" ? "#8bd450" : r.fini === "nul" ? "inherit" : "#ff6b6b"}">${txt}</span>`, true);
+    journal(`Quatre alignés (mise ${r.mise} ₡) : ${txt.charAt(0).toLowerCase() + txt.slice(1)}`, r.fini === "gagne" ? "gain" : r.fini === "nul" ? "" : "alerte", "eco");
+    _barRafraichirTables();
+    if(typeof afficher==="function") afficher();
+  };
+  dessiner(p.grille && coupMaison != null ? `${n.nom} pose son premier jeton. À toi.` : "À toi.", false);
+}
 
 /* ===========================================================
    v1.93 — K62 : LES RÉSERVES DE LA STATION (onglet du bar, à la station, habilité).

@@ -83,7 +83,7 @@ function renderBoutique(){
   if(!_catsBoutique().some(c=>c.id===boutiqueTab)) boutiqueTab = _catsBoutique()[0].id;
   let html = `<p class="vide" id="boutique-msg" style="margin:0 0 8px; display:none"></p>`;
   if(_surNidBoutique()){
-    html += `<p class="vide" style="margin:0 0 10px">Le module du Nid — <b>du carburant et des kits de réparation</b>, rien d'autre. Les étiquettes sont écrites en <b>ancien</b> ; les bidons et les kits, eux, se reconnaissent.
+    html += `<p class="vide" style="margin:0 0 10px">Le module du relais garde, depuis trois siècles, le plein prévu pour le vaisseau du retour : <b>du carburant et des kits de réparation</b>, rien d'autre. Personne n'y avait touché ; c'est toi qu'il sert, et il débite ton matricule. Les étiquettes sont écrites en <b>ancien</b> ; les bidons et les kits, eux, se reconnaissent.
       <br><span class="itip-gris">Une coque clouée dans le secteur est remorquée jusqu'ici.</span></p>`;
   } else if(_surBaseBoutique()){
     html += `<p class="vide" style="margin:0 0 10px">Comptoir du Perchoir — <b>oxygène, soins, carburant et vaisseau</b>, rien d'autre. Les prix sont ceux d'un endroit où tout doit monter en vaisseau : acheter aux <b>Biotech</b> ou au marché d'une faction reste bien plus avantageux.</p>`;

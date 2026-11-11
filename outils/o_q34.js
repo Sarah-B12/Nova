@@ -24,7 +24,7 @@
   r.lieux = q.etapes.map(e => e.cible.lieu).join(",");                                  // e2_etoile_bleue ×4, e2_base
   const types = id => new Set(queteData(id).etapes.map(e => e.defi.type).filter(t => !["choix","attente","scene","combat"].includes(t)));
   r.repetitionAvecQ33 = [...types("q34")].filter(t => types("q33").has(t));             // []
-  r.ratables = q.etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).map(e => e.defi.type).join(",");   // traversee,calques
+  r.ratables = q.etapes.filter(e => DEFIS_UNTRY.has(e.defi.type)).map(e => e.defi.type).join(",");   // calques (v2.76 : la traversée est rejouable, K241)
 
   // 2. La traversée : sa consigne (écrans thermiques), sa fin (« Tu es assez près. ») et son échec.
   const dT = q.etapes[0].defi, C = dT.colonnes, L = dT.lignes; a.etape = 0;
@@ -50,7 +50,9 @@
         ko = 0; dernierEchec = ""; a._trav = t; z.innerHTML = _defiHTML(dT); _defiWire(z, dT);
         z.querySelector(`#q-trav-grille [data-i="${lave}"]`).click(); perdu = true; break; }
       if(!sures.length) break; t.vus.push(sures[Math.floor(Math.random() * sures.length)]); } }
-  r.travPerdu = ko === 1 && /écran thermique cède/.test(dernierEchec) && /8 h/.test(dernierEchec);
+  // v2.76 (K241) : plus de verrou — la dernière protection perdue, une NOUVELLE grille tout de suite, le message au journal.
+  r.travPerdu = ko === 0 && a._trav && a._trav.vus.length === 1 && a._trav.plaques === dT.plaques
+             && msgs.some(m => /écran thermique cède/.test(m) && /tout est à refaire/.test(m));
 
   // 3. Les calques : les trois noms ; la bonne position gagne ; la dernière vérification ratée = son échec.
   const dC = q.etapes[1].defi; a.etape = 1;

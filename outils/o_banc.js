@@ -110,6 +110,10 @@ const DELAIS = {
   depart: { profil: 50, sac: 50, jauges: 50 },     // v2.63 : partir avec l'aller seulement (K217), le kit au Nid (o_depart.js)
   missions265: { profil: 50, sac: 50, jauges: 50 }, // v2.65 : rangement au doigt, coffre « qui », textes des missions (o_missions265.js)
   version: { profil: 50, sac: 50, jauges: 50 },    // v2.71 : l'écran « nouvelle version » (o_version.js, K235)
+  bonneteau: { profil: 50, sac: 50, jauges: 50 },  // v2.73 : le tenancier triche (o_bonneteau.js, K236)
+  quatre: { profil: 50, sac: 50, jauges: 50 },     // v2.74 : Quatre alignés (o_quatre.js, K237 → K239)
+  fleau_partir: { profil: 50, sac: 50, jauges: 50 }, // v2.75 : partir du Fléau = défaite (o_fleau_partir.js, K240)
+  traversee: { profil: 50, sac: 50, jauges: 50 },  // v2.76 : la traversée rejouable tout de suite (o_traversee.js, K241)
   seq: { profil: 50, sac: 50, jauges: 50 },
   banq: { profil: 50, sac: 50, jauges: 50 },
   q7: { profil: 50, sac: 50, jauges: 50 },

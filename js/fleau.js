@@ -46,6 +46,23 @@ const _FLEAU_PARE = { piques:"moteurs", rayon:"bouclier", decharge:"canon" };
 
 let _fleauObjets = {};           // { pique|lentille|pupille : "ISO d'expiration" }
 let _fleauSous = "combat", _fleauEtat = null, _fleauOccupe = false;
+/* v2.75 (K240, demande de l'autrice) — PARTIR, C'EST PERDRE. Quitter la fenêtre du Fléau pendant un
+   combat (aller ailleurs, recharger la page) le rompt : il compte comme une défaite. On ne répare pas
+   non plus sa coque en plein combat (le serveur garde la sienne : la réparation aurait été écrasée à
+   la fin, kit perdu). `_fleauEngageIci` : le combat a commencé dans CETTE page ; sinon, c'est un
+   combat d'avant un rechargement, rompu dès qu'on revient. */
+let _fleauEngageIci = false;
+function fleauCombatEnCours(){ return !!(_fleauEtat && _fleauEtat.combat && _fleauEtat.combat.statut === "en_cours"); }
+async function fleauQuitter(pourquoi){
+  if(!fleauCombatEnCours() || _fleauOccupe) return;
+  _fleauOccupe = true;
+  try{
+    const { data:d } = await sb.rpc("fleau_rompre");
+    if(d && d.ok){ _fleauEtat.combat = d.combat; _fleauDernier = "Tu t'es éloigné des piques : le combat est perdu.";
+      journal(`⚔️ ${pourquoi || "Tu t'éloignes des piques"} : le combat contre le Fléau compte comme perdu. Score du jour : ${d.combat.score}.`, "alerte", "combat"); }
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "fleau.js#quitter"); }
+  _fleauOccupe = false; _fleauEngageIci = false;
+}
 let _fleauRep = { bouclier:1, canon:2, moteurs:1 }, _fleauCharger = false, _fleauDernier = null;
 
 function surFleau(){ return (typeof enCeres === "function") && enCeres() && (typeof surLieuEspace === "function") && surLieuEspace(espaceLieu("e2_oeil_piques")); }
@@ -116,6 +133,8 @@ async function majFleau(rafraichir){
   fleauObjetsCharger().then(() => { if(_fleauSous === "combat" && !(_fleauEtat && _fleauEtat.combat && _fleauEtat.combat.statut === "en_cours")) _fleauRendre(); });
   if(!d || !d.ok){ z.innerHTML = `<p class="vide">Le Fléau ne répond pas. Réessaie dans un instant.</p>`; _fleauEtat = null; return; }
   _fleauEtat = d;
+  // v2.75 (K240) : un combat resté ouvert d'avant un rechargement de la page compte comme perdu.
+  if(fleauCombatEnCours() && !_fleauEngageIci) await fleauQuitter("Tu as quitté le combat en cours de route");
   _fleauMontrerSous();
 }
 
@@ -151,7 +170,7 @@ function _fleauRendre(){
   else if(nrj < cout) refus = `Pas assez d'énergie (${cout} % requis).`;
   const maitre = (typeof canonVaisseau === "function") && canonVaisseau() > 0;
   z.innerHTML = signe
-    + `<p class="vide" style="margin:0 0 10px">Une attaque par jour. À chaque passe, il annonce son coup ; tu répartis <b>4 points de puissance</b> entre le bouclier, le canon et les moteurs. Chaque coup se pare mieux d'une façon. Ton canon tire d'abord ; s'il tient, il frappe. Passé la moitié de sa coque, il s'emballe : il annonce deux coups et n'en lâche qu'un. Douze passes au plus.</p>`
+    + `<p class="vide" style="margin:0 0 10px">Une attaque par jour. À chaque passe, il annonce son coup ; tu répartis <b>4 points de puissance</b> entre le bouclier, le canon et les moteurs. Chaque coup se pare mieux d'une façon. Ton canon tire d'abord ; s'il tient, il frappe. Passé la moitié de sa coque, il s'emballe : il annonce deux coups et n'en lâche qu'un. Douze passes au plus. <b>Une fois engagé, quitter cette fenêtre, c'est rompre le combat : il compte comme perdu.</b></p>`   // v2.75 (K240)
     + (maitre ? `<p class="vide" style="margin:0 0 10px">Ton canon de bord peut être <b>chargé</b> à chaque passe : un point de puissance de plus, une cellule d'énergie de moins (${etat.sac[FLEAU_CELLULE] || 0} au sac).</p>` : "")
     + `<p class="vide" style="margin:0 0 12px">Une victoire rapporte des crédits, plus les jours où il est fort. Le classement du mois compte tes <b>10 meilleurs combats</b>, et la coque qui te reste ; une navette ou un cargo comptent davantage qu'un Vaisseau maître.</p>`
     + `<div class="actions"><button class="mini" id="fl-attaquer" ${refus ? "disabled" : ""}>Attaquer le Fléau · ${cout} % d'énergie</button></div>`
@@ -182,6 +201,7 @@ function _fleauCombatHtml(c){
       <span class="fl-pts">${"<i></i>".repeat(_fleauRep[s.id])}</span>`).join("");
   return `
     <div class="fl-barres">
+      <p class="vide" style="margin:0 0 6px">Reste dans cette fenêtre jusqu'à la fin : la quitter, c'est perdre le combat.</p>
       ${_fleauBarre("Ta coque", c.coque, c.coque_max, `${c.coque} / ${c.coque_max} PV`, false)}
       ${_fleauBarre("Le Fléau", c.fleau_pct, 100, `${c.fleau_pct} %`, true)}
     </div>
@@ -255,7 +275,7 @@ async function fleauAttaquer(){
     if(!d || !d.ok){ journal(FLEAU_ERREURS[d && d.err] || "Le Fléau ne répond pas.", "alerte", "combat"); _fleauOccupe = false; return; }
     if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
     if(d.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(d.etat);
-    _fleauEtat = { ok:true, bande:d.bande, combat:d.combat };
+    _fleauEtat = { ok:true, bande:d.bande, combat:d.combat }; _fleauEngageIci = true;   // v2.75 (K240)
     _fleauRep = { bouclier:1, canon:2, moteurs:1 }; _fleauCharger = false; _fleauDernier = null;
     journal("Tu fonces vers le Fléau. Le point rouge se tourne vers toi.", "alerte", "combat");
     if(typeof afficher === "function") afficher();

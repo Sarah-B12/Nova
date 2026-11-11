@@ -22,6 +22,9 @@ function versionLocale(){
 }
 async function versionVerifier(){
   if(_versionPerimee) return true;
+  /* v2.75 (K240) : jamais en plein combat contre le Fléau — l'écran forcerait à recharger, et partir, c'est
+     perdre. On repasse 5 minutes plus tard (un combat dure au plus dix minutes sans jouer). */
+  if(typeof fleauCombatEnCours === "function" && fleauCombatEnCours()) return false;
   const ici = versionLocale(); if(!ici) return false;
   try{
     const r = await fetch(`version.txt?t=${Date.now()}`, { cache:"no-store" });

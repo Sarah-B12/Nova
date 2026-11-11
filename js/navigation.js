@@ -46,7 +46,10 @@ function _boutiqueBanniere(){
    s'ouvraient dans une table aussitôt remplacée — la mise était prise, rien ne se
    jouait (retour de l'autrice). Un rafraîchissement ne redessine donc plus le Bar
    s'il est déjà affiché ; seul un vrai changement d'onglet le reconstruit. */
-function changerHub(h, rafraichir){ if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(rafraichir);
+function changerHub(h, rafraichir){
+  /* v2.75 (K240) : quitter la fenêtre du Fléau en plein combat le rompt (défaite). */
+  if(h !== "fleau" && !rafraichir && typeof fleauCombatEnCours === "function" && fleauCombatEnCours()) fleauQuitter();
+  if(h==="inn") _innBanniere(); if(h==="boutique") _boutiqueBanniere(); montrerHub(h); if(h==="terrain") majTerrain(); if(h==="centre") majCentre(); if(h==="quete" && typeof majQueteHub==="function") majQueteHub(rafraichir);
   if(h==="bar" && typeof majBar==="function"){ const bv=document.querySelector("#bar-vue"); if(!(rafraichir && bv && bv.childElementCount)) majBar(bv); } if(h==="marche" && typeof renderMarche==="function") renderMarche(); if(h==="poste" && typeof majPoste==="function") majPoste(); if(h==="boutique" && typeof renderBoutique==="function") renderBoutique(); if(h==="voler" && typeof majVoler==="function") majVoler(); if(h==="garage" && typeof majGarage==="function") majGarage(); if(h==="gisement" && typeof majGisement==="function") majGisement(); if(h==="arene" && typeof majArene==="function") majArene(); if(h==="fleau" && typeof majFleau==="function") majFleau(rafraichir); if(h==="descente" && typeof majDescente==="function") majDescente(); }
 // Affiche les destinations selon l'endroit (temps réel). Terrain : chez soi seulement.
 function majHub(){
