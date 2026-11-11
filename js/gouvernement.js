@@ -896,7 +896,9 @@ async function _evenementsAppliquerFond(evs){
              retour de l'autrice). Une catégorie précise (`combat`, `poste`…)
              est gardée, sauf pour les vols/traques et le couple. */
           const generique = ["alerte","gain","info"].includes(cat);
-          if(auto==="vol" || auto==="couple" || !connu || (generique && auto!=="systeme")) onglet = auto;
+          /* v2.68 — un message de mission (cat `quete`) reste dans « Quêtes » : « sondes », « hacker »
+             l'envoyaient dans Vols/hacks (retour de l'autrice). */
+          if(cat !== "quete" && (auto==="vol" || auto==="couple" || !connu || (generique && auto!=="systeme"))) onglet = auto;
         }
         // v0.91 : le serveur n'écrit que des identifiants, on les rend lisibles ici.
         // v0.94b : `quand` = l'heure réelle du fait (`evenements.cree_le`),

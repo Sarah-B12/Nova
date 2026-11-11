@@ -68,6 +68,20 @@
   journal = (t) => journ.push(t); journ.length = 0;
   await _missionAppel("mission_lancer", { p_groupe:10 });
   r.refusDepart = journ[0];
+  // 6. v2.68 — journal des missions, couleurs du sas, mention retirée.
+  const jl = []; journal = (t, ton, cat) => jl.push([t, cat]);
+  await _evenementsAppliquerFond([{ texte:"L'escorte est repoussée. Le sas de Bardane est devant vous : à l'ingénieur, puis au hacker.", cat:"quete" },
+                                  { texte:"Les quatre vaisseaux sont là. Les sondes gardiennes d'AREPO se réveillent : artilleurs, à vos canons !", cat:"quete" },
+                                  { texte:"Ton Ordinateur de hacking a été volé.", cat:"alerte" }]);
+  r.categories = jl.map(x => x[1]);
+  sb.rpc = (nom) => nom === "satellite_sas" ? Promise.resolve({ data:{ ok:true, ouvert:false, bien:1, mal:0 }, error:null })
+                  : nom === "missions_lire" ? Promise.resolve({ data:_missions, error:null }) : rpcOrig(nom);
+  jl.length = 0; await _missionAppel("satellite_sas", { p_mission:1 }, x => x.ouvert ? "Le sas s'ouvre." : null);
+  r.sasJournal = jl.length;
+  r.couleurs = SAS_COUL.join(" ");
+  satF.groupes[0].statut = "lance"; satF.mon_poste = "ingenieur";
+  const dp = document.createElement("div"); dp.innerHTML = _mMonGroupe(satF, satF.groupes[0]);
+  r.fixeDepuisDepart = /fixé depuis le départ/.test(dp.textContent);
   sb.rpc = rpcOrig; journal = jOrig;
   return r;
 })();

@@ -30,7 +30,8 @@
   r.deuxPostes = { libre: !div.querySelector("[data-mi-lancer]").disabled, plusDeManque: !/Il manque/.test(t) };
   // 3. Après le départ
   h = _mMonGroupe({ ...base, mon_poste:"crocheteur", vue:null }, g0("crocheteur", "guetteur", "lance", true)); t = txt(h);
-  r.parti = { pasDeMenu: !div.querySelector("#mi-poste"), fige: /Ton poste : Crocheteur \(fixé depuis le départ\)/.test(t), saDescription: /cinq goupilles/.test(t), pasCelleDuGuetteur: !/brouille les drones/.test(t) };
+  // v2.68 : « (fixé depuis le départ) » est retiré ; « fige » vérifie qu'il n'apparaît plus.
+  r.parti = { pasDeMenu: !div.querySelector("#mi-poste"), fige: /Ton poste : Crocheteur/.test(t) && !/fixé depuis le départ/.test(t), saDescription: /cinq goupilles/.test(t), pasCelleDuGuetteur: !/brouille les drones/.test(t) };
   const g3 = g0(null, "guetteur", "lance", false);
   h = _mMonGroupe({ ...base, mon_poste:null, vue:null }, g3); t = txt(h);
   const opts = [...div.querySelectorAll("#mi-poste option")].map(o => o.value).filter(Boolean);

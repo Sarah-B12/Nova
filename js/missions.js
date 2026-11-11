@@ -60,7 +60,8 @@ function _mQuandRetenter(v){
   if(!j || j >= auj) return "pas avant demain";
   return `dès aujourd'hui, et jusqu'au ${_mJourTxt(v.epreuve_jour, 2)}`;
 }
-function _mEtape(titre, texte){ return `<div class="mi-etape"><b>${titre}</b>${texte}</div>`; }
+/* v2.69 (K233) — chaque étape : un petit récit (ce qui se passe, pourquoi), puis une ligne pratique (quoi faire). */
+function _mEtape(titre, texte, pratique){ return `<div class="mi-etape"><b>${titre}</b>${texte}${pratique ? `<span class="mi-pratique">${pratique}</span>` : ""}</div>`; }
 const MISSION_ERREURS = {
   non_connecte:"Connexion perdue.", deja:"Tu as déjà pris part à cette mission.", plein:"Ce groupe est complet.",
   ferme:"Ce groupe est fermé : on n'y entre que sur invitation.", parti:"Ce groupe est déjà parti.",
@@ -167,7 +168,7 @@ async function _missionAppel(nom, args, okTexte){
       return data;
     }
     if(data.etat && typeof _appliquerEtatStocks === "function"){ _appliquerEtatStocks(data.etat); if(typeof afficher === "function") afficher(); }
-    if(okTexte) journal(typeof okTexte === "function" ? okTexte(data) : okTexte, "gain", "quete");
+    if(okTexte){ const tx = typeof okTexte === "function" ? okTexte(data) : okTexte; if(tx) journal(tx, "gain", "quete"); }   // v2.68 : rien si le texte est vide
     return data;
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#" + nom); return null; }
   finally{ await missionsCharger(); if(typeof majQueteHub === "function") majQueteHub(); }
@@ -356,7 +357,7 @@ function _mMonGroupe(m, g){
       h += `<div class="mi-ligne"><span>Ton poste :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${postes.map(p => `<option value="${p}"${m.mon_poste === p ? " selected" : ""}>${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
       h += `<div class="mi-postes">${postes.map(p => `<p><b>${MISSION_POSTES[p] || p}</b> — ${MISSION_POSTES_DESC[p] || ""}</p>`).join("")}<p class="vide">${MISSION_OMBRE} Les postes se figent au départ du groupe. Chaque essai d'un jeu de poste coûte ${_mEssaiCout()} % d'énergie.</p></div>`;
     } else if(m.mon_poste){
-      h += `<p style="margin:6px 0">Ton poste : <b>${MISSION_POSTES[m.mon_poste] || m.mon_poste}</b> <span class="vide">(fixé depuis le départ)</span></p>`;
+      h += `<p style="margin:6px 0">Ton poste : <b>${MISSION_POSTES[m.mon_poste] || m.mon_poste}</b></p>`;   // v2.68 : « (fixé depuis le départ) » retiré
       if(MISSION_POSTES_DESC[m.mon_poste]) h += `<p class="vide" style="margin:0 0 6px">${MISSION_POSTES_DESC[m.mon_poste]}</p>`;
     } else if(libres.length){
       h += `<div class="mi-ligne"><span>Un poste est resté libre :</span><select id="mi-poste" data-mi-mission="${m.id}"><option value="">— aucun —</option>${libres.map(p => `<option value="${p}">${MISSION_POSTES[p] || p}</option>`).join("")}</select></div>`;
@@ -451,8 +452,8 @@ function _mSurMousseron(){
 function _mBouture(m){
   const v = m.vue || {}; const ici = _mSurMousseron();
   let h = `<h4 class="gsec">La bouture</h4>`;
-  if(v.phase === "drones") h += _mEtape("Étape 1 sur 2 — Les drones", "Des drones rouillés gardent la bouture sur Mousseron. Il suffit qu'un seul d'entre vous aille les faire fuir.");
-  if(v.phase === "soins") h += _mEtape("Étape 2 sur 2 — Les soins", "Quatre jours de suite, la bouture doit être reliée à l'eau, sur Mousseron : on pose et on tourne des bouts de racine jusqu'à ce que l'eau passe.");
+  if(v.phase === "drones") h += _mEtape("Étape 1 sur 2 — Les drones", "Sur Mousseron, au milieu des mousses géantes, la bouture a germé. Autour d'elle, de vieux drones d'AREPO tournent sans fin : leurs carcasses sont rouillées, mais leurs lames tournent encore, et personne ne s'en approche tant qu'ils sont là.", "Un seul d'entre vous suffit : qu'il aille sur Mousseron et fasse fuir les drones.");   // v2.69 (K233)
+  if(v.phase === "soins") h += _mEtape("Étape 2 sur 2 — Les soins", "Les drones partis, la bouture est à vous. Mais elle est fragile : ses racines cherchent l'eau sans la trouver, et sans aide, elle fanera.", "Quatre jours de suite, sur Mousseron, reliez-la à l'eau : on pose et on tourne des bouts de racine jusqu'à ce que l'eau passe.");
   if(v.phase === "drones"){
     if(v.tentatives >= 1){
       h += `<p>Les drones ont tenu bon. Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -602,10 +603,10 @@ function _mBalise(m){
   let h = `<h4 class="gsec">La descente</h4>`;
   const postes = ["encordeur","eclaireur","dechiffreur"];
   h += `<p class="vide" style="margin:2px 0">${postes.map(p => `${MISSION_POSTES[p]} : ${echapper((v.postes_tenus || {})[p] || "—")}${faits[p] ? " ✓" : ""}`).join(" · ")}</p>`;
-  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe. Mieux vous êtes équipés, plus la tempête tardera : chaque unité au-delà du minimum vous donne du temps pour jouer vos postes.");   // v2.65 (K219)
-  if(v.phase === "remontee") h += _mEtape("Seconde tentative", `La première descente a échoué. Le matériel du coffre reste : une seconde descente peut se tenter, ${_mQuandRetenter(v)}.`);
-  if(v.phase === "descente" && d && !postes.every(p => faits[p])) h += _mEtape("Étape 2 sur 3 — La descente", "La tempête approche. À la balise, chacun joue son poste avant qu'elle n'arrive : l'encordeur, l'éclaireur, le déchiffreur.");
-  if(v.phase === "descente" && d && postes.every(p => faits[p])) h += _mEtape("Étape 3 sur 3 — La tourelle", "Les trois postes sont faits. Il reste à affronter la tourelle, tous ensemble.");
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Sous la glace du Suaire, la balise appelle toujours, dans l'écriture de l'ancien. Pour l'atteindre, il faut descendre dans le froid avec des cordes, des piolets, des lampes et de quoi tenir chaud — et là-haut, une tempête finit toujours par se lever.", "Remplissez ensemble le coffre commun. Quand le minimum est réuni, l'un de vous, à la balise, lance la descente pour tout le groupe. Mieux vous êtes équipés, plus la tempête tardera.");   // v2.69 (K233) ; v2.65 (K219)
+  if(v.phase === "remontee") h += _mEtape("Seconde tentative", "La glace vous a repoussés. Le matériel est resté au bord du puits, et la balise appelle toujours.", `Une seconde descente peut se tenter, ${_mQuandRetenter(v)}.`);
+  if(v.phase === "descente" && d && !postes.every(p => faits[p])) h += _mEtape("Étape 2 sur 3 — La descente", "Vous êtes dans la glace. Au-dessus, le ciel du Suaire s'assombrit : la tempête approche, et quand elle tombera, il faudra remonter. Chacun a son rôle : tenir la corde, trouver le passage, lire ce que dit la balise.", "À la balise, l'encordeur, l'éclaireur et le déchiffreur jouent chacun leur poste avant la tempête.");
+  if(v.phase === "descente" && d && postes.every(p => faits[p])) h += _mEtape("Étape 3 sur 3 — La tourelle", "La corde a tenu, le passage est trouvé, le message est lu. Mais la balise n'est pas seule : une tourelle d'AREPO veille sur elle, et elle vient de vous voir.", "Affrontez la tourelle, tous ensemble, avant la tempête.");
   if(v.phase === "preparation" || v.phase === "remontee"){
     h += _mCoffre(m);
     if(v.phase === "remontee") h += `<p>Seconde descente : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -630,7 +631,7 @@ function _mBalise(m){
   }
   const mp = v.mon_poste;
   if(!mp || !postes.includes(mp)){ h += `<p class="vide">Tu n'as pas de poste : ta force comptera contre la tourelle.</p>`; return h; }
-  if(faits[mp]){ h += `<p class="vide">Ton poste est fait. Attends les autres.</p>`; return h; }
+  if(faits[mp]){ h += `<p class="vide">Ton poste est fait. Les autres jouent le leur : reste près de la balise.</p>`; return h; }
   if(mp === "encordeur") h += `<div id="mi-noeud" data-mi-mission="${m.id}">${_mEssaiPorte("noeud", m.id, _mEssais.noeud ? _mNoeudHtml() : "")}</div>`;   // v2.17
   if(mp === "eclaireur" && v.crevasse) h += `<div id="mi-crevasse" data-mi-mission="${m.id}">${_mEssaiPorte("crevasse", m.id, _mEssais.crevasse ? _mCrevasseHtml(m) : "")}</div>`;
   if(mp === "dechiffreur" && v.message) h += `<div id="mi-message" data-mi-mission="${m.id}">${_mMessageHtml(v.message)}</div>`;
@@ -798,11 +799,11 @@ function _mInfiltration(m){
   const porteurs = (v.porteurs || []).map(p => `${echapper(p.nom)}${p.score != null ? ` ✓ (${Math.round(p.score * 100)} %)` : ""}`).join(", ") || "—";
   h += `<p class="vide" style="margin:2px 0">Artificier : ${echapper(v.artificier || "—")}${v.breche_par ? " ✓" : ""} · Porteurs : ${porteurs}</p>`;
   /* v2.65 (K221, K225) — les étapes, plus claires (retour d'une testeuse : « pourquoi le coffre reste ouvert ? »). */
-  const ET_INF = { releve:["Étape 1 sur 4 — Le repérage et le coffre", "Deux choses en même temps. Sur La Braise, l'un de vous cherche l'entrée de l'entrepôt dans la zone marquée : elle apparaît quand on passe tout près. Pendant ce temps, tout le monde remplit le coffre commun, à commencer par les charges de l'artificier."],
-                   breche:["Étape 2 sur 4 — La brèche", "À l'entrée de l'entrepôt, l'artificier fait sauter la paroi avec les charges du coffre. Jusque-là, vous pouvez encore compléter le coffre ; dès que la paroi saute, il est fermé pour de bon."],
-                   rangement:["Étape 3 sur 4 — Le chargement", "La brèche est ouverte : chaque porteur, à l'entrée, range une caisse. Chaque recoin laissé vide, c'est une pièce abandonnée à l'entrepôt : plus vous rangez serré, plus les caisses que chacun rapportera seront pleines."],
-                   sentinelles:["Étape 4 sur 4 — La sortie", "Les sentinelles barrent la sortie : affrontez-les tous ensemble."] }[v.phase];
-  if(ET_INF) h += _mEtape(ET_INF[0], ET_INF[1]);
+  const ET_INF = { releve:["Étape 1 sur 4 — Le repérage et le coffre", "Quelque part sous la cendre de La Braise, l'entrepôt d'AREPO dort enseveli. Personne ne sait exactement où : il faudra fouiller la zone, de près, pour en trouver l'entrée.", "L'un de vous cherche l'entrée dans la zone marquée sur la carte de La Braise : elle apparaît quand on passe tout près. Pendant ce temps, tout le monde remplit le coffre commun, à commencer par les charges de l'artificier."],   // v2.69 (K233)
+                   breche:["Étape 2 sur 4 — La brèche", "L'entrée est là, sous la cendre : une paroi d'AREPO, épaisse, scellée depuis trois siècles. Il faudra la faire sauter.", "À l'entrée, l'artificier fait sauter la paroi avec les charges du coffre. Jusque-là, vous pouvez encore compléter le coffre ; dès que la paroi saute, il est fermé pour de bon."],
+                   rangement:["Étape 3 sur 4 — Le chargement", "La paroi a cédé. Derrière, des rayonnages entiers, intacts sous la poussière. Il n'y a pas de place pour tout : chaque recoin laissé vide, c'est une pièce abandonnée à l'entrepôt, et plus vous rangez serré, plus les caisses que chacun rapportera seront pleines.", "Chaque porteur, à l'entrée, range une caisse."],
+                   sentinelles:["Étape 4 sur 4 — La sortie", "Le bruit de la brèche a réveillé l'entrepôt. Ses vieilles sentinelles, couvertes de cendre, se dressent entre vous et la sortie.", "Affrontez-les tous ensemble pour repartir avec les caisses."] }[v.phase];
+  if(ET_INF) h += _mEtape(ET_INF[0], ET_INF[1], ET_INF[2]);
   if(v.tentatives === 1) h += `<p>Les sentinelles vous ont repoussés. Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
   if(v.phase === "releve"){
     h += _mCoffre(m);
@@ -812,14 +813,14 @@ function _mInfiltration(m){
   if(v.phase === "breche") h += _mCoffre(m);
   if(!ici){ h += `<p>Rends-toi à l'entrepôt (marqué sur la carte de La Braise).${v.phase === "breche" ? ` Première tentative contre les sentinelles au plus tard le ${_mJourTxt(v.limite)}.` : ""}</p>`; return h; }
   if(v.phase === "breche"){
-    if(v.mon_poste !== "artificier"){ h += `<p class="vide">L'artificier doit ouvrir la brèche.</p>`; return h; }
+    if(v.mon_poste !== "artificier"){ h += `<p class="vide">${echapper(v.artificier || "L'artificier")} pose les charges contre la paroi. Reste en retrait.</p>`; return h; }   // v2.69 (K233)
     if(!v.paroi){ h += `<p class="vide">Paroi indisponible.</p>`; return h; }
     h += `<div id="mi-paroi" data-mi-mission="${m.id}">${_mParoiHtml(m)}</div>`;
     return h;
   }
   if(v.phase === "rangement"){
-    if(v.mon_poste !== "porteur"){ h += `<p class="vide">Les porteurs chargent les caisses.</p>`; return h; }
-    if(!v.rangement){ h += `<p class="vide">Ta part est rangée. Attends les autres porteurs.</p>`; return h; }
+    if(v.mon_poste !== "porteur"){ h += `<p class="vide">Les porteurs chargent les caisses. Garde l'entrée.</p>`; return h; }
+    if(!v.rangement){ h += `<p class="vide">Ta caisse est pleine et fermée. Les autres porteurs finissent la leur.</p>`; return h; }
     h += `<div id="mi-rangement" data-mi-mission="${m.id}">${_mRangementHtml(m)}</div>`;
     return h;
   }
@@ -1024,10 +1025,10 @@ function _mCasse(m, g){
   const pt = v.postes_tenus || {};
   h += `<p class="vide" style="margin:2px 0">Crocheteur : ${echapper(pt.crocheteur || "—")}${v.casse && v.casse.faits && v.casse.faits.crocheteur ? " ✓" : ""} · Guetteur : ${echapper(pt.guetteur || "—")}${v.casse && v.casse.faits && v.casse.faits.guetteur ? " ✓" : ""}</p>`;
   const f0 = (v.casse && v.casse.faits) || {};
-  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Le meneur choisit la cité visée. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est dans la cité.");
-  if(v.phase === "repousse") h += _mEtape("Seconde tentative", `La première tentative a échoué. Le matériel du coffre reste : le casse peut se retenter, ${_mQuandRetenter(v)}. C'est le meneur qui le relance.`);
-  if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "Toute l'équipe est dans la cité et n'en sort plus. Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
-  if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "Serrure ouverte, drones brouillés : il reste à vider les vitrines.");
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Un marché, ses vitrines, et toute une nuit devant vous. Mais un casse se prépare : choisir la cité, savoir combien de vendeurs exposent et comment veillent les drones, et ne rien oublier.", "Le meneur choisit la cité visée. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est dans la cité.");   // v2.69 (K233)
+  if(v.phase === "repousse") h += _mEtape("Seconde tentative", "La nuit a mal tourné, et le marché est sur ses gardes. Le matériel du coffre, lui, est resté.", `Le casse peut se retenter, ${_mQuandRetenter(v)}. C'est le meneur qui le relance.`);
+  if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "La nuit est tombée, le marché dort. Toute l'équipe est entrée, et personne ne ressort avant la fin : une serrure à forcer, des drones à aveugler.", "Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
+  if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "La serrure a cédé, les drones tournent à vide. Les vitrines sont là, à portée de main — mais le jour finira par se lever.", "Videz les vitrines, vite et sans bruit.");
   if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>.</p>`;
   if(v.cible && v.reperage) h += _mReperageHtml(v.reperage);   // v2.15 (K133) : une photo datée
   if(v.tentatives === 1 && v.phase === "repousse") h += `<p>Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
@@ -1259,17 +1260,17 @@ function _mABardane(){
   return (typeof enEcart === "function" && enEcart()) && typeof surLieuEspace === "function"
       && typeof espaceLieu === "function" && surLieuEspace(espaceLieu("satellite1"));
 }
-const SAS_COUL = ["#ff5257","#f59e0b","#facc15","#7bc47f","#5ab0e6","#e5e7eb"];
+const SAS_COUL = ["#ff5257","#a970ff","#facc15","#7bc47f","#5ab0e6","#e5e7eb"];   // v2.68 : l'orange (#f59e0b) se confondait avec le jaune → violet
 function _mSatellite(m){
   const v = m.vue || {}; const ici = _mABardane(); const auj = String(_missions && _missions.jour).slice(0, 10);
   let h = `<h4 class="gsec">Bardane</h4>`;
   const pt = v.postes_tenus || {};
-  const ET_SAT = { rendezvous:["Étape 1 sur 4 — Le rendez-vous", "Chacun rejoint Bardane avec son vaisseau et s'y signale. Quand les quatre se sont signalés le même jour, l'escorte attaque. Remplissez aussi le coffre commun."],
-                   rendezvous2:["Seconde tentative", `La première tentative a échoué. Le matériel du coffre reste : un nouveau rendez-vous est possible, ${_mQuandRetenter(v)}.`],
-                   escorte:["Étape 2 sur 4 — L'escorte", "Les artilleurs abattent les sondes ; ensuite, tout le groupe repousse les gardiennes."],
-                   sas:["Étape 3 sur 4 — Le sas", "L'ingénieur trouve la combinaison qui ouvre le sas."],
-                   coeur:["Étape 4 sur 4 — Le cœur", "Le hacker pirate le cœur de Bardane."] }[v.phase];
-  if(ET_SAT) h += _mEtape(ET_SAT[0], ET_SAT[1]);
+  const ET_SAT = { rendezvous:["Étape 1 sur 4 — Le rendez-vous", "La sonde Bardane dérive dans Triptolème depuis trois siècles, éteinte, avec dans son ventre des modules d'AREPO intacts. Ses vieilles gardiennes tournent encore autour d'elle : seul, on ne l'approche pas. À quatre, peut-être.", "Chacun rejoint Bardane avec son vaisseau et s'y signale. Quand les quatre sont là le même jour, l'escorte se réveille. Remplissez le coffre commun avant."],   // v2.69 (K233)
+                   rendezvous2:["Seconde tentative", "L'escorte vous a dispersés, mais Bardane dérive toujours, et le matériel du coffre est resté.", `Un nouveau rendez-vous des quatre est possible, ${_mQuandRetenter(v)}.`],
+                   escorte:["Étape 2 sur 4 — L'escorte", "Vos quatre signaux ont réveillé ce qui veille sur Bardane. Des sondes gardiennes se détachent de la coque et foncent sur vous ; derrière elles, des gardiennes plus lourdes attendent leur tour.", "Les deux artilleurs abattent les sondes ; puis tout le groupe repousse les gardiennes."],
+                   sas:["Étape 3 sur 4 — Le sas", "L'escorte dispersée, Bardane est à vous… presque. Sa seule porte est un sas scellé, gardé par quatre voyants : la bonne combinaison l'ouvre, une mauvaise le verrouille, et tout est à recommencer.", "L'ingénieur trouve la combinaison ; les autres restent à ses côtés."],
+                   coeur:["Étape 4 sur 4 — Le cœur", "Derrière le sas, un couloir mort, puis le cœur de Bardane : le cerveau de la sonde, qui veille encore sur ses baies. Tant qu'il veille, rien ne s'ouvre.", "Le hacker pirate le cœur. S'il cède, chacun repart avec un module d'AREPO."] }[v.phase];
+  if(ET_SAT) h += _mEtape(ET_SAT[0], ET_SAT[1], ET_SAT[2]);
   h += `<p class="vide" style="margin:2px 0">Artilleurs : ${(pt.artilleur || []).map(echapper).join(", ") || "—"} · Hacker : ${(pt.hacker || []).map(echapper).join(", ") || "—"} · Ingénieur : ${(pt.ingenieur || []).map(echapper).join(", ") || "—"}</p>`;
   if(v.phase === "rendezvous" || v.phase === "rendezvous2"){
     h += _mCoffre(m);
@@ -1286,19 +1287,19 @@ function _mSatellite(m){
     if(!ici){ h += `<p>L'escorte attaque à Bardane : rejoins-la avant minuit.</p>`; return h; }
     if(tirs >= 2){ h += `<p class="quete-indice">Les gardiennes chargent.</p><div class="mi-btns"><button class="mini" data-mi-escorte="${m.id}">Repousser l'escorte</button></div>`; return h; }
     if(v.mon_poste === "artilleur" && v.tir) h += `<div id="mi-tir" data-mi-mission="${m.id}">${_mTirHtml(v.tir)}</div>`;
-    else h += `<p class="vide">Les artilleurs tiennent les canons (${tirs} sur 2).</p>`;
+    else h += `<p class="vide">Les artilleurs tiennent les canons : ${tirs} sur 2 ont abattu leur part des sondes.</p>`;
     return h;
   }
   if(v.phase === "sas" || v.phase === "coeur"){
-    h += `<p class="vide">Sas et cœur au plus tard le ${_mJourTxt(v.sas_limite)}.</p>`;
+    h += `<p class="vide">Bardane ne restera pas à portée longtemps : le sas et le cœur doivent céder au plus tard le ${_mJourTxt(v.sas_limite)}.</p>`;   // v2.69 (K233)
     if(!ici){ h += `<p>Rends-toi à Bardane (carte de Triptolème).</p>`; return h; }
     if(v.phase === "sas"){
       if(v.mon_poste === "ingenieur" && v.sas) h += `<div id="mi-sas" data-mi-mission="${m.id}">${_mEssaiPorte("sas", m.id, _mEssais.sas ? _mSasHtml(v.sas) : "")}</div>`;   // v2.17
-      else h += `<p class="vide">L'ingénieur ouvre le sas.</p>`;
+      else h += `<p class="vide">${(pt.ingenieur || []).map(echapper).join(", ") || "L'ingénieur"} cherche la combinaison du sas. Reste à ses côtés.</p>`;
       return h;
     }
     if(v.mon_poste === "hacker" && v.coeur) h += `<div class="mi-btns"><button class="mini" data-mi-coeur="${m.id}" data-mi-vig="${v.coeur.vigilance}">Pirater le cœur · ${_mEssaiCout()} % d'énergie</button></div>`;
-    else h += `<p class="vide">Le hacker pénètre le cœur.</p>`;
+    else h += `<p class="vide">${(pt.hacker || []).map(echapper).join(", ") || "Le hacker"} s'attaque au cœur de Bardane. Reste à ses côtés.</p>`;
   }
   return h;
 }
@@ -1374,7 +1375,7 @@ function _mSasBrancher(z){
   if(bo) bo.addEventListener("click", async () => {
     bo.disabled = true; const essai = _sas.essai.slice(); _sas.essai = [];
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
-    const d = await _missionAppel("satellite_sas", { p_mission:m.id, p_essai:essai, p_abandon:false }, x => x.ouvert ? "Le sas s'ouvre." : `● ${x.bien} · ○ ${x.mal}`);
+    const d = await _missionAppel("satellite_sas", { p_mission:m.id, p_essai:essai, p_abandon:false }, x => x.ouvert ? "Le sas s'ouvre." : null);   // v2.68 : chaque essai n'encombre plus le journal (il reste à l'écran)
     if(d && d.err === "verrouille") journal("Le sas se verrouille : un autre code.", "alerte", "quete");
     if(!d || d.ouvert || d.err === "verrouille" || d.verrouille){ _mEssaiFin("sas"); _sas.manche = null; if(typeof majQueteHub === "function") majQueteHub(); }   // v2.17 : la manche est finie
   });
@@ -1566,6 +1567,7 @@ function _mBrancher(z){
     .mi-msg{ display:flex; flex-wrap:wrap; gap:6px 4px; align-items:flex-end; margin:6px 0 10px; }
     .mi-msg-sep{ width:14px; }
     .mi-msg-inconnu .gly{ color:var(--orange-hi,#ffb060); }
+    .mi-pratique{ display:block; margin-top:6px; font-size:.95em; opacity:.85; }   /* v2.69 (K233) : la ligne pratique d'une étape */
     .mi-rg-grille{ display:grid; gap:3px; max-width:360px; margin:4px 0; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
     .mi-rg-case{ aspect-ratio:1; background:rgba(245,158,11,.08); border:1px solid var(--line); border-radius:3px; cursor:pointer; touch-action:manipulation; }
     .mi-rg-case.mi-rg-ap{ background:rgba(123,196,127,.55); border-color:#7bc47f; }   /* v2.65 (K222) : aperçu, ça tient */
