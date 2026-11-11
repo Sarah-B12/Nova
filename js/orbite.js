@@ -46,11 +46,14 @@ const SECTEUR_NOM = "Triptolème";
       Cargo           : 36 L sur 200 → 2 allers-retours et plus
       (⚠ corrigé le 08/11 : ce commentaire disait encore 54 et 108 L, les chiffres d'avant la v1.93d) */
 const SAUT_UNITES  = 18;
-const SAUT_ENERGIE = 12;
+/* v2.70 (K234) — l'énergie des changements de carte, allégée (le carburant ne bouge pas) : base 12 → 8
+   (décoller, rentrer, se poser sur une planète, en repartir) ; Gorge 6 → 4. Silène → La Braise → Silène
+   coûtait 56 à 72 % d'énergie : plus de la moitié de la journée avant d'avoir rien fait. */
+const SAUT_ENERGIE = 8;
 /* v2.56 (K191) — LA GORGE coûte moins d'énergie qu'une sortie d'atmosphère : il n'y a pas de planète à quitter.
    Base 6 au lieu de 12 (+2 par point d'« énergie » du vaisseau, comme le saut). Le carburant ne change pas
    (18 étapes × conso). coutSaut(true) = le passage de la Gorge. */
-const GORGE_ENERGIE = 6;
+const GORGE_ENERGIE = 4;   // v2.70 (K234) : était 6
 
 function coutSaut(gorge){
   const v = (typeof vaisseauActif==="function") ? vaisseauActif() : null;
@@ -668,7 +671,7 @@ async function secoursOrbite(){
       etat.secteur = "silene";
       etat.pos = { x:p.x, y:p.y };
       journal(aSec
-        ? `Réservoir à sec, plus un bidon et pas de quoi en acheter. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. ${du > 0 ? `−${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais rien à donner."}`
+        ? `Réservoir à sec, plus un bidon et pas de quoi en acheter. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. ${du > 0 ? `−${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais pas de quoi payer : rien ne t'est pris."}`   // v2.70
         : `Plus de vaisseau pour repasser la Gorge. Évacuation d'urgence : tu reprends tes esprits chez toi, sur Silène. −${frais} ₡ de frais de secours${p25 ? " (ta faction en paie la moitié)" : ""}.${impaye}`,"alerte","voyage");
       if(typeof fermerOrbite==="function") fermerOrbite();
     }
@@ -694,7 +697,7 @@ async function secoursOrbite(){
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };
   journal(aSec
-    ? `Réservoir à sec, plus un bidon et pas de quoi en acheter : un cargo de passage te prend en remorque. ${du > 0 ? `Le remorquage te coûte ${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais rien à leur donner ; ils te redescendent quand même."}`
+    ? `Réservoir à sec, plus un bidon et pas de quoi en acheter : un cargo de passage te prend en remorque. ${du > 0 ? `Le remorquage te coûte ${du} ₡ (${Math.round(pctSec*100)} % de tes crédits).` : "Tu n'avais pas de quoi payer : ils te redescendent quand même, sans rien te prendre."}`   // v2.70 (Asulf : « ils prennent tout ? »)
     : `Appel de détresse : un cargo de passage te redescend chez toi. −${frais} ₡ de frais de secours${p25 ? " (ta faction en paie la moitié)" : ""}.${impaye}`,"alerte","voyage");
   if(typeof fermerOrbite==="function") fermerOrbite();
   if(typeof sauverMaintenant==="function") await sauverMaintenant();

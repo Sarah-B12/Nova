@@ -23,6 +23,13 @@
   const sNid = surNid; surNid = () => true; const sOuv = nidOuvert; nidOuvert = () => true;
   r.nid = { articles: _catalogueBoutique().map(a => a.id), onglets: _catsBoutique().map(c => c.id) };
   surNid = sNid; nidOuvert = sOuv;
+  // v2.70 (K234) : l'énergie des changements de carte ; la phrase du secours à sec sans crédits.
+  etat.vaisseau = "fab_vaisseau_cargo"; r.energieSaut = coutSaut().energie; r.energieGorge = coutSaut(true).energie;
+  const s2 = { enEspace, vaisseauSansRetour, majApresDeplacement };
+  enEspace = () => true; vaisseauSansRetour = () => true; majApresDeplacement = () => {}; window.sauverMaintenant = async () => {};
+  etat.secteur = "ecart"; etat.credits = 3; journ.length = 0; await secoursOrbite();
+  r.secoursTroisCredits = { pris: 3 - etat.credits, texte: journ[0] };
+  enEspace = s2.enEspace; vaisseauSansRetour = s2.vaisseauSansRetour; majApresDeplacement = s2.majApresDeplacement;
   journal = jOrig;
   return r;
 })();
