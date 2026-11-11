@@ -425,7 +425,7 @@ function majVaisseau(){
           <button class="mini" id="vais-plein">Faire le plein (+${CARBURANT_LITRES[v.carb]||0} L)</button>
           <span class="qte">au sac : ${etat.sac[v.carb]||0}</span>
         </div>
-        <p class="vide" style="margin:0 0 10px">Ce vaisseau consomme du <b>${item(v.carb).nom}</b>. Le plein est déjà fonctionnel ; la consommation en vol arrivera avec la carte spatiale. La coque s'use (voir durée de vie).</p>
+        <p class="vide" style="margin:0 0 10px">Ce vaisseau consomme du <b>${item(v.carb).nom}</b> : garde toujours de quoi faire l'aller et le retour, on n'en trouve pas partout. Sa coque s'use avec le temps (voir sa durée de vie).</p>
         ${_htmlModulesVaisseau()}
         <button class="mini" id="vais-desequiper">${plein?"Vide la soute pour ranger":"Ranger dans le sac"}</button>
       </div>

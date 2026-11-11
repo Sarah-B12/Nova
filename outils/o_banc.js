@@ -109,6 +109,7 @@ const DELAIS = {
   quetesrecharge: { profil: 50, sac: 50, jauges: 50 }, // v2.63 : finJour et gardiens gardés au rechargement (o_quetesrecharge.js)
   depart: { profil: 50, sac: 50, jauges: 50 },     // v2.63 : partir avec l'aller seulement (K217), le kit au Nid (o_depart.js)
   missions265: { profil: 50, sac: 50, jauges: 50 }, // v2.65 : rangement au doigt, coffre « qui », textes des missions (o_missions265.js)
+  version: { profil: 50, sac: 50, jauges: 50 },    // v2.71 : l'écran « nouvelle version » (o_version.js, K235)
   seq: { profil: 50, sac: 50, jauges: 50 },
   banq: { profil: 50, sac: 50, jauges: 50 },
   q7: { profil: 50, sac: 50, jauges: 50 },

@@ -208,7 +208,7 @@ async function changerFaction(fid){
 function sauverEmail(){
   const el=document.querySelector("#param-email"); if(!el) return;
   etat.email=(el.value||"").trim();
-  journal("E-mail enregistré (local pour l'instant — il sera rattaché à ton compte serveur).","gain");
+  journal("E-mail enregistré.","gain");   // v2.72 : sans la note de développeur
   if(typeof sauvegarder==="function") sauvegarder();
 }
 /* Changement de mot de passe.

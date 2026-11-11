@@ -337,6 +337,22 @@ titre("10. .catch / .finally sur un appel Supabase");
   if(!e) ok("aucun");
 }
 
+/* ---------- 11. version.txt = le ?v d'index.html (v2.71, K235) ----------
+   Le jeu compare son numéro (les ?v= d'index.html) à version.txt pour savoir
+   qu'une nouvelle version est en ligne. Oublier l'un des deux : soit personne
+   n'est prévenu, soit tout le monde est bloqué (« recharger » en boucle). */
+titre("11. version.txt ↔ ?v d'index.html");
+{
+  const fs2 = require("fs");
+  const idx = fs2.readFileSync(path.join(RACINE, "index.html"), "utf8");
+  const vs = [...new Set((idx.match(/\?v=(\d+)/g) || []).map(x => x.slice(3)))];
+  let vt = null; try{ vt = fs2.readFileSync(path.join(RACINE, "version.txt"), "utf8").trim(); }catch(e){}
+  if(vs.length !== 1) ko("index.html porte plusieurs ?v : " + vs.join(", "));
+  else if(vt === null) ko("version.txt absent (à la racine, à côté d'index.html)");
+  else if(vt !== vs[0]) ko("version.txt dit " + vt + ", index.html dit ?v=" + vs[0]);
+  else ok("version.txt = ?v=" + vt);
+}
+
 /* ---------- Verdict ---------- */
 console.log("\n" + "═".repeat(60));
 console.log(alertes === 0 ? "AUCUNE ALERTE — bon pour le déploiement."

@@ -276,7 +276,7 @@ async function majBar(el){
   if(station){ try{ const { data } = await sb.rpc("bar_menu_station"); carte = Array.isArray(data) ? data : []; }catch(e){ if(typeof _catchLog==="function") _catchLog(e,"bar.js#carte"); } }
   const dispo=(_barCatalogue||[]).filter(b=>station ? (!b.faction || carte.includes(b.id)) : (!b.faction || b.faction===fid));
   if(!dispo.length){
-    el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Aucune boisson au comptoir. Si cela persiste, le catalogue du serveur est vide.</p>`;
+    el.innerHTML=`<h3 style="margin:2px 0">${barNom(fid)}</h3><p class="vide">Aucune boisson au comptoir pour le moment.</p>`;
     return;
   }
   const reste=boissonResteMs();

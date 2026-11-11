@@ -14,7 +14,7 @@ let etat = charger();
    `demarrer()`, sur TOUTES ses branches, juste après que `etat` a trouvé sa
    valeur définitive. */
 let _etatPret = false;
-function _pretASynchro(){ return _etatPret && !!(etat && etat.inscrit); }
+function _pretASynchro(){ return !(typeof _versionPerimee !== "undefined" && _versionPerimee) && _etatPret && !!(etat && etat.inscrit); }   // v2.71 (K235) : une version périmée ne synchronise plus rien
 
 /* ---------- Onglets ---------- */
 document.querySelectorAll(".onglet").forEach(o => o.addEventListener("click", () => {
@@ -134,14 +134,18 @@ setInterval(() => { if(etat.inscrit && typeof pousserCredits==="function") pouss
    n'en font plus qu'une : la veille (veille.js, serveur v233). Relue aussi à chaque retour. */
 rythme("veille",   60000, () => { if(_pretASynchro() && typeof veilleMinute==="function") return veilleMinute(); }, { auRetour:true });
 // v1.61 — missions : groupes, invitations et gains changent sans message (un coéquipier rejoint, dépose…).
+rythme("version", 300000, () => { if(typeof versionVerifier === "function") return versionVerifier(); });   // v2.71 (K235)
 rythme("missions", 120000, () => { if(_pretASynchro() && typeof missionsCharger==="function") return missionsCharger().then(() => { if(typeof missionsRedessiner==="function") missionsRedessiner(); }); });
 /* v0.66 — le sac ne se relisait qu'au CHARGEMENT : un objet offert par la
    console du staff, ou tout ajout venu du serveur, n'apparaissait qu'après un
    rafraîchissement manuel. On relit périodiquement (sac_lire est peu coûteux),
    et dès que l'onglet revient au premier plan. */
 // (v2.09 : le sac est relu par la veille, ci-dessus.)
-document.addEventListener("visibilitychange", ()=>{
+document.addEventListener("visibilitychange", async ()=>{
   if(document.hidden || !_pretASynchro()) return;
+  /* v2.71 (K235) — AVANT tout le reste : une version périmée ne doit plus agir (Asulf, 10/11 : le secours
+     d'une ancienne version a joué ici, au retour sur l'onglet). */
+  if(typeof versionVerifier === "function" && await versionVerifier()) return;
   if(typeof rechargerCredits==="function")     rechargerCredits();
   if(typeof chargerIntegrite==="function")     chargerIntegrite();
   /* v0.91 — filet de sécurité : si le joueur se retrouve à Triptolème SANS

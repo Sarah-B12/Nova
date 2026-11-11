@@ -1025,7 +1025,7 @@ async function _rendreGuet(zone, fac){
   catch(e){ err = e; if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#guet"); }
   /* Si la RPC n'existe pas encore (SQL v112 pas passé), on le DIT au staff
      plutôt que de laisser un trou silencieux dans la page. */
-  if(err && !d){ zone.innerHTML = `<p class="itip-gris" style="font-size:12px">Guet indisponible : la fonction <code>guet_lire</code> manque côté serveur (SQL v112 à passer).</p>`; return; }
+  if(err && !d){ zone.innerHTML = `<p class="itip-gris" style="font-size:12px">Le guet est indisponible pour le moment.</p>`; return; }
   if(!d || !d.ok || !d.gouvernement){ zone.innerHTML = ""; return; }
   let h = `<h4 class="gsec">Guet — horaires de patrouille</h4>`;
   if(!d.paye){
