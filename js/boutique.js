@@ -58,11 +58,12 @@ function _etiquetteNid(id){
   return `<span class="bq-gly">${mots.map(glyphesMot).join(`<span class="bq-gly-sep">·</span>`)}</span>`;
 }
 /* v2.63 (demande de l'autrice, 09/11) — le Nid vend aussi le Kit de réparation, au prix du
-   Perchoir : une coque abîmée à Cérès n'avait pas d'autre recours que le remorquage. */
-const NID_ARTICLES = ["fab_biocarburant", "fab_biocarburant_raffine", "kit_reparation"];
+   Perchoir : une coque abîmée à Cérès n'avait pas d'autre recours que le remorquage.
+   v2.79 (K246, K250) — 150 ₡ partout ; et le Kit de réparation lourd, au Nid seulement. */
+const NID_ARTICLES = ["fab_biocarburant", "fab_biocarburant_raffine", "kit_reparation", "kit_reparation_lourd"];   // v2.79 : + le kit lourd (K250)
 function _catalogueBoutique(){
   if(_surNidBoutique()) return BASE_BOUTIQUE.filter(a => NID_ARTICLES.includes(a.id));
-  return _surBaseBoutique() ? BASE_BOUTIQUE : BOUTIQUE; }
+  return _surBaseBoutique() ? BASE_BOUTIQUE.filter(a => !a.nidSeul) : BOUTIQUE; }   // v2.79 : le kit lourd n'est pas au Perchoir
 function _catsBoutique(){
   if(_surNidBoutique()) return CAT_BASE_BOUTIQUE.filter(c => c.id === "carburant" || c.id === "vaisseau");
   return _surBaseBoutique() ? CAT_BASE_BOUTIQUE : CAT_BOUTIQUE; }

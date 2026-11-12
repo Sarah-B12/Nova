@@ -288,14 +288,18 @@ function reparerPv(n){
    pour une Navette (120 PV), neuf pour un Maître (340). Les gros vaisseaux
    coûtent plus cher à entretenir, ce qui est juste puisqu'ils rapportent plus. */
 const KIT_PV = 40;
-async function utiliserKitReparation(){
+/* v2.79 (K250) — les kits et ce qu'ils rendent. Le lourd (Nid seul) : 150 PV pour une place. */
+const KITS_PV = { kit_reparation:KIT_PV, kit_reparation_lourd:150 };
+async function utiliserKitReparation(id = "kit_reparation"){
+  if(!KITS_PV[id]) return;
+  const nomKit = (typeof item === "function" && item(id)) ? item(id).nom : "Kit de réparation";
   if(!etat.vaisseau){ journal("Aucun vaisseau équipé à réparer.","alerte"); return; }
-  if((etat.sac["kit_reparation"]||0) <= 0){ journal("Tu n'as pas de Kit de réparation dans ton sac.","alerte"); return; }
+  if((etat.sac[id]||0) <= 0){ journal(`Tu n'as pas de ${nomKit} dans ton sac.`,"alerte"); return; }
   if(pvVaisseau() >= pvMax()){ journal("La coque est déjà intacte.","alerte"); return; }
   // v2.75 (K240) : pas en plein combat contre le Fléau (le serveur garde la coque du combat : le kit serait perdu).
   if(typeof fleauCombatEnCours === "function" && fleauCombatEnCours()){ journal("Pas en plein combat contre le Fléau : finis-le ou romps-le d'abord.","alerte"); return; }
-  if(!await agirServeur({ retirer:{ kit_reparation:1 }, motif:"reparer_coque" })) return;
-  const gagne = reparerPv(KIT_PV);
+  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"reparer_coque" })) return;
+  const gagne = reparerPv(KITS_PV[id]);
   journal(`Coque rafistolée : +${gagne} PV (${pvVaisseau()}/${pvMax()}).`,"gain");
   apresAction(); majVaisseau();
   if(typeof sauvegarder==="function") sauvegarder();

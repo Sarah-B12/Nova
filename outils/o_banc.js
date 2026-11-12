@@ -17,6 +17,7 @@ const DELAIS = {
   sondes: { profil: 50, sac: 50, jauges: 50 },  // v1.20 : gain des sondes (o_sondes.js)
   volrisque: { profil: 50, sac: 50, jauges: 50 }, // v1.22 : extrait le barème de vol (o_volrisque.js)
   prixmoyen: { profil: 50, sac: 50, jauges: 50 }, // v1.60 : extrait le prix moyen des missions (o_prixmoyen.js)
+  kits: { profil: 50, sac: 50, jauges: 50 },      // v2.79 : les deux kits de réparation, Perchoir / Nid (o_kits.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)
   chronique: { profil: 50, sac: 50, jauges: 50 }, // v1.62 : Chronique du gouvernement (o_chronique.js)
   bouture: { profil: 50, sac: 50, jauges: 50 },   // v1.63 : la bouture capricieuse (o_bouture.js)

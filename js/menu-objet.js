@@ -37,7 +37,7 @@ function ouvrirMenuObjet(id){
   const prixMarche = (typeof PRIX_ITEM!=="undefined") && PRIX_ITEM[id];
   const brade = valeurBrade(id);
   // v0.91 : le Kit de réparation a sa propre action, hors du système de conso.
-  const kit = (id === "kit_reparation");
+  const kit = (typeof KITS_PV !== "undefined") ? (id in KITS_PV) : (id === "kit_reparation");   // v2.79 : + le kit lourd
   const caisse = /^caisse_arepo_[3-6]$/.test(id);   // v1.65 : la caisse scellée d'AREPO (H54)
   if(!conso && !equip && !vais && !prixMarche && !kit && !caisse && brade==null) return;   // rien à faire
 
@@ -49,7 +49,7 @@ function ouvrirMenuObjet(id){
   } else if(typeof mentionNiveauHtml==="function"){ const mn=mentionNiveauHtml(id); if(mn) html += `<div class="menu-niveau">${mn}</div>`; }   // v1.33
   if(conso)      html += `<button class="menu-act" data-act="consommer">Consommer</button>`;
   if(caisse)     html += `<button class="menu-act" data-act="ouvrir-caisse">Ouvrir</button>`;
-  if(kit)        html += `<button class="menu-act" data-act="kit-coque">Réparer la coque (+${(typeof KIT_PV!=="undefined")?KIT_PV:40} PV)</button>`;
+  if(kit)        html += `<button class="menu-act" data-act="kit-coque">Réparer la coque (+${(typeof KITS_PV!=="undefined" && KITS_PV[id]) ? KITS_PV[id] : 40} PV)</button>`;
   if(equip)      html += `<button class="menu-act" data-act="equiper">Équiper</button>`;
   if(vais)       html += `<button class="menu-act" data-act="equiper-vaisseau">Équiper (vaisseau)</button>`;
   if(prixMarche) html += `<button class="menu-act" data-act="vendre">Vendre au marché — fixe ton prix…</button>`;
@@ -112,7 +112,7 @@ function menuActionObjet(act, id){
   fermerMenuObjet();
   if(act==="consommer" && typeof utiliser==="function") utiliser(id);
   if(act==="ouvrir-caisse" && typeof ouvrirCaisseArepo==="function") ouvrirCaisseArepo(id);   // v1.65
-  else if(act==="kit-coque" && typeof utiliserKitReparation==="function") utiliserKitReparation();
+  else if(act==="kit-coque" && typeof utiliserKitReparation==="function") utiliserKitReparation(id);
   else if(act==="equiper" && typeof equiper==="function") equiper(id);
   else if(act==="equiper-vaisseau" && typeof equiperVaisseau==="function") equiperVaisseau(id);
   else if(act==="brader") braderObjet(id, _brdQte);

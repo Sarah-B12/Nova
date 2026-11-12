@@ -92,7 +92,7 @@ function activiteJour(P, niv){
 }
 function simuler(P, jours){
   let xp = 0, qi = 0, attente = 0, dimancheQ38 = -1, prochaineMission = 20 + Math.floor(alea() * 20);
-  const res = { niv:{}, finQ:{}, atteint:{} };
+  const res = { niv:{}, finQ:{}, atteint:{}, jq:[] };   // v2.79 : jq[i] = jour où la quête i est finie (o_economie.js)
   for(let j = 0; j < jours; j++){
     const dim = (j % 7) === 6;     // jour 0 = un lundi
     // Quêtes : Q1 → Q5 libres (plusieurs le même jour), puis une par jour au plus (dès Q6)
@@ -110,7 +110,7 @@ function simuler(P, jours){
       let gx = rx;
       for(const e of q.etapes || []) if(e.defi && e.defi.type === "combat") gx += e.defi.xp || 8;
       const ch = CHOIX_XP[q.id]; if(ch) gx += Math.round(ch[Math.floor(alea() * ch.length)] * kx);
-      xp += gx; faites++; qi++;
+      xp += gx; faites++; qi++; res.jq[qi - 1] = j;
       if(q.id === "q38") dimancheQ38 = j;
       if(qi === 15 || qi === 30 || qi === 45) res.finQ[qi] = j + 1;
       if(!libre) attente = j + 1;
@@ -138,6 +138,10 @@ function lancer(P, n = 1000){
 }
 const fj = d => d == null ? "> 2 ans" : (d < 60 ? d + " j" : (d / 30.4).toFixed(1).replace(".", ",") + " mois");
 
+/* v2.79 : l'outil de l'économie (o_economie.js) réutilise la simulation des quêtes ; les sorties ne s'impriment
+   que si l'on lance CE fichier. */
+module.exports = { simuler, PROFILS, QUETES, niveauDe, graine: v => { _graine = v; } };
+if(require.main === module){
 /* ---------- Sorties ---------- */
 if(BAREME) console.log(`Barème des quêtes : ${_bar} (o_baremes_quetes.js)`);
 console.log(`Nova Epic — simulation de la progression${ATELIER ? ` AVEC l'XP d'atelier (${_at ? "barème essayé" : "barème du jeu, K173"})` : " SANS l'XP d'atelier"}${FACT !== 1 ? ` (activité ×${FACT})` : ""}\n`);
@@ -163,4 +167,5 @@ console.log("   profil                    | niv J+7 | J+30 | J+60 | J+90 | J+180
 for(const P of Object.values(PROFILS)){
   const r = lancer(P);
   console.log(`   ${P.nom.padEnd(25)} | ${r.niv.map(x => String(x).padStart(4)).join(" | ")}  | ${r.finQ.map(d => fj(d).padStart(7)).join(" | ")} | ${[r.atteint[0], r.atteint[2], r.atteint[3], r.atteint[4]].map(d => fj(d).padStart(6)).join(" | ")}`);
+}
 }

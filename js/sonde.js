@@ -41,6 +41,7 @@ function _degatsSonde(n){
    étaient trop rentables : 40–90 ₡ par duel, sans coût ni limite, et le client
    décidait seul du montant. Désormais : 1re victoire du jour de jeu 40–90 ₡,
    les suivantes ÷3 (13–30 ₡), 0 ₡ au-delà de 10 victoires payées ; + bonus
+   [v2.79 (K248, v282) : × 3 → 120–270 ₡, puis 40–90 ₡ ; le reste inchangé]
    d'Intelligence lu par le serveur. Ouvrir le feu coûte SONDE_ENERGIE, gagné
    ou perdu. Barème dupliqué ici pour l'affichage seulement : il fait foi côté
    serveur (BACKEND_PLAN §36). */

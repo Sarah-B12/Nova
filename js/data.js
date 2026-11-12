@@ -136,14 +136,19 @@ const BASE_BOUTIQUE = [
      ⚠ Volontairement PAS fabricable par le Constructeur. La Carcasse répare à
      1,5 ₡ le PV et se trouve sur le chemin du retour du Gravier (3 % d'énergie
      et 2 L de détour) : aucun kit fabriqué n'aurait jamais trouvé preneur. */
-  { id:"kit_reparation",           nom:"Kit de réparation",    prix:450,  cat:"vaisseau",
-    sous:"+40 PV de coque, utilisable partout" }
+  { id:"kit_reparation",           nom:"Kit de réparation",    prix:150,  cat:"vaisseau",   // v2.79 (K246) : 450 → 150
+    sous:"+40 PV de coque, utilisable partout" },
+  /* v2.79 (K250) — le grand kit : vendu au NID SEULEMENT (nidSeul, voir _catalogueBoutique). Même prix au PV
+     que le petit (3,75 ₡) ; son avantage : 150 PV pour UNE place de soute, et une seule réparation. */
+  { id:"kit_reparation_lourd",     nom:"Kit de réparation lourd", prix:560, cat:"vaisseau", nidSeul:true,
+    sous:"+150 PV de coque, utilisable partout" }
 ];
 const CAT_BASE_BOUTIQUE = [ { id:"survie", nom:"Survie" }, { id:"carburant", nom:"Carburant" }, { id:"vaisseau", nom:"Vaisseau" } ];
 
 /* v0.91 — le Kit de réparation n'appartient à aucune des familles ci-dessus :
    ni consommable de survie, ni matière, ni vivant. Il est déclaré à part. */
-const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", cat:"vaisseau", poids:1 } ];
+const OUTILS = [ { id:"kit_reparation", nom:"Kit de réparation", type:"outil", cat:"vaisseau", poids:1 },
+                 { id:"kit_reparation_lourd", nom:"Kit de réparation lourd", type:"outil", cat:"vaisseau", poids:1 } ];   // v2.79 (K250)
 /* v0.97 — OBJETS DE QUÊTE LIÉS. Ils ne quittent JAMAIS le sac : ni vente,
    ni marché, ni Poste, ni coffre/soute, ni drones, ni diversion, ni péremption,
    ni vol ; conservés à la mort.
@@ -206,6 +211,7 @@ function item(id){ return TOUS_ITEMS.find(i => i.id === id); }
 const IMG_ITEM = {
   // v0.91 — réutilise l'image de la Plaque de coque : c'est exactement ce qu'on rustine.
   kit_reparation:"images/items/kit_reparation.png",   // v1.69 : sa propre image (était plaque_coque)
+  kit_reparation_lourd:"images/items/kit_reparation_lourd.png",   // v2.79 (K250) : image fournie par l'autrice
   mousse_amie:"images/items/mousse_amie.png",   // v1.63 (prompt : PROMPTS_IMAGES_QUETES.md)
   regulateur_arepo:"images/items/regulateur_arepo.png",   // v1.64
   cape_voleur:"images/items/cape_voleur.png",              // v1.67

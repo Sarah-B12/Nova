@@ -63,7 +63,8 @@ async function resoudreCombat(opts){
       gagnerXp(xp); patrouilleCompter();
       journal(`Patrouille du Protocole neutralisée : les patrouilles se méfient de toi, rien à prendre sur celle-ci. +${xp} XP.`,"gain");
     } else {
-    const g = Math.round(aptButinCombat(alea(14,30) + bonusCredits()) * R.butin); etat.credits += g; gagnerXp(xp);
+    // v2.79 (K248) : 14–30 → 70–100 ₡ (les activités du quotidien rapportent davantage hors quêtes)
+    const g = Math.round(aptButinCombat(alea(70,100) + bonusCredits()) * R.butin); etat.credits += g; gagnerXp(xp);
     const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : [];   // v1.11 : liste d'objets
     const btn = (typeof _butinTexte==="function") ? _butinTexte(drop) : "";
     if(typeof patrouilleCompter==="function") patrouilleCompter();

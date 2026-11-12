@@ -105,7 +105,7 @@ function verifier(fsql){
   if(!/FLEAU_CELLULE\s*=\s*"fab_cellule_d_energie"/.test(f) || !sql.includes(`'{"fab_cellule_d_energie":1}'`)) ecarts.push("cellule d'énergie");
   if(!/FLEAU_ENERGIE\s*=\s*10;/.test(f) || !sql.includes("least(13, coalesce(p_cout, 10))")) ecarts.push("coût d'énergie (10, borné [5 ; 13])");
   const regles = ["v_pts := 4 +", "10 * v_c", "least(0.75", "0.22 * v_m + 0.08 * v_b", "0.22 * v_b + 0.08 * v_m", "0.22 * v_c + 0.08 * (v_b + v_m)",
-                  "(30 + 0.2 * c.force) * (0.85 + random() * 0.30)", "then 1.3 else 1 end", "c.tour >= 12", "round(2.0 * v_force)", "v_gain  := 5 * c.force", "least(c.force, 190)", "c.annonce2 := case when c.fleau < c.fleau_max / 2.0"];
+                  "(30 + 0.2 * c.force) * (0.85 + random() * 0.30)", "then 1.3 else 1 end", "c.tour >= 12", "round(2.0 * v_force)", "v_gain  := 12 * c.force", "least(c.force, 190)", "c.annonce2 := case when c.fleau < c.fleau_max / 2.0"];
   regles.filter(x => !sql.includes(x)).forEach(x => ecarts.push("règle du combat absente : " + x));
   const { lieuxVol } = require("./o_vol_lieux.js");
   const fl = lieuxVol().find(l => l.secteur === "ceres" && l.id === "e2_oeil_piques");
