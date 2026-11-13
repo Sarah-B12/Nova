@@ -3,6 +3,12 @@
    ⚠ v2.79 (K245, K247) — les cristaux COMPTENT désormais dans les objets qui les contiennent : Nyx 800,
    Sélénite 2 000 (prix moyens). Avant, la Sélénite y comptait pour 0 ₡ (un maître à 24 095 ₡ contenait
    pour 67 500 ₡ de cristaux). Règle complète, et recalcul : `node outils/o_economie.js . --prix`.
+   v2.81 (K253) — l'IA d'assistance coûte 1 Noyau, 1 Nyx, 1 Supraconducteur (au lieu de 2 Noyaux, 1 Nyx,
+   2 Sélénite, 1 Supraconducteur) : l'IA, les 4 drones, le cockpit blindé et le maître baissent.
+   v2.82 (K254) — recettes des vaisseaux : Bloc de propulsion + 1 Nyx ; Cargo sans Moteur basique ; Cockpit blindé
+   sans Sélénite ; Maître = 1 Cockpit blindé, 1 Moteur à distorsion, 1 Tourelle, 2 Nyx (3 Sél + 5 Nyx contenus).
+   v2.83 (K255) — Biocarburant raffiné = 2 Biocarburant, 1 Cellule d'énergie (au lieu du Composant avancé) : 568 → 300 ₡
+   le bidon de 60 L, soit 5 ₡ le litre comme le Biocarburant. Le comptoir (Perchoir, Nid : 1 400 ₡) ne change pas.
    Commission de mise en vente = 10 % du min (5 % avec l'aptitude Marchand), prélevée À LA MISE EN VENTE. */
 const PRIX_ITEM = {
   cendrite: { min:3, moy:4, max:7 }, // Cendrite
@@ -59,7 +65,7 @@ const PRIX_ITEM = {
   fab_antidote: { min:41, moy:59, max:106 }, // Antidote
   fab_boite_de_soin: { min:230, moy:328, max:590 }, // Boîte de soin
   fab_biofil_renforce: { min:94, moy:134, max:241 }, // Biofil renforcé
-  fab_biocarburant_raffine: { min:398, moy:568, max:1022 }, // Biocarburant raffiné
+  fab_biocarburant_raffine: { min:210, moy:300, max:540 }, // Biocarburant raffiné
   fab_implant_de_force: { min:3688, moy:5269, max:9484 }, // Implant de force
   fab_implant_d_agilite: { min:3692, moy:5275, max:9495 }, // Implant d'agilité
   fab_implant_maitre: { min:4854, moy:6934, max:12481 }, // Implant maitre
@@ -84,20 +90,20 @@ const PRIX_ITEM = {
   fab_panneau_composite: { min:137, moy:196, max:353 }, // Panneau composite
   fab_ordinateur_de_hacking: { min:1454, moy:2077, max:3739 }, // Ordinateur de hacking
   fab_supraconducteur: { min:1831, moy:2616, max:4709 }, // Supraconducteur
-  fab_ia_d_assistance: { min:7549, moy:10784, max:19411 }, // IA d'assistance
-  fab_drone_de_recolte: { min:7808, moy:11154, max:20077 }, // Drone de récolte
-  fab_drone_d_elevage: { min:8074, moy:11535, max:20763 }, // Drone d'élevage
-  fab_drone_recuperateur: { min:8733, moy:12476, max:22457 }, // Drone récupérateur
-  fab_drone_de_combat: { min:8336, moy:11909, max:21436 }, // Drone de combat
+  fab_ia_d_assistance: { min:3573, moy:5104, max:9187 }, // IA d'assistance
+  fab_drone_de_recolte: { min:3832, moy:5474, max:9853 }, // Drone de récolte
+  fab_drone_d_elevage: { min:4099, moy:5855, max:10539 }, // Drone d'élevage
+  fab_drone_recuperateur: { min:4757, moy:6796, max:12233 }, // Drone récupérateur
+  fab_drone_de_combat: { min:4360, moy:6229, max:11212 }, // Drone de combat
   fab_tank_a_oxygene: { min:193, moy:276, max:497 }, // Tank à oxygène
   fab_combinaison_pressurisee: { min:357, moy:510, max:918 }, // Combinaison pressurisée
   fab_moteur_basique: { min:183, moy:261, max:470 }, // Moteur basique
   fab_navette_legere: { min:1001, moy:1430, max:2574 }, // Navette légère
-  fab_bloc_de_propulsion: { min:760, moy:1085, max:1953 }, // Bloc de propulsion
+  fab_bloc_de_propulsion: { min:1320, moy:1885, max:3393 }, // Bloc de propulsion
   fab_soute_cargo: { min:247, moy:353, max:635 }, // Soute cargo
-  fab_vaisseau_cargo: { min:1779, moy:2541, max:4574 }, // Vaisseau Cargo
+  fab_vaisseau_cargo: { min:2156, moy:3080, max:5544 }, // Vaisseau Cargo
   fab_coque_blindee: { min:1730, moy:2471, max:4448 }, // Coque blindée
-  fab_cockpit_blinde: { min:12482, moy:17832, max:32098 }, // Cockpit blindé
+  fab_cockpit_blinde: { min:7106, moy:10152, max:18274 }, // Cockpit blindé
   fab_moteur_a_distorsion: { min:853, moy:1219, max:2194 }, // Moteur à distorsion
   fab_pistolet_cinetique: { min:155, moy:221, max:398 }, // Pistolet cinétique
   fab_lame_a_plasma: { min:91, moy:130, max:234 }, // Lame à plasma
@@ -105,5 +111,5 @@ const PRIX_ITEM = {
   fab_plastron_lourd: { min:1922, moy:2746, max:4943 }, // Plastron lourd
   fab_lame_a_singularite: { min:2275, moy:3250, max:5850 }, // Lame à singularité
   fab_canon_a_singularite: { min:5061, moy:7230, max:13014 }, // Canon à singularité
-  fab_vaisseau_maitre: { min:22537, moy:32195, max:57951 }, // Vaisseau maitre
+  fab_vaisseau_maitre: { min:10011, moy:14302, max:25744 }, // Vaisseau maitre
 };

@@ -1,4 +1,5 @@
 // v2.79 (K246, K250) — les kits de réparation : prix aux comptoirs, kit lourd au Nid SEUL, PV rendus.
+// v2.80 (K252) — et la boutique des cités : Kit de soin 160 ₡, Biocarburant 320 ₡.
 //   node outils/o_banc.js . kits
 (async function(){
   const r = {};
@@ -7,6 +8,8 @@
   r.perchoir = _catalogueBoutique().filter(a => /kit/.test(a.id)).map(a => `${a.id}:${a.prix}`);
   _surNidBoutique = () => true;
   r.nid = _catalogueBoutique().filter(a => /kit/.test(a.id)).map(a => `${a.id}:${a.prix}`);
+  _surNidBoutique = () => false; _surBaseBoutique = () => false;   // v2.80 (K252) : la boutique d'une cité
+  r.ville = _catalogueBoutique().filter(a => a.id === "fab_kit_de_soin" || a.id === "fab_biocarburant").map(a => `${a.id}:${a.prix}`);
   _surNidBoutique = nid; _surBaseBoutique = base;
   r.marche = { kit:PRIX_ITEM.kit_reparation, lourd:PRIX_ITEM.kit_reparation_lourd };
   r.marcheSousComptoir = PRIX_ITEM.kit_reparation.max < 150 && PRIX_ITEM.kit_reparation_lourd.max < 560;

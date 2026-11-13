@@ -108,8 +108,10 @@ const BOUTIQUE = [
   ...GRAINES.map(g => ({ id:g.id, nom:g.nom, prix:g.prix, cat:"graines" })),
   ...BEBES.map(b => ({ id:b.id, nom:b.nom, prix:b.prix, cat:"bebes" })),
   { id:"fab_recharge_d_oxygene", nom:"Recharge d'oxygène", prix:340, cat:"conso" },
-  { id:"fab_kit_de_soin",        nom:"Kit de soin",        prix:100, cat:"conso" },   // v0.59 : 200 → 100 (provisoire)
-  { id:"fab_biocarburant",       nom:"Biocarburant",       prix:460, cat:"conso" }
+  /* v2.80 (K252) — Kit de soin 100 → 160 (au-dessus du prix moyen des Biotech, 139 ; le Perchoir reste à 260) ;
+     Biocarburant 460 → 320 (comme le Perchoir : plus cher en ville qu'en orbite n'avait pas de sens). */
+  { id:"fab_kit_de_soin",        nom:"Kit de soin",        prix:160, cat:"conso" },   // v0.59 : 200 → 100 (provisoire) ; v2.80 : 160
+  { id:"fab_biocarburant",       nom:"Biocarburant",       prix:320, cat:"conso" }   // v2.80 : 460 → 320
 ];
 const CAT_BOUTIQUE = [ { id:"graines", nom:"Graines" }, { id:"bebes", nom:"Bébés animaux" }, { id:"conso", nom:"Consommables" } ];
 

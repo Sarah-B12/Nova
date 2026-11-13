@@ -46,7 +46,7 @@ const FORMATIONS = {
       [80,"Noyau de calcul","2 Composant avancé, 1 Circuit imprimé, 1 Cristal de Nyx"],
       [90,"Ordinateur de hacking","1 Noyau de calcul, 1 Composant avancé, 1 Fil"],
       [100,"Supraconducteur","2 Lingot de Voltane, 1 Lingot de Givrite, 1 Composant avancé, 1 Biofil renforcé, 1 Cristal de Sélénite"],
-      [110,"IA d'assistance","2 Noyau de calcul, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Supraconducteur"],
+      [110,"IA d'assistance","1 Noyau de calcul, 1 Cristal de Nyx, 1 Supraconducteur"],   // v2.81 (K253) : était 2 Noyau, 1 Nyx, 2 Sélénite, 1 Supraconducteur
       [120,"Drone de récolte","1 Servomoteur, 1 IA d'assistance, 1 Composant simple, 2 Biogel"],
       [130,"Drone d'élevage","1 Servomoteur, 1 IA d'assistance, 1 Composant avancé, 1 Kit de soin"],
       [140,"Drone récupérateur","1 Servomoteur, 1 IA d'assistance, 4 Composant avancé"],
@@ -70,7 +70,7 @@ const FORMATIONS = {
       [100,"Tank à oxygène","2 Recharge d'oxygène, 2 Lingot de Silite"],
       [110,"Biofil renforcé","4 Fil, 1 Biofibre"],
       [120,"Combinaison pressurisée","1 Tank à oxygène, 1 Biofil renforcé, 1 Cellule d'énergie"],
-      [130,"Biocarburant raffiné","2 Biocarburant, 1 Composant avancé"],
+      [130,"Biocarburant raffiné","2 Biocarburant, 1 Cellule d'énergie"],   // v2.83 (K255) : était 2 Biocarburant, 1 Composant avancé
       [140,"Implant de force","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote"],
       [150,"Implant d'agilité","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Stimulant"],
       [160,"Implant maitre","3 Biofil renforcé, 3 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote, 1 Stimulant"]
@@ -88,13 +88,13 @@ const FORMATIONS = {
       [50,"Cockpit léger","3 Plaque de coque, 1 Cellule d'énergie, 1 Circuit imprimé, 4 Cuir"],
       [60,"Moteur basique","2 Cellule d'énergie, 1 Câblage"],
       [70,"Navette légère","2 Plaque de coque, 1 Cockpit léger, 1 Moteur basique, 1 Propulseur d'appoint, 1 Réservoir"],
-      [80,"Bloc de propulsion","2 Moteur basique, 1 Réservoir, 1 Composant avancé, 1 Lingot de Silite"],
+      [80,"Bloc de propulsion","2 Moteur basique, 1 Réservoir, 1 Composant avancé, 1 Lingot de Silite, 1 Cristal de Nyx"],   // v2.82 (K254) : + 1 Nyx
       [90,"Soute cargo","3 Plaque de coque, 1 Panneau renforcé"],
-      [100,"Vaisseau Cargo","3 Plaque de coque, 1 Cockpit léger, 1 Moteur basique, 1 Bloc de propulsion, 1 Soute cargo"],
+      [100,"Vaisseau Cargo","3 Plaque de coque, 1 Cockpit léger, 1 Bloc de propulsion, 1 Soute cargo"],   // v2.82 (K254) : sans le Moteur basique
       [110,"Coque blindée","3 Plaque de coque, 1 Panneau composite, 1 Cristal de Sélénite"],
-      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir, 1 Cristal de Sélénite"],
+      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir"],   // v2.82 (K254) : sans la Sélénite
       [130,"Moteur à distorsion","1 Moteur basique, 3 Lingot de Givrite, 1 Cristal de Nyx"],
-      [140,"Vaisseau maitre","1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 3 Cristal de Nyx, 1 Cristal de Sélénite"]
+      [140,"Vaisseau maitre","1 Cockpit blindé, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 2 Cristal de Nyx"]   // v2.82 (K254) : était 1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle, 3 Nyx, 1 Sélénite
     ]
   }
 };
@@ -309,7 +309,8 @@ const PTS_FAB_SEUILS = [[20,1],[60,2],[150,3],[500,4]];   // au-delà : 5
 const PTS_FAB_CRISTAL = 25;
 const PTS_FAB_FORCES = {                                  // nom normalisé → points (décision du 29/10)
   "biocarburant raffine":2, "ordinateur de hacking":3, "ia d'assistance":3,
-  "drone recuperateur":4, "drone de combat":4
+  "drone recuperateur":4, "drone de combat":4,
+  "cockpit blinde":5      // v2.81 (K253) : la nouvelle IA le fait passer à 419 (→ 4) ; gardé à 5, la formation du Constructeur ne change pas
 };
 let _coutFabMemo = null;
 function _coutFab(nom){
