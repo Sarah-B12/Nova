@@ -132,8 +132,25 @@ async function sondeCombat(){
   /* v1.20 — l'énergie est débitée AVANT le duel, gagné ou perdu. Si le serveur
      refuse (plus assez d'énergie), agirServeur() l'a déjà dit : on rouvre la
      rencontre pour que le joueur choisisse une autre issue. */
-  const r = await agirServeur({ cout:coutSonde(), motif:"sonde" });
-  if(!r){ ouvrirSonde(); return; }
+  /* v2.89 (v291, anti-triche) — le duel s'ENGAGE au serveur (`sonde_engager` : énergie, Endurance comprise) ;
+     `sonde_victoire` n'accepte plus qu'un duel engagé (2 s à 10 min). Avant : énergie par agir(), et la
+     victoire pouvait s'encaisser sans jamais avoir payé. */
+  let r = null;
+  try{
+    const rep = await sb.rpc("sonde_engager");
+    if(rep && rep.error) throw new Error(rep.error.message);
+    r = rep && rep.data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "sonde.js#engager"); }
+  if(!r || !r.ok){
+    const err = r && r.err;
+    if(err === "mort"){ if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); return; }
+    if(err === "energie") journal("Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.","alerte");
+    else if(err === "prison") journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
+    else journal("Le serveur n'a pas répondu — réessaie.","alerte");
+    ouvrirSonde(); return;
+  }
+  if(typeof r.energie === "number"){ etat.energie = r.energie; etat.energieMaj = Date.now(); }
+  if(r.jauges){ etat.jauges = etat.jauges || {}; Object.assign(etat.jauges, r.jauges); }
   lancerTirSonde(_sondeGagne, _sondePerdu, { durci: (typeof enCeres === "function") && enCeres() });   // v1.96 : K65 à Cérès
 }
 async function _sondeGagne(){
@@ -144,7 +161,9 @@ async function _sondeGagne(){
     d = r && r.data;
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "sonde.js#victoire"); }
   if(typeof gagnerXp==="function") gagnerXp(10);
-  if(!d || !d.ok){
+  if(d && d.err === "pas_de_duel"){   // v2.89 (v291) : duel non engagé au serveur (ou trop vieux)
+    journal("La sonde se disloque. Le duel n'a pas été enregistré : aucun crédit versé. +10 XP.","alerte");
+  } else if(!d || !d.ok){
     journal("La sonde se disloque. Le serveur n'a pas répondu : aucun crédit versé. +10 XP.","alerte");
   } else if(d.gain > 0){
     journal(`La sonde se disloque. Tu récupères ${d.gain} ₡ de pièces revendables dans les débris, +10 XP.`

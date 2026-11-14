@@ -24,7 +24,7 @@ const SELENITE_POUSSE_J = 4;      // jours pour mûrir
 function _selPousseJ(){ return SELENITE_POUSSE_J - ((typeof _apt === "function" && _apt("to5")) ? 1 : 0); }
 const SELENITE_GRACE_J  = 2;      // jours de grâce, mûre, avant que le gel la fende
 const SELENITE_REPRISE  = 0.5;    // après une fêlure : elle repart de la moitié
-const SELENITE_DOUBLE   = 0.25;   // chance d'en tirer deux
+const SELENITE_DOUBLE   = 0.25;   // chance d'en tirer deux — v2.89 : RÉFÉRENCE, tirée par le serveur (selenite_conclure)
 const SELENITE_ENERGIE  = 6;      // % d'énergie pour la dégager (Endurance comprise)
 const SELENITE_COUPS    = 5;      // coups (goupilles) pour la dégager
 
@@ -98,34 +98,82 @@ function majSelenite(z){
   const b = z.querySelector("#sel-degager"); if(b) b.addEventListener("click", () => seleniteDegager(z));
 }
 
+/* v2.89 (v291, anti-triche) — L'AIGUILLE VIT AU SERVEUR (table `selenite_aiguille`, reprise de la sauvegarde
+   à la première lecture). `selenite_lire` la renvoie, gel appliqué ; `selenite_engager` vérifie le lieu, mûre,
+   la place, et débite l'énergie (Endurance) ; `selenite_conclure(p_reussi)` donne 1 cristal (2 une fois sur
+   quatre, tiré là-bas) ou fend l'aiguille. Le jeu ne dit que l'issue du mini-jeu des coups (comme le vol).
+   etat.selenite n'est plus qu'un reflet (pour l'affichage, et gelVu). */
+function _selAppliquer(a){
+  if(!a || typeof a.debut !== "number") return;
+  const S = etat.selenite || {};
+  etat.selenite = { debut:a.debut, gels:a.gels|0, gelLe:(typeof a.gel_le === "number" ? a.gel_le : S.gelLe), gelVu:S.gelVu };
+}
+const SELENITE_REFUS = {
+  inconnue:"Tu ne sais pas où chercher.", lieu:"Tu n'es plus au lac gelé.", pas_mure:"Trop jeune. Si tu la touches maintenant, elle casse.",
+  sac_plein:"Sac plein.", energie:"Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.",
+  prison:"Tu es en prison — impossible d'agir jusqu'à ta libération.", pas_engage:"Il faut d'abord commencer à la dégager."
+};
+async function majSeleniteServeur(z){
+  if(!z) return;
+  try{
+    const { data, error } = await sb.rpc("selenite_lire");
+    if(error) throw new Error(error.message);
+    if(data && data.ok) _selAppliquer(data.aiguille);
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "selenite.js#lire"); }
+  majSelenite(z);
+}
+let _selEnCours = false;
 async function seleniteDegager(z){
-  if(!surSelenite() || !seleniteMure()) return;
+  if(!surSelenite() || !seleniteMure() || _selEnCours) return;
   const b = z.querySelector("#sel-degager"); if(b) b.disabled = true;
   // L'énergie part AVANT les coups : quitter en route ne la rend pas.
-  if(!await agirServeur({ cout:coutSelenite(), motif:"selenite" })){ if(b) b.disabled = false; return; }
+  _selEnCours = true;
+  let d = null;
+  try{
+    if(typeof sauverMaintenant === "function") await sauverMaintenant();   // le serveur lit la position sauvée
+    const rep = await sb.rpc("selenite_engager");
+    if(rep && rep.error) throw new Error(rep.error.message);
+    d = rep && rep.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "selenite.js#engager"); }
+  finally{ _selEnCours = false; }
+  if(!d || !d.ok){
+    if(d && d.err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); return; }
+    if(d && d.aiguille) _selAppliquer(d.aiguille);
+    journal((d && SELENITE_REFUS[d.err]) || "Le serveur n'a pas répondu — réessaie.", "alerte");
+    if(b) b.disabled = false; majSelenite(z); return;
+  }
+  if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
   const zone = z.querySelector("#sel-jeu"); if(!zone) return;
   if(typeof goupillesMoteur !== "function"){ journal("Rien ne se passe.", "alerte"); return; }
+  const conclure = async (reussi) => {
+    try{
+      const rep = await sb.rpc("selenite_conclure", { p_reussi: reussi });
+      if(rep && rep.error) throw new Error(rep.error.message);
+      return rep && rep.data;
+    }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "selenite.js#conclure"); return null; }
+  };
   goupillesMoteur(zone, {
     nb:SELENITE_COUPS, libelle:"Coup", bouton:"Frapper", aide:"Frappe quand le curseur passe dans le vert.",
     gagne: async () => {
-      const n = Math.random() < SELENITE_DOUBLE ? 2 : 1;
-      const r = await agirServeur({ ajouter:{ selenite:n }, motif:"selenite" });
-      const recu = (r && r.ajoutes && r.ajoutes.selenite) || 0;
-      etat.selenite = { debut:Date.now(), gels:(etat.selenite && etat.selenite.gels) || 0, gelLe:etat.selenite && etat.selenite.gelLe, gelVu:etat.selenite && etat.selenite.gelVu };
-      if(recu) journal(n === 2 && recu === 2
+      const r = await conclure(true);
+      if(!r || !r.ok){ journal("Le serveur n'a pas répondu : l'aiguille reste en place. Réessaie.", "alerte"); setTimeout(() => majSeleniteServeur(z), 50); return true; }
+      _selAppliquer(r.aiguille);
+      if(r.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(r.etat);
+      const recu = r.recu|0, n = r.tire|0;
+      if(!r.reussi) journal("Un coup de travers. L'aiguille se fend net : la moitié du haut tombe, mate et morte. Le reste repoussera.", "alerte", "minage");
+      else if(recu) journal(n === 2 && recu === 2
         ? "L'aiguille vient d'un bloc, et une seconde avec elle, collée à sa base. +2 Cristal de Sélénite. Une nouvelle pointe perce déjà la glace."
         : "L'aiguille vient d'un bloc, entière, froide dans ta main. +1 Cristal de Sélénite. Une nouvelle pointe perce déjà la glace.", "gain", "minage");
       else journal("Ton sac est plein : l'aiguille t'échappe des doigts et se brise sur la glace.", "alerte", "minage");
-      if(typeof gagnerXp === "function") gagnerXp(5);
+      if(r.reussi && typeof gagnerXp === "function") gagnerXp(5);
       if(typeof sauvegarder === "function") sauvegarder();
       majSelenite(z); if(typeof afficher === "function") afficher();
       return true;
     },
     rate: () => {
-      etat.selenite = Object.assign({}, etat.selenite, { debut:Date.now() - _selPousseJ() * _selJour() * SELENITE_REPRISE });
+      etat.selenite = Object.assign({}, etat.selenite, { debut:Date.now() - _selPousseJ() * _selJour() * SELENITE_REPRISE });   // affichage tout de suite…
+      conclure(false).then(r => { if(r && r.ok) _selAppliquer(r.aiguille); if(typeof sauvegarder === "function") sauvegarder(); majSelenite(z); });   // …le serveur fait foi
       journal("Un coup de travers. L'aiguille se fend net : la moitié du haut tombe, mate et morte. Le reste repoussera.", "alerte", "minage");
-      if(typeof sauvegarder === "function") sauvegarder();
-      setTimeout(() => majSelenite(z), 50);
       return false;
     }
   });

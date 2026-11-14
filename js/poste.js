@@ -247,7 +247,10 @@ function _posteBornerQte(z, id, ecrire){
    Triptolème. L'écart entre les deux reste net (le triple), mais l'envoi cesse
    d'être dissuasif au point que personne ne s'en serve. */
 function tauxPoste(){ return ((typeof surBase==="function") && surBase()) ? 0.15 : 0.05; }
-function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(tauxPoste()*(p.moy||0)*qte):0; }
+/* v2.87 (v289) — la taxe d'un objet est CALCULÉE PAR LE SERVEUR (`poste_envoyer` : 5 % sur Silène,
+   15 % ailleurs, du prix moyen `prix_moyen`, arrondi au-dessus) ; `p_taxe` est ignoré. Ceci n'est
+   que l'affichage : en pourcentage ENTIER, pour arrondir exactement comme le serveur. */
+function _taxeObjet(id, qte){ const p=(typeof PRIX_ITEM!=="undefined")?PRIX_ITEM[id]:null; return p?Math.ceil(Math.round(tauxPoste()*100)*(p.moy||0)*qte/100):0; }
 function _majTaxe(z){
   const t=_posteTypeChoisi(z); const el=z.querySelector("#poste-taxe"); if(!el) return;
   /* v0.91 — la réserve de la v0.87 est levée : `poste_envoyer` lit désormais
@@ -258,7 +261,7 @@ function _majTaxe(z){
      c'est le serveur qui la calcule. `tauxPoste()` ne sert qu'à l'AFFICHAGE —
      les deux barèmes doivent rester d'accord, ici et dans le SQL. */
   if(t==="credits"){ const m=parseInt((z.querySelector("#poste-montant")||{}).value,10)||0;
-    const tx=Math.ceil(tauxPoste()*m)*_posteMultTaxe();   // v1.11 : affichage triplé si perturbé
+    const tx=Math.ceil(Math.round(tauxPoste()*100)*m/100)*_posteMultTaxe();   // v1.11 : affichage triplé si perturbé
     el.innerHTML=`Coût total : <b>${m + tx} ₡</b> (${m} + taxe ${tx} ₡, soit ${Math.round(tauxPoste()*100)*_posteMultTaxe()} %)${_postePerturbee()?" — <b>taxe triplée</b> (réseau perturbé)":""}.`; }
   else { const id=(z.querySelector("#poste-item")||{}).value; const q=_posteBornerQte(z, id, !!_posteFige);
     const tx=_taxeObjet(id,q)*_posteMultTaxe();   // v1.11 : affichage triplé si perturbé

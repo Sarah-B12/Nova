@@ -148,6 +148,16 @@
   // Dégager : énergie d'abord, puis les coups ; gagné → 1 ou 2 cristaux, l'aiguille repart de zéro.
   etat.energie = 100; etat.selenite = { debut:Date.now() - 4.2 * J }; majSelenite(zs); motifs.length = 0;
   const vAgir = agirServeur; let ajout = null; agirServeur = async (o) => { motifs.push(o.motif); if(o.ajouter) ajout = o.ajouter; return { ok:true, ajoutes:o.ajouter || {} }; };
+  // v2.89 (v291) : l'aiguille vit au serveur — doublure de selenite_engager / selenite_conclure (comme le serveur).
+  const vRpc = sb.rpc.bind(sb);
+  sb.rpc = (nom, args) => {
+    if(nom === "selenite_engager"){ motifs.push(nom); return Promise.resolve({ data:{ ok:true, energie:94 }, error:null }); }
+    if(nom === "selenite_conclure"){ motifs.push(nom);
+      const n = Math.random() < SELENITE_DOUBLE ? 2 : 1; if(args.p_reussi) ajout = { selenite:n };
+      const debut = args.p_reussi ? Date.now() : Date.now() - _selPousseJ() * J * SELENITE_REPRISE;
+      return Promise.resolve({ data:{ ok:true, reussi:!!args.p_reussi, tire:args.p_reussi ? n : 0, recu:args.p_reussi ? n : 0, aiguille:{ debut, gels:0 } }, error:null }); }
+    return vRpc(nom, args);
+  };
   const gm = goupillesMoteur; let moteur = null; goupillesMoteur = (zone, o) => { moteur = gm(zone, o); return moteur; };
   await seleniteDegager(zs);
   for(let k = 0; k < SELENITE_COUPS; k++){ moteur.etat.pos = 0.5; moteur.coup(); } await att(20);
@@ -155,7 +165,7 @@
   // Raté : fendue, repart de la moitié.
   etat.selenite = { debut:Date.now() - 4.2 * J }; majSelenite(zs); await seleniteDegager(zs); moteur.etat.pos = 0.01; moteur.coup(); await att(80);
   r.sel.rateRepart = Math.round(selenitePousse() * 100);
-  goupillesMoteur = gm; agirServeur = vAgir;
+  goupillesMoteur = gm; agirServeur = vAgir; sb.rpc = vRpc;
   // La part des doublés (25 %).
   let deux = 0; for(let k = 0; k < 20000; k++) if(Math.random() < SELENITE_DOUBLE) deux++; r.sel.partDeux = Math.round(deux / 200);
   // L'onglet « Le Gisement » au lac, « Quêtes » à la station.

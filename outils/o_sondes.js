@@ -1,4 +1,5 @@
 // v1.20 — sondes : énergie débitée avant, gain décidé par le serveur (node o_banc.js .. sondes)
+// v2.89 (v291) : l'énergie part par sonde_engager (le duel engagé), plus par agir.
 (async function(){
   const r = {}; const dort = ms => new Promise(x => setTimeout(x, ms));
   const appels = []; let rep = {};
@@ -9,10 +10,10 @@
 
   // 1. assez d'énergie, 1re du jour
   etat.energie = 50; const avant = etat.credits;
-  rep.agir = () => Promise.resolve({ data:{ ok:true, etat:{ sac:{}, coffre:{}, soute:{}, lots:[] }, energie:45 }, error:null });
+  rep.sonde_engager = () => Promise.resolve({ data:{ ok:true, etat:{ sac:{}, coffre:{}, soute:{}, lots:[] }, energie:45 }, error:null });
   rep.sonde_victoire = () => Promise.resolve({ data:{ ok:true, gain:77, rang:1, plafond:false, solde:avant+77 }, error:null });
   await sondeCombat(); await dort(50);
-  r.cas1 = { ordre: appels.map(a=>a.n).filter(n=>n==="agir"||n==="sonde_victoire"), cout: (appels.find(a=>a.n==="agir")||{a:{}}).a.p_cout, credits: etat.credits - avant, msg: journ.slice(-1)[0] };
+  r.cas1 = { ordre: appels.map(a=>a.n).filter(n=>n==="agir"||n==="sonde_engager"||n==="sonde_victoire"), credits: etat.credits - avant, msg: journ.slice(-1)[0] };
 
   // 2. plafond atteint
   appels.length = 0; const av2 = etat.credits;
@@ -22,7 +23,7 @@
 
   // 3. énergie refusée par le serveur : pas de duel, la rencontre se rouvre
   appels.length = 0; r.duelLance = false;
-  rep.agir = () => Promise.resolve({ data:{ ok:false, err:"energie" }, error:null });
+  rep.sonde_engager = () => Promise.resolve({ data:{ ok:false, err:"energie" }, error:null });
   await sondeCombat(); await dort(50);
   r.cas3 = { duel: r.duelLance, victoireDemandee: appels.some(a=>a.n==="sonde_victoire"), modaleRouverte: !document.querySelector("#sonde-modale").hidden };
 

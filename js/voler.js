@@ -216,9 +216,11 @@ async function _volConclure(mode, prep, reussi){
   const xpTxt = ` (+${xp} XP)`;
   if(d.reussi){
     if(d.vide){
-      if(mode==="vol") journal((d.sac_plein ? `Tu tiens de quoi faire les poches de ${nom}, mais ton sac est plein : tu repars les mains vides.`
-                                           : `Tu fouilles ${nom} mais repars les mains vides.`)+xpTxt,"alerte","vol");
-      else journal(`Hack réussi, mais le compte de ${nom} est vide.`+xpTxt,"alerte","vol");
+      /* v2.86 (testeuse Vortex, 11/11) : une réussite sans butin s'écrivait en ROUGE, comme un échec, et « tu fouilles…
+         mais repars les mains vides » ne disait pas si le vol avait réussi. Désormais : couleur normale, « réussi » écrit. */
+      if(mode==="vol") journal((d.sac_plein ? `Vol réussi sur ${nom}, mais ton sac est plein : tu repars les mains vides.`
+                                           : `Vol réussi sur ${nom}… mais ses poches étaient vides.`)+xpTxt,"","vol");
+      else journal(`Hack réussi, mais le compte de ${nom} est vide.`+xpTxt,"","vol");
     } else if(mode==="vol"){
       journal(`Vol réussi sur ${nom} : ${_nomsButin(d.butin)}.`+(d.sac_plein?" (sac plein : tu as dû en laisser)":"")+" "
         + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui.") + xpTxt, "gain","vol");

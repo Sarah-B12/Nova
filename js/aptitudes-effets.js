@@ -96,6 +96,8 @@ function regenPassif(){
 /* ---------- Crédits ---------- */
 function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * _boi("credits")); }                                        // Négociant +15 %
 function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1)); }        // v1.25 : Repérage ne s'applique plus à l'exploration
+/* ⚠ v2.89 (v291) — RÉFÉRENCE : le butin des patrouilles est calculé par le SERVEUR (`patrouille_neutralisee`),
+   avec cette formule ; gardée pour outils/o_aptitudes.js. Changer un coefficient = changer aussi le serveur. */
 function aptButinCombat(g){ let m = (_apt("no3") ? 1.15 : 1); if(_apt("tr3")) m *= 1.25;   // v1.26 : Cœur de forge (ig4) → Force, plus butin
   if(_apt("om2")) m *= 1.25;                                                        // Repérage
   if(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) m *= 1.25;  // Fournaise
@@ -179,7 +181,7 @@ function aptBiodomeRecolte(){ const b=_apt("cu2") ? { min:7, max:11 } : { min:5,
 function aptTonteBonus(){ const m=_boi("recolte"); return (_apt("pr2") ? 1 : 0) + (m>1 ? Math.round((m-1)*4) : (m<1 ? -1 : 0)); }                                                            // Cultures vivaces : +1 produit à la tonte
 
 /* ---------- Atelier (fabrication) ---------- */
-function aptFabSkip(){ return _apt("ar1"); }             // Récup d'atelier : 20 % de ne pas consommer l'ingrédient le moins coûteux
-function aptFabSerie(){ return _apt("ar2"); }            // Production en série : 10 % de sortir 2 objets
+/* v2.88 (v290) — Récup d'atelier (ar1, 20 % : 1 unité du plus gros lot rendue) et Production en série (ar2,
+   10 % : 2 objets) sont tirées par le SERVEUR (`atelier_fabriquer`) : aptFabSkip / aptFabSerie retirées. */
 function aptFabPoints(){ return 0; }   // v2.04 (K117) : l'Apprentissage (+1 point) est remplacé par l'Entretien (usure.js, dureeViePerso)
 function aptFabMaitre(){ return _apt("ar4"); }           // Maître-artisan : −1 matière première sur le plus gros lot

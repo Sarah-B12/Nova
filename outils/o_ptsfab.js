@@ -4,7 +4,7 @@
   await new Promise(x=>setTimeout(x,1200));
   const attendu = {
     "Lingot de Cendrite":1,"Couteau de survie":1,"Munitions cinétiques ×10":1,"Pistolet cinétique":2,"Casque léger":1,"Plastron léger":1,"Jambières légères":1,
-    "Munitions à plasma ×10":1,"Lame à plasma":1,"Pistolet à plasma":1,"Lingot de Givrite":1,"Munitions à ions ×10":1,"Fusil à ions":3,"Tourelle de vaisseau":3,
+    "Munitions à plasma ×10":1,"Lame à plasma":2,"Pistolet à plasma":2,"Lingot de Givrite":1,"Munitions à ions ×10":1,"Fusil à ions":3,"Tourelle de vaisseau":4,   /* v2.85 (K258) : lame, pistolet 1 → 2 ; tourelle 3 → 4 (cristaux) */
     "Casque lourd":2,"Plastron lourd":3,"Jambières lourdes":2,"Lame à singularité":3,"Canon à singularité":4,
     "Lingot de Voltane":1,"Composant simple":1,"Circuit imprimé":1,"Câblage":1,"Panneau renforcé":1,"Servomoteur":2,"Composant avancé":2,"Panneau composite":2,
     "Noyau de calcul":3,"Ordinateur de hacking":3,"Supraconducteur":3,"IA d'assistance":3,"Drone de récolte":4,"Drone d'élevage":4,"Drone récupérateur":4,"Drone de combat":4,

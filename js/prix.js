@@ -9,6 +9,9 @@
    sans Sélénite ; Maître = 1 Cockpit blindé, 1 Moteur à distorsion, 1 Tourelle, 2 Nyx (3 Sél + 5 Nyx contenus).
    v2.83 (K255) — Biocarburant raffiné = 2 Biocarburant, 1 Cellule d'énergie (au lieu du Composant avancé) : 568 → 300 ₡
    le bidon de 60 L, soit 5 ₡ le litre comme le Biocarburant. Le comptoir (Perchoir, Nid : 1 400 ₡) ne change pas.
+   v2.84 (K256) — Cockpit blindé : 1 Coque blindée au lieu de 2 ; les trois implants : 1 Sélénite au lieu de 2.
+   v2.85 (K258) — Fabricant d'armes : Lame et Pistolet à plasma + 1 Nyx, Fusil à ions + 2 Nyx, Tourelle + 1 Sélénite
+   (le Drone de combat et le Vaisseau maître, qui les contiennent, suivent).
    Commission de mise en vente = 10 % du min (5 % avec l'aptitude Marchand), prélevée À LA MISE EN VENTE. */
 const PRIX_ITEM = {
   cendrite: { min:3, moy:4, max:7 }, // Cendrite
@@ -66,9 +69,9 @@ const PRIX_ITEM = {
   fab_boite_de_soin: { min:230, moy:328, max:590 }, // Boîte de soin
   fab_biofil_renforce: { min:94, moy:134, max:241 }, // Biofil renforcé
   fab_biocarburant_raffine: { min:210, moy:300, max:540 }, // Biocarburant raffiné
-  fab_implant_de_force: { min:3688, moy:5269, max:9484 }, // Implant de force
-  fab_implant_d_agilite: { min:3692, moy:5275, max:9495 }, // Implant d'agilité
-  fab_implant_maitre: { min:4854, moy:6934, max:12481 }, // Implant maitre
+  fab_implant_de_force: { min:2288, moy:3269, max:5884 }, // Implant de force
+  fab_implant_d_agilite: { min:2293, moy:3275, max:5895 }, // Implant d'agilité
+  fab_implant_maitre: { min:3454, moy:4934, max:8881 }, // Implant maitre
   fab_lingot_de_silite: { min:20, moy:29, max:52 }, // Lingot de Silite
   fab_plaque_de_coque: { min:62, moy:89, max:160 }, // Plaque de coque
   fab_reservoir: { min:116, moy:166, max:299 }, // Réservoir
@@ -79,9 +82,9 @@ const PRIX_ITEM = {
   fab_plastron_leger: { min:100, moy:143, max:257 }, // Plastron léger
   fab_jambieres_legeres: { min:67, moy:95, max:171 }, // Jambières légères
   fab_munitions_a_plasma: { min:39, moy:55, max:99 }, // Munitions à plasma ×10
-  fab_pistolet_a_plasma: { min:107, moy:153, max:275 }, // Pistolet à plasma
+  fab_pistolet_a_plasma: { min:667, moy:953, max:1715 }, // Pistolet à plasma
   fab_munitions_a_ions: { min:96, moy:137, max:247 }, // Munitions à ions ×10
-  fab_fusil_a_ions: { min:462, moy:660, max:1188 }, // Fusil à ions
+  fab_fusil_a_ions: { min:1582, moy:2260, max:4068 }, // Fusil à ions
   fab_casque_lourd: { min:1569, moy:2242, max:4036 }, // Casque lourd
   fab_jambieres_lourdes: { min:1663, moy:2376, max:4277 }, // Jambières lourdes
   fab_cablage: { min:48, moy:69, max:124 }, // Câblage
@@ -94,7 +97,7 @@ const PRIX_ITEM = {
   fab_drone_de_recolte: { min:3832, moy:5474, max:9853 }, // Drone de récolte
   fab_drone_d_elevage: { min:4099, moy:5855, max:10539 }, // Drone d'élevage
   fab_drone_recuperateur: { min:4757, moy:6796, max:12233 }, // Drone récupérateur
-  fab_drone_de_combat: { min:4360, moy:6229, max:11212 }, // Drone de combat
+  fab_drone_de_combat: { min:4920, moy:7029, max:12652 }, // Drone de combat
   fab_tank_a_oxygene: { min:193, moy:276, max:497 }, // Tank à oxygène
   fab_combinaison_pressurisee: { min:357, moy:510, max:918 }, // Combinaison pressurisée
   fab_moteur_basique: { min:183, moy:261, max:470 }, // Moteur basique
@@ -103,13 +106,13 @@ const PRIX_ITEM = {
   fab_soute_cargo: { min:247, moy:353, max:635 }, // Soute cargo
   fab_vaisseau_cargo: { min:2156, moy:3080, max:5544 }, // Vaisseau Cargo
   fab_coque_blindee: { min:1730, moy:2471, max:4448 }, // Coque blindée
-  fab_cockpit_blinde: { min:7106, moy:10152, max:18274 }, // Cockpit blindé
+  fab_cockpit_blinde: { min:5377, moy:7681, max:13826 }, // Cockpit blindé
   fab_moteur_a_distorsion: { min:853, moy:1219, max:2194 }, // Moteur à distorsion
   fab_pistolet_cinetique: { min:155, moy:221, max:398 }, // Pistolet cinétique
-  fab_lame_a_plasma: { min:91, moy:130, max:234 }, // Lame à plasma
-  fab_tourelle_de_vaisseau: { min:926, moy:1323, max:2381 }, // Tourelle de vaisseau
+  fab_lame_a_plasma: { min:651, moy:930, max:1674 }, // Lame à plasma
+  fab_tourelle_de_vaisseau: { min:3446, moy:4923, max:8861 }, // Tourelle de vaisseau
   fab_plastron_lourd: { min:1922, moy:2746, max:4943 }, // Plastron lourd
   fab_lame_a_singularite: { min:2275, moy:3250, max:5850 }, // Lame à singularité
   fab_canon_a_singularite: { min:5061, moy:7230, max:13014 }, // Canon à singularité
-  fab_vaisseau_maitre: { min:10011, moy:14302, max:25744 }, // Vaisseau maitre
+  fab_vaisseau_maitre: { min:10802, moy:15431, max:27776 }, // Vaisseau maitre
 };

@@ -15,9 +15,12 @@
   intrusion(true); etat.competences.intelligence = 100; etat.patrJour = null;
   etat.equipement = Object.assign({}, etat.equipement, { arme:"fab_ordinateur_de_hacking" });
   const appels = []; const journ = [];
-  const orig = { rc: resoudreCombat, bp: butinPatrouille, rs: registreSignaler, gx: gagnerXp, j: journal, rnd: Math.random };
+  const orig = { rc: resoudreCombat, pn: patrouilleNeutraliseeServeur, rs: registreSignaler, gx: gagnerXp, j: journal, rnd: Math.random };
   resoudreCombat = async (o) => { appels.push(["combat", o]); };
-  butinPatrouille = async () => { appels.push(["butin"]); return []; };
+  // v2.89 (v291) : la patrouille piratée est COMPTÉE au serveur, sans butin (doublure du serveur).
+  patrouilleNeutraliseeServeur = async (m) => { appels.push(["serveur", m]);
+    etat.patrJour = { jour: jourDeJeu(), n: ((etat.patrJour && etat.patrJour.n) || 0) + 1 };
+    return { ok:true, n: etat.patrJour.n, butin:false }; };
   registreSignaler = async (t) => { appels.push(["registre", t]); };
   gagnerXp = (n) => { appels.push(["xp", n]); };
   journal = (t) => journ.push(t);
@@ -39,6 +42,6 @@
   // 6. La sonde : même chance (lue dans sondeBrouiller).
   const src = sondeBrouiller.toString();
   r.sonde = { chanceHack: /chanceHack\(\)/.test(src), ancienneFormule: /0\.45|0\.90/.test(src) };
-  resoudreCombat = orig.rc; butinPatrouille = orig.bp; registreSignaler = orig.rs; gagnerXp = orig.gx; journal = orig.j; Math.random = orig.rnd;
+  resoudreCombat = orig.rc; patrouilleNeutraliseeServeur = orig.pn; registreSignaler = orig.rs; gagnerXp = orig.gx; journal = orig.j; Math.random = orig.rnd;
   return r;
 })();

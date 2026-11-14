@@ -72,7 +72,7 @@
   if(typeof aptCombatBonusVictoire === "function") aptCombatBonusVictoire = () => 0;
   if(typeof aptCombatBonusProtocole === "function") aptCombatBonusProtocole = () => 0;
   let xp = []; const gxOrig = gagnerXp; gagnerXp = (n) => { xp.push(n); };
-  butinPatrouille = async () => [];
+  patrouilleNeutraliseeServeur = async () => ({ ok:true, n:1, butin:true, credits:0, objets:{} });   // v2.89 : le butin vient du serveur
   const rnd = Math.random; Math.random = () => 0.36;   // gagne à dureté 6 (40 %), perd à 26 (32 %)
   await resoudreCombat({}); const gagneDebris = journ.slice(-1)[0];
   Math.random = () => 0.01; await resoudreCombat({}); const xpDebris = xp.slice(-1)[0];

@@ -71,10 +71,13 @@ function _boutiqueDehors(){
   if(_surBaseBoutique() || _surNidBoutique()) return false;  // la base (et Le Nid) SONT des comptoirs
   return !(typeof villeActuelle==="function" && villeActuelle());
 }
+/* v2.87 (v289) — le prix PAYÉ est calculé par le serveur (`boutique_acheter`) ; ceci est l'affichage.
+   La boisson en dix-millièmes (nombres ENTIERS), pour arrondir exactement comme lui (+10 % :
+   vérifié identique jusqu'à 20 000 ₡) : en virgule flottante, 165 × 0,7 donnait 115 au lieu de 116 (115,4999…). */
 function _prixBoutique(a){
-  const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix;
+  const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix;   // boutique mobile (no1) : +10 %
   const m = (typeof boissonMod==="function") ? boissonMod("boutique", 1) : 1;   // v0.79 : « Mémoire courte » −20 %
-  return Math.max(1, Math.round(base * m));
+  return Math.max(1, Math.round(base * Math.round(m * 10000) / 10000));
 }
 function renderBoutique(){
   const z = document.querySelector("#boutique-vue"); if(!z) return;
@@ -134,6 +137,18 @@ function renderBoutique(){
   if(typeof brancherTips==="function") brancherTips(z);
 }
 
+/* v2.87 (K260) — les refus de `boutique_acheter` (v289), dits au joueur. */
+let _boutiqueEnCours = false;
+const BOUTIQUE_REFUS = {
+  hors_ville: "La Boutique n'est accessible qu'en ville.",
+  nid_ferme:  "Au Nid, personne ne te vend rien pour l'instant.",
+  item:       "Ce comptoir ne vend pas ça.",
+  permis:     "Il te faut un permis de vaisseau.",
+  credits:    "Crédits insuffisants.",
+  sac_plein:  "Sac plein — fais de la place avant d'acheter.",
+  quantite:   "Quantité invalide.",
+  prison:     "Tu es en prison — impossible d'acheter jusqu'à ta libération."
+};
 /* Achat par lots. ⚠ La quantité est bornée par ce qu'on peut PAYER et par la
    place restante dans le sac : mieux vaut acheter moins que refuser tout, et
    le journal annonce ensuite ce qui est réellement entré. */
@@ -162,12 +177,35 @@ async function acheterBoutique(id){
   const nn = Math.min(n, parCredits, parPlace);
   if(nn < n) _boutiqueMsg(`Réduit à ${nn} : ${parCredits < n ? "crédits" : "place"} insuffisant${parCredits < n ? "s" : "e"}.`);
 
-  // Les objets arrivent côté serveur AVANT le débit : pas de crédits perdus sans objet.
-  const r = await agirServeur({ ajouter:{ [id]:nn }, motif: dehors ? "boutique_mobile" : "boutique" });
-  if(!r) return;
-  const recu = (r.ajoutes||{})[id] || 0;
-  if(!recu){ journal("Sac plein.","alerte"); _boutiqueMsg("Sac plein — fais de la place avant d'acheter."); return; }
-  etat.credits -= prix * recu;
-  journal(`Boutique${dehors?" mobile":""} : ${a.nom}${recu>1?` ×${recu}`:""} acheté — ${prix * recu} ₡.`,"gain");
+  /* v2.87 (K260, anti-triche) — l'achat se fait d'UN SEUL COUP au serveur : `boutique_acheter`
+     (v289) trouve le comptoir d'après la position SAUVÉE (cité, Perchoir, Nid, boutique mobile),
+     applique SON prix (catalogue `_boutique_catalogue`, copie de BOUTIQUE / BASE_BOUTIQUE /
+     NID_ARTICLES : outils/o_boutique.js --verifier), met l'objet au sac et débite dans la même
+     transaction. Avant : objet par agir(), puis débit LOCAL poussé plus tard par crediter() —
+     un client modifié ne payait jamais, et fermer la page juste après l'achat rendait l'objet
+     gratuit. Les contrôles ci-dessus ne servent plus qu'à répondre vite à l'écran. */
+  if(_boutiqueEnCours) return;
+  _boutiqueEnCours = true;
+  let data = null;
+  try{
+    if(typeof sauverMaintenant==="function") await sauverMaintenant();   // le serveur lit la position sauvée
+    const r = await rpcAvecSolde("boutique_acheter", { p_item:id, p_qte:nn }, "solde");
+    if(r && r.error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
+    data = r && r.data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "boutique.js#achat"); journal("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
+  finally{ _boutiqueEnCours = false; }
+  if(!data || !data.ok){
+    const err = data && data.err;
+    if(err === "mort"){ if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); return; }
+    if(err === "non_connecte"){ if(typeof alerteSessionPerdue==="function") alerteSessionPerdue(); else journal("Session expirée — recharge la page.","alerte"); return; }
+    if(data && data.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
+    const msg = BOUTIQUE_REFUS[err] || `Achat refusé par le serveur (${err || "réponse vide"}).`;
+    journal(msg,"alerte"); _boutiqueMsg(msg);
+    renderBoutique(); return;
+  }
+  if(data.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
+  const recu = data.recu|0, total = data.total|0;
+  const mobile = data.comptoir === "mobile";
+  journal(`Boutique${mobile?" mobile":""} : ${a.nom}${recu>1?` ×${recu}`:""} acheté — ${total} ₡.`,"gain");
   apresAction(); renderBoutique();
 }

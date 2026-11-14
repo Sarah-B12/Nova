@@ -18,6 +18,8 @@
   // victoire forcée : butin et XP majorés, signalement « battue »
   _registrePalier = "signale";
   rep.registre_patrouille = (a) => ({ data:{ ok:true, compte:true, palier:"recherche" }, error:null });
+  // v2.89 (v291, K262) : le butin vient du serveur — doublure de patrouille_neutralisee.
+  rep.patrouille_neutralisee = (a) => ({ data:{ ok:true, n:1, butin:true, credits:83, solde:etat.credits + 83, objets:{} }, error:null });
   const rnd = Math.random; Math.random = () => 0.01;
   appels.length = 0; journ.length = 0;
   await resoudreCombat({}); await dort(50);

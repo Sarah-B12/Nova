@@ -265,7 +265,15 @@ titre("7. Globales déclarées et jamais lues");
 const ORPHELINS_ASSUMES = {
   _saisieEnCours:   "garde-fou anti-redessin, prêt à brancher (pièges n°20 et 22)",
   prochainResetJeu: "minuit parisien exact, changement d'heure compris — pour les futurs « reviens demain »",
-  novaDiag:         "commande de console (F12) : lit le journal de synchro v1.17"
+  novaDiag:         "commande de console (F12) : lit le journal de synchro v1.17",
+  // v2.89 (v291, K262) : le butin des patrouilles est tiré par le serveur (patrouille_neutralisee) ; ces quatre-là
+  //   restent la RÉFÉRENCE du barème copié au serveur, lue par les outils (o_economie, o_aptitudes).
+  PATROUILLE_DROPS:       "référence du butin serveur (patrouille_neutralisee), lue par o_economie",
+  PATROUILLE_DROP_TAUX:   "référence du butin serveur (patrouille_neutralisee), lue par o_economie",
+  PATROUILLE_DROP_DOUBLE: "référence du butin serveur (patrouille_neutralisee), lue par o_economie",
+  aptButinCombat:         "référence de la formule serveur (patrouille_neutralisee), lue par o_aptitudes",
+  GRAVIER_CHANCE:         "référence du tirage serveur (gravier_miner, v291)",
+  SELENITE_DOUBLE:        "référence du tirage serveur (selenite_conclure, v291), lue par o_lot2"
 };
 const toutPropre = Object.values(propre).join("\n") + "\n" + html;
 let orph = 0;

@@ -86,7 +86,7 @@ function majGisement(){
      lac gelé (la vue de la Sélénite a les siens ; avant, les deux s'empilaient). */
   const sel = (typeof surSelenite === "function" && surSelenite());
   [document.querySelector("#gisement-titre"), document.querySelector("#gisement-ban")].forEach(e => { if(e) e.style.display = sel ? "none" : ""; });
-  if(sel){ majSelenite(z); return; }
+  if(sel){ majSeleniteServeur(z); return; }   // v2.89 (v291) : l'aiguille est lue au serveur d'abord
 
   if(typeof surGravier !== "function" || !surGravier()){
     /* ⚠ Ne jamais laisser un panneau VIDE : si cet écran s'ouvre alors qu'on

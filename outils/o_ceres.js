@@ -86,7 +86,13 @@
   r.sonsNouveaux = ["PUL","SION","CEN","TRE"].every(s => GLYPHES_ANCIEN[s]) &&
     new Set(Object.values(GLYPHES_ANCIEN).map(g => g.join("/"))).size === Object.keys(GLYPHES_ANCIEN).length;  // vrai : aucune forme en double
   agirServeur = async (o) => ({ ok:true, ajoutes: o.ajouter || {} });
-  etat.credits = 1000; const avant = etat.credits; await acheterBoutique("fab_biocarburant"); r.achatNid = avant - etat.credits === 320;
+  // v2.87 (v289) : l'achat passe par boutique_acheter — doublure du serveur (prix du Nid : 320 ₡).
+  const vRpcB = sb.rpc.bind(sb); let argsB = null;
+  sb.rpc = (n, a) => n === "boutique_acheter"
+    ? (argsB = a, Promise.resolve({ data:{ ok:true, item:a.p_item, recu:1, demande:a.p_qte, prix:320, total:320, solde:680, comptoir:"nid", etat:null }, error:null }))
+    : vRpcB(n, a);
+  etat.credits = 1000; const avant = etat.credits; await acheterBoutique("fab_biocarburant"); r.achatNid = avant - etat.credits === 320 && !!argsB;
+  sb.rpc = vRpcB;
   agirServeur = async () => ({ ok:true });
   etat.posEspace = { x:G.x, y:G.y }; majHub(); r.ongletsGorge = [...document.querySelectorAll(".hub-lien")].filter(b => b.style.display !== "none").map(b => b.dataset.hub);   // []
 
@@ -124,7 +130,9 @@
   // Les sondes interceptent aussi à Cérès ; le duel y lance le tir durci.
   etat.secteur = "ceres"; let ouvert = 0; const vraiOS = ouvrirSonde; ouvrirSonde = () => ouvert++; const vr = Math.random; Math.random = () => 0.01;
   r.sondeCeres = tenterSonde() && ouvert === 1; Math.random = vr; ouvrirSonde = vraiOS;
-  let opts = null; const vraiLT = lancerTirSonde; lancerTirSonde = (w, l, o) => { opts = o; }; await sondeCombat(); lancerTirSonde = vraiLT;
+  let opts = null; const vraiLT = lancerTirSonde; lancerTirSonde = (w, l, o) => { opts = o; };
+  const vRpcS = sb.rpc.bind(sb); sb.rpc = (n, a) => n === "sonde_engager" ? Promise.resolve({ data:{ ok:true, energie:90 }, error:null }) : vRpcS(n, a);   // v2.89 (v291)
+  await sondeCombat(); lancerTirSonde = vraiLT; sb.rpc = vRpcS;
   r.duelCeresDurci = !!(opts && opts.durci);
 
   // 14. Noms de secteur (liste d'amis, traque) et sauvegarde.

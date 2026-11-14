@@ -59,16 +59,19 @@ async function resoudreCombat(opts){
   if(opts.embuscade) pWin = Math.max(0.01, pWin - 0.15);
   if(Math.random() < pWin){
     const xp = Math.round((_deb ? DEBRIS_PATR_XP : ((typeof XP_PATROUILLE==="number") ? XP_PATROUILLE : 10)) * R.xp);
-    if(typeof patrouilleAvecButin==="function" && !patrouilleAvecButin()){   // v1.83 : plus de butin aujourd'hui
-      gagnerXp(xp); patrouilleCompter();
+    /* v2.89 (v291, K262, anti-triche) — le combat se tire ici, le BUTIN au serveur : `patrouille_neutralisee`
+       compte la patrouille (5 par jour de jeu avec butin, piratages compris, v1.83) et tire lui-même les crédits
+       (70–100 + Int ÷ 5, aptitudes, boisson, Registre) et les objets. Avant : crédits ajoutés ici puis poussés
+       par crediter(), objets par agir() — un client modifié choisissait son butin. */
+    gagnerXp(xp);
+    const nb = await patrouilleNeutraliseeServeur("combat");
+    if(nb && nb.butin){
+      const btn = _butinTexte(_butinListe(nb.objets));
+      journal(`Patrouille du Protocole neutralisée : +${nb.credits|0} ₡${btn?`, ${btn}`:""}, +${xp} XP.`,"gain");
+    } else if(nb){
       journal(`Patrouille du Protocole neutralisée : les patrouilles se méfient de toi, rien à prendre sur celle-ci. +${xp} XP.`,"gain");
     } else {
-    // v2.79 (K248) : 14–30 → 70–100 ₡ (les activités du quotidien rapportent davantage hors quêtes)
-    const g = Math.round(aptButinCombat(alea(70,100) + bonusCredits()) * R.butin); etat.credits += g; gagnerXp(xp);
-    const drop = (typeof butinPatrouille==="function") ? await butinPatrouille() : [];   // v1.11 : liste d'objets
-    const btn = (typeof _butinTexte==="function") ? _butinTexte(drop) : "";
-    if(typeof patrouilleCompter==="function") patrouilleCompter();
-    journal(`Patrouille du Protocole neutralisée : +${g} ₡${btn?`, ${btn}`:""}, +${xp} XP.`,"gain");
+      journal(`Patrouille du Protocole neutralisée. Le serveur n'a pas répondu : aucun butin. +${xp} XP.`,"alerte");
     }
     if(typeof registreSignaler==="function") registreSignaler("battue");   // v1.45 : +3 au Registre (débris compris)
   } else {

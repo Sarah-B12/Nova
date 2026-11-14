@@ -394,9 +394,15 @@ QUETES_JEUX.tir = {
       };
       svg.addEventListener("pointerdown", ev => {
         if(!P.actif || P.tirs <= 0) return;
-        const r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) * 300 / (r.width || 300), y = (ev.clientY - r.top) * 180 / (r.height || 180);
+        /* v2.86 — tablette : même correction que le tir de Bardane (missions.js) — vraie géométrie du dessin, zone de
+           touche plus large au doigt (+10 au lieu de +4), et la cible acceptée là où elle était il y a 0,1 s. */
+        let x, y;
+        const ctm = svg.getScreenCTM && svg.getScreenCTM();
+        if(ctm){ const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(ctm.inverse()); x = q.x; y = q.y; }
+        else { const r = svg.getBoundingClientRect(); x = (ev.clientX - r.left) * 300 / (r.width || 300); y = (ev.clientY - r.top) * 180 / (r.height || 180); }
+        const marge = (ev.pointerType === "mouse") ? 4 : 10;
         P.tirs--;
-        const k = P.objets.findIndex(o => Math.hypot(o.x - x, o.y - y) <= o.r + 4);
+        const k = P.objets.findIndex(o => Math.hypot(o.x - x, o.y - y) <= o.r + marge || Math.hypot(o.x - o.v * 0.1 - x, o.y - y) <= o.r + marge);
         if(k >= 0){ P.objets.splice(k, 1); P.touches++; }
         if(P.touches >= cible) finir(true);
         else if(P.tirs <= 0) finir(false);

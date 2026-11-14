@@ -859,13 +859,12 @@ async function _effetsAppliquerFond(data){
       const parts=[]; if(data.sante) parts.push(`${data.sante>0?"+":""}${data.sante} santé`); if(data.moral) parts.push(`${data.moral>0?"+":""}${data.moral} moral`);
       if(parts.length) journal("Séquelles de bataille : "+parts.join(", ")+".", (data.sante<0||data.moral<0)?"alerte":"gain");
     }
-    if(data && data.cristaux && data.cristaux>0){
-      // ⚠ Avant : ajouterAuSac local → cristaux FANTÔMES (invisibles du serveur).
-      const r = await agirServeur({ ajouter:{ cristal:data.cristaux }, motif:"butin_protocole" });
-      const ok = r ? ((r.ajoutes||{}).cristal || 0) : 0;
-      if(ok>0){ journal(`Butin du Protocole : +${ok} Cristal de Nyx !`,"gain"); if(typeof afficher==="function") afficher(); }
-      if(ok<data.cristaux) journal(`${data.cristaux-ok} Cristal de Nyx perdu (sac plein).`,"alerte");
-    }
+    /* v2.89 (v291, anti-triche) — les cristaux du butin sont mis au sac PAR LE SERVEUR (`consommer_effets`) :
+       il renvoie `cristaux_recus` / `cristaux_perdus` et l'état du sac (`cristaux` vaut désormais 0, pour que
+       les anciens onglets ne les ajoutent pas une seconde fois). Avant : agir() avec le nombre annoncé ici. */
+    if(data && data.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);
+    if(data && (data.cristaux_recus|0) > 0){ journal(`Butin du Protocole : +${data.cristaux_recus} Cristal de Nyx !`,"gain"); if(typeof afficher==="function") afficher(); }
+    if(data && (data.cristaux_perdus|0) > 0) journal(`${data.cristaux_perdus} Cristal de Nyx perdu (sac plein).`,"alerte");
 }
 async function _evenementsAppliquer(evs){
   _journalServeur++; try{ return await _evenementsAppliquerFond(evs); } finally { _journalServeur--; }   // v2.21c (K138)

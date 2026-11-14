@@ -8,7 +8,7 @@
   const SAC = { sac:{ cendrite:2, sporelle:1 }, capacite:50, utilise:3, coffre:{}, coffre_capacite:50, coffre_utilise:0,
                 soute:{}, soute_capacite:20, soute_utilise:0, equipe:{}, equipe_capacite:6, equipe_utilise:0, force_combat:10,
                 lots:[{ item:"cendrite", lieu:"sac", qte:2, acquis:Date.now()-86400000 }, { item:"sporelle", lieu:"sac", qte:1, acquis:Date.now()-3600000 }] };
-  const EFFETS = { xp:5, sante:-10, moral:-5, energie:-8, cristaux:2, xp_total:105 };
+  const EFFETS = { xp:5, sante:-10, moral:-5, energie:-8, cristaux:0, cristaux_recus:2, cristaux_perdus:0, xp_total:105 };   // v2.89 (v291) : le serveur met les cristaux au sac
   const EVS = [{ texte:"Voleur t'a fait les poches : 1× cendrite.", cat:"alerte", quand:new Date().toISOString() }];
   const ANNONCE = { cree_le:new Date().toISOString(), texte:"Réunion ce soir" };
   const PRISON = { en_prison:false };

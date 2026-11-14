@@ -200,8 +200,8 @@ function _fleauCombatHtml(c){
             <button class="mini" data-fl-plus="${s.id}" ${somme >= pts ? "disabled" : ""} aria-label="${s.nom} : un point de plus">+</button></span>
       <span class="fl-pts">${"<i></i>".repeat(_fleauRep[s.id])}</span>`).join("");
   return `
-    <div class="fl-barres">
-      <p class="vide" style="margin:0 0 6px">Reste dans cette fenêtre jusqu'à la fin : la quitter, c'est perdre le combat.</p>
+    <p class="vide" style="margin:0 0 6px">Reste dans cette fenêtre jusqu'à la fin : la quitter, c'est perdre le combat.</p>
+    <div class="fl-barres">   <!-- v2.86 : la phrase sort de la grille, les deux jauges sont sur la même ligne -->
       ${_fleauBarre("Ta coque", c.coque, c.coque_max, `${c.coque} / ${c.coque_max} PV`, false)}
       ${_fleauBarre("Le Fléau", c.fleau_pct, 100, `${c.fleau_pct} %`, true)}
     </div>

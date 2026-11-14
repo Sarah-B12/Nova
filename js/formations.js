@@ -17,13 +17,13 @@ const FORMATIONS = {
       [40,"Casque léger","2 Lingot de Cendrite, 1 Fil, 1 Biofibre"],
       [50,"Plastron léger","3 Lingot de Cendrite, 2 Cuir, 1 Fil, 1 Biofibre"],
       [60,"Jambières légères","2 Lingot de Cendrite, 1 Fil, 1 Biofibre"],
-      [70,"Munitions à plasma ×10","1 Lingot de Silite, 3 Voltane"],
-      [80,"Lame à plasma","1 Lingot de Cendrite, 1 Lingot de Silite, 1 Câblage"],
-      [90,"Pistolet à plasma","1 Lingot de Cendrite, 1 Lingot de Silite, 1 Cellule d'énergie"],
+      [70,"Lame à plasma","1 Lingot de Cendrite, 1 Lingot de Silite, 1 Câblage, 1 Cristal de Nyx"],   // v2.85 (K258) : avant les munitions à plasma, + 1 Nyx
+      [80,"Munitions à plasma ×10","1 Lingot de Silite, 3 Voltane"],   // v2.85 (K258) : 70 → 80
+      [90,"Pistolet à plasma","1 Lingot de Cendrite, 1 Lingot de Silite, 1 Cellule d'énergie, 1 Cristal de Nyx"],   // v2.85 (K258) : + 1 Nyx
       [100,"Lingot de Givrite","3 Givrite"],
       [110,"Munitions à ions ×10","2 Lingot de Givrite, 1 Lingot de Silite"],
-      [120,"Fusil à ions","4 Lingot de Givrite, 1 Composant avancé, 1 Cellule d'énergie"],
-      [130,"Tourelle de vaisseau","1 Fusil à ions, 3 Munitions à ions, 1 Servomoteur"],
+      [120,"Fusil à ions","4 Lingot de Givrite, 1 Composant avancé, 1 Cellule d'énergie, 2 Cristal de Nyx"],   // v2.85 (K258) : + 2 Nyx
+      [130,"Tourelle de vaisseau","1 Fusil à ions, 3 Munitions à ions, 1 Servomoteur, 1 Cristal de Sélénite"],   // v2.85 (K258) : + 1 Sélénite
       [140,"Casque lourd","2 Lingot de Givrite, 1 Biofil renforcé, 1 Cristal de Sélénite"],
       [150,"Plastron lourd","3 Lingot de Givrite, 1 Combinaison pressurisée, 1 Panneau renforcé, 1 Cristal de Sélénite"],
       [160,"Jambières lourdes","2 Lingot de Givrite, 2 Biofil renforcé, 1 Cristal de Sélénite"],
@@ -71,9 +71,9 @@ const FORMATIONS = {
       [110,"Biofil renforcé","4 Fil, 1 Biofibre"],
       [120,"Combinaison pressurisée","1 Tank à oxygène, 1 Biofil renforcé, 1 Cellule d'énergie"],
       [130,"Biocarburant raffiné","2 Biocarburant, 1 Cellule d'énergie"],   // v2.83 (K255) : était 2 Biocarburant, 1 Composant avancé
-      [140,"Implant de force","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote"],
-      [150,"Implant d'agilité","3 Biofil renforcé, 1 Cristal de Nyx, 2 Cristal de Sélénite, 1 Stimulant"],
-      [160,"Implant maitre","3 Biofil renforcé, 3 Cristal de Nyx, 2 Cristal de Sélénite, 1 Antidote, 1 Stimulant"]
+      [140,"Implant de force","3 Biofil renforcé, 1 Cristal de Nyx, 1 Cristal de Sélénite, 1 Antidote"],   // v2.84 (K256) : 2 → 1 Sélénite
+      [150,"Implant d'agilité","3 Biofil renforcé, 1 Cristal de Nyx, 1 Cristal de Sélénite, 1 Stimulant"],   // v2.84 (K256) : 2 → 1 Sélénite
+      [160,"Implant maitre","3 Biofil renforcé, 3 Cristal de Nyx, 1 Cristal de Sélénite, 1 Antidote, 1 Stimulant"]   // v2.84 (K256) : 2 → 1 Sélénite
     ]
   },
   constructeur: {
@@ -92,7 +92,7 @@ const FORMATIONS = {
       [90,"Soute cargo","3 Plaque de coque, 1 Panneau renforcé"],
       [100,"Vaisseau Cargo","3 Plaque de coque, 1 Cockpit léger, 1 Bloc de propulsion, 1 Soute cargo"],   // v2.82 (K254) : sans le Moteur basique
       [110,"Coque blindée","3 Plaque de coque, 1 Panneau composite, 1 Cristal de Sélénite"],
-      [120,"Cockpit blindé","2 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir"],   // v2.82 (K254) : sans la Sélénite
+      [120,"Cockpit blindé","1 Coque blindée, 1 Lingot de Givrite, 1 IA d'assistance, 4 Cuir"],   // v2.82 (K254) : sans la Sélénite ; v2.84 (K256) : 2 → 1 Coque blindée
       [130,"Moteur à distorsion","1 Moteur basique, 3 Lingot de Givrite, 1 Cristal de Nyx"],
       [140,"Vaisseau maitre","1 Cockpit blindé, 1 Moteur à distorsion, 1 Tourelle de vaisseau, 2 Cristal de Nyx"]   // v2.82 (K254) : était 1 Cockpit blindé, 3 Coque blindée, 1 Moteur à distorsion, 1 Tourelle, 3 Nyx, 1 Sélénite
     ]
@@ -475,6 +475,15 @@ function parseIngredients(txt){
 }
 
 /* ---------- Fabrication ---------- */
+/* v2.88 (v290) — refus propres à `atelier_fabriquer` (les autres : TERRAIN_REFUS, terrain-serveur.js). */
+let _fabEnCours = false;
+const FAB_REFUS = {
+  pas_atelier: "Il faut fabriquer dans ton atelier.",
+  formation:   "Aucune formation en cours : choisis-en une au Centre → Formations.",
+  recette:     "Cette recette n'existe pas dans ta formation.",
+  verrouillee: "Recette encore verrouillée.",
+  permis:      "Assemblage de vaisseau verrouillé : permis de vaisseau requis."
+};
 async function fabriquer(seuil){
   if(typeof enPrison==="function" && enPrison()){ journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte"); return; }
   const f = etat.formation; if(!f) return;
@@ -503,28 +512,31 @@ async function fabriquer(seuil){
 
   const pid = PROD_PAR_NOM[normNom(nom)].id;
   if(typeof estVaisseau==="function" && estVaisseau(pid) && !etat.permisVaisseau){ journal("Assemblage de vaisseau verrouillé : permis de vaisseau requis (quête à venir).","alerte"); return; }
-  // Un SEUL appel atomique : ingrédients consommés et objet reçu, ou rien du tout.
-  // (Sans « tout ou rien », un sac saturé aurait mangé les ingrédients sans rendre l'objet.)
-  const retirer = {};
-  for(let i=0;i<ings.length;i++){ if(qtes[i]>0) retirer[ings[i].id] = (retirer[ings[i].id]||0) + qtes[i]; }
-
-  const bonus2 = !!(aptFabSerie() && Math.random()<0.10);       // Production en série : 2ᵉ objet
-  let rendu = null, renduId = null;
-  if(aptFabSkip() && Math.random()<0.20){                        // Récup d'atelier : 1 unité rendue
-    let bi=0; for(let i=1;i<qtes.length;i++) if(qtes[i]>qtes[bi]) bi=i;
-    if(qtes[bi]>0){ renduId = ings[bi].id; rendu = item(renduId).nom; }
-  }
-  const ajouter = { [pid]: bonus2 ? 2 : 1 };
-  if(renduId) ajouter[renduId] = (ajouter[renduId]||0) + 1;
-
-  const res = await agirServeur({ retirer, ajouter, motif:"fabrication", toutOuRien:true });
+  /* v2.88 (v290, K261, anti-triche) — LE SERVEUR FABRIQUE : `atelier_fabriquer(p_plot, p_seuil)` lit la
+     recette dans SA copie (`_fab_recettes`, produite par outils/o_recettes.js), vérifie l'atelier (à toi,
+     en état, sur Silène), le seuil (points de formation lus dans `donnees` jusqu'au morceau 8 de
+     l'anti-triche, K261), le permis ; applique Maître-artisan, tire lui-même la Production en série (10 %)
+     et la Récup d'atelier (20 %), consomme et range d'un seul geste (tout ou rien), et crédite l'XP
+     d'atelier en base. Avant : agir() avec les ingrédients ET l'objet annoncés par le jeu — un client
+     modifié recevait n'importe quel objet. Les contrôles ci-dessus ne servent plus qu'à répondre vite.
+     Les points de formation restent comptés ici (K261). */
+  if(_fabEnCours) return;
+  _fabEnCours = true;
+  let res = null;
+  try{
+    if(typeof sauverMaintenant === "function") await sauverMaintenant();   // le serveur lit la formation sauvée
+    res = await terrainRpc("atelier_fabriquer", { p_plot: structSel, p_seuil: seuil }, { refus: FAB_REFUS });
+  } finally { _fabEnCours = false; }
   if(!res) return;
+  const bonus2 = !!res.serie;
+  const rendu = res.recup ? (item(res.recup) ? item(res.recup).nom : res.recup) : null;
 
   const gagne = Math.min(ptsFab(nom) + aptFabPoints(), CAP_RECETTE - (f.fait[seuil]||0));
   if(gagne > 0){ f.fait[seuil] = (f.fait[seuil]||0) + gagne; f.points += gagne; }
-  const xpA = xpAtelier(nom) * (bonus2 ? 2 : 1);   // v2.49 (K173) : les gros objets rapportent de l'XP
+  const xpA = res.xp|0;   // v2.49 (K173) : les gros objets rapportent de l'XP — v2.88 : créditée par le serveur
   journal(`Fabriqué : ${nom}${bonus2?" ×2 (série)":""}.` + (rendu?` Récup : +1 ${rendu}.`:"") + (gagne > 0 ? ` +${gagne} pt${gagne>1?"s":""} de formation.` : " (recette épuisée, +0 pt)") + (xpA > 0 ? ` +${xpA} XP.` : ""), "gain");
-  if(xpA > 0 && typeof gagnerXp === "function") gagnerXp(xpA);   // après la ligne : un « Niveau N atteint » vient ensuite
+  if(typeof res.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(res.xp_total);   // après la ligne : un « Niveau N atteint » vient ensuite
+  if(typeof sauverMaintenant === "function") sauverMaintenant();   // les points de formation partent tout de suite
   /* v1.86 — retour de l'autrice : la liste remontait tout en haut après chaque
      fabrication (on enchaîne vingt lingots de Givrite tout en bas). On note le
      défilement des conteneurs AVANT le redessin et on le rend APRÈS. */

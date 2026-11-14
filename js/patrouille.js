@@ -14,6 +14,9 @@
    =========================================================== */
 const PATROUILLE_TAUX          = 0.15;   // probabilité de base par déplacement à découvert
 const PATROUILLE_TAUX_DISCRET  = 0.10;   // avec Discrétion (om1)
+/* ⚠ v2.89 (v291) — LE BUTIN EST TIRÉ PAR LE SERVEUR (`patrouille_neutralisee`). Les trois constantes qui suivent
+   (et PATROUILLE_DROPS) restent ici comme RÉFÉRENCE du barème, copiée au serveur (barème dupliqué, BACKEND_PLAN §6),
+   et lue par outils/o_economie.js. Changer une valeur = changer aussi la fonction serveur. */
 const PATROUILLE_DROP_TAUX     = 0.55;   // v1.11 : 0,35 → 0,55 (butin plus souvent)
 const PATROUILLE_DROP_DOUBLE   = 0.25;   // v1.11 : et, dans ce cas, 1 fois sur 4 un SECOND objet
 const PATROUILLE_CRISTAL       = 0.02;   // chance de lâcher un Cristal de Nyx (seule source ordinaire du jeu)
@@ -42,6 +45,7 @@ function chanceHack(){
    arme lourde, ni vaisseau : ce sont des patrouilleurs dépouillés, pas un
    entrepôt. ⚠ Ces objets se revendent : garder la liste au ras des matières
    premières, sinon le marché n'a plus besoin des artisans. */
+/* ⚠ v2.89 (v291) : RÉFÉRENCE — copiée dans `patrouille_neutralisee` (tableau `v_pool`), seule à tirer. */
 const PATROUILLE_DROPS = [
   "fab_composant_simple","fab_circuit_imprime","fab_cablage","voltane","silite",
   "fab_fil","fab_lingot_de_voltane","fab_lingot_de_givrite","fab_lingot_de_cendrite",
@@ -159,32 +163,36 @@ function _patrJour(){
   if(!etat.patrJour || etat.patrJour.jour !== j) etat.patrJour = { jour:j, n:0 };
   return etat.patrJour;
 }
-function patrouilleAvecButin(){ return _patrJour().n < PATR_BUTIN_JOUR; }
 function patrouilleMefianceDurete(){ return Math.min(PATR_DURETE_MAX, Math.max(0, _patrJour().n - PATR_BUTIN_JOUR + 1) * PATR_DURETE_PAS); }
 function patrouilleMefianceHack(){ return Math.min(PATR_HACK_MAX, Math.max(0, _patrJour().n - PATR_BUTIN_JOUR + 1) * PATR_HACK_PAS); }
-/* À appeler APRÈS chaque patrouille neutralisée. */
-function patrouilleCompter(){
-  const p = _patrJour(); p.n++;
-  if(p.n === PATR_BUTIN_JOUR) journal("Les patrouilles commencent à se méfier de toi : celles qui suivront aujourd'hui n'auront plus rien sur elles, et elles seront de plus en plus dures.", "alerte");
-}
-
-async function butinPatrouille(){
-  if(placesLibres() <= 0) return [];
-  // Cristal de Nyx : butin très rare du Protocole (seule source ordinaire, en attendant les zones/l'espace).
-  if(Math.random() < registreEffets().cristal && typeof item==="function" && item("cristal")){   // v1.45 : 2 → 3 % selon le Registre
-    const rc = await agirServeur({ ajouter:{ cristal:1 }, motif:"patrouille" });
-    return (rc && (rc.ajoutes||{}).cristal) ? ["cristal"] : [];
+/* v2.89 (v291, K262) — LE SERVEUR COMPTE ET PAIE. Une patrouille neutralisée (combat gagné ou piratage
+   réussi) est déclarée à `patrouille_neutralisee(p_mode)` ; il tient le compteur du jour de jeu (ci-dessus :
+   seulement son reflet, pour la méfiance) et, pour les 5 premières vaincues AU COMBAT, tire crédits et objets
+   (taux de PATROUILLE_DROPS, PATROUILLE_DROP_TAUX, PATROUILLE_DROP_DOUBLE, REGISTRE_PALIERS : copiés au
+   serveur, barème dupliqué). La position est lue à la dernière sauvegarde (Fournaise en zone chaude) :
+   on sauve d'abord. Renvoie la réponse (ok) ou null. */
+async function patrouilleNeutraliseeServeur(mode){
+  let d = null;
+  try{
+    if(typeof sauverMaintenant === "function") await sauverMaintenant();
+    const r = await rpcAvecSolde("patrouille_neutralisee", { p_mode: mode }, "solde");
+    if(r && r.error) throw new Error(r.error.message);
+    d = r && r.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "patrouille.js#neutralisee"); return null; }
+  if(!d || !d.ok){
+    if(d && d.err === "mort" && typeof ouvrirCouloirMort === "function") ouvrirCouloirMort();
+    return null;
   }
-  if(Math.random() > PATROUILLE_DROP_TAUX) return [];
-  const pool = PATROUILLE_DROPS.filter(x => typeof item==="function" && item(x));
-  if(!pool.length) return [];
-  const gains = {};
-  const n = (Math.random() < PATROUILLE_DROP_DOUBLE && placesLibres() > 1) ? 2 : 1;
-  for(let k=0; k<n; k++){ const id = pool[alea(0, pool.length-1)]; gains[id] = (gains[id]||0) + 1; }
-  const r = await agirServeur({ ajouter:gains, motif:"patrouille" });
-  const pris = (r && r.ajoutes) ? r.ajoutes : {};
+  if(d.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(d.etat);
+  const j = (typeof jourDeJeu === "function") ? jourDeJeu() : new Date().toISOString().slice(0, 10);
+  etat.patrJour = { jour: j, n: d.n|0 };
+  if((d.n|0) === PATR_BUTIN_JOUR) journal("Les patrouilles commencent à se méfier de toi : celles qui suivront aujourd'hui n'auront plus rien sur elles, et elles seront de plus en plus dures.", "alerte");
+  return d;
+}
+/* { fab_fil:2, voltane:1 } → [ "fab_fil", "fab_fil", "voltane" ] (pour _butinTexte). */
+function _butinListe(objets){
   const liste = [];
-  for(const id in pris) for(let k=0; k<pris[id]; k++) liste.push(id);
+  for(const id in (objets || {})) for(let k = 0; k < (objets[id]|0); k++) liste.push(id);
   return liste;
 }
 /* Rend « 2× Fil, 1× Lingot de voltane » à partir de la liste. */
@@ -276,7 +284,7 @@ async function patrouilleHacker(){
        combat inutile. L'XP et le point du Registre restent. */
     const R = registreEffets();                                           // v1.45 : Registre
     const xpH = Math.round(XP_PATROUILLE_HACK * R.xp);
-    gagnerXp(xpH); patrouilleCompter();
+    gagnerXp(xpH); await patrouilleNeutraliseeServeur("piratage");   // v2.89 : comptée au serveur (sans butin)
     journal(`Patrouille piratée : ses capteurs te perdent et elle passe son chemin. Aucun dégât, rien à prendre. +${xpH} XP.`, "gain");
     registreSignaler("piratee");
     apresAction();

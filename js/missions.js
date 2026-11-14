@@ -1308,7 +1308,7 @@ function _mSatellite(m){
 let _tir = { actif:false, touches:0, tirs:0, fin:0, sondes:[], raf:null };
 function _mTirHtml(t){
   return `<p style="margin:6px 0"><b>Abats les sondes qui traversent l'écran : ${t.cible} à toucher. Tirs : ${t.tirs}. Temps : ${t.duree} s.</b></p>
-    <svg id="mi-tir-svg" viewBox="0 0 300 180" style="width:100%;max-width:360px;background:#060b14;border:1px solid var(--line);border-radius:8px;touch-action:none"></svg>
+    <svg id="mi-tir-svg" viewBox="0 0 300 180" style="width:100%;max-width:360px;aspect-ratio:300/180;height:auto;display:block;background:#060b14;border:1px solid var(--line);border-radius:8px;touch-action:none"></svg>
     <p class="vide" id="mi-tir-etat">Touchées : 0 / ${t.cible} · Tirs : ${t.tirs} · ${t.duree} s</p>
     <div class="mi-btns"><button class="mini" data-tir-go="1">Ouvrir le feu · ${_mEssaiCout()} % d'énergie</button></div>`;
 }
@@ -1335,9 +1335,17 @@ function _mSatBrancher(z){
       };
       svg.addEventListener("pointerdown", e => {
         if(!_tir.actif || _tir.tirs <= 0) return;
-        const r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * 300 / r.width, y = (e.clientY - r.top) * 180 / r.height;
+        /* v2.86 — tablette (testeuse, 14/11 : « il fallait taper deux fois sur les cibles »). Trois corrections :
+           1. la position se calcule avec la vraie géométrie du dessin (getScreenCTM), même s'il est réduit ou centré ;
+           2. au doigt, la zone de touche est plus large (11 + 10 au lieu de 11 + 3) : un doigt couvre plus qu'une souris ;
+           3. la sonde a déjà avancé quand le toucher arrive (délai de l'écran) : on accepte aussi sa position d'il y a 0,1 s. */
+        let x, y;
+        const ctm = svg.getScreenCTM && svg.getScreenCTM();
+        if(ctm){ const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(ctm.inverse()); x = q.x; y = q.y; }
+        else { const r = svg.getBoundingClientRect(); x = (e.clientX - r.left) * 300 / r.width; y = (e.clientY - r.top) * 180 / r.height; }
+        const tol = (e.pointerType === "mouse") ? 14 : 21;
         _tir.tirs--;
-        const k = _tir.sondes.findIndex(s => Math.hypot(s.x - x, s.y - y) <= 14);
+        const k = _tir.sondes.findIndex(s => Math.hypot(s.x - x, s.y - y) <= tol || Math.hypot(s.x - s.v * 0.1 - x, s.y - y) <= tol);
         if(k >= 0){ _tir.sondes.splice(k, 1); _tir.touches++; }
         if(_tir.touches >= T.cible){
           _tir.actif = false;

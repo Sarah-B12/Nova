@@ -458,8 +458,8 @@ async function volVersPoint(pt){
    un jardin. C'est la source de dégâts régulière et prévisible, celle qu'on
    planifie — l'autre étant la défaite contre une sonde.
    =========================================================== */
-const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu
-const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal
+const GRAVIER_ESSAIS   = 8;      // tentatives par jour de jeu — v2.89 : comptées par le serveur (gravier_miner, même valeur)
+const GRAVIER_CHANCE   = 0.20;   // probabilité de sortir un cristal — v2.89 : RÉFÉRENCE, tirée par le serveur (gravier_miner)
 const GRAVIER_ENERGIE  = 4;      // par tentative (le minage au sol coûte 8)
 /* v1.33h — coût réel, Endurance comprise : affichage ET débit (garage.js, ici). */
 function coutGravier(){ return (typeof aptEndurance==="function" ? aptEndurance : (x=>x))(GRAVIER_ENERGIE); }
@@ -471,6 +471,18 @@ function gravierRestants(){
   if(!g || g.jour !== _gravierJour()) return GRAVIER_ESSAIS;
   return Math.max(0, GRAVIER_ESSAIS - (g.essais||0));
 }
+/* v2.89 (v291) — refus de `gravier_miner`. */
+let _gravierEnCours = false;
+const GRAVIER_REFUS = {
+  lieu:      "Il faut être au Gravier pour ça.",
+  vaisseau:  "Il te faut un vaisseau pour travailler ici.",
+  cloue:     "Coque hors service : impossible de manœuvrer dans les cailloux.",
+  epuise:    "Le gisement est épuisé pour aujourd'hui. Il se recharge demain.",
+  sac_plein: "Sac plein.",
+  energie:   "Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.",
+  prison:    "Tu es en prison — impossible d'agir jusqu'à ta libération.",
+  non_connecte: "Session expirée — recharge la page."
+};
 async function minerGravier(){
   const l = espaceLieu("asteroides");
   if(!surLieuEspace(l)){ journal(`Il faut être au ${espaceNom(l)} pour ça.`,"alerte"); return; }
@@ -479,17 +491,32 @@ async function minerGravier(){
   if(gravierRestants() <= 0){ journal("Le gisement est épuisé pour aujourd'hui. Il se recharge demain.","alerte"); return; }
   if(placesLibres() <= 0){ journal("Sac plein.","alerte"); return; }
 
-  const touche = Math.random() < GRAVIER_CHANCE;
-  const gains  = touche ? { cristal:1 } : {};
-  const r = await agirServeur({ cout:coutGravier(), ajouter:gains, motif:"gravier" });
-  if(!r) return;
-
-  const g = (etat.gravier && etat.gravier.jour === _gravierJour()) ? etat.gravier : { jour:_gravierJour(), essais:0 };
-  g.essais = (g.essais||0) + 1;
-  etat.gravier = g;
-
+  /* v2.89 (v291, anti-triche) — LE SERVEUR TIRE : `gravier_miner()` vérifie le lieu (position sauvée), le
+     vaisseau, les 8 essais du jour de jeu, débite l'énergie (Endurance) et tire la chance de cristal
+     (GRAVIER_CHANCE), d'un seul geste. Avant : tirage ici, cristal par agir(), compteur dans la sauvegarde. */
+  if(_gravierEnCours) return;
+  _gravierEnCours = true;
+  let r = null;
+  try{
+    if(typeof sauverMaintenant==="function") await sauverMaintenant();   // le serveur lit la position sauvée
+    const rep = await sb.rpc("gravier_miner");
+    if(rep && rep.error) throw new Error(rep.error.message);
+    r = rep && rep.data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "orbite.js#gravier"); journal("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
+  finally{ _gravierEnCours = false; }
+  if(r && typeof r.restants === "number") etat.gravier = { jour:_gravierJour(), essais: GRAVIER_ESSAIS - r.restants };
+  if(!r || !r.ok){
+    const err = r && r.err;
+    if(err === "mort"){ if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); return; }
+    journal(GRAVIER_REFUS[err] || `Refusé par le serveur (${err || "réponse vide"}).`, "alerte");
+    if(typeof majOrbite==="function") majOrbite();
+    return;
+  }
+  if(r.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(r.etat);
+  if(typeof r.energie === "number"){ etat.energie = r.energie; etat.energieMaj = Date.now(); }
+  const touche = !!r.touche;
   abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
-  if(touche && (r.ajoutes||{}).cristal) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain","minage");
+  if(touche && r.ajoute) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain","minage");
   else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte","minage");
   if(typeof gagnerXp==="function") gagnerXp(3);
   if(typeof majOrbite==="function") majOrbite();
