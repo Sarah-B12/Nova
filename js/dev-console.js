@@ -519,20 +519,26 @@ function majDev(){
     const bab=av.querySelector("#dev-abimer"); if(bab) bab.addEventListener("click", ()=>{ if(typeof devAbimerStructure==="function") devAbimerStructure(); });
     const bir=av.querySelector("#dev-integrite-reset"); if(bir) bir.addEventListener("click", ()=>{ if(typeof devReparerTout==="function") devReparerTout(); });
     const bcq=av.querySelector("#dev-coque");
-    if(bcq) bcq.addEventListener("click", ()=>{
+    if(bcq) bcq.addEventListener("click", async ()=>{
       if(!etat.vaisseau){ journal("[dev] Aucun vaisseau équipé.","alerte"); return; }
-      abimerVaisseau(30, "console dev");
-      journal(`[dev] Coque : ${pvVaisseau()}/${pvMax()} PV.`,"alerte");
+      // v3.00 (v302) : la coque appartient au serveur (coque_dev, rôle dev seulement) ; mêmes annonces qu'un dégât
+      const avant = pvVaisseau();
+      const d = await _coqueRpc("coque_dev", { p_pv: avant - 30 });
+      if(d){ journal(`[dev] Coque : ${d.coque}/${d.max} PV.`,"alerte"); _annoncerCoque(d.vaisseau, avant, "console dev"); }
     });
     const bso=av.querySelector("#dev-sonde");
-    if(bso) bso.addEventListener("click", ()=>{
+    if(bso) bso.addEventListener("click", async ()=>{
       if(typeof enEspace!=="function" || !enEspace()){ journal("[dev] Il faut être dans l'espace (Triptolème ou Cérès).","alerte"); return; }
+      /* v3.03 (v305) : la rencontre est notée au serveur (sonde_dev), sinon les issues seraient refusées. */
+      let d = null; try{ const r = await sb.rpc("sonde_dev"); d = r && r.data; }catch(e){ d = null; }
+      if(!d || !d.ok){ journal(`[dev] Sonde refusée par le serveur (${(d && d.err) || "pas de réponse"}).`,"alerte"); return; }
       if(typeof ouvrirSonde==="function") ouvrirSonde();
     });
     const bcr=av.querySelector("#dev-coque-ok");
-    if(bcr) bcr.addEventListener("click", ()=>{
+    if(bcr) bcr.addEventListener("click", async ()=>{
       if(!etat.vaisseau){ journal("[dev] Aucun vaisseau équipé.","alerte"); return; }
-      reparerPv(pvMax()); journal(`[dev] Coque remise à neuf : ${pvVaisseau()}/${pvMax()} PV.`,"gain");
+      const d = await _coqueRpc("coque_dev", { p_pv: pvMax() });   // v3.00 (v302)
+      if(d) journal(`[dev] Coque remise à neuf : ${d.coque}/${d.max} PV.`,"gain");
       if(typeof majVaisseau==="function") majVaisseau();
       if(typeof sauvegarder==="function") sauvegarder();
     });

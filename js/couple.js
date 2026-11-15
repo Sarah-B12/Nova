@@ -622,18 +622,20 @@ function _blocCachette(k){
       <span class="itip-gris">${p ? (ici ? "Tu y es." : `Tu es à ${d} u.`) : "Tu n'es pas sur la carte de Silène."}</span></p>
     <button class="mini" id="fa-fouiller"${ici ? "" : " disabled"}>Fouiller ici</button></div>`;
 }
-/* Mécano : les PV de coque déposés par le serveur (la coque vit dans donnees). */
+/* Mécano : les PV de coque déposés par le serveur, appliqués par lui (v3.00, v302). */
 let _coqueTs = 0;
 async function _coqueEnfant(){
   if(Date.now() - _coqueTs < 60000) return; _coqueTs = Date.now();
   let d = null; try{ ({ data:d } = await sb.rpc("enfant_coque_prendre")); }catch(e){ return; }
   if(!d || !d.ok || !(d.points > 0)) return;
   const qui = d.prenom || "Votre enfant";
-  if(etat.vaisseau && typeof reparerPv === "function"){
-    const g = reparerPv(d.points);
+  /* v3.00 (v302, K272) : le serveur répare lui-même le vaisseau équipé (enfant_coque_prendre) ;
+     sans vaisseau équipé, les points sont perdus, comme avant. */
+  if(d.vaisseau && typeof d.coque === "number"){
+    if(typeof adopterCoque === "function") adopterCoque(d);
+    const g = d.gagne|0;
     _jc(g > 0 ? `${qui} a révisé ton vaisseau : +${g} PV de coque.` : `${qui} a révisé ton vaisseau : la coque était déjà intacte.`, "gain");
     if(typeof majVaisseau === "function") majVaisseau();
-    if(typeof sauvegarder === "function") sauvegarder();
   } else _jc(`${qui} voulait réviser ton vaisseau, mais aucun n'est équipé.`, "");
 }
 

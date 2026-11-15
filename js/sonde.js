@@ -23,9 +23,18 @@
    disent « une sonde », point.
    =========================================================== */
 
+/* ⚠ v3.03 (v305, K273, anti-triche) — LES RENCONTRES SONT TIRÉES ET RÉGLÉES PAR LE SERVEUR.
+   espace_voler tire la rencontre à l'arrivée et la note ; tant qu'elle n'est pas réglée, ni vol
+   ni changement de carte (la fenêtre revient au rechargement : sonde_etat). Les quatre issues
+   passent par lui : sonde_engager (puis sonde_victoire, ou sonde_defaite), sonde_prelever,
+   sonde_deriver, sonde_brouiller ; les dégâts (riposte, défaite, moitié si l'Intelligence
+   anticipe) sont tirés et écrits par lui. Un duel engagé et pas gagné est PERDU, même si la
+   page est fermée en plein duel. Les chiffres ci-dessous sont recopiés dans _sonde_cfg()
+   (node outils/o_banc.js . sondesrv) : ils doivent rester identiques des deux côtés. */
 const SONDE_TAUX      = 0.15;    // probabilité d'interception par vol dans Triptolème
 const SONDE_PV_RIPOSTE= [15, 25];// dégâts quand elle tire la première
 const SONDE_PV_DEFAITE= [25, 40];// dégâts quand on l'attaque et qu'on perd
+const SONDE_DERIVE    = { base:0.35, par:300, max:0.90 };   // dériver : 35 % + Intelligence ÷ 300, 90 % au plus
 /* v1.36ab — décision de l'autrice (03/10, idée d'un testeur) : l'Intelligence
    anticipe le tir de la sonde. Chance = Intelligence ÷ 10 %, 20 % au plus
    (atteint à 200), que la coque n'encaisse que la MOITIÉ des dégâts. */
@@ -53,14 +62,58 @@ function coutSonde(){ return (typeof aptEndurance==="function" ? aptEndurance : 
    Nyx : Le Gravier doit rester la seule source fiable du secteur, sinon son
    quota quotidien ne sert plus à rien. */
 
-function tenterSonde(){
+/* v3.03 (v305) — `d` : la réponse d'espace_voler, qui dit si une sonde coupe la route
+   (`d.sonde`). Sans réponse du serveur (bancs d'essai seulement), le tirage du jeu. */
+function tenterSonde(d){
   /* v1.96 — à Cérès aussi (K81 : « en vol, à l'improviste »), avec le tir durci. */
   if(!((typeof enEspace === "function") ? enEspace() : enEcart())) return false;
+  if(d !== undefined){ if(!(d && d.sonde)) return false; ouvrirSonde(); return true; }
   const len = (typeof fleauLentille === "function") ? fleauLentille() : 1;   // v2.06 (K123) : éclat de lentille, ×⅔
   if(Math.random() >= SONDE_TAUX * len) return false;
   ouvrirSonde();
   return true;
 }
+/* v3.03 (v305) — au chargement : un duel laissé en plan compte comme perdu (le serveur l'a
+   dit), une rencontre en attente revient. Vrai si la fenêtre s'est rouverte. */
+async function sondeReprendre(){
+  if(typeof sb === "undefined" || !sb) return false;
+  let d = null;
+  try{ const r = await sb.rpc("sonde_etat"); d = r && r.data; }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "sonde.js#etat"); d = null; }
+  if(!d || !d.ok) return false;
+  if(d.perdu){
+    journal("Ton duel contre la sonde est resté inachevé : il compte comme perdu. Elle a riposté, coque touchée.","alerte");
+    _sondeTouche(d.perdu);
+  }
+  if(d.attente){ ouvrirSonde(); return true; }
+  return false;
+}
+/* v3.03 (v305) — un appel d'issue au serveur. Renvoie sa réponse (ok ou refus), ou null.
+   `_coqueSeq` avance au départ et au retour (vaisseau.js) : une sauvegarde partie avant ne
+   défait pas la coque qu'il a écrite. */
+async function _sondeRpc(nom){
+  if(typeof sb === "undefined" || !sb) return null;
+  let d = null;
+  if(typeof _coqueSeq !== "undefined") _coqueSeq++;
+  try{ const r = await sb.rpc(nom, {}); if(r && r.error) throw new Error(r.error.message); d = r && r.data; }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "sonde.js#" + nom); d = null; }
+  if(typeof _coqueSeq !== "undefined") _coqueSeq++;
+  if(d && d.ok === false && d.err === "mort" && typeof ouvrirCouloirMort === "function") ouvrirCouloirMort();
+  return d;
+}
+/* v3.03 (v305) — la coque touchée, d'après le serveur : mêmes annonces qu'avant (anticipation,
+   seuil d'avarie, vaisseau cloué → remorquage). */
+function _sondeTouche(d){
+  if(!d) return;
+  if(d.anticipe) journal("Tu avais anticipé son tir : la coque n'encaisse que la moitié du choc.", "gain");
+  if(d.vaisseau && typeof d.coque === "number"){
+    const avant = (typeof d.avant === "number") ? d.avant : pvVaisseau(d.vaisseau);
+    if(typeof adopterCoque === "function") adopterCoque(d);
+    if(typeof _annoncerCoque === "function") _annoncerCoque(d.vaisseau, avant, "tir de sonde");
+  }
+  if(typeof sauvegarder === "function") sauvegarder();
+}
+const SONDE_PARTIE = "La sonde a décroché entre-temps : il n'y a plus rien à régler.";
 
 let _sondeMonte = false;
 function monterSonde(){
@@ -144,6 +197,7 @@ async function sondeCombat(){
   if(!r || !r.ok){
     const err = r && r.err;
     if(err === "mort"){ if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); return; }
+    if(err === "pas_de_sonde"){ journal(SONDE_PARTIE, ""); _sondeFin(); return; }   // v3.03 (v305)
     if(err === "energie") journal("Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.","alerte");
     else if(err === "prison") journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
     else journal("Le serveur n'a pas répondu — réessaie.","alerte");
@@ -176,8 +230,10 @@ async function _sondeGagne(){
   if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
-function _sondePerdu(){
-  abimerVaisseau(_degatsSonde(alea(SONDE_PV_DEFAITE[0], SONDE_PV_DEFAITE[1])), "tir de sonde");
+/* v3.03 (v305) — la défaite est dite au serveur (sonde_defaite), qui tire et écrit les dégâts. */
+async function _sondePerdu(){
+  const d = await _sondeRpc("sonde_defaite");
+  if(d && d.ok) _sondeTouche(d);
   journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
@@ -210,6 +266,7 @@ async function sondeScanner(){
     journal("La sonde t'immobilise, puis relâche sans rien prendre — liaison perdue.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
     return;
   }
+  if(d && d.ok === false && d.err === "pas_de_sonde"){ journal(SONDE_PARTIE, ""); _sondeFin(); return; }   // v3.03 (v305)
   if(d && d.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(d.etat);
   if(d && d.pris){
     const it = (typeof item==="function") ? item(d.item) : null;
@@ -225,13 +282,19 @@ async function sondeScanner(){
    Jet d'Intelligence : se faire passer pour un débris demande de savoir ce
    qu'une sonde cherche. Échec = elle tire la première (SONDE_PV_RIPOSTE, plus
    clément que la défaite au combat : on n'a pas engagé le tir). */
+/* v3.03 (v305) — jet et riposte faits par le serveur (sonde_deriver : SONDE_DERIVE, SONDE_PV_RIPOSTE). */
 async function sondeDeriver(){
-  const int = (typeof intelligenceEffective==="function") ? intelligenceEffective() : 10;
-  const p = Math.min(0.90, 0.35 + int/300);
-  if(Math.random() < p){
+  const d = await _sondeRpc("sonde_deriver");
+  if(!d){ journal("Le serveur n'a pas répondu — la sonde attend toujours.","alerte"); ouvrirSonde(); return; }
+  if(!d.ok){
+    if(d.err === "pas_de_sonde"){ journal(SONDE_PARTIE, ""); _sondeFin(); }
+    else if(d.err !== "mort"){ journal(`Refusé par le serveur (${d.err || "réponse vide"}).`,"alerte"); ouvrirSonde(); }
+    return;
+  }
+  if(d.reussi){
     journal("Moteurs coupés, signature éteinte. Elle te prend pour un débris, te contourne et poursuit sa route.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
-    abimerVaisseau(_degatsSonde(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1])), "tir de sonde");
+    _sondeTouche(d);
     journal("Trop tard : elle avait déjà verrouillé. Elle tire la première, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();
@@ -245,12 +308,21 @@ async function sondeDeriver(){
 async function sondeBrouiller(){
   if(typeof ordiHackEquipe==="function" && !ordiHackEquipe()) return;
   /* v2.61 (K203) — même chance que pour pirater une patrouille (chanceHack,
-     patrouille.js) : 30 % + Intrusion 20 + Int ÷ 5, plafond 75 %. */
-  const p = (typeof chanceHack==="function") ? chanceHack() : 0.30;
-  if(Math.random() < p){
+     patrouille.js) : 30 % + Intrusion 20 + Int ÷ 5, plafond 75 %.
+     v3.03 (v305) — jet et riposte faits par le serveur (sonde_brouiller), avec cette chance
+     recopiée (600 cas comparés : node outils/o_banc.js . sondesrv). */
+  const d = await _sondeRpc("sonde_brouiller");
+  if(!d){ journal("Le serveur n'a pas répondu — la sonde attend toujours.","alerte"); ouvrirSonde(); return; }
+  if(!d.ok){
+    if(d.err === "pas_de_sonde"){ journal(SONDE_PARTIE, ""); _sondeFin(); }
+    else if(d.err === "materiel"){ journal("Il te faut un Ordinateur de hacking équipé pour brouiller son scanner.","alerte"); ouvrirSonde(); }
+    else if(d.err !== "mort"){ journal(`Refusé par le serveur (${d.err || "réponse vide"}).`,"alerte"); ouvrirSonde(); }
+    return;
+  }
+  if(d.reussi){
     journal("Ton ordinateur noie son scanner sous de faux échos. Elle cherche, ne trouve plus rien, et s'éloigne.","gain"); if(typeof bulleTenace==="function") bulleTenace();
   } else {
-    abimerVaisseau(_degatsSonde(alea(SONDE_PV_RIPOSTE[0], SONDE_PV_RIPOSTE[1])), "tir de sonde");
+    _sondeTouche(d);
     journal("Le brouillage ne prend pas — elle isole ta signature et ouvre le feu.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
   }
   _sondeFin();

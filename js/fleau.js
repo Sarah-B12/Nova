@@ -317,7 +317,8 @@ async function fleauTenir(bouton){
 function _fleauAppliquerCoque(c){
   if(!c || !etat.vaisseau || etat.vaisseau !== c.vaisseau || typeof _poserPv !== "function") return;
   const avant = pvVaisseau();
-  _poserPv(etat.vaisseau, c.coque);
+  // v3.00 (v302) : le serveur a déjà écrit cette coque au vaisseau (fleau_tour) ; on l'adopte.
+  if(typeof adopterCoque === "function") adopterCoque({ vaisseau:etat.vaisseau, coque:c.coque }); else _poserPv(etat.vaisseau, c.coque);
   const mx = pvMax();
   if(avant / mx >= PV_SEUIL_AVARIE && c.coque > 0 && c.coque / mx < PV_SEUIL_AVARIE)
     journal(`⚠ ${VAISSEAUX[etat.vaisseau].nom} est en avarie — coque à ${Math.round(100 * c.coque / mx)} %. La consommation de carburant augmente de moitié tant que ce n'est pas réparé.`, "alerte");

@@ -61,7 +61,8 @@ function coutSaut(gorge){
   /* v0.91 — la majoration d'avarie s'applique aussi au saut : sinon on
      décollerait indéfiniment avec une coque en ruine sans rien sentir. */
   const l = Math.ceil(SAUT_UNITES * (v.conso||1) * ((typeof malusCarburant==="function")?malusCarburant():1));
-  return { litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
+  return { type: gorge ? "gorge" : "saut",   // v3.01 (v303) : ce que saut_payer doit facturer
+           litres: (typeof aptCarburant==="function") ? aptCarburant(l) : l,   // v1.26 : Voyageur −20 %
            energie: (typeof aptSaut==="function" ? aptSaut : (x=>x))((gorge ? GORGE_ENERGIE : SAUT_ENERGIE) + (v.energie||0) * 2),   // v1.34b : Endurance −15 % et Pas léger −20 %
            carb: v.carb, reservoir: v.reservoir, nom: v.nom };
 }
@@ -160,7 +161,18 @@ function _villeDeMaFaction(){
 
 /* Vérifie PUIS débite. Comme pour les trajets au sol, on refuse avant de
    toucher à quoi que ce soit : jamais de panne en cours de route. */
-async function _payerSaut(quoi, cout){
+/* ⚠ v3.01 (v303, K271, anti-triche) — LE SERVEUR FACTURE LE SAUT (saut_payer) : carburant
+   et énergie, calculés par lui (coutSaut / coutSautSurface recopiés, 600 cas comparés :
+   node outils/o_banc.js . espsrv), la majoration d'avarie d'après SA coque (K272). Avant :
+   l'énergie par agir, le réservoir débité ici. Le réservoir n'est plus écrit que par le
+   serveur. v3.02 (v304) : le changement de carte lui-même aussi (carte_changer, ci-dessous). */
+/* ⚠ v3.02 (v304, K271) — AVEC UNE DESTINATION (`vers`), LE SERVEUR CHANGE DE CARTE
+   (carte_changer) : il vérifie qu'on part du bon endroit (cité, Perchoir, orbite de la
+   planète, vaisseau, station, Gorge), que le vaisseau vole et que la route est connue, fait
+   payer (saut_payer), puis écrit le secteur et la position d'arrivée, appliqués ici. La
+   sauvegarde n'écrit plus le secteur. Les appelants gardent leurs propres affectations
+   (mêmes valeurs) et leurs garde-fous de confort. */
+async function _payerSaut(quoi, cout, vers){
   const c = cout || coutSaut();   // v1.85 : coût fourni (Silène ⇄ Ancolie, × 1,5)
   if(!c){ journal("Aucun vaisseau équipé.","alerte"); return false; }
   const cuve = etat.carburant || 0;
@@ -168,12 +180,64 @@ async function _payerSaut(quoi, cout){
     journal(`${quoi} impossible : il faut ${c.litres} L, tu en as ${Math.round(cuve)}. Fais le plein (${item(c.carb)?item(c.carb).nom:"carburant"}).`,"alerte","voyage");
     return false;
   }
-  // L'énergie est vérifiée et débitée par le serveur (agir), comme au sol.
-  const r = await agirServeur({ cout:c.energie, motif:"saut_orbital" });
-  if(!r) return false;
-  etat.carburant = Math.max(0, cuve - c.litres);
-  journal(`${quoi} : −${c.litres} L (reste ${Math.round(etat.carburant)}/${c.reservoir} L), −${c.energie} % d'énergie.`);
+  const d = vers ? await _espaceRpc("carte_changer", { p_vers: vers }) : await _espaceRpc("saut_payer", { p_type: c.type || "saut" });
+  if(!d) return false;
+  if(!d.ok){
+    if(d.err === "carburant") journal(`${quoi} impossible : il faut ${d.litres|0} L, tu en as ${Math.round(Number(d.carburant)||0)}. Fais le plein (${item(c.carb)?item(c.carb).nom:"carburant"}).`,"alerte","voyage");
+    else _refusEspace(d);
+    return false;
+  }
+  if(vers) _adopterCarte(d);
+  journal(`${quoi} : −${d.litres|0} L (reste ${Math.round(etat.carburant)}/${d.reservoir || c.reservoir} L), −${d.cout_e|0} % d'énergie.`);
   return true;
+}
+/* v3.02 (v304) — ce que le serveur dit d'une arrivée : secteur, position sur Silène, dans
+   l'espace, au sol. Quitter une surface oublie la position au sol. */
+function _adopterCarte(d){
+  if(!d || !d.secteur) return;
+  const avant = etat.secteur;
+  etat.secteur = d.secteur;
+  if(d.pos && typeof d.pos.x === "number") etat.pos = { x:d.pos.x, y:d.pos.y };
+  if(d.posEspace && typeof d.posEspace.x === "number") etat.posEspace = { x:d.posEspace.x, y:d.posEspace.y };
+  if(d.surface && typeof d.surface.x === "number") etat.surface = { x:d.surface.x, y:d.surface.y, abord:!!d.surface.abord };
+  else if(avant !== d.secteur && !(typeof SURFACES !== "undefined" && SURFACES[d.secteur])) etat.surface = null;
+}
+/* v3.01 (v303) — un appel qui touche au carburant ou à la position dans l'espace : énergie,
+   jauges, sac et réservoir RENVOYÉS appliqués. null : pas de réponse (le message est dit).
+   ⚠ `_carbSeq` avance au départ et au retour : une réponse de sauvegarde partie avant ne
+   doit pas défaire ce qu'il a dit (voir _adopterCarburantSauvegarde, serveur.js). */
+let _carbSeq = 0;
+async function _espaceRpc(nom, args){
+  if(typeof sb === "undefined"){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  _carbSeq++;
+  let data = null;
+  try{
+    let r = await sb.rpc(nom, args || {});
+    if(!r.error && r.data && r.data.err === "non_connecte" && typeof reprendreSession === "function" && await reprendreSession()) r = await sb.rpc(nom, args || {});
+    if(r.error) throw new Error(r.error.message);
+    data = r.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "orbite.js#" + nom); data = null; }
+  _carbSeq++;
+  if(!data){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+  if(typeof data.energie === "number"){ etat.energie = data.energie; etat.energieMaj = Date.now(); }
+  if(data.jauges){ etat.jauges = etat.jauges || {}; Object.assign(etat.jauges, data.jauges); }
+  if(data.carburant != null && isFinite(Number(data.carburant))) etat.carburant = Number(data.carburant);
+  return data;
+}
+function _refusEspace(d){
+  const err = d && d.err;
+  if(err === "energie") journal(`Trop peu d'énergie${d.cout ? ` : il t'en faut ${d.cout} %` : ""}.`,"alerte");
+  else if(err === "prison") journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
+  else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+  else if(err === "aucun") journal("Aucun vaisseau équipé.","alerte");
+  else if(err === "cloue") journal("Coque hors service : ton vaisseau ne décolle pas. Fais-le réparer.","alerte");
+  else if(err === "surplace") journal("Tu y es déjà.","alerte");
+  else if(err === "lieu") journal("Tu n'es pas au bon endroit pour partir d'ici.","alerte","voyage");   // v3.02 (v304)
+  else if(err === "connue") journal("Tu ne connais pas encore cette route.","alerte","voyage");
+  else if(err === "sonde"){ journal("Une sonde te tient en joue : règle d'abord la rencontre.","alerte","voyage"); if(typeof ouvrirSonde === "function") ouvrirSonde(); }   // v3.03 : la fenêtre revient
+  else if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); }
+  else journal(`Refusé par le serveur (${err || "réponse vide"}).`,"alerte");
 }
 
 async function partirVersEcart(){
@@ -223,7 +287,7 @@ async function partirVersEcart(){
     }
     journal(`Tu pars avec l'aller seulement : pour rentrer, il faudra acheter ${Math.ceil(manque)} L de ${nomCarb} au comptoir du Perchoir (${prixRetour} ₡). Garde de quoi payer.`,"alerte","voyage");
   }
-  if(!await _payerSaut("Décollage")) return;
+  if(!await _payerSaut("Décollage", null, "ecart")) return;   // v3.02 : carte_changer
   const base = espaceLieu("base");
   etat.secteur   = "ecart";
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
@@ -264,7 +328,7 @@ async function revenirVersSilene(){
     journal(`${RENTREE_RP} Rejoins-la d'abord${c?` — ${c.energie} % d'énergie, ${c.litres} L`:""}.`,"alerte","voyage");
     return;
   }
-  if(!await _payerSaut("Rentrée")) return;
+  if(!await _payerSaut("Rentrée", null, "silene")) return;   // v3.02 : carte_changer
   const p = _villeDeMaFaction();
   etat.secteur = "silene";
   etat.pos = { x:p.x, y:p.y };                 // retour DANS sa cité, jamais en pleine nature
@@ -342,24 +406,31 @@ async function volVers(l){
     }
     return false;
   }
-  // Carburant : on complète le réservoir depuis les réserves autant que nécessaire.
-  let garde = 0;
-  while((etat.carburant||0) < j.cout.litres && garde++ < 20){
-    if(!await ravitailler()) break;
+  /* ⚠ v3.01 (v303, K271, anti-triche) — LE SERVEUR FAIT LE VOL (espace_voler) : prix depuis
+     la position qu'IL connaît, retour à la base garanti, bidons versés au besoin (sac puis
+     soute), énergie et carburant débités, position écrite. Avant : les pleins, l'énergie
+     (agir « vol_espace »), le réservoir et la position étaient faits ici ; la sauvegarde
+     écrivait les deux derniers. Les phrases restent celles d'avant, chiffres du serveur. */
+  const d = await _espaceRpc("espace_voler", { p_x:dest.x, p_y:dest.y });
+  if(!d) return false;
+  const v0 = vaisseauActif(), nomCarb = (v0 && item(v0.carb)) ? item(v0.carb).nom : "carburant";
+  for(const p of (d.pleins || []))
+    journal(`Plein : +${(v0 && CARBURANT_LITRES[v0.carb]) || p.ajoute} L de ${nomCarb}. Réservoir ${Math.round(Number(p.carburant)||0)}/${v0 ? v0.reservoir : "?"} L.`,"gain");
+  if(!d.ok){
+    if(d.err === "retour") journal(`Le calculateur de bord refuse : ${d.besoin} L nécessaires pour aller là-bas ET revenir à la base, tu n'en as que ${Math.round(Number(d.autonomie)||0)}. Fais des réserves de ${nomCarb}.`,"alerte");
+    else if(d.err === "transfert") journal("Impossible de transférer assez de carburant dans le réservoir.","alerte");
+    else _refusEspace(d);
+    if(typeof majOrbite === "function") majOrbite();
+    return false;
   }
-  if((etat.carburant||0) < j.cout.litres){
-    journal("Impossible de transférer assez de carburant dans le réservoir.","alerte"); return false;
-  }
-  if(!await agirServeur({ cout:j.cout.energie, motif:"vol_espace" })   /* v0.97 : ex-« vol_nielle ». Aucune fonction serveur ne lit ce motif (vérifié : 0 occurrence) ; hors MOTIFS_ACTION exprès. */) return false;
-  etat.carburant = Math.max(0, (etat.carburant||0) - j.cout.litres);
-  etat.posEspace = dest;
-  journal(`Cap sur ${espaceNom(l)} — ${Math.round(j.cout.d)} u, ${j.cout.energie} % d'énergie, ${j.cout.litres} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain","voyage");
+  etat.posEspace = { x:d.x, y:d.y };
+  journal(`Cap sur ${espaceNom(l)} — ${Math.round(Number(d.d)||0)} u, ${d.cout_e|0} % d'énergie, ${d.litres|0} L. Réservoir ${Math.round(etat.carburant)} L.`,"gain","voyage");
   if(l.type === "decor") journal(`${espaceNom(l)} : ${l.ici || "rien, pour l'instant."}`, "", "voyage");   // v1.01
   else if(enCeres() && l.id && !ongletLieuEspace(l) && (l.ici || l.desc)) journal(`${espaceNom(l)} : ${l.ici || l.desc}`, "", "voyage");   // v1.96 : à Cérès, un lieu sans onglet (la Gorge) se raconte
   /* v0.91 — une sonde peut couper la route. ⚠ APRÈS l'arrivée, jamais pendant :
      un joueur intercepté à mi-parcours ne saurait plus où il est, et les
      dégâts de coque changeraient le coût du vol déjà payé. */
-  const sondeOuverte = (typeof tenterSonde==="function") ? tenterSonde() : false;
+  const sondeOuverte = (typeof tenterSonde==="function") ? tenterSonde(d) : false;   // v3.03 (v305) : tirée par le serveur
   if(typeof sauverMaintenant==="function") await sauverMaintenant();
   majApresDeplacement();
   /* v0.92 — un vol intra-secteur peut consommer la dernière réserve : volVers()
@@ -515,7 +586,8 @@ async function minerGravier(){
   if(r.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(r.etat);
   if(typeof r.energie === "number"){ etat.energie = r.energie; etat.energieMaj = Date.now(); }
   const touche = !!r.touche;
-  abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
+  // v3.00 (v302, K272) : les éraflures (GRAVIER_PV) sont tirées et écrites par le serveur (gravier_miner).
+  if(typeof annoncerCoqueServeur === "function") annoncerCoqueServeur(r, "éraflures d'astéroïdes");
   if(touche && r.ajoute) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain","minage");
   else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte","minage");
   // v2.93 (v295, K267) : les +3 XP sont donnés par le serveur (gravier_miner) ; avant : gagnerXp(3) ici.
@@ -544,10 +616,11 @@ async function reparerChezReparateur(){
   const c = coutReparateur();
   if(c <= 0){ journal("La coque est déjà intacte.","alerte"); return; }
   if((etat.credits||0) < c){ journal(`Il te faut ${c} ₡ pour cette réparation.`,"alerte"); return; }
-  etat.credits -= c;
-  const gagne = reparerPv(pvMax());
-  journal(`Coque remise à neuf : +${gagne} PV (${pvVaisseau()}/${pvMax()}). −${c} ₡.`,"gain");
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  /* v3.00 (v302, K272 ; K268 pour le paiement) — le serveur vérifie le lieu, prend le prix
+     (1,5 ₡ par PV manquant) et remet la coque à neuf. Avant : crédits et coque changés ici. */
+  const d = await _coqueRpc("coque_reparateur", {}, true);
+  if(!d) return;
+  journal(`Coque remise à neuf : +${d.gagne|0} PV (${d.coque}/${d.max}). −${d.cout|0} ₡.`,"gain");
   if(typeof majOrbite==="function") majOrbite();
   if(typeof afficher==="function") afficher();
 }
@@ -638,12 +711,12 @@ async function secoursOrbite(){
      désormais AUSSI sur une sous-carte (La Braise, Le Suaire). */
   const enSurface = (typeof enSurfaceIci === "function") && enSurfaceIci();
   if(!enEspace() && !enSurface) return false;   // v1.96 : Cérès aussi
-  const cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
+  let cloue = (typeof vaisseauCloue==="function") && vaisseauCloue();
   /* v0.92 — TROISIÈME CAS : le vaisseau est intact mais à sec, sans bidon et
      sans de quoi en acheter. Le secours n'existait que pour le vaisseau absent
      ou cloué : un pilote sans carburant restait en haut sans aucun recours, et
      sans revenu possible puisqu'il ne pouvait plus voler. */
-  const aSec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
+  let aSec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
   if(etat.vaisseau && !cloue && !aSec) return false;       // il lui reste un moyen de rentrer
   /* ⚠ ORDRE AVEC LA MORT. Un joueur mort est derrière un écran bloquant : le
      redescendre pendant ce temps contredirait la règle « mourir à Triptolème ne
@@ -670,12 +743,22 @@ async function secoursOrbite(){
      réputation : 10 % à sec, et 100 ₡ au lieu de 200 sans vaisseau — les deux cas
      sans autre choix. Coque à zéro (cloué) : 200 ₡ pour tous (le remorquage rend
      de la coque et épargne le retour : moins cher, il deviendrait une commodité). */
-  const p25    = (typeof repPalier === "function") && repPalier(typeof REP_PALIER_RAPATRIEMENT !== "undefined" ? REP_PALIER_RAPATRIEMENT : 25);
+  /* ⚠ v3.02 (v304, K271 ; K268) — LE SECOURS EST FAIT PAR LE SERVEUR (secours_orbite) : il
+     refait le diagnostic (cloué, sans vaisseau, à sec — mêmes règles, mêmes tarifs, mêmes
+     paliers), prend les frais, rend la coque d'un cloué et pose à l'arrivée (secteur et
+     position). Ce bloc n'en garde que les phrases, d'après SON diagnostic, et refait les
+     mêmes déplacements pour l'affichage. Le diagnostic de la page ne sert qu'à savoir s'il
+     faut appeler. */
+  /* _coqueRpc : crédits poussés d'abord, solde repris, et la coque d'une sauvegarde partie
+     pendant l'appel n'écrase pas celle rendue ici. Silencieux : null si refus ou pas de réponse. */
+  const d = (typeof _coqueRpc === "function") ? await _coqueRpc("secours_orbite", {}, true, true) : null;
+  if(!d || !d.ok) return false;                            // le serveur ne voit pas de secours à faire (ou ne répond pas)
+  cloue = d.cas === "cloue"; aSec = d.cas === "sec";
+  if(cloue && typeof adopterCoque === "function") adopterCoque(d);
+  const p25    = !!d.palier;
   const pctSec = p25 ? SECOURS_SEC_PALIER : SECOURS_SEC;
-  const frais  = aSec ? Math.floor(Math.max(0, etat.credits||0) * pctSec)
-               : (!etat.vaisseau && p25) ? SECOURS_FRAIS_PALIER : SECOURS_FRAIS;
-  const du     = Math.min(frais, Math.max(0, etat.credits||0));
-  etat.credits = Math.max(0, (etat.credits||0) - frais);
+  const frais  = d.frais|0;
+  const du     = d.du|0;
   const impaye = du < frais ? " Tu n'avais pas de quoi payer : tu leur dois le reste." : "";
 
   /* ⚠ DEUX DESTINATIONS, et la différence compte. Un vaisseau CLOUÉ ramené au
@@ -691,8 +774,7 @@ async function secoursOrbite(){
   if(enCeres()){
     if(cloue){
       const n = baseEspace("ceres");
-      if(n) etat.posEspace = { x:n.x, y:n.y };
-      if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
+      if(n) etat.posEspace = { x:n.x, y:n.y };   // la coque : rendue par coque_remorquage (v3.00)
       journal(`Appel de détresse : on te remorque jusqu'au Nid et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon, à La Carcasse.`,"alerte","voyage");
     } else {
       const p = _villeDeMaFaction();
@@ -710,8 +792,7 @@ async function secoursOrbite(){
   if(cloue){
     if(enSurface){ etat.secteur = "ecart"; etat.surface = null; if(typeof fermerCarteBraise==="function") fermerCarteBraise(); }   // v1.56
     const b = espaceLieu("base");
-    if(b) etat.posEspace = { x:b.x, y:b.y };
-    if(typeof reparerPv==="function") reparerPv(Math.ceil(pvMax()*PV_REMORQUAGE));
+    if(b) etat.posEspace = { x:b.x, y:b.y };   // la coque : rendue par coque_remorquage (v3.00)
     /* v2.63 — « jusqu'au Le Perchoir » : le nom porte déjà son article. */
     const jusqua = !b ? "jusqu'au Perchoir" : /^Le /.test(b.nom) ? `jusqu'au ${b.nom.slice(3)}` : /^La /.test(b.nom) ? `jusqu'à la ${b.nom.slice(3)}` : `jusqu'à ${b.nom}`;
     journal(`Appel de détresse : on te remorque ${jusqua} et on te rend juste de quoi voler. −${SECOURS_FRAIS} ₡.${impaye} Fais réparer la coque pour de bon.`,"alerte","voyage");
@@ -799,7 +880,7 @@ async function passerLaGorge(){
     }
     journal(`Tu passes avec de quoi rejoindre le Nid seulement : pour rentrer, il faudra y acheter ${Math.ceil(total - auto)} L de carburant (${prixRetour} ₡). Garde de quoi payer.`,"alerte","voyage");
   }
-  if(!await _payerSaut("La Gorge", cs)) return;
+  if(!await _payerSaut("La Gorge", cs, "ceres")) return;   // v3.02 : carte_changer
   const g = espaceLieu("e2_gorge");
   etat.secteur = "ceres";
   etat.posEspace = g ? { x:g.x, y:g.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
@@ -822,7 +903,7 @@ async function repasserLaGorge(){
     journal(`Passage refusé : de l'autre côté, il faudra encore rejoindre le Perchoir. La Gorge puis le Perchoir coûtent ${besoin} L, tu n'as que ${Math.round(auto)} L en tout.${nidOuvert() ? " Le Nid vend du carburant." : ""}`,"alerte","voyage");   // v2.32 (K155)
     return;
   }
-  if(!await _payerSaut("La Gorge", cs)) return;
+  if(!await _payerSaut("La Gorge", cs, "ecart")) return;   // v3.02 : carte_changer
   etat.secteur = "ecart";
   etat.posEspace = t ? { x:t.x, y:t.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
   journal(`La Gorge te reprend, te serre, et te rend à Triptolème. Le Perchoir est là où tu l'as laissé.`,"gain","voyage");

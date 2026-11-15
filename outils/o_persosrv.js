@@ -3,7 +3,7 @@
 //    nœud = aptCout(rang) (1, sauf le 4ᵉ : APT_CAP_COUT).
 //  • `pa` → `_quete_pa()` : les PA de chaque quête (recompense.pa).
 //  • `drapeaux` → `_perso_drapeaux()` : la quête qui donne chaque drapeau que le serveur lit (permisVaisseau, espace1,
-//    ancolie, nidOuvert).
+//    ancolie, nidOuvert ; v3.02 : ceres).
 //  • `coutsQuetes` → `_quete_couts()` (v297) : les étapes « paiement » des quêtes (qN:étape → crédits).
 //  • `regles` : compétences de départ, PTS_PAR_NIVEAU, CAP_COMP, APT_CAP_COUT (écrits en dur dans _perso_controler).
 // Changer l'arbre, un PA de quête ou un drapeau = changer aussi le serveur (BACKEND_PLAN §6) : relancer, recopier.
@@ -16,7 +16,7 @@
   const couts = chaines.map(c => c.n.map((id, i) => aptCout(i)).join("")).join(" ");
   const pa = {}; for(const q of QUETES){ const r = q.recompense || {}; if(r.pa) pa[q.id] = r.pa; }
   const drapeaux = {};
-  for(const k of ["permisVaisseau","espace1","ancolie","nidOuvert"]){
+  for(const k of ["permisVaisseau","espace1","ancolie","nidOuvert","ceres"]){   // v3.02 (v304) : + ceres, lu par carte_changer
     const q = QUETES.find(q => q.recompense && q.recompense.flags && k in q.recompense.flags);
     drapeaux[k] = q ? q.id : null;
   }

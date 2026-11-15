@@ -4,6 +4,33 @@
 (async function(){
   const r = {}, att = ms => new Promise(x => setTimeout(x, ms));
   await att(1500);
+  /* v3.02 (v304) : changements de carte, sauts de quête et secours passent par le serveur (carte_changer, carte_quete,
+     secours_orbite) : on rejoue ici ce qu'il fait, avec les règles du jeu, pour comparer aux versions d'avant (qui
+     n'appellent pas ces fonctions). L'arrivée reste posée par la page, comme avant. */
+  { const rpc304 = sb.rpc;
+    sb.rpc = (n, a) => {
+      const rep = d => Promise.resolve({ data:d, error:null });
+      if(n === "carte_changer"){
+        const v = a.p_vers, de = etat.secteur || "silene";
+        const type = (de === "ecart" && v === "ceres") || (de === "ceres" && v === "ecart") ? "gorge"
+                   : (de === "silene" && v === "ancolie") || (de === "ancolie" && v === "silene") ? "ancolie" : "saut";
+        const c = type === "gorge" ? coutSaut(true) : type === "ancolie" ? coutSautSurface(SURFACES.ancolie) : coutSaut();
+        if(!c) return rep({ ok:false, err:"aucun" });
+        if((etat.carburant || 0) < c.litres) return rep({ ok:false, err:"carburant", litres:c.litres, carburant:etat.carburant || 0 });
+        return rep({ ok:true, type, litres:c.litres, cout_e:c.energie, carburant:Math.max(0, (etat.carburant || 0) - c.litres), reservoir:c.reservoir, de, secteur:v });
+      }
+      if(n === "carte_quete") return rep({ ok:true, secteur:a.p_carte });
+      if(n === "secours_orbite"){
+        const cloue = !!etat.vaisseau && vaisseauCloue(), sec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
+        if(etat.vaisseau && !cloue && !sec) return rep({ ok:false, err:"pas_de_secours" });
+        const p25 = repPalier(typeof REP_PALIER_RAPATRIEMENT !== "undefined" ? REP_PALIER_RAPATRIEMENT : 25), cr = Math.max(0, etat.credits || 0);
+        const frais = sec ? Math.floor(cr * (p25 ? SECOURS_SEC_PALIER : SECOURS_SEC)) : (!etat.vaisseau && p25) ? SECOURS_FRAIS_PALIER : SECOURS_FRAIS;
+        const du = Math.min(frais, cr), d = { ok:true, cas: cloue ? "cloue" : sec ? "sec" : "sans", frais, du, solde:cr - du, palier:p25 };
+        if(cloue) Object.assign(d, { vaisseau:etat.vaisseau, coque:Math.ceil(pvMax() * PV_REMORQUAGE), max:pvMax(), secteur: enCeres() ? "ceres" : "ecart" });
+        else d.secteur = "silene";
+        return rep(d);
+      }
+      return rpc304(n, a); }; }
   const msgs = []; const vraiJournal = journal; journal = (t, ...a) => { msgs.push(String(t)); return vraiJournal(t, ...a); };
   const appels = [];
   // ---------- faux serveur ----------
@@ -11,6 +38,11 @@
   const vue = () => S.combat && { ...S.combat };
   const orig = sb.rpc.bind(sb);
   sb.rpc = (n, a) => {
+    /* v3.00 (v302) : le remorquage d'un vaisseau cloué passe par coque_remorquage (200 ₡, 25 % de coque rendus par le
+       serveur) : on rejoue ce qu'il fait, pour comparer aux versions d'avant. */
+    if(n === "coque_remorquage"){ const du = Math.min(200, Math.max(0, etat.credits || 0));
+      return Promise.resolve({ data:{ ok:true, vaisseau:etat.vaisseau, coque:Math.ceil(pvMax() * PV_REMORQUAGE), max:pvMax(), frais:200, du,
+                                      solde:Math.max(0, (etat.credits || 0) - du) }, error:null }); }
     if(!/^fleau_|^agir$/.test(n)) return orig(n, a);
     appels.push([n, a]);
     let d;

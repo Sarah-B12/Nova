@@ -317,6 +317,19 @@ QUETES_JEUX.saut = {
     const b = z.querySelector("#qj-saut"); if(!b) return;
     b.addEventListener("click", async () => {
       b.disabled = true;
+      /* v3.02 (v304, K271) — le saut est fait par le serveur (carte_quete) : depuis la Gorge,
+         tant que la quête n'est pas finie ; il écrit le secteur et l'arrivée. */
+      if(typeof sb !== "undefined"){
+        let rq = null;
+        try{ const r = await sb.rpc("carte_quete", { p_carte: d.carte === "ceres" ? "ceres" : (d.carte || "ancolie") }); rq = r && r.data; }catch(e){ rq = null; }
+        if(!rq || !rq.ok){
+          if(rq && rq.err === "sonde"){   // v3.03 (v305, K273) : une rencontre de sonde attend
+            journal("Une sonde te tient en joue : règle d'abord la rencontre.", "alerte");
+            if(typeof ouvrirSonde === "function") ouvrirSonde();
+          } else journal(rq && rq.err === "lieu" ? "La Gorge est plus loin : entres-y d'abord." : `Le saut n'a pas pu se faire (${(rq && rq.err) || "pas de réponse"}).`, "alerte");
+          b.disabled = false; return;
+        }
+      }
       /* v1.98 — Q31 : la Gorge mène à une carte SPATIALE, Cérès (`carte:"ceres"`, `lieu`
          = un lieu de js/espace2-data.js). Le passage reste ouvert : etat.ceres (K75). */
       if(d.carte === "ceres"){

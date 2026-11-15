@@ -158,7 +158,8 @@ async function equiperVaisseau(id){
   const r = await _vaisseauRpc("vaisseau_equiper", { p_item:id });
   if(!r) return;
   if(!etat.vaisseau) etat.vaisseau = id;   // (serveur d'avant v292 : pas de champ `vaisseau` dans l'état)
-  etat.carburant = Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);   // le réservoir peut être plus petit
+  // le réservoir peut être plus petit — v3.01 (v303) : le serveur le plafonne et renvoie la valeur
+  etat.carburant = (r.carburant != null && isFinite(Number(r.carburant))) ? Number(r.carburant) : Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);
   journal(`${VAISSEAUX[id].nom} équipé. Soute : ${VAISSEAUX[id].soute} places.`,"gain");
   apresAction(); majVaisseau();
 }
@@ -278,12 +279,96 @@ function _poserPv(id, n){
   etat.vaisseauPv = etat.vaisseauPv || {};
   etat.vaisseauPv[id] = Math.max(0, Math.min(pvMax(id), Math.round(n)));
 }
+/* ===========================================================
+   v3.00 (v302, K272, anti-triche) — LA COQUE APPARTIENT AU SERVEUR.
+   `donnees.vaisseauPv` n'est plus écrit que par lui : la sauvegarde garde la valeur
+   en base et la renvoie (« coque ») si la page envoie autre chose. Avant, la page
+   baissait ET remontait la coque elle-même : une sauvegarde trafiquée la remettait
+   à neuf sans rien payer.
+   · Réparer : coque_reparer_kit, coque_reparateur, coque_remorquage, l'enfant
+     mécano (enfant_coque_prendre répare directement).
+   · Abîmer : le Gravier (gravier_miner) et le Fléau (fleau_tour) l'écrivent
+     eux-mêmes ; les tirs de sonde, les éclats d'astéroïde et le choc du premier
+     décollage sont encore tirés ici, appliqués ici tout de suite (l'affichage et
+     le remorquage n'attendent pas), puis envoyés à coque_abimer (qui ne fait que
+     baisser, dans les limites du jeu) — ils passeront au serveur avec les vols.
+   ⚠ `_coqueSeq` avance au départ ET au retour de chaque appel qui touche la coque :
+     une réponse de sauvegarde partie avant ne doit pas défaire ce qu'il a dit.
+   =========================================================== */
+let _coqueSeq = 0;
+function adopterCoque(d){
+  if(!d || !d.vaisseau || typeof d.coque !== "number") return;
+  _poserPv(d.vaisseau, d.coque); _coqueSeq++;
+}
+function _adopterCoqueSauvegarde(carte, seq){
+  if(seq !== _coqueSeq || !carte || typeof carte !== "object") return;
+  const avant = JSON.stringify(etat.vaisseauPv || {});
+  etat.vaisseauPv = Object.assign({}, carte);
+  if(JSON.stringify(etat.vaisseauPv) === avant) return;
+  console.warn("[serveur] coque gardée par le serveur :", carte);
+  if(typeof majVaisseau === "function") majVaisseau();
+}
+const COQUE_REFUS = {
+  aucun:     "Aucun vaisseau équipé.",
+  intacte:   "La coque est déjà intacte.",
+  fleau:     "Pas en plein combat contre le Fléau : finis-le ou romps-le d'abord.",
+  lieu:      "Il faut être à La Carcasse pour ça.",
+  manque:    "Ce kit n'est plus dans ton sac.",
+  pas_cloue: "La coque n'est pas hors service.",
+  secteur:   "Tu n'es ni dans l'espace ni sur une planète.",
+  prison:    "Tu es en prison — impossible d'agir jusqu'à ta libération.",
+  objet:     "Ce n'est pas un kit de réparation."
+};
+/* Un appel qui touche la coque : refus dits, sac et énergie appliqués, coque adoptée.
+   avecSolde : rpcAvecSolde (crédits en attente poussés d'abord, solde renvoyé appliqué). */
+async function _coqueRpc(nom, args, avecSolde, silencieux){
+  if(typeof sb === "undefined") return null;
+  _coqueSeq++;
+  let d = null;
+  try{
+    const r = avecSolde ? await rpcAvecSolde(nom, args || {}, "solde") : await sb.rpc(nom, args || {});
+    if(r && r.error) throw new Error(r.error.message);
+    d = r && r.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "vaisseau.js#" + nom); d = null; }
+  _coqueSeq++;
+  if(!d){ if(!silencieux) journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  if(!d.ok){
+    if(silencieux) return null;
+    const err = d.err;
+    if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+    else if(err === "fonds") journal(`Il te faut ${d.cout|0} ₡ pour cette réparation.`,"alerte");
+    else if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); }
+    else journal(COQUE_REFUS[err] || `Refusé par le serveur (${err || "réponse vide"}).`,"alerte");
+    return null;
+  }
+  if(d.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(d.etat);
+  if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
+  adopterCoque(d);
+  return d;
+}
+/* Ce que le serveur renvoie après un dégât qu'il a tiré lui-même (Gravier) : mêmes
+   annonces que abimerVaisseau (seuil d'avarie, coque clouée → remorquage). */
+function annoncerCoqueServeur(d, raison){
+  if(!d || !d.vaisseau || typeof d.coque !== "number") return;
+  const id = d.vaisseau, avant = pvVaisseau(id);
+  adopterCoque(d);
+  _annoncerCoque(id, avant, raison);
+}
+/* Dégâts encore tirés par le jeu : la raison affichée → la raison connue du serveur. */
+const COQUE_RAISONS = { "tir de sonde":"sonde", "éclats d'astéroïde":"asteroide", "sortie d'atmosphère":"choc" };
 /* Abîme la coque équipée. Prévient au franchissement des deux seuils, et
    seulement là : un message à chaque éraflure deviendrait du bruit. */
 function abimerVaisseau(n, raison){
   const id = etat.vaisseau; if(!id || !(n > 0)) return;
-  const avant = pvVaisseau(id), ratioAvant = avant / pvMax(id);
+  const avant = pvVaisseau(id);
   _poserPv(id, avant - n);
+  if(COQUE_RAISONS[raison]) _coqueRpc("coque_abimer", { p_points:Math.round(n), p_raison:COQUE_RAISONS[raison] }, false, true);
+  _annoncerCoque(id, avant, raison);
+  if(typeof sauvegarder==="function") sauvegarder();
+}
+function _annoncerCoque(id, avant, raison){
+  if(!id || !VAISSEAUX[id]) return;
+  const ratioAvant = avant / pvMax(id);
   const apres = pvVaisseau(id);
   const nom = VAISSEAUX[id].nom;
   if(apres <= 0){
@@ -296,14 +381,8 @@ function abimerVaisseau(n, raison){
     journal(`⚠ ${nom} est en avarie — coque à ${Math.round(100*apres/pvMax(id))} %. La consommation de carburant augmente de moitié tant que ce n'est pas réparé.`,"alerte");
   }
   if(typeof majVaisseau==="function") majVaisseau();
-  if(typeof sauvegarder==="function") sauvegarder();
 }
-function reparerPv(n){
-  const id = etat.vaisseau; if(!id) return 0;
-  const avant = pvVaisseau(id);
-  _poserPv(id, avant + n);
-  return pvVaisseau(id) - avant;
-}
+/* (v3.00 : reparerPv retirée — toute réparation passe par le serveur, voir _coqueRpc.) */
 
 /* PV rendus par un Kit de réparation. ⚠ Forfait et non pourcentage : trois kits
    pour une Navette (120 PV), neuf pour un Maître (340). Les gros vaisseaux
@@ -319,11 +398,11 @@ async function utiliserKitReparation(id = "kit_reparation"){
   if(pvVaisseau() >= pvMax()){ journal("La coque est déjà intacte.","alerte"); return; }
   // v2.75 (K240) : pas en plein combat contre le Fléau (le serveur garde la coque du combat : le kit serait perdu).
   if(typeof fleauCombatEnCours === "function" && fleauCombatEnCours()){ journal("Pas en plein combat contre le Fléau : finis-le ou romps-le d'abord.","alerte"); return; }
-  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"reparer_coque" })) return;
-  const gagne = reparerPv(KITS_PV[id]);
-  journal(`Coque rafistolée : +${gagne} PV (${pvVaisseau()}/${pvMax()}).`,"gain");
+  // v3.00 (v302) : le serveur retire le kit et répare (KITS_PV y est recopié : coque_reparer_kit).
+  const d = await _coqueRpc("coque_reparer_kit", { p_item:id });
+  if(!d) return;
+  journal(`Coque rafistolée : +${d.gagne|0} PV (${d.coque}/${d.max}).`,"gain");
   apresAction(); majVaisseau();
-  if(typeof sauvegarder==="function") sauvegarder();
 }
 
 /* Litres réellement disponibles : le réservoir PLUS tout ce qu'on transporte.
@@ -354,8 +433,16 @@ async function ravitailler(){
     } else { journal(`Il te faut du ${item(v.carb).nom} dans ton sac ou ta soute.`,"alerte"); return false; }
   }
   const litres = CARBURANT_LITRES[v.carb]||0;
-  if(!await agirServeur({ retirer:{ [v.carb]:1 }, motif:"ravitailler" })) return false;
-  etat.carburant = Math.min(v.reservoir, (etat.carburant||0) + litres);
+  /* v3.01 (v303, K271) : le serveur verse le bidon (sac d'abord, puis soute) et écrit le
+     réservoir (carburant_plein). Avant : agir retirait le bidon, la page remplissait. */
+  const d = (typeof _espaceRpc === "function") ? await _espaceRpc("carburant_plein", {}) : null;
+  if(!d) return false;
+  if(!d.ok){
+    if(d.err === "plein") journal("Réservoir plein.","alerte");
+    else if(d.err === "manque") journal(`Il te faut du ${item(v.carb).nom} dans ton sac ou ta soute.`,"alerte");
+    else if(typeof _refusEspace === "function") _refusEspace(d);
+    return false;
+  }
   journal(`Plein : +${litres} L de ${item(v.carb).nom}. Réservoir ${Math.round(etat.carburant)}/${v.reservoir} L.`,"gain");
   apresAction(); majVaisseau();
   return true;   // v0.91 : volVers() enchaîne les pleins tant qu'il en faut

@@ -202,6 +202,9 @@ async function syncApresConnexion(){
      le jeu bloqué à Triptolème sans vaisseau y restait tant qu'il ne changeait
      pas d'onglet. Il joue donc ici aussi, APRÈS `syncMort` (donc après que
      `_mortInfo` soit connu) et après l'écran bloquant. */
+  /* v3.03 (v305, K273) — une rencontre de sonde en attente revient (et un duel laissé en plan
+     compte comme perdu). Fenêtre rouverte : pas de secours par-dessous (repris à sa fin). */
+  if(typeof sondeReprendre==="function" && await sondeReprendre()) return;
   if(typeof secoursOrbite==="function") secoursOrbite();
 }
 /* ⚠ v0.95 — plus de `setTimeout(syncApresConnexion, 1200)` : `demarrer()` l'appelle

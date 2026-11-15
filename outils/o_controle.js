@@ -278,6 +278,14 @@ const ORPHELINS_ASSUMES = {
   aptCredits:             "référence de la formule serveur (quete_terminer, v293 : Négociant × boisson)",
   // v2.92 (v294, K266) : les soins sont appliqués par le serveur (soin_consommer).
   aptSoin:                "référence du coefficient serveur (soin_consommer, v294 : Autarcie), lue par o_soinssrv",
+  // v3.00 (v302, K272) : la coque est réparée et abîmée par le serveur.
+  GRAVIER_PV:             "référence du barème serveur (gravier_miner, v302 : éraflures 1 à 3 PV), lue par o_coquesrv",
+  PV_REMORQUAGE:          "référence du barème serveur (coque_remorquage, v302 : 25 % rendus), lue par o_coquesrv",
+  SECOURS_FRAIS_PALIER:   "référence du barème serveur (secours_orbite, v304 : 100 ₡ sans vaisseau au palier 25), lue par o_secsrv",
+  REP_PALIER_RAPATRIEMENT: "référence du barème serveur (secours_orbite, v304 : palier 25 de réputation), lue par o_secsrv",
+  SONDE_PV_RIPOSTE:       "référence du barème serveur (sonde_deriver, sonde_brouiller, v305 : riposte 15–25), lue par o_sondesrv",
+  SONDE_PV_DEFAITE:       "référence du barème serveur (sonde_defaite, v305 : défaite 25–40), lue par o_sondesrv",
+  SONDE_DERIVE:           "référence du barème serveur (sonde_deriver, v305 : 35 % + Int ÷ 300, 90 % au plus), lue par o_sondesrv",
   // v2.96 (v298, K270) : la prison de l'espion raté est tirée par le serveur (espionner).
   espionRisquePrison:     "référence de la formule serveur (espionner, v298), lue par o_v251",
   espionDureePrison:      "référence de la formule serveur (espionner, v298)"

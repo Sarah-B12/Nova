@@ -41,7 +41,8 @@
   r.texteIntrusion = /\+20 points pour pirater/.test(document.documentElement.outerHTML + JSON.stringify(typeof APTITUDES !== "undefined" ? APTITUDES : "")) || (typeof aptDef === "function" && /\+20 points/.test((aptDef("om4") || {}).effet || ""));
   // 6. La sonde : même chance (lue dans sondeBrouiller).
   const src = sondeBrouiller.toString();
-  r.sonde = { chanceHack: /chanceHack\(\)/.test(src), ancienneFormule: /0\.45|0\.90/.test(src) };
+  // v3.03 (v305) : le jet est au serveur (sonde_brouiller), avec la chance de chanceHack recopiée (vérifiée par o_sondesrv).
+  r.sonde = { chanceHack: /chanceHack\(\)/.test(src) || /sonde_brouiller/.test(src), ancienneFormule: /0\.45|0\.90/.test(src) };
   resoudreCombat = orig.rc; patrouilleNeutraliseeServeur = orig.pn; registreSignaler = orig.rs; gagnerXp = orig.gx; journal = orig.j; Math.random = orig.rnd;
   return r;
 })();

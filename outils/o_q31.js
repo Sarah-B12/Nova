@@ -5,6 +5,33 @@
 // règles d'écriture (K53, K68) ; récompense. Tout ce qui est noté « vrai » doit l'être.
 (async function(){
   await new Promise(x=>setTimeout(x,1200));
+  /* v3.02 (v304) : changements de carte, sauts de quête et secours passent par le serveur (carte_changer, carte_quete,
+     secours_orbite) : on rejoue ici ce qu'il fait, avec les règles du jeu, pour comparer aux versions d'avant (qui
+     n'appellent pas ces fonctions). L'arrivée reste posée par la page, comme avant. */
+  { const rpc304 = sb.rpc;
+    sb.rpc = (n, a) => {
+      const rep = d => Promise.resolve({ data:d, error:null });
+      if(n === "carte_changer"){
+        const v = a.p_vers, de = etat.secteur || "silene";
+        const type = (de === "ecart" && v === "ceres") || (de === "ceres" && v === "ecart") ? "gorge"
+                   : (de === "silene" && v === "ancolie") || (de === "ancolie" && v === "silene") ? "ancolie" : "saut";
+        const c = type === "gorge" ? coutSaut(true) : type === "ancolie" ? coutSautSurface(SURFACES.ancolie) : coutSaut();
+        if(!c) return rep({ ok:false, err:"aucun" });
+        if((etat.carburant || 0) < c.litres) return rep({ ok:false, err:"carburant", litres:c.litres, carburant:etat.carburant || 0 });
+        return rep({ ok:true, type, litres:c.litres, cout_e:c.energie, carburant:Math.max(0, (etat.carburant || 0) - c.litres), reservoir:c.reservoir, de, secteur:v });
+      }
+      if(n === "carte_quete") return rep({ ok:true, secteur:a.p_carte });
+      if(n === "secours_orbite"){
+        const cloue = !!etat.vaisseau && vaisseauCloue(), sec = !!etat.vaisseau && !cloue && vaisseauSansRetour();
+        if(etat.vaisseau && !cloue && !sec) return rep({ ok:false, err:"pas_de_secours" });
+        const p25 = repPalier(typeof REP_PALIER_RAPATRIEMENT !== "undefined" ? REP_PALIER_RAPATRIEMENT : 25), cr = Math.max(0, etat.credits || 0);
+        const frais = sec ? Math.floor(cr * (p25 ? SECOURS_SEC_PALIER : SECOURS_SEC)) : (!etat.vaisseau && p25) ? SECOURS_FRAIS_PALIER : SECOURS_FRAIS;
+        const du = Math.min(frais, cr), d = { ok:true, cas: cloue ? "cloue" : sec ? "sec" : "sans", frais, du, solde:cr - du, palier:p25 };
+        if(cloue) Object.assign(d, { vaisseau:etat.vaisseau, coque:Math.ceil(pvMax() * PV_REMORQUAGE), max:pvMax(), secteur: enCeres() ? "ceres" : "ecart" });
+        else d.secteur = "silene";
+        return rep(d);
+      }
+      return rpc304(n, a); }; }
   const r = { erreurs:[] }, att = ms => new Promise(x=>setTimeout(x,ms));
   const q = queteData("q31"); r.existe = !!q;
   const vraiQA = queteActive;

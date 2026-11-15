@@ -379,11 +379,25 @@ function _adopterPositionServeur(p, envoye){
   const posInchangee = !etat.pos || (Math.round(etat.pos.x) === envoye.pos_x && Math.round(etat.pos.y) === envoye.pos_y);
   if(posInchangee && (!etat.pos || etat.pos.x !== p.x || etat.pos.y !== p.y)){ etat.pos = { x:p.x, y:p.y }; change = true; }
   const sectActuel = ["ecart","braise","suaire","ancolie","ceres"].includes(etat.secteur) ? etat.secteur : "silene";
-  // On ne quitte Silène que depuis une cité (ou la prison retient) : le serveur a gardé Silène.
-  if(p.secteur === "silene" && envoye.secteur !== "silene" && sectActuel === envoye.secteur){
-    etat.secteur = "silene"; etat.surface = null;
-    if(typeof fermerOrbite === "function" && document.querySelector("#modale-orbite")) fermerOrbite();
-    if(typeof fermerCarteBraise === "function") fermerCarteBraise();
+  /* v3.02 (v304) — le secteur appartient au serveur (carte_changer, carte_quete, secours_orbite,
+     prison, résurrection) : s'il a gardé un autre secteur que celui envoyé, et que la page n'a pas
+     changé de carte depuis, on s'y range (cartes fermées, positions reprises plus bas). */
+  if(p.secteur && p.secteur !== envoye.secteur && sectActuel === envoye.secteur){
+    etat.secteur = p.secteur;
+    if(!(typeof SURFACES !== "undefined" && SURFACES[p.secteur])) etat.surface = null;
+    if(p.secteur === "silene" && typeof fermerOrbite === "function" && document.querySelector("#modale-orbite")) fermerOrbite();
+    if(typeof fermerCarteBraise === "function" && !(typeof SURFACES !== "undefined" && SURFACES[p.secteur])) fermerCarteBraise();
+    if(p.posEspace && typeof p.posEspace.x === "number") etat.posEspace = { x:p.posEspace.x, y:p.posEspace.y };
+    if(p.surface && typeof p.surface.x === "number") etat.surface = { x:p.surface.x, y:p.surface.y, abord:!!p.surface.abord };
+    change = true;
+  }
+  /* v3.01 (v303) — la position dans l'espace (Triptolème, Cérès) : même règle, adoptée seulement si
+     `etat.posEspace` est encore l'objet envoyé (un vol, espace_voler, le remplace). */
+  const espEnvoyee = envoye.donnees ? envoye.donnees.posEspace : undefined;
+  if(p.posEspace && typeof p.posEspace === "object" && p.secteur === etat.secteur && espEnvoyee === etat.posEspace
+     && (!etat.posEspace || etat.posEspace.x !== p.posEspace.x || etat.posEspace.y !== p.posEspace.y)){
+    etat.posEspace = { x:p.posEspace.x, y:p.posEspace.y };
+    if(typeof majOrbite === "function") majOrbite();
     change = true;
   }
   /* v2.99 (v301) — la position au sol des surfaces (La Braise, Le Suaire, Ancolie) : même règle,
@@ -398,6 +412,16 @@ function _adopterPositionServeur(p, envoye){
   if(!change) return;
   console.warn("[serveur] position gardée par le serveur :", p, "| envoyée :", envoye.pos_x, envoye.pos_y, envoye.secteur);
   if(typeof majApresDeplacement === "function") majApresDeplacement(); else if(typeof afficher === "function") afficher();
+}
+/* v3.01 (v303, K271) — le réservoir n'est plus écrit que par le serveur : la sauvegarde garde le
+   sien et le renvoie (« carburant ») si la page envoie autre chose. Adopté seulement si aucun
+   appel de carburant (saut, vol, plein) n'est parti ou revenu pendant ce temps. */
+function _adopterCarburantSauvegarde(v, seq){
+  if(typeof _carbSeq !== "undefined" && seq !== _carbSeq) return;
+  const n = Number(v); if(!isFinite(n) || n === etat.carburant) return;
+  console.warn("[serveur] réservoir gardé par le serveur :", n, "| la page avait :", etat.carburant);
+  etat.carburant = n;
+  if(typeof majVaisseau === "function") majVaisseau();
 }
 async function _premiereFaction(fid){
   if(!SERVEUR_DISPO || !fid) return;
@@ -481,6 +505,8 @@ async function _sauverMaintenantInterne(){
   await pousserCredits();
   const s = await sessionActuelle();
   if(!s){ console.warn("[serveur] sauvegarde ignorée : pas de session active"); return; }
+  const coqueSeq = (typeof _coqueSeq !== "undefined") ? _coqueSeq : 0;   // v3.00 (v302) : voir _adopterCoqueSauvegarde
+  const carbSeq  = (typeof _carbSeq  !== "undefined") ? _carbSeq  : 0;   // v3.01 (v303) : voir _adopterCarburantSauvegarde
   const maj = {
     nom: etat.nom || null,
     // ⚠ `faction` N'EST PLUS POUSSÉE : la colonne appartient au serveur
@@ -556,6 +582,9 @@ async function _sauverMaintenantInterne(){
     _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
     if(res.corrige && typeof res.corrige === "object") _appliquerCorrectionFiche(res.corrige);   // v2.94 (v296, K269)
     if(res.pos && typeof res.pos === "object") _adopterPositionServeur(res.pos, maj);        // v2.98 (v300, K271)
+    if(res.coque && typeof res.coque === "object" && typeof _adopterCoqueSauvegarde === "function")
+      _adopterCoqueSauvegarde(res.coque, coqueSeq);                                          // v3.00 (v302, K272)
+    if(res.carburant != null) _adopterCarburantSauvegarde(res.carburant, carbSeq);          // v3.01 (v303, K271)
     return;
   }
   if(res && res.err === "conflit"){

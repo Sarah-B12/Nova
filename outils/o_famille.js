@@ -121,7 +121,9 @@
   r.apresDepart.cachette = !!cv.querySelector(".fa-cachette"); r.apresDepart.vide = cv.textContent.includes("Pas d'enfant à la maison");
   // Mécano : coque récupérée (vaisseau équipé)
   etat.vaisseau = Object.keys(VAISSEAUX)[0]; etat.vaisseauPv = { [etat.vaisseau]: 50 };
-  rep.enfant_coque_prendre = () => ({ data:{ ok:true, points:10, prenom:"Eden" }, error:null });
+  // v3.00 (v302) : le serveur répare lui-même et renvoie la coque (les versions d'avant ne lisent que `points`)
+  rep.enfant_coque_prendre = () => ({ data:{ ok:true, points:10, prenom:"Eden", vaisseau:etat.vaisseau,
+                                             coque:Math.min(pvMax(), pvVaisseau() + 10), max:pvMax(), gagne:Math.min(pvMax(), pvVaisseau() + 10) - pvVaisseau() }, error:null });
   _coqueTs = 0; journ.length = 0; await _coqueEnfant();
   r.coque = { pv: etat.vaisseauPv[etat.vaisseau], msg: journ[0] };
   // v1.40 — divorce : avertissement si des enfants existent

@@ -105,7 +105,8 @@ const SURFACES = {
 function coutSautSurface(c){
   const cs = (typeof coutSaut==="function") ? coutSaut() : null; if(!cs) return null;
   const m = (c && c.coutMult) || 1;
-  return Object.assign({}, cs, { litres:Math.ceil(cs.litres * m), energie:Math.ceil(cs.energie * m) });
+  return Object.assign({}, cs, { litres:Math.ceil(cs.litres * m), energie:Math.ceil(cs.energie * m),
+                                 type: m === 1 ? cs.type : "ancolie" });   // v3.01 (v303) : saut_payer facture « ancolie » (× 0,5)
 }
 /* Compatibilité : BRAISE désigne la configuration de La Braise. */
 const BRAISE = SURFACES.braise;
@@ -171,7 +172,7 @@ async function descendreBraise(){
     journal(`Descente refusée : il faut de quoi remonter. Se poser et redécoller coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout.`,"alerte","voyage");
     return;
   }
-  if(!await _payerSaut(`Descente sur ${c.nom}`)) return;
+  if(!await _payerSaut(`Descente sur ${c.nom}`, null, cle)) return;   // v3.02 : carte_changer
   etat.secteur = cle;
   etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
   journal(c.arrivee,"gain","voyage");
@@ -207,7 +208,7 @@ async function decollerBraise(){
   }
   if(_viseeSol) _viseeSol.effacer();
   if(c.depuisSilene){ await _decollerVersSilene(c); return; }
-  if(!await _payerSaut(`Décollage — ${c.nom}`)) return;
+  if(!await _payerSaut(`Décollage — ${c.nom}`, null, "ecart")) return;   // v3.02 : carte_changer (au-dessus de la planète)
   etat.secteur = "ecart";
   etat.surface = null;
   journal(c.depart,"gain","voyage");
@@ -235,7 +236,7 @@ async function partirVersAncolie(){
     journal(`Départ refusé : il faut de quoi revenir. L'aller-retour coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout.`,"alerte","voyage");
     return;
   }
-  if(!await _payerSaut("Départ pour Ancolie", cs)) return;
+  if(!await _payerSaut("Départ pour Ancolie", cs, "ancolie")) return;   // v3.02 : carte_changer
   etat.secteur = "ancolie";
   etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
   journal(c.arrivee,"gain","voyage");
@@ -252,7 +253,7 @@ async function _decollerVersSilene(c){
     return;
   }
   const cs = coutSautSurface(c); if(!cs){ journal("Aucun vaisseau équipé.","alerte"); return; }
-  if(!await _payerSaut(`Retour sur Silène — ${c.nom}`, cs)) return;
+  if(!await _payerSaut(`Retour sur Silène — ${c.nom}`, cs, "silene")) return;   // v3.02 : carte_changer
   etat.secteur = "silene";
   etat.surface = null;
   journal(c.depart,"gain","voyage");
@@ -280,7 +281,7 @@ async function partirEcartDepuisAncolie(){
   const auto = (typeof autonomieCarburant === "function") ? autonomieCarburant() : (etat.carburant||0);
   if(auto < 2*cs.litres){
     journal(`Départ refusé : il faut de quoi revenir. L'aller-retour coûte ${2*cs.litres} L, tu n'as que ${Math.round(auto)} L en tout (réservoir + bidons).`,"alerte","voyage"); return; }
-  if(!await _payerSaut("Départ pour Triptolème", cs)) return;
+  if(!await _payerSaut("Départ pour Triptolème", cs, "ecart")) return;   // v3.02 : carte_changer
   const base = (typeof espaceLieu === "function") ? espaceLieu("base") : null;
   etat.secteur = "ecart"; etat.surface = null;
   etat.posEspace = base ? { x:base.x, y:base.y } : { x:ESPACE_MONDE.w/2, y:ESPACE_MONDE.h/2 };
@@ -301,7 +302,7 @@ async function partirAncolieDepuisEcart(){
   const auto = (typeof autonomieCarburant === "function") ? autonomieCarburant() : (etat.carburant||0);
   if(retour && auto < cs.litres + retour.litres){
     journal(`Descente refusée : il faut de quoi revenir. L'aller vers Ancolie puis le retour sur Silène coûtent ${cs.litres + retour.litres} L, tu n'as que ${Math.round(auto)} L en tout.`,"alerte","voyage"); return; }
-  if(!await _payerSaut("Descente vers Ancolie", cs)) return;
+  if(!await _payerSaut("Descente vers Ancolie", cs, "ancolie")) return;   // v3.02 : carte_changer
   etat.secteur = "ancolie";
   etat.surface = { x:c.vaisseau.x, y:c.vaisseau.y, abord:true };
   journal(c.arrivee,"gain","voyage");
