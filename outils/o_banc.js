@@ -50,6 +50,7 @@ const DELAIS = {
   sondecat: { profil: 50, sac: 50, jauges: 50 },    // v3.08 : messages du duel de sonde dans « Combats » (o_sondecat.js)
   navette20: { profil: 50, sac: 50, jauges: 50 },   // v3.09 : Navette de réserve, 20 jours et avertissements, K279 (o_navette20.js)
   ecophoto: { profil: 50, sac: 50, jauges: 50 },    // v3.10 : la photo de l'économie, bouton de la console, K281 (o_ecophoto.js)
+  v311: { profil: 50, sac: 50, jauges: 50 },        // v3.11 : vols vides en bleu, plus de chaînes sur le portrait (o_v311.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)

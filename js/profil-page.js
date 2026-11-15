@@ -49,7 +49,7 @@ function _ppStyle(){
        (.portrait.enprison, css/fiche.css), au-dessus des calques, sous la bête. */
     .pp-portrait.enprison{ position:relative; }
     .pp-portrait.enprison::after{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(90deg, rgba(8,12,20,.9) 0 5px, transparent 5px 24px); pointer-events:none; z-index:6; }
-    .pp-portrait.enprison::before{ content:"⛓️"; position:absolute; top:6px; right:8px; font-size:22px; z-index:7; }
+    /* v3.11 (autrice, 15/11) : plus de chaînes en haut à droite du portrait — les barreaux suffisent. */
     .pp-prison{ color:#ff8f92; }
     .pp-haut{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
     .pp-haut .pp-portrait{ width:200px; aspect-ratio:3/4; flex:0 0 auto; }
