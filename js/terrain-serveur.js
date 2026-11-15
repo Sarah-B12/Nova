@@ -46,6 +46,7 @@ async function chargerTerrain(){
 const TERRAIN_REFUS = {
   acces:        "Ce terrain n'est pas le tien.",
   loin:         "Ton terrain est sur Silène : rentre chez toi pour t'en occuper.",
+  chez_soi:     "Ton terrain est dans ta ville : rejoins-la sur la carte pour t'en occuper.",   // v3.05 (v307, K275) : le serveur le vérifie aussi
   occupee:      "Cette place est déjà occupée.",
   hs:           "Structure à l'arrêt : répare-la (ou démolis-la) avant de t'en servir.",
   epuisee:      "Mine épuisée — démolis-la puis reconstruis-en une.",

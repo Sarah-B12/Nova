@@ -110,6 +110,7 @@ async function reparerStructure(plot){
     if(err==="energie")      journal("Pas assez d'énergie pour réparer.","alerte");
     else if(err==="manque")  journal(`Il te manque : ${(data.item && typeof item==="function") ? item(data.item).nom : "une matière"}.`,"alerte");
     else if(err==="intacte") journal("Cette structure est déjà intacte.","alerte");
+    else if(err==="chez_soi") journal("Ton terrain est dans ta ville : rejoins-la sur la carte pour t'en occuper.","alerte");   // v3.05 (v307, K275)
     else journal(`Réparation refusée par le serveur (${err||"réponse vide"}).`,"alerte");
     return;
   }

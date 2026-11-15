@@ -45,6 +45,8 @@ const DELAIS = {
   cartes: { profil: 50, sac: 50, jauges: 50 },      // v3.02 : changements de carte et secours par le serveur, v304 (o_cartes.js)
   sondesrv: { profil: 50, sac: 50, jauges: 50 },    // v3.03 : chances des sondes copiées au serveur, v305 (o_sondesrv.js)
   rencontre: { profil: 50, sac: 50, jauges: 50 },   // v3.03 : rencontres de sondes par le serveur, v305 (o_rencontre.js)
+  chezsoi: { profil: 50, sac: 50, jauges: 50 },     // v3.05 : terrain « chez soi » vérifié au serveur, v307 (o_chezsoi.js)
+  deuxarmes: { profil: 50, sac: 50, jauges: 50 },   // v3.06 : deux fois la même arme comptée deux fois, v308 (o_deuxarmes.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)
