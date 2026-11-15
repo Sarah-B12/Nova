@@ -37,6 +37,7 @@ const DEV_ONGLETS = [
     { id:"etat", titre:"❤️ État", note:"Tests sur <b>ce personnage</b> seulement.", items:[
       { sel:"#dev-energie", bouton:true }, { sel:"#dev-pause", bouton:true }, { sel:"#dev-prison", bouton:true },
       { sel:"#dev-recaler-comp", bouton:true }, { sel:"#dev-journal-vider", bouton:true } ] },
+    { id:"qdisp", titre:"🧭 Dispense de quêtes", note:"Sur <b>ton</b> compte dev : ni ordre ni « Reviens demain » (K265).", items:[ { sel:"#dev-qdisp", bloc:true, titre:false } ] },
     { id:"acces", titre:"🔑 Accès", items:[
       { sel:"#dev-permis", bouton:true }, { sel:"#dev-espace1", bouton:true }, { sel:"#dev-facbloc", bouton:true } ] },
     { id:"vaisseau", titre:"🚀 Vaisseau", items:[
@@ -385,6 +386,26 @@ async function devTranquillite(){
   afficher();
 }
 
+/* v2.91 (v293, K265) — dispense de quêtes : sur SON compte dev, allumée / éteinte ici (quete_dispense,
+   table fermée ; admin_quetes_dispense vérifie est_dev()). Éteinte par défaut. */
+async function _majBoutonDispense(){
+  const b = document.querySelector("#dev-qdisp"); if(!b) return;
+  if(!(typeof estDev === "function" && estDev())){ b.textContent = "Dispense de quêtes (réservée aux comptes dev)"; b.disabled = true; return; }
+  if(typeof queteDispenseCharger === "function") await queteDispenseCharger();
+  b.disabled = false;
+  b.textContent = etat.queteDispense ? "Dispense de quêtes : ON — désactiver" : "Dispense de quêtes : OFF — activer";
+}
+async function devQueteDispense(){
+  const b = document.querySelector("#dev-qdisp"); if(b) b.disabled = true;
+  const { data, error } = await sb.rpc("admin_quetes_dispense", { p_actif: !etat.queteDispense });
+  if(error){ alert("Échec : " + error.message); if(b) b.disabled = false; return; }
+  if(!data || !data.ok){ alert("Refusé : réservé aux comptes dev."); if(b) b.disabled = false; return; }
+  etat.queteDispense = !!data.actif;
+  journal("[STAFF] dispense de quêtes " + (etat.queteDispense ? "ACTIVÉE (ni ordre ni lendemain)" : "DÉSACTIVÉE") + ".", "alerte");
+  await _majBoutonDispense();
+  afficher();
+}
+
 function majDev(){
   // ⚠ `dev` était lu ici alors qu'il n'est déclaré que dans ouvrirDev() :
   // ReferenceError ligne ~190, qui interrompait majDev() et empêchait la
@@ -409,9 +430,14 @@ function majDev(){
          <div id="dev-cand"><p class="dev-note">Chargement…</p></div></div>
        <div class="dev-bloc"><h4>Mode tranquillité</h4>
          <p class="dev-note">Sur <b>ton</b> personnage : plus de déclin quotidien, et santé / moral / O₂ remis à 100 chaque nuit. Les dégâts de combat sont réparés le lendemain — tu n'es pas invulnérable.</p>
-         <div class="dev-actions"><button class="mini" id="dev-tranq">Mode tranquillité …</button></div></div>`;
+         <div class="dev-actions"><button class="mini" id="dev-tranq">Mode tranquillité …</button></div></div>
+       <div class="dev-bloc"><h4>Dispense de quêtes</h4>
+         <p class="dev-note">Sur <b>ton</b> compte dev seulement : le serveur paie les quêtes sans exiger l'ordre ni « Reviens demain » (une fois chacune ; <i>admin_reset_quete</i> efface aussi le paiement). À éteindre après les tests.</p>
+         <div class="dev-actions"><button class="mini" id="dev-qdisp">Dispense de quêtes …</button></div></div>`;
     r.querySelector("#dev-chercher").addEventListener("click", devChercherJoueur);
     r.querySelector("#dev-tranq").addEventListener("click", devTranquillite);
+    r.querySelector("#dev-qdisp").addEventListener("click", devQueteDispense);   // v2.91 (K265)
+    _majBoutonDispense();
     r.querySelector("#dev-cand-go").addEventListener("click", devCandidatures);
     devCandidatures();   // chargé d'office : c'est le cycle en cours qu'on surveille
     _majBoutonTranquillite();

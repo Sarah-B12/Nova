@@ -229,7 +229,14 @@ function _queteLendemain(q){
   if(i < QUETES.findIndex(x => x.id === QUETE_LENDEMAIN_DES)) return null;
   return { apres:QUETES[i-1].id, texte:null };
 }
+/* v2.91 (K265) — dispense de quêtes d'un compte dev (console → Mon perso) : ni ordre ni lendemain. */
+async function queteDispenseCharger(){
+  if(typeof estDev !== "function" || !estDev() || typeof sb === "undefined" || !sb){ etat.queteDispense = false; return; }
+  try{ const { data } = await sb.rpc("quetes_dispense_etat"); etat.queteDispense = !!(data && data.ok && data.actif); }
+  catch(e){ etat.queteDispense = false; }
+}
 function queteAttendLendemain(q){
+  if(etat.queteDispense && typeof estDev === "function" && estDev()) return false;   // v2.91 (K265)
   const L = _queteLendemain(q); if(!L || typeof jourDeJeu !== "function") return false;
   const f = queteEtat().finJour && queteEtat().finJour[L.apres];
   return !!f && f >= jourDeJeu();
@@ -292,41 +299,62 @@ async function avancerQuete(){
   }
 }
 let _avanceEnChaine = false;
+/* v2.91 (v293, K264, anti-triche) — LE SERVEUR PAIE LA RÉCOMPENSE : `quete_terminer(p_quete)` verse objets
+   (tout ou rien), crédits (× Négociant, × boisson) et XP, UNE fois par quête, dans l'ordre, et pas plus d'une
+   par jour de jeu dès Q6 (la règle du lendemain, gardée aussi au serveur) ; un compte dev peut s'en dispenser
+   (K265, console → Mon perso). Barèmes copiés au serveur : outils/o_quetessrv.js. Les PA et les drapeaux
+   restent donnés ici jusqu'au morceau 8 (K261). Avant : objets par agir(), crédits ajoutés ici puis poussés
+   par crediter(), XP par gagnerXp — un client modifié touchait toutes les quêtes d'un coup. */
+const QUETE_REFUS = {
+  ordre:     "La quête d'avant n'est pas enregistrée au serveur. Recharge la page, puis valide à nouveau la dernière étape.",
+  lendemain: "Cette quête ne peut s'achever qu'à partir de demain (jour de jeu). Reviens demain valider la dernière étape.",
+  prison:    "Tu es en prison — impossible de recevoir ta récompense avant ta libération. Valide à nouveau la dernière étape ensuite.",
+  paiement:  "L'étape payante de cette quête n'est pas enregistrée au serveur. Demande au staff de remettre la quête à zéro.",   // v2.95 (v297)
+  quete:     "Quête inconnue du serveur."
+};
+async function queteTerminerServeur(id, q){
+  let d = null;
+  try{
+    const rep = await rpcAvecSolde("quete_terminer", { p_quete:id }, "solde");
+    if(rep && rep.error) throw new Error(rep.error.message);
+    d = rep && rep.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "quetes.js#terminer"); d = null; }
+  if(d && d.ok) return d;
+  const err = d && d.err;
+  if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); return null; }
+  if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); return null; }
+  if(err === "sac_plein"){
+    const r = (q && q.recompense) || {};
+    const noms = Object.keys(r.objets || {}).map(k => { const x = (typeof item === "function") ? item(k) : null; return x ? x.nom : k; }).join(", ");
+    journal(`Fais de la place dans ton sac pour recevoir : ${noms || "ta récompense"}. Puis valide à nouveau la dernière étape.`, "alerte");
+    return null;
+  }
+  journal(QUETE_REFUS[err] || "Le serveur n'a pas répondu : valide à nouveau la dernière étape dans un instant.", "alerte");
+  return null;
+}
 async function terminerQuete(){
   const a=queteActive(); if(!a) return; const q=queteData(a.id); const r=q.recompense||{};
-  /* v0.97 — objets liés : remis en TOUT-OU-RIEN, et AVANT tout autre gain (sinon
-     un échec après les crédits les ferait verser deux fois à la relance). */
-  /* v2.00 — retour de l'autrice (Q5) : un objet de récompense non lié était donné SANS
-     garantie — sac plein, la Navette de réserve de Q5 se perdait en silence, et la quête
-     se terminait quand même (permis et espace sans vaisseau). Désormais TOUT objet de
-     récompense passe en tout-ou-rien, avant les autres gains, comme les objets liés. */
-  const lies = r.objets ? Object.keys(r.objets) : [];
-  if(lies.length){
-    const ok = await agirServeur({ ajouter:r.objets, motif:"quete_recompense", toutOuRien:true });
-    if(!ok){
-      const it = (typeof item==="function") ? item(lies[0]) : null;
-      const noms = lies.map(id => { const x = (typeof item==="function") ? item(id) : null; return x ? x.nom : id; }).join(", ");
-      journal(`Fais de la place dans ton sac pour recevoir : ${noms}. Puis valide à nouveau la dernière étape.`,"alerte");
-      return false;
-    }
-  }
-  const gainQ = r.credits ? ((typeof aptCredits==="function") ? aptCredits(r.credits) : r.credits) : 0;   // Négociant (no3)
-  if(gainQ) etat.credits += gainQ;
-  // (v2.00 : plus de remise « au mieux » ici — tout objet passe par le tout-ou-rien plus haut.)
+  const s = await queteTerminerServeur(a.id, q);
+  if(!s) return false;
+  const neuf = !s.deja;
+  if(s.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(s.etat);
+  const gainQ = neuf ? (s.credits|0) : 0;
+  const xpQ = neuf ? (s.xp|0) : 0;
   /* v0.91 — la Navette de réserve démarre son compte à rebours À LA REMISE,
      pas à l'équipement : dix jours, qu'on s'en serve ou non. */
-  if(r.objets && r.objets[typeof NAVETTE_CADEAU!=="undefined" ? NAVETTE_CADEAU : "navette_reserve"]
+  if(neuf && r.objets && r.objets[typeof NAVETTE_CADEAU!=="undefined" ? NAVETTE_CADEAU : "navette_reserve"]
      && typeof navetteCadeauPosee==="function") navetteCadeauPosee();
   const paDonne = (r.pa && !_paDejaRecu(a.id)) ? r.pa : 0;   // v1.03 : jamais deux fois
   if(paDonne && typeof gagnerPA==="function"){ gagnerPA(paDonne); _marquerPaRecu(a.id); }
-  if(r.xp && typeof gagnerXp==="function") gagnerXp(r.xp);
+  if(typeof s.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(s.xp_total);   // l'XP vient du serveur
   if(r.flags) for(const k in r.flags){ etat[k]=r.flags[k]; }
   queteEtat().done.push(a.id); queteEtat().active=null;
   if(typeof jourDeJeu==="function"){ const qe=queteEtat(); if(!qe.finJour || typeof qe.finJour!=="object") qe.finJour={}; qe.finJour[a.id]=jourDeJeu(); }   // v1.93l : pour `lendemain`
   if(typeof sauverMaintenant==="function") sauverMaintenant();   // v0.65 : une quête terminée part TOUT DE SUITE au serveur
-  const parts=[]; if(gainQ) parts.push(`+${gainQ} ₡`); if(r.xp) parts.push(`+${r.xp} XP`); if(paDonne) parts.push(`+${paDonne} PA`);
-  if(r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
+  const parts=[]; if(gainQ) parts.push(`+${gainQ} ₡`); if(xpQ) parts.push(`+${xpQ} XP`); if(paDonne) parts.push(`+${paDonne} PA`);
+  if(neuf && r.objets) for(const id in r.objets){ const it=(typeof item==="function")?item(id):null; parts.push(`+${r.objets[id]} ${it?it.nom:id}`); }
   if(r.flags && r.flags.permisVaisseau) parts.push("🚀 Permis de vaisseau obtenu !");
+  if(!neuf) parts.push("(récompense déjà touchée)");
   journal(`Quête « ${q.nom} » accomplie ! ${parts.join(", ")}`.trim(),"gain");
   sauvegarder();
   return true;
@@ -792,7 +820,23 @@ function _htmlPaiement(d){ const cout=d.cout||0, ok=etat.credits>=cout;
     ${ok?"":`<p class="vide">Crédits insuffisants (${etat.credits}/${cout}).</p>`}</div>`;
 }
 function _wirePaiement(z,d){ const b=z.querySelector("#q-pay-btn"); if(!b) return;
-  b.addEventListener("click",()=>{ if(b.disabled) return; b.disabled=true; const cout=d.cout||0; if(etat.credits<cout){ b.disabled=false; journal("Crédits insuffisants.","alerte"); return; } etat.credits-=cout; journal(`Payé ${cout} ₡.`,"gain"); reussirDefi(); }); }
+  /* v2.95 (v297, K268) — le SERVEUR prend les crédits (`quete_paiement`, une fois par quête jouée) ; quete_terminer
+     refuse de payer la quête tant que cette étape n'est pas payée. Avant : crédits retirés ici, poussés par crediter(). */
+  b.addEventListener("click", async ()=>{ if(b.disabled) return; b.disabled=true; const cout=d.cout||0;
+    if(etat.credits<cout){ b.disabled=false; journal("Crédits insuffisants.","alerte"); return; }
+    const a = queteActive(); if(!a){ b.disabled=false; return; }
+    let r = null;
+    try{ const rep = await rpcAvecSolde("quete_paiement", { p_cle: a.id + ":" + a.etape }, "solde"); if(rep && rep.error) throw new Error(rep.error.message); r = rep && rep.data; }
+    catch(e){ if(typeof _catchLog === "function") _catchLog(e, "quetes.js#paiement"); }
+    if(!r || !r.ok){
+      b.disabled=false;
+      const err = r && r.err;
+      if(err === "credits") journal(`Crédits insuffisants (le serveur compte ${r.solde} ₡ pour ${r.cout} ₡).`,"alerte");
+      else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+      else journal(err ? `Paiement refusé par le serveur (${err}).` : "Le serveur n'a pas répondu — réessaie.","alerte");
+      return;
+    }
+    journal(r.deja ? "Déjà payé." : `Payé ${r.cout|0} ₡.`,"gain"); reussirDefi(); }); }
 
 /* choix (embranchement de Cercle) : options avec coût + deltas de réputation de Cercle. Définitif. */
 function _coutQ_ok(cout){ if(!cout) return true;
@@ -814,6 +858,8 @@ async function _payerCoutQ(cout){ if(!cout) return true;
   if(energie > 0 || Object.keys(objets).length || Object.keys(jauges).length){
     if(!await agirServeur({ cout:energie, retirer:objets, jauges, motif:"quete_choix" })) return false;
   }
+  /* ⚠ v2.95 (v297) — aucune option de choix ne coûte de crédits aujourd'hui (outils/o_persosrv.js : optionsCredits = 0).
+     Si on en ajoute une, la faire payer par le serveur (quete_paiement, avec sa clé dans _quete_couts), pas ici. */
   if(cout.credits) etat.credits -= cout.credits;
   return true;
 }

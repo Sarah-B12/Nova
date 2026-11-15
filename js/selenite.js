@@ -165,7 +165,7 @@ async function seleniteDegager(z){
         ? "L'aiguille vient d'un bloc, et une seconde avec elle, collée à sa base. +2 Cristal de Sélénite. Une nouvelle pointe perce déjà la glace."
         : "L'aiguille vient d'un bloc, entière, froide dans ta main. +1 Cristal de Sélénite. Une nouvelle pointe perce déjà la glace.", "gain", "minage");
       else journal("Ton sac est plein : l'aiguille t'échappe des doigts et se brise sur la glace.", "alerte", "minage");
-      if(r.reussi && typeof gagnerXp === "function") gagnerXp(5);
+      if(typeof r.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(r.xp_total);   // v2.93 (v295) : +5 XP par le serveur si réussi
       if(typeof sauvegarder === "function") sauvegarder();
       majSelenite(z); if(typeof afficher === "function") afficher();
       return true;

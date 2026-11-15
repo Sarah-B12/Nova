@@ -36,7 +36,6 @@ const PROTECTION_VOL_H = 48, PROTECTION_HACK_H = 72, PROTECTION_RATE_H = 24;
 const ITEM_HACK_VOL   = "fab_ordinateur_de_hacking";
 let _volTimer = null, _hackTimer = null, _hackWin = null, _hackLose = null, _hackCleanup = null;
 
-function _vjm(){ return (typeof JOUR_MS!=="undefined")?JOUR_MS:86400000; }
 function _vfmt(ms){ return _dureePrison(ms); }   // v1.86 : j / h / min / s (était « 1434 min 12 s »)
 function _apris(id){ return !!(etat.aptitudes && Array.isArray(etat.aptitudes.pris) && etat.aptitudes.pris.includes(id)); }
 function aDiscretion(){ return _apris("om1"); }
@@ -116,12 +115,8 @@ function prisonRestant(){ return Math.max(0, (etat.prisonJusqua||0)-Date.now());
    ⚠ RÈGLE : ne jamais chaîner `.catch` / `.finally` sur un appel Supabase.
    Soit `await`, soit `Promise.resolve(...)` qui adopte le thenable — c'est
    cette adoption qui DÉCLENCHE la requête. */
-function _rpcFireAndForget(nom, args, repere){
-  if(typeof sb==="undefined" || !sb) return;
-  Promise.resolve(sb.rpc(nom, args||{}))
-    .then(r=>{ if(r && r.error) console.warn(`[${repere}] ${nom} :`, r.error.message); })
-    .catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, repere); });
-}
+/* (v2.96 : _rpcFireAndForget, qui portait ce piège pour `emprisonner`, a été retiré avec emprisonnerJoueur — la règle
+   ci-dessus reste valable partout.) */
 /* v1.11 — RISQUE DE PRISON APRÈS UN ÉCHEC. Hack 35 % (10 points d'avance sur
    le vol, payés par l'équipement et l'aptitude).
    ⚠ v1.22 — CES CHIFFRES SONT TIRÉS PAR LE SERVEUR (`vol_echec`,
@@ -138,7 +133,7 @@ const CHANCE_SIGNATURE_VOL = 0.70;
 const CHANCE_ANONYMAT_HACK = 0.70;
 /* Sert encore à l'espionnage (espionnage.js). Le vol, lui, n'emprisonne plus
    depuis le client : c'est le serveur qui le fait, dans la même transaction. */
-function emprisonnerJoueur(faction, ms){ etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=faction; _rpcFireAndForget("emprisonner",{p_faction:faction,p_secondes:Math.round(ms/1000)},"voler.js#emprisonner"); if(typeof sauvegarder==="function") sauvegarder(); }
+/* v2.96 (v298) — emprisonnerJoueur() et _vjm() retirés : l'espion raté est emprisonné PAR LE SERVEUR (espionner). */
 
 /* ===========================================================
    v1.22 — LE VRAI VOL ENTRE JOUEURS (brique 0 de la traque)

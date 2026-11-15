@@ -50,6 +50,26 @@ function _appliquerEtatStocks(e, opt){
      serveur porte réellement (lieu `equipe`). Seulement si la réponse contient
      `equipe` : une réponse sans ce champ ne dit rien de l'équipement. */
   if(Object.prototype.hasOwnProperty.call(e, "equipe") && typeof reconcilierEquipement === "function") reconcilierEquipement();
+  /* v2.90 (v292, K263) — le VAISSEAU ÉQUIPÉ est le lot du lieu `vaisseau` (le hangar) : etat.vaisseau et
+     etat.vaisseauDate en sont le reflet. Seulement si la réponse contient `vaisseau` (serveur d'avant v292 :
+     on ne touche à rien). L'âge : la date du lot (elle suit le vaisseau), ou la garde d'âge si elle est plus
+     ancienne ; la Navette de réserve garde son échéance absolue. */
+  if(Object.prototype.hasOwnProperty.call(e, "vaisseau")){
+    const v = e.vaisseau || null;
+    etat.vaisseau = v;
+    if(!v){ etat.vaisseauDate = null; }
+    else {
+      const lot = etat.lots.filter(l => l && l.lieu === "vaisseau" && l.item === v && typeof l.acquis === "number")
+                           .sort((a, b) => a.acquis - b.acquis)[0];
+      let t = lot ? lot.acquis : (etat.vaisseauDate || Date.now());
+      const garde = etat.vaisseauAge && etat.vaisseauAge[v];
+      if(typeof garde === "number") t = Math.min(t, garde);
+      if(typeof NAVETTE_CADEAU !== "undefined" && v === NAVETTE_CADEAU && etat.navetteFin && typeof dureeVie === "function")
+        t = etat.navetteFin - dureeVie(v) * ((typeof JOUR_MS !== "undefined") ? JOUR_MS : 86400000);
+      etat.vaisseauDate = t;
+      if(typeof _noterAgeVaisseau === "function") _noterAgeVaisseau(v, t);
+    }
+  }
 }
 
 // Action atomique. Renvoie la réponse du serveur, ou null si refusée.

@@ -273,7 +273,14 @@ const ORPHELINS_ASSUMES = {
   PATROUILLE_DROP_DOUBLE: "référence du butin serveur (patrouille_neutralisee), lue par o_economie",
   aptButinCombat:         "référence de la formule serveur (patrouille_neutralisee), lue par o_aptitudes",
   GRAVIER_CHANCE:         "référence du tirage serveur (gravier_miner, v291)",
-  SELENITE_DOUBLE:        "référence du tirage serveur (selenite_conclure, v291), lue par o_lot2"
+  SELENITE_DOUBLE:        "référence du tirage serveur (selenite_conclure, v291), lue par o_lot2",
+  // v2.91 (v293, K264) : la récompense des quêtes est payée par le serveur (quete_terminer).
+  aptCredits:             "référence de la formule serveur (quete_terminer, v293 : Négociant × boisson)",
+  // v2.92 (v294, K266) : les soins sont appliqués par le serveur (soin_consommer).
+  aptSoin:                "référence du coefficient serveur (soin_consommer, v294 : Autarcie), lue par o_soinssrv",
+  // v2.96 (v298, K270) : la prison de l'espion raté est tirée par le serveur (espionner).
+  espionRisquePrison:     "référence de la formule serveur (espionner, v298), lue par o_v251",
+  espionDureePrison:      "référence de la formule serveur (espionner, v298)"
 };
 const toutPropre = Object.values(propre).join("\n") + "\n" + html;
 let orph = 0;

@@ -849,16 +849,19 @@ async function _effetsAppliquerFond(data){
          fois de suite. Le débit, lui, a bien lieu ci-dessus. */
       if(typeof sauvegarder==="function") sauvegarder();
     }
-    if(data && (data.sante||data.moral)){
-      if(!etat.jauges) etat.jauges={ ...nouvelEtat().jauges };   // v0.95 : les défauts ont UNE source (etat.js)
-      // Les effets de combat modifient des jauges SERVEUR : on passe par agir(),
-      // qui borne, enregistre et détecte la mort éventuelle.
-      await agirServeur({ jauges:{ sante:(data.sante||0), moral:(data.moral||0) }, motif:"effets_combat" });
+    /* v2.92 (v294, K266, anti-triche) — les séquelles sont appliquées PAR LE SERVEUR (`consommer_effets`) : il
+       renvoie `sante_appliquee` / `moral_appliquee`, les jauges et `mort` (`sante` et `moral` valent 0, pour que
+       les anciens onglets ne les réappliquent pas). Avant : agir() avec les valeurs annoncées ici. */
+    const dS = data ? (data.sante_appliquee|0) : 0, dM = data ? (data.moral_appliquee|0) : 0;
+    if(data && data.jauges){ if(!etat.jauges) etat.jauges = { ...nouvelEtat().jauges };   // v0.95 : les défauts ont UNE source (etat.js)
+      ["o2","sante","moral"].forEach(g => { if(typeof data.jauges[g] === "number") etat.jauges[g] = data.jauges[g]; }); }
+    if(dS || dM){
       if(typeof sauvegarder==="function") sauvegarder();
       if(typeof afficher==="function") afficher();
-      const parts=[]; if(data.sante) parts.push(`${data.sante>0?"+":""}${data.sante} santé`); if(data.moral) parts.push(`${data.moral>0?"+":""}${data.moral} moral`);
-      if(parts.length) journal("Séquelles de bataille : "+parts.join(", ")+".", (data.sante<0||data.moral<0)?"alerte":"gain");
+      const parts=[]; if(dS) parts.push(`${dS>0?"+":""}${dS} santé`); if(dM) parts.push(`${dM>0?"+":""}${dM} moral`);
+      journal("Séquelles de bataille : "+parts.join(", ")+".", (dS<0||dM<0)?"alerte":"gain");
     }
+    if(data && data.mort && typeof ouvrirCouloirMort === "function") ouvrirCouloirMort();
     /* v2.89 (v291, anti-triche) — les cristaux du butin sont mis au sac PAR LE SERVEUR (`consommer_effets`) :
        il renvoie `cristaux_recus` / `cristaux_perdus` et l'état du sac (`cristaux` vaut désormais 0, pour que
        les anciens onglets ne les ajoutent pas une seconde fois). Avant : agir() avec le nombre annoncé ici. */

@@ -30,10 +30,13 @@
   await posteRecuperer(1); r.colisRefuse = !appel && msgs.some(m => /prison/i.test(m)); sb.rpc = vr; etat.prisonJusqua = 0; etat.prisonFinConnue = 0;
   // 5. Q5 : sac plein → la quête ne se termine pas, la navette n'est pas perdue.
   const vraiQA = queteActive; const a = { id:"q5", etape: queteData("q5").etapes.length - 1 }; queteActive = () => a;
-  const vA = agirServeur; agirServeur = async (o) => false; const done0 = (queteEtat().done || []).length; msgs.length = 0;
+  // v2.91 : le serveur paie (quete_terminer) — on simule son refus « sac_plein » ; agirServeur reste simulé pour l'ancienne version.
+  const vA = agirServeur; agirServeur = async (o) => false;
+  const vR = sb.rpc; sb.rpc = (n, x) => n === "quete_terminer" ? Promise.resolve({ data:{ ok:false, err:"sac_plein", requis:1, disponible:0 }, error:null }) : vR.call(sb, n, x);
+  const done0 = (queteEtat().done || []).length; msgs.length = 0;
   const res = await terminerQuete();
   r.q5SacPlein = { refuse: res === false, pasTerminee: (queteEtat().done || []).length === done0, texte: msgs.some(m => /Navette de réserve|Fais de la place/.test(m)) };
-  agirServeur = vA; queteActive = vraiQA;
+  agirServeur = vA; sb.rpc = vR; queteActive = vraiQA;
   // 6. Profil visité en prison : barreaux et mention.
   _chargerProfilComplet = async (nom) => ({ id:"00000000-0000-0000-0000-0000000000b1", nom, faction:"ignis", niveau:10, avatar:null, derniere_activite:new Date().toISOString() });
   const vr2 = sb.rpc; sb.rpc = (n, a) => n === "profil_en_prison" ? Promise.resolve({ data:true, error:null }) : vr2.call(sb, n, a);

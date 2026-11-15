@@ -120,6 +120,11 @@ async function majBureauOmbre(el, fac){
     el.querySelector("#esp-hack").addEventListener("click", async()=>{
       const cible=el.querySelector("#esp-cible").value, info=el.querySelector("#esp-info").value;
       if(_restant<=0){ journal("Plus de tentatives aujourd'hui contre cette faction.","alerte"); return; }
+      /* v2.96 (v298, K270) — la partie s'ouvre au SERVEUR avant le mini-jeu : `espionner` ne compte « réussi » que
+         pour une partie ouverte depuis 3 s à 10 min, sur cette cible ; et c'est lui qui tire la prison d'un raté. */
+      let eng = null; try{ ({ data:eng } = await sb.rpc("jeu_engager",{ p_jeu:"espion", p_detail: cible + ":" + info })); }
+      catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#engager"); }
+      if(!eng || !eng.ok){ journal(eng && eng.err==="pas_ombre" ? "Seule l'Ombre de ta faction peut espionner." : "Espionnage impossible pour l'instant.","alerte"); return; }
       const jeu=Math.random()<0.5?_espF1:_espF2;
       const reussi=await jeu(_det + (_contre?3:0));
       const { data:res, error } = await sb.rpc("espionner",{ p_cible:cible, p_info:info, p_reussi:reussi });
@@ -130,7 +135,7 @@ async function majBureauOmbre(el, fac){
            chasserait tout le reste. On renvoie vers le rapport. */
         if(_espEstLong(info)) journal(`Espionnage réussi — Transmission de ${(typeof _expCibleNom==="function")?_expCibleNom(cible):cible} interceptée. À lire dans les rapports.`,"gain");
         else journal(`Espionnage réussi — ${_espInfoNom(info)} de ${(typeof _expCibleNom==="function")?_expCibleNom(cible):cible} : ${res.resultat}`,"gain"); }
-      else{ journal("Espionnage raté.","alerte"); _prisonEspion(cible); }
+      else{ journal("Espionnage raté.","alerte"); _prisonEspion(cible, res.prison); }
       if(typeof majCentre==="function") majCentre();
     });
   }
@@ -144,6 +149,10 @@ async function hackerProtocoleDepuisCarte(){
      du gouvernement) en donnent une seconde. Le serveur renvoie `limite`. */
   if(d.restant<=0){ journal(`Ta faction a déjà fait ses ${d.limite||1} tentative(s) de hack du Protocole pour aujourd'hui.`,"alerte"); return; }
   if(d.veilleurs && d.restant>1) journal("Les Veilleurs t'ouvrent une tentative de plus aujourd'hui.","gain","vol");
+  /* v2.96 (v298, K270) — la partie s'ouvre au serveur avant le mini-jeu (3 s à 10 min). */
+  let eng = null; try{ ({ data:eng } = await sb.rpc("jeu_engager",{ p_jeu:"hack", p_detail:"" })); }
+  catch(e){ if(typeof _catchLog==="function") _catchLog(e, "espionnage.js#engager-hack"); }
+  if(!eng || !eng.ok){ journal("Hack impossible pour l'instant.","alerte"); return; }
   const reussi=await _lancerHackProto();
   const { data:res, error } = await sb.rpc("hacker_protocole",{ p_reussi:reussi });
   if(error || !res || !res.ok){ if(res&&res.err==="limite") journal(`Déjà ${(res.limite||1)} tentative(s) faite(s) aujourd'hui.`,"alerte"); else journal("Hack impossible.","alerte"); return; }
@@ -313,14 +322,13 @@ function espionDureePrison(agi){
   if(agi <= 20) return Math.max(0.40, 1 - agi*0.03);
   return Math.max(0.20, 0.40 - (agi - 20) * (0.20 / 180));
 }
-function _prisonEspion(cible){
-  const agi=(typeof agiliteEffective==="function")?agiliteEffective():5;
-  const pPrison=espionRisquePrison(agi);
-  if(Math.random() < pPrison){
-    const facteur=espionDureePrison(agi);
-    const ms=Math.round(((typeof _vjm==="function")?_vjm():86400000)*facteur);
-    if(typeof emprisonnerJoueur==="function") emprisonnerJoueur(cible, ms);
-    else { etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=cible; if(typeof sauvegarder==="function") sauvegarder(); }
+/* ⚠ v2.96 (v298, K270) — le risque d'être pris et la durée sont tirés PAR LE SERVEUR (`espionner`, avec ces deux
+   formules recopiées : espionRisquePrison / espionDureePrison restent la RÉFÉRENCE, et l'affichage du risque) ; il
+   emprisonne lui-même et renvoie `prison` {faction, secondes}. Avant : tiré ici, et le jeu s'emprisonnait (ou pas). */
+function _prisonEspion(cible, prison){
+  if(prison && prison.secondes > 0){
+    const ms=prison.secondes*1000;
+    etat.prisonJusqua=Date.now()+ms; etat.prisonFaction=prison.faction||cible; if(typeof sauvegarder==="function") sauvegarder();
     const cn=(typeof _expCibleNom==="function")?_expCibleNom(cible):cible;
     journal("Repéré ! Tu es jeté dans la prison de "+cn+".","alerte");
     if(typeof afficher==="function") afficher();

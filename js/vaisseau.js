@@ -113,28 +113,51 @@ function capaciteSoute(){ const v=vaisseauActif(); return v ? v.soute : 0; }
 function itemsSoute(){ return Object.values(etat.soute||{}).reduce((a,b)=>a+b,0); }
 
 /* ---------- Équiper / déséquiper ---------- */
+/* v2.90 (v292, K263, anti-triche) — LE VAISSEAU ÉQUIPÉ EST UN LOT DU SERVEUR, au lieu « vaisseau » (le hangar).
+   `vaisseau_equiper(p_item)` le passe du sac au hangar (l'ancien repart au sac, soute vide) et
+   `vaisseau_ranger()` le rend au sac ; la DATE DU LOT SUIT, comme pour l'équipement porté. etat.vaisseau et
+   etat.vaisseauDate ne sont plus qu'un reflet de sac_lire() (_appliquerEtatStocks, inventaire.js).
+   Avant : agir() retirait le vaisseau à l'équipement et en RECRÉAIT un au déséquipement — un client modifié
+   créait un vaisseau à partir de rien, et le serveur croyait `donnees.vaisseau` (Fléau, soute). */
+const VAISSEAU_REFUS = {
+  soute:     "Vide la soute de ton vaisseau actuel avant d'en changer.",
+  sac_plein: "Sac plein.",
+  permis:    "Il te faut un permis de vaisseau pour piloter (quête à venir).",
+  manque:    "Ce vaisseau n'est plus dans ton sac.",
+  type:      "Ce n'est pas un vaisseau.",
+  aucun:     "Aucun vaisseau équipé.",
+  prison:    "Tu es en prison — impossible d'agir jusqu'à ta libération."
+};
+let _vaisseauEnCours = false;
+async function _vaisseauRpc(nom, args){
+  if(_vaisseauEnCours) return null;
+  _vaisseauEnCours = true;
+  try{
+    const { data, error } = await sb.rpc(nom, args || {});
+    if(error){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+    if(!data || !data.ok){
+      const err = data && data.err;
+      if(err === "mort"){ if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); }
+      else if(err === "niveau") journal(`Niveau ${data.requis} requis.`,"alerte");
+      else if(err === "non_connecte"){ if(typeof alerteSessionPerdue==="function") alerteSessionPerdue(); }
+      else journal(VAISSEAU_REFUS[err] || `Refusé par le serveur (${err || "réponse vide"}).`,"alerte");
+      return null;
+    }
+    if(data.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(data.etat);   // pose etat.vaisseau
+    return data;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "vaisseau.js#" + nom); journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  finally{ _vaisseauEnCours = false; }
+}
 async function equiperVaisseau(id){
   if(!estVaisseau(id) || (etat.sac[id]||0)<=0) return;
   if(typeof verifierNiveau==="function" && !verifierNiveau(id)) return;   // v1.33 : niveau requis
   if(!etat.permisVaisseau){ journal("Il te faut un permis de vaisseau pour piloter (quête à venir).","alerte"); return; }
   if(id===etat.vaisseau) return;
-  if(etat.vaisseau){                                   // remplacer : il faut d'abord ranger l'actuel (soute vide)
-    if(itemsSoute()>0){ journal("Vide la soute de ton vaisseau actuel avant d'en équiper un autre.","alerte"); return; }
-    if(placesLibres()<=0){ journal("Sac plein — impossible de ranger le vaisseau actuel.","alerte"); return; }
-    const ancien=etat.vaisseau;
-    const rA = await agirServeur({ ajouter:{ [ancien]:1 }, motif:"vaisseau_ranger" });
-    if(!rA || !(rA.ajoutes||{})[ancien]){ journal("Sac plein — impossible de ranger le vaisseau actuel.","alerte"); return; }
-  }
-  // Le vaisseau quitte le sac et devient équipé : un seul appel, tout ou rien.
-  if(!await agirServeur({ retirer:{ [id]:1 }, motif:"vaisseau_equiper" })) return;
-  etat.vaisseau=id;
-  /* ⚠ L'âge SUIT le vaisseau : on reprend la date du lot d'où il sort, pas
-     l'instant présent. La Navette de réserve, elle, est antidatée pour retomber
-     sur son échéance absolue. */
-  etat.vaisseauDate = (id===NAVETTE_CADEAU && etat.navetteFin)
-    ? (etat.navetteFin - dureeVie(id)*((typeof JOUR_MS!=="undefined")?JOUR_MS:86400000))
-    : (ageVaisseau(id) || Date.now());
-  _noterAgeVaisseau(id, etat.vaisseauDate);
+  if(etat.vaisseau && itemsSoute()>0){ journal("Vide la soute de ton vaisseau actuel avant d'en équiper un autre.","alerte"); return; }
+  if(typeof sauverMaintenant==="function") await sauverMaintenant();   // le permis est lu dans la sauvegarde
+  const r = await _vaisseauRpc("vaisseau_equiper", { p_item:id });
+  if(!r) return;
+  if(!etat.vaisseau) etat.vaisseau = id;   // (serveur d'avant v292 : pas de champ `vaisseau` dans l'état)
   etat.carburant = Math.min(etat.carburant||0, VAISSEAUX[id].reservoir);   // le réservoir peut être plus petit
   journal(`${VAISSEAUX[id].nom} équipé. Soute : ${VAISSEAUX[id].soute} places.`,"gain");
   apresAction(); majVaisseau();
@@ -143,11 +166,9 @@ async function desequiperVaisseau(){
   if(!etat.vaisseau) return;
   if(itemsSoute()>0){ journal("Impossible : vide d'abord la soute.","alerte"); return; }
   const id=etat.vaisseau;
-  const r = await agirServeur({ ajouter:{ [id]:1 }, motif:"vaisseau_desequiper" });
-  if(!r || !(r.ajoutes||{})[id]){ journal("Sac plein.","alerte"); return; }
-  // ⚠ Le lot qui revient au sac porte la date du jour : la garde d'âge est la
-  //   seule mémoire de l'usure réelle. On l'écrit AVANT d'oublier vaisseauDate.
-  _noterAgeVaisseau(id, etat.vaisseauDate || Date.now());
+  const r = await _vaisseauRpc("vaisseau_ranger");
+  if(!r) return;
+  _noterAgeVaisseau(id, etat.vaisseauDate || Date.now());   // la garde d'âge reste (la date du lot suit, désormais)
   etat.vaisseau=null; etat.vaisseauDate=null;
   journal(`${VAISSEAUX[id].nom} rangé dans le sac.`);
   apresAction(); majVaisseau();

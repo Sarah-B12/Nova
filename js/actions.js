@@ -15,15 +15,48 @@ async function reposer(){
   /* v0.91 — logement à l'arrêt : on dort encore dans sa ville, mais pas chez
      soi. Le confort retombe à celui de l'auberge (plafond 70). */
   const chezSoi = (!!ville && ville===etat.faction && !(typeof maisonHS==="function" && maisonHS()));
-  const gain = chezSoi?25:20, cap = chezSoi?80:70;
+  const cap = chezSoi?80:70;
   if(etat.jauges.sante>=cap && etat.jauges.moral>=cap){ journal(`Déjà en forme — le repos ne dépasse pas ${cap} (kit/ration pour aller plus haut).`,"alerte"); return; }
-  // Les jauges sont serveur : on calcule le gain UTILE (plafonné) et on l'envoie.
-  const gs = Math.max(0, Math.min(cap, etat.jauges.sante + gain) - etat.jauges.sante);
-  const gm = Math.max(0, Math.min(cap, etat.jauges.moral + gain) - etat.jauges.moral);
-  if(!await agirServeur({ jauges:{ sante:gs, moral:gm }, motif:"repos" })) return;
+  /* v2.92 (v294, K266) — le SERVEUR calcule le repos (`repos()` : lieu, une fois par jour de jeu, chez soi ou non,
+     plafond) ; les contrôles ci-dessus ne servent plus qu'à répondre sans appel. Avant : le jeu annonçait le gain. */
+  const d = await soinServeur("repos", {});
+  if(d && d.err === "deja") etat.reposLe = Date.now();
+  if(!d || !d.ok) return;
   etat.reposLe = Date.now();
-  journal(chezSoi ? `Repos chez toi : +${gain} santé/moral (plafond ${cap}).` : `Repos à l'auberge : +${gain} santé/moral (plafond ${cap}).`,"gain");
+  const g2 = d.chez_soi ? 25 : 20;
+  journal(d.chez_soi ? `Repos chez toi : +${g2} santé/moral (plafond ${d.cap}).` : `Repos à l'auberge : +${g2} santé/moral (plafond ${d.cap}).`,"gain");
   apresAction();
+}
+/* v2.92 (v294, K266) — appel d'un soin calculé par le serveur (repos, soin_consommer, regen_aptitudes) :
+   applique les jauges, le sac et l'énergie renvoyés ; dit le refus. Renvoie la réponse (ou null si injoignable). */
+const SOIN_REFUS = {
+  lieu:   "Repos possible seulement en ville, ou à l'auberge de la base.",
+  deja:   "Tu t'es déjà reposé aujourd'hui — la remise à zéro est à minuit.",
+  pause:  "Personnage en pause.",
+  prison: "Tu es en prison — impossible d'agir jusqu'à ta libération.",
+  item:   "Cet objet ne soigne pas."
+};
+async function soinServeur(nom, args, muet){
+  let d = null;
+  try{
+    const rep = await sb.rpc(nom, args || {});
+    if(rep && rep.error) throw new Error(rep.error.message);
+    d = rep && rep.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "actions.js#" + nom); if(!muet) journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  if(!d) return null;
+  if(d.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(d.etat);
+  if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
+  if(d.jauges){ etat.jauges = etat.jauges || {};
+    ["o2","sante","moral"].forEach(g => { if(typeof d.jauges[g] === "number") etat.jauges[g] = d.jauges[g]; }); }
+  if(!d.ok && !muet){
+    if(d.err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+    else if(d.err === "forme") journal(`Déjà en forme — le repos ne dépasse pas ${d.cap} (kit/ration pour aller plus haut).`,"alerte");
+    else if(d.err === "manque"){ const it = (typeof item === "function") ? item(d.item) : null; journal(`Il te manque : ${it ? it.nom : (d.item || "un objet")}.`,"alerte"); }
+    else if(d.err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); }
+    else journal(SOIN_REFUS[d.err] || `Action refusée par le serveur (${d.err || "réponse vide"}).`,"alerte");
+  }
+  if(typeof afficher === "function") afficher();
+  return d;
 }
 /* ⚠ CODE MORT : l'action « Explorer » a été retirée du jeu (GDD §21) et aucun
    bouton ne l'appelle. Elle utilise encore l'ancien modèle (depenserEnergie,
@@ -105,18 +138,15 @@ async function utiliser(art){
   if(typeof VIVRES_STATION!=="undefined" && VIVRES_STATION[id] && typeof mangerVivre==="function"){ await mangerVivre(id); return; }
   const eff = (typeof effetConso==="function") ? effetConso(id) : null;
   if(!eff || !etat.sac[id]) return;
-  /* ⚠ Les jauges appartiennent au SERVEUR (colonnes o2/sante/moral). L'objet
-     était retiré côté serveur mais le soin appliqué en LOCAL, sans être passé
-     dans p_jauges : agirServeur écrase ensuite etat.jauges avec les valeurs
-     renvoyées, donc le gain s'affichait puis disparaissait à l'action
-     suivante. Le joueur perdait son kit pour rien. On envoie désormais les
-     deltas DANS le même appel, atomique avec le retrait. */
+  /* ⚠ Les jauges appartiennent au SERVEUR (colonnes o2/sante/moral) : retrait de l'objet et soin dans le
+     MÊME appel, et les jauges affichées sont celles qu'il renvoie (sinon le gain s'affichait puis disparaissait). */
+  /* v2.92 (v294, K266) — le SERVEUR applique le soin (`soin_consommer` : son catalogue, × 1,3 avec Autarcie) ;
+     avant, le jeu l'annonçait à agir() et un client modifié pouvait s'en donner autant qu'il voulait. */
   const avant = Object.assign({}, etat.jauges);
-  const deltas = {};
-  for(const g in eff) deltas[g] = aptSoin(eff[g]);
-
-  const res = await agirServeur({ retirer:{ [id]:1 }, jauges:deltas, motif:"consommer" });
-  if(!res) return;
+  const res = await soinServeur("soin_consommer", { p_item:id });
+  if(!res || !res.ok) return;
+  const deltas = res.soin || {};
+  if(typeof sauverSurServeur === "function"){ try{ sauverSurServeur(); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "actions.js#soin"); } }
 
   // Gain RÉEL : le serveur plafonne à 100, annoncer le nominal serait mentir.
   const parts=[];

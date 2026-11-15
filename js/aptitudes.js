@@ -108,9 +108,8 @@ function acheterApt(chaine, idx){
    PA sont rares : un débutant qui se trompe de branche reste coincé jusqu'à
    50 000 ₡, ce qui est une frustration, pas une difficulté. Une fois, gratuit ;
    ensuite, plein tarif.
-   ⚠ `respecOffert` vit dans `donnees` (via `etat`), pas côté serveur : la
-   réattribution est déjà entièrement client, crédits compris. À déplacer le
-   jour où les crédits d'aptitude passeront au serveur. */
+   v2.95 (v297) — c'est le SERVEUR qui décide du prix (`perso_base.respec_offert`, repris de `respecOffert`) ;
+   `etat.respecOffert` ne sert plus qu'à l'affichage du bouton et de la question. */
 function respecGratuit(){ return !etat.respecOffert; }
 function respecCout(){ return respecGratuit() ? 0 : APT_RESPEC; }
 async function respecApt(){
@@ -122,15 +121,30 @@ async function respecApt(){
     ? `Réattribuer toutes tes aptitudes ? C'est OFFERT — une seule fois. Les suivantes coûteront ${APT_RESPEC.toLocaleString("fr-FR")} ₡.`
     : `Réattribuer toutes tes aptitudes pour ${cout} ₡ ? Tes points seront rendus, à replacer.`;
   if(!await confirmerJoli("Réattribuer les aptitudes", question, "Réattribuer")) return;
+  /* v2.95 (v297, K268) — le SERVEUR prend le prix (`aptitudes_reattribution` : 1ʳᵉ offerte, puis 50 000 ₡) et pose un
+     jeton que la sauvegarde suivante consomme : sans lui, il refuse qu'on retire des aptitudes. Avant : crédits retirés
+     ici puis poussés par crediter(), et la gratuité tenait dans la sauvegarde. */
+  let r = null;
+  try{ const rep = await rpcAvecSolde("aptitudes_reattribution", {}, "solde"); if(rep && rep.error) throw new Error(rep.error.message); r = rep && rep.data; }
+  catch(err){ if(typeof _catchLog === "function") _catchLog(err, "aptitudes.js#respec"); }
+  if(!r || !r.ok){
+    const er = r && r.err;
+    journal(er === "credits" ? `Réattribution : ${r.cout} ₡ nécessaires (le serveur compte ${r.solde} ₡).`
+          : er === "rien" ? "Aucune aptitude à réattribuer (selon le serveur)."
+          : "Le serveur n'a pas répondu — réessaie.", "alerte");
+    return;
+  }
+  const paye = r.cout|0;
   const rendu = e.pris.reduce((a,id)=>a+aptCoutParId(id), 0);
-  etat.credits -= cout; e.pa += rendu; e.pris = [];
+  e.pa += rendu; e.pris = [];
   // ⚠ Le drapeau se pose APRÈS le confirm : une annulation ne doit pas
   // consommer la gratuité.
   etat.respecOffert = true;
-  journal((cout === 0)
-    ? `Aptitudes réattribuées — réattribution offerte, +${rendu} PA à replacer.`
-    : `Aptitudes réattribuées : −${cout} ₡, +${rendu} PA à replacer.`, "gain");
-  sauvegarder(); afficher();
+  journal((paye === 0)
+    ? `Aptitudes réattribuées — ${r.deja ? "déjà réglée" : "réattribution offerte"}, +${rendu} PA à replacer.`
+    : `Aptitudes réattribuées : −${paye} ₡, +${rendu} PA à replacer.`, "gain");
+  if(typeof sauverMaintenant === "function") sauverMaintenant(); else sauvegarder();   // le jeton se consomme à la sauvegarde
+  afficher();
 }
 // Appelée à la fin d'une quête (à venir) — et par le bouton debug.
 function gagnerPA(n=1){ aptEtat().pa += n; sauvegarder(); majAptitudes(); }

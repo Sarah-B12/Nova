@@ -40,15 +40,29 @@ const MISSION_POSTES_DESC = {
 const MISSION_ESSAI = 10;
 let _mEssais = {};                                   // jeu → true : un essai payé, en cours
 function _mEssaiCout(){ return (typeof aptEnergieAction === "function") ? aptEnergieAction(MISSION_ESSAI) : MISSION_ESSAI; }
-async function _mEssaiPayer(){
-  if(typeof agirServeur !== "function") return true;
-  const r = await agirServeur({ cout:_mEssaiCout(), motif:"mission_essai" });
-  return !!r;                                        // refus (énergie…) : agirServeur l'a déjà dit au journal
+/* v2.97 (v299, K270) — l'essai est payé AU SERVEUR (`mission_essai` : le coût calculé par lui) et ouvre la partie ;
+   le nœud, les goupilles, le brouillage, le tir et le cœur ne comptent que pour une partie ouverte depuis 3 s à 10 min.
+   Avant : agir() avec le coût annoncé par le jeu. */
+async function _mEssaiPayer(mid){
+  if(typeof sb === "undefined" || !sb) return true;
+  let d = null;
+  try{ ({ data:d } = await sb.rpc("mission_essai", { p_mission: +mid || 0 })); }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#essai"); }
+  if(!d || !d.ok){
+    const err = d && d.err;
+    if(err === "energie") journal("Pas assez d'énergie pour cet essai.","alerte","quete");
+    else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+    else journal(MISSION_ERREURS[err] || "Le serveur n'a pas répondu — réessaie.","alerte","quete");
+    return false;
+  }
+  if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
+  if(d.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(d.etat);
+  return true;
 }
 function _mEssaiFin(jeu){ delete _mEssais[jeu]; }
 function _mEssaiPorte(jeu, mid, html){
   if(_mEssais[jeu]) return html;
-  return `<div class="mi-essai"><button class="mini" data-mi-essai="${jeu}">Tenter · ${_mEssaiCout()} % d'énergie</button>
+  return `<div class="mi-essai"><button class="mini" data-mi-essai="${jeu}" data-mi-mid="${mid}">Tenter · ${_mEssaiCout()} % d'énergie</button>
     <p class="vide" style="margin:4px 0 0">Chaque essai coûte de l'énergie. Prends tout le temps qu'il te faut.</p></div>`;
 }
 const MISSION_OMBRE = "Sans poste, tu n'as pas de jeu à toi : tu comptes dans l'épreuve finale avec tout le groupe.";
@@ -63,6 +77,7 @@ function _mQuandRetenter(v){
 /* v2.69 (K233) — chaque étape : un petit récit (ce qui se passe, pourquoi), puis une ligne pratique (quoi faire). */
 function _mEtape(titre, texte, pratique){ return `<div class="mi-etape"><b>${titre}</b>${texte}${pratique ? `<span class="mi-pratique">${pratique}</span>` : ""}</div>`; }
 const MISSION_ERREURS = {
+  pas_de_partie:"L'essai n'a pas été enregistré par le serveur (ou il date de plus de 10 minutes) : retente-le.",   // v2.97 (v299)
   non_connecte:"Connexion perdue.", deja:"Tu as déjà pris part à cette mission.", plein:"Ce groupe est complet.",
   ferme:"Ce groupe est fermé : on n'y entre que sur invitation.", parti:"Ce groupe est déjà parti.",
   recrutement_clos:"Le recrutement est terminé.", groupe:"Ce groupe n'existe plus.", mission:"Cette mission n'est plus là.",
@@ -750,7 +765,7 @@ function _mBaliseBrancher(z){
   const zm = z.querySelector("#mi-message");
   if(zm) zm.querySelectorAll("[data-msg]").forEach(b => b.addEventListener("click", async () => {
     zm.querySelectorAll("[data-msg]").forEach(x => x.disabled = true);
-    if(!await _mEssaiPayer()){ zm.querySelectorAll("[data-msg]").forEach(x => x.disabled = false); return; }   // v2.17
+    if(!await _mEssaiPayer(+zm.dataset.miMission)){ zm.querySelectorAll("[data-msg]").forEach(x => x.disabled = false); return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     _missionAppel("balise_message", { p_mission:+zm.dataset.miMission, p_son:b.dataset.msg }, d => `Message lu : « ${d.sens} ».`);
   }));
@@ -866,7 +881,7 @@ function _mParoiBrancher(z){
   const b = zone.querySelector("[data-p-feu]");
   if(b) b.addEventListener("click", async () => {
     if(b.disabled) return; b.disabled = true;
-    if(!await _mEssaiPayer()){ b.disabled = false; return; }   // v2.17
+    if(!await _mEssaiPayer(+zone.dataset.miMission)){ b.disabled = false; return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     const charges = _paroi.charges.slice(); _paroi = { cle:null, charges:[] };
     _missionAppel("infiltration_breche", { p_mission:m.id, p_charges:charges }, "La paroi s'effondre : la brèche est ouverte.");
@@ -970,7 +985,7 @@ function _mRangementBrancher(z){
       : confirm("Valider ?");
     if(!ok) return;
     bv.disabled = true;
-    if(!await _mEssaiPayer()){ bv.disabled = false; return; }   // v2.17
+    if(!await _mEssaiPayer(+zone.dataset.miMission)){ bv.disabled = false; return; }   // v2.17
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     const pose = _rang.pose.slice(); _rang = { cle:null, pose:[], sel:0, rot:0 };
     _missionAppel("infiltration_ranger", { p_mission:m.id, p_pose:pose }, d => `Ta part est rangée (${Math.round(d.score * 100)} %).`);
@@ -1221,7 +1236,7 @@ function _mBrouillageBrancher(z){
   dessiner();
   go.addEventListener("click", async () => {
     go.disabled = true;
-    if(!await _mEssaiPayer()){ go.disabled = false; return; }
+    if(!await _mEssaiPayer(+zone.dataset.miMission)){ go.disabled = false; return; }
     f.disabled = false; d.disabled = false; _brou.actif = true;
     const t0 = Date.now(); let der = t0;
     const pas = () => {
@@ -1319,7 +1334,7 @@ function _mSatBrancher(z){
     const go = zt.querySelector("[data-tir-go]"); const svg = zt.querySelector("#mi-tir-svg");
     if(go && T) go.addEventListener("click", async () => {
       go.disabled = true;
-      if(!await _mEssaiPayer()){ go.disabled = false; return; }   // v2.17
+      if(!await _mEssaiPayer(m.id)){ go.disabled = false; return; }   // v2.17
       _tir = { actif:true, touches:0, tirs:T.tirs, fin:performance.now() + T.duree * 1000, sondes:[], raf:null, der:performance.now(), pause:0 };
       const rater = msg => { _tir.actif = false; journal(msg, "alerte", "quete"); zt.innerHTML = _mTirHtml(T); _mSatBrancher(z); };
       const pas = t => {
@@ -1507,7 +1522,7 @@ function _mBrancher(z){
       d => d.reussi ? "L'escorte est repoussée." : (d.definitif ? "L'escorte tient bon." : "L'escorte vous a dispersés.")); });
   q("[data-mi-coeur]", async b => {
     if(typeof _espF1 !== "function"){ b.disabled = false; return; }
-    if(!await _mEssaiPayer()){ b.disabled = false; return; }   // v2.17
+    if(!await _mEssaiPayer(+b.dataset.miCoeur)){ b.disabled = false; return; }   // v2.17
     const ok = await _espF1(+b.dataset.miVig);
     if(!ok){ b.disabled = false; return; }
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
@@ -1517,7 +1532,7 @@ function _mBrancher(z){
   // v2.17 (K135) — la porte d'un essai : payer, puis ouvrir le jeu.
   q("[data-mi-essai]", async b => {
     const jeu = b.dataset.miEssai;
-    if(await _mEssaiPayer()) _mEssais[jeu] = true;
+    if(await _mEssaiPayer(+b.dataset.miMid)) _mEssais[jeu] = true;
     b.disabled = false;
     if(typeof majQueteHub === "function") majQueteHub();
   });

@@ -23,6 +23,26 @@ function pasEval(){
   if(etat.quetes && (etat.quetes.active || (etat.quetes.done && etat.quetes.done.length))) etat.pas.quete=true;
   // vendu & deplace : posés par les actions.
 }
+/* v2.91 (v293, anti-triche) — la prime des Premiers pas est versée par le SERVEUR (`premiers_pas_payer`), une fois
+   par compte ; avant, le jeu ajoutait 300 ₡ et `crediter` les acceptait. Montant copié au serveur (BACKEND_PLAN §6). */
+const PREMIERS_PAS_CREDITS = 300;
+let _pasPaiement = 0;   // horodatage du dernier essai : un appel à la fois, et pas plus d'un par minute en cas d'échec
+async function premiersPasPayer(){
+  if(etat.pasFini || Date.now() - _pasPaiement < 60000) return;
+  _pasPaiement = Date.now();
+  let d = null;
+  try{
+    const rep = await rpcAvecSolde("premiers_pas_payer", {}, "solde");
+    if(rep && rep.error) throw new Error(rep.error.message);
+    d = rep && rep.data;
+  }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "onboarding.js#prime"); }
+  if(!d || !d.ok) return;                                  // on réessaiera au prochain passage (dans une minute)
+  etat.pasFini = true;
+  journal(d.deja ? "Premiers pas accomplis ! Bonne route sur Silène."
+                 : `Premiers pas accomplis ! +${(d.credits|0) || PREMIERS_PAS_CREDITS} ₡. Bonne route sur Silène.`, "gain");
+  if(typeof sauvegarder === "function") sauvegarder();
+  if(typeof afficher === "function") afficher();
+}
 let _pasStyleMonte=false;
 function _pasCSS(){
   if(_pasStyleMonte) return; _pasStyleMonte=true;
@@ -45,7 +65,7 @@ function majPas(){
   if(etat.pasFini){ z.hidden=true; return; }
   _pasCSS(); pasEval();
   const defs=pasDefs(), done=defs.filter(d=>etat.pas && etat.pas[d.k]).length, tot=defs.length;
-  if(done>=tot){ etat.pasFini=true; etat.credits=(etat.credits||0)+300; journal("Premiers pas accomplis ! +300 ₡. Bonne route sur Silène.","gain"); z.hidden=true; if(typeof sauvegarder==="function") sauvegarder(); return; }
+  if(done>=tot){ z.hidden=true; premiersPasPayer(); return; }
   z.hidden=false;
   const plie=!!etat.pasPlie;
   const sig=done+"|"+(plie?1:0)+"|"+defs.map(d=>etat.pas&&etat.pas[d.k]?1:0).join("");

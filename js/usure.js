@@ -138,6 +138,7 @@ async function majUsure(){
   for(const l of (etat.lots||[])){
     if(!l || !(l.qte > 0)) continue;
     if(l.lieu === "equipe") continue;   // l'équipement porté s'use à part (etat.equipementDate)
+    if(l.lieu === "vaisseau") continue; // v2.90 (v292) : le vaisseau équipé s'use à part (bloc plus bas : soute d'abord)
     // v0.97 — un objet lié ne périt pas (le serveur refuserait tout le lot).
     if(typeof estObjetLie==="function" && estObjetLie(l.item)) continue;
     const dv = (typeof dureeViePerso==="function") ? dureeViePerso(l.item) : null;   // v2.04 : Entretien
@@ -253,7 +254,18 @@ async function majUsure(){
              if(data && data.ok) _appliquerEtatStocks(data.etat); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#1"); }
       }
       const etaitCadeau = (etat.vaisseau === "navette_reserve");
-      if(etat.vaisseauAge) delete etat.vaisseauAge[etat.vaisseau];
+      /* v2.90 (v292) — le vaisseau équipé est un lot du serveur (lieu `vaisseau`) : on le fait périmer là-bas.
+         Échec : on garde tout, on réessaiera au prochain passage. */
+      const auHangar = (etat.lots||[]).filter(l => l && l.lieu === "vaisseau" && l.qte > 0)
+        .map(l => ({ item:l.item, lieu:"vaisseau", acquis:l.acquis }));
+      if(auHangar.length && typeof sb !== "undefined"){
+        let ok = false;
+        try{ const { data, error } = await sb.rpc("perimer", { p_lots: auHangar });
+             if(!error && data && data.ok && !data.gele){ ok = true; _appliquerEtatStocks(data.etat); } }
+        catch(e){ if(typeof _catchLog==="function") _catchLog(e, "usure.js#hangar"); }
+        if(!ok){ if(perte && typeof sauvegarder=="function") sauvegarder(); return; }
+      }
+      if(etat.vaisseauAge) delete etat.vaisseauAge[it ? it.id : etat.vaisseau];
       etat.vaisseau = null; etat.vaisseauDate = null;
       if(etaitCadeau) etat.navetteFin = 0;   // v0.91 : l'échéance a joué, on la referme
       journal(etaitCadeau

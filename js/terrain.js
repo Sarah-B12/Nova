@@ -240,7 +240,7 @@ async function recolterMine(i){
   if(!r) return;
   const pr=Object.entries(r.ajoutes||{}).filter(([k])=>k!==APT_VEINE_ITEM).reduce((a,[,b])=>a+b,0);
   if(cristal && (r.ajoutes||{})[APT_VEINE_ITEM]) journal("Veine de cristal : +1 Cristal de Sélénite !","gain");
-  gagnerXp(3);
+  if(typeof r.xp_total === "number") adopterXpTotal(r.xp_total);   // v2.93 (v295, K267) : +3 XP par le serveur (avant : gagnerXp(3))
   journal(`Mine : +${pr} minerai(s). Réserve : ${r.stock}/${r.max||rmax}.`+(r.sac_plein?" (sac plein)":""),"gain");
   _journalDouble(r);   // v2.51 (K179)
   apresAction(); majStruct();
@@ -276,7 +276,7 @@ async function recolterCase(ci){
   const res=await terrainRpc("terrain_recolter", { p_plot:structSel, p_idx:ci, p_nb:nb });
   if(!res) return;
   const pr=(res.ajoutes||{})[c.plante]||0;
-  gagnerXp(2);
+  if(typeof res.xp_total === "number") adopterXpTotal(res.xp_total);   // v2.93 (v295, K267) : +2 XP par le serveur (avant : gagnerXp(2))
   journal(`Récolte : +${pr} ${nom}.`,"gain"); _journalDouble(res); apresAction(); majStruct();
 }
 
@@ -329,7 +329,7 @@ async function tondreCase(ci){
   const pr=(res.ajoutes||{})[a.produit]||0;
   let msg=`Tonte : +${pr} ${item(a.produit).nom} — ${res.tontes}/${TONTES_MAX}.`;
   if(res.retraite) msg+=` Le ${a.nom} a pris sa retraite.`;
-  gagnerXp(2);
+  if(typeof res.xp_total === "number") adopterXpTotal(res.xp_total);   // v2.93 (v295, K267) : +2 XP par le serveur (avant : gagnerXp(2))
   journal(msg,"gain"); _journalDouble(res); apresAction(); majStruct();
 }
 

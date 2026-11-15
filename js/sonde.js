@@ -160,11 +160,13 @@ async function _sondeGagne(){
     if(r && r.error) throw new Error(r.error.message);
     d = r && r.data;
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "sonde.js#victoire"); }
-  if(typeof gagnerXp==="function") gagnerXp(10);
+  /* v2.93 (v295, K267) — les +10 XP sont donnés PAR LE SERVEUR (sonde_victoire), seulement pour un duel enregistré ;
+     avant : gagnerXp(10) ici, même quand le serveur refusait. */
+  if(d && typeof d.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(d.xp_total);
   if(d && d.err === "pas_de_duel"){   // v2.89 (v291) : duel non engagé au serveur (ou trop vieux)
-    journal("La sonde se disloque. Le duel n'a pas été enregistré : aucun crédit versé. +10 XP.","alerte");
+    journal("La sonde se disloque. Le duel n'a pas été enregistré : ni crédit ni XP.","alerte");
   } else if(!d || !d.ok){
-    journal("La sonde se disloque. Le serveur n'a pas répondu : aucun crédit versé. +10 XP.","alerte");
+    journal("La sonde se disloque. Le serveur n'a pas répondu : ni crédit ni XP.","alerte");
   } else if(d.gain > 0){
     journal(`La sonde se disloque. Tu récupères ${d.gain} ₡ de pièces revendables dans les débris, +10 XP.`
       + (d.rang === 1 ? "" : " La première sonde du jour rapporte davantage."),"gain");

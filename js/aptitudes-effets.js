@@ -70,30 +70,25 @@ function aptRegenEnergie(){ return (_apt("sv2") ? APT_RECUP_H : 0) + (_apt("cu4"
 function aptO2Bonus(){ return _apt("sv1") ? 1 : 0; }                            // Poumons d'acier −1 (appliqué dans coutO2)
 
 /* ---------- Régénération passive (O₂ / santé / moral) ; l'énergie passe par regenEnergie ---------- */
+/* v2.92 (v294, K266) — calculée par le SERVEUR (`regen_aptitudes`) : Photosynthèse (cu3) +5 O₂/h jusqu'à 100,
+   Organisme (cu4) +1 santé et +1 moral par heure jusqu'à 60, 24 h rattrapées au plus, rien en prison ni en pause ;
+   des jauges déjà pleines ne mettent plus le temps en réserve. Le jeu appelle toutes les 10 minutes s'il a l'une des
+   deux aptitudes. Avant : le jeu calculait le gain et l'envoyait à agir(), qui le croyait. */
+const REGEN_APPEL_MS = 10 * 60000;
+let _regenDer = 0, _regenEnCours = false;
 function regenPassif(){
+  if(!(_apt("cu3") || _apt("cu4"))) return;
+  if(typeof SERVEUR_DISPO !== "undefined" && !SERVEUR_DISPO) return;
+  if(!etat || !etat.inscrit || typeof soinServeur !== "function") return;
   const now = Date.now();
-  if(!etat.regenMaj){ etat.regenMaj = now; return; }
-  const h = (now - etat.regenMaj) / 3600000;
-  if(h <= 0) return;
-  etat.regenMaj = now;
-  // ⚠ Les jauges appartiennent au serveur. On calcule le gain ici (les aptitudes
-  // sont une donnée client) mais on le fait APPLIQUER par agir(), sinon il serait
-  // écrasé au premier appel serveur — le piège des crédits, puis de l'énergie.
-  let go2 = 0, gs = 0, gm = 0;
-  if(_apt("cu3")) go2 = Math.max(0, Math.min(100, etat.jauges.o2 + h*5) - etat.jauges.o2);   // Photosynthèse +5 O₂/h (v1.25)
-  if(_apt("cu4")){                                                               // Organisme : +1 santé/moral/h, plafond 60
-    gs = Math.max(0, Math.min(60, etat.jauges.sante + h) - etat.jauges.sante);
-    gm = Math.max(0, Math.min(60, etat.jauges.moral + h) - etat.jauges.moral);
-  }
-  if((go2 + gs + gm) >= 1 && typeof agirServeur === "function"){
-    // Seuil de 1 point : on n'envoie pas une requête pour 0,03 point d'O₂.
-    agirServeur({ jauges:{ o2:Math.round(go2), sante:Math.round(gs), moral:Math.round(gm) }, motif:"regen_aptitude" });
-  } else {
-    etat.regenMaj = now - (h * 3600000);   // on garde le reliquat pour le prochain passage
-  }
+  if(_regenEnCours || now - _regenDer < REGEN_APPEL_MS) return;
+  _regenDer = now; _regenEnCours = true;
+  soinServeur("regen_aptitudes", {}, true).finally(() => { _regenEnCours = false; });
 }
 
 /* ---------- Crédits ---------- */
+/* ⚠ v2.91 (v293) — RÉFÉRENCE : la récompense des quêtes est calculée par le SERVEUR (`quete_terminer`) avec cette
+   formule (Négociant × 1,15, puis boisson « crédits », arrondi). Changer un coefficient = changer aussi le serveur. */
 function aptCredits(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1) * _boi("credits")); }                                        // Négociant +15 %
 function aptButinExplore(g){ return Math.round(g * (_apt("no3") ? 1.15 : 1)); }        // v1.25 : Repérage ne s'applique plus à l'exploration
 /* ⚠ v2.89 (v291) — RÉFÉRENCE : le butin des patrouilles est calculé par le SERVEUR (`patrouille_neutralisee`),
@@ -149,6 +144,8 @@ const APT_VEINE_ITEM = "selenite", APT_VEINE_CHANCE = 0.025;
 function aptVeineCristal(){ return _apt("to4") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < APT_VEINE_CHANCE; }     // Veine de cristal
 
 /* ---------- Soin (consommables) ---------- */
+/* ⚠ v2.92 (v294) — RÉFÉRENCE : le soin des objets est appliqué par le SERVEUR (`soin_consommer`) avec ce coefficient
+   (Autarcie × 1,3, arrondi) ; lu par outils/o_soinssrv.js. Changer un coefficient = changer aussi le serveur. */
 function aptSoin(soin){ return Math.round(soin * (_apt("cu1") ? 1.3 : 1)); }                                      // Autarcie +30 %
 
 /* ---------- Maison ---------- */

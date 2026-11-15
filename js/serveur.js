@@ -247,6 +247,7 @@ const CLES_SERVEUR = [
   "sacDate", "coffreDate", "souteDate",  // vestiges : les dates sont serveur
   "_lotsSynchro",                    // garde-fou de majUsure : DOIT repartir à faux au démarrage
   "equipeServeur", "forceCombatServeur", // reflets de sac_lire() : recalculés à chaque appel
+  "queteDispense",                   // v2.91 (K265) : reflet de quetes_dispense_etat(), relu au démarrage
   "faction",                         /* ⚠ colonne profils.faction, écrite par changer_faction() UNIQUEMENT.
                                         Le client a cessé de la pousser (course avec la RPC) mais continuait
                                         à la lire dans `donnees` : un joueur transféré voyait son ANCIENNE
@@ -339,6 +340,28 @@ function _etatSansStocks(){
    Le trigger l'autorise UNIQUEMENT tant que profils.faction vaut NULL ; ensuite
    il faut passer par changer_faction(). On pose aussi faction_le à NULL
    volontairement : le premier changement ne doit pas être bloqué 30 jours. */
+/* v2.94 (v296, K269, anti-triche) — le serveur CONTRÔLE la fiche à chaque sauvegarde (_perso_controler) :
+   compétences et points à placer (niveau d'après l'XP + choix de quête), aptitudes (PA des quêtes payées + dons du
+   staff ; chaîne dans l'ordre ; nœuds d'une autre faction rendus), drapeaux (permis, espace, Ancolie, Nid : la quête
+   qui les donne doit être payée ou en cours). Ce qui ne colle pas reprend sa valeur précédente et revient ici dans
+   `corrige` : on l'applique, pour que la page montre ce que le serveur a gardé (et que la sauvegarde suivante passe). */
+let _ficheCorrigeeDite = false;
+function _appliquerCorrectionFiche(c){
+  const cles = Object.keys(c || {}); if(!cles.length) return;
+  for(const k of cles){
+    const v = c[k];
+    if(k === "aptitudes" && (!v || typeof v !== "object")) etat.aptitudes = { pa:0, pris:[] };
+    else if(k === "competences" && (!v || typeof v !== "object")) etat.competences = { ...nouvelEtat().competences };
+    else if(k === "pointsCompetence") etat.pointsCompetence = (typeof v === "number") ? v : 0;
+    else etat[k] = (v === null) ? false : v;
+  }
+  if(!_ficheCorrigeeDite && typeof journal === "function"){
+    _ficheCorrigeeDite = true;
+    journal("Le serveur a gardé ta fiche telle qu'il la connaît (compétences, aptitudes ou accès) : un changement ne correspondait pas à ce que tu as gagné.", "alerte");
+  }
+  if(typeof majAptitudes === "function") majAptitudes();
+  if(typeof afficher === "function") afficher();
+}
 async function _premiereFaction(fid){
   if(!SERVEUR_DISPO || !fid) return;
   const s = await sessionActuelle(); if(!s) return;
@@ -491,6 +514,7 @@ async function _sauverMaintenantInterne(){
     _rev = Number(res.rev) || (_rev + 1); _conflitSignale = false;
     _majSync = Number(res.maj) || _majSync;   // v0.92 : je suis à jour avec ce que je viens d'écrire
     _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
+    if(res.corrige && typeof res.corrige === "object") _appliquerCorrectionFiche(res.corrige);   // v2.94 (v296, K269)
     return;
   }
   if(res && res.err === "conflit"){

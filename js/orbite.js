@@ -518,7 +518,8 @@ async function minerGravier(){
   abimerVaisseau(alea(GRAVIER_PV[0], GRAVIER_PV[1]), "éraflures d'astéroïdes");
   if(touche && r.ajoute) journal(`Une veine s'ouvre : +1 Cristal de Nyx. (${gravierRestants()} tentative(s) restante(s))`,"gain","minage");
   else journal(`Rien que de la roche morte. (${gravierRestants()} tentative(s) restante(s))`,"alerte","minage");
-  if(typeof gagnerXp==="function") gagnerXp(3);
+  // v2.93 (v295, K267) : les +3 XP sont donnés par le serveur (gravier_miner) ; avant : gagnerXp(3) ici.
+  if(typeof r.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(r.xp_total);
   if(typeof majOrbite==="function") majOrbite();
   if(typeof apresAction==="function") apresAction();
 }

@@ -498,13 +498,17 @@ function majNiveauDepuisXp(){
   return monte;
 }
 
-/* Reste SYNCHRONE : une quinzaine d'appelants, aucun n'attend. On applique le
-   gain tout de suite pour l'affichage, et le serveur tranche à sa réponse. */
+/* Reste SYNCHRONE : une quinzaine d'appelants, aucun n'attend.
+   ⚠ v2.93 (v295, K267) — avec le serveur, le gain n'est PLUS ajouté ici d'avance : `xp_gagner` le plafonne
+   (30 par appel, 500 par jour de jeu, pour ce que le jeu annonce encore : patrouilles, combats de quête, vol,
+   espionnage, piratage) et on adopte le total qu'il renvoie. La montée de niveau (niveau_monter, qui calcule
+   désormais le niveau d'après l'XP du serveur) part donc APRÈS l'écriture de l'XP, jamais avant. Les autres
+   activités (terrain, Gravier, Sélénite, sondes) reçoivent leur XP du serveur dans leur propre réponse. */
 function gagnerXp(n){
   if(!(n > 0)) return;
-  etat.xpTotal = (etat.xpTotal || 0) + n;
+  if(typeof SERVEUR_DISPO !== "undefined" && SERVEUR_DISPO){ _pousserXpServeur(n); return; }
+  etat.xpTotal = (etat.xpTotal || 0) + n;   // hors ligne (démo, tests) : comme avant
   majNiveauDepuisXp();
-  _pousserXpServeur(n);
 }
 
 /* ⚠ L'INCRÉMENT SE FAIT EN BASE (`xp = xp + n`), pas « je lis, j'ajoute,
@@ -516,6 +520,11 @@ async function _pousserXpServeur(n){
     const { data, error } = await sb.rpc("xp_gagner", { p_n: n|0 });
     if(error){ if(typeof _catchLog==="function") _catchLog(error, "systeme.js#xp"); return; }
     if(data && data.ok && typeof data.xp === "number") adopterXpTotal(data.xp);
+    /* v2.93 (v295, K267) — plafond du jour atteint (500 XP pour ce que le jeu annonce) : on le dit, une fois par jour. */
+    if(data && data.ok && data.accorde === 0 && typeof jourDeJeu === "function" && etat.xpPlafondDit !== jourDeJeu()){
+      etat.xpPlafondDit = jourDeJeu();
+      journal("Tu as atteint aujourd'hui le plafond d'expérience des combats et des coups de main (500 XP). Le reste comptera demain.", "alerte");
+    }
   }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "systeme.js#xp2"); }
 }
 
