@@ -673,7 +673,7 @@ const QUETES = [
     ],
     /* ⚠ v0.91 — le permis seul obligeait à attendre qu'un Constructeur mette un
        vaisseau au marché. La Navette de réserve débloque le vol TOUT DE SUITE,
-       et disparaît en dix jours : le métier de Constructeur garde sa clientèle,
+       et disparaît en vingt jours (dix avant la v3.09, K279) : le métier de Constructeur garde sa clientèle,
        et le joueur découvre l'orbite avant de devoir payer. */
     recompense:{ credits:800, xp:85, pa:1, objets:{ navette_reserve:1 }, flags:{ permisVaisseau:true, espace1:true } }
   },

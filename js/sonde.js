@@ -82,7 +82,7 @@ async function sondeReprendre(){
   catch(e){ if(typeof _catchLog === "function") _catchLog(e, "sonde.js#etat"); d = null; }
   if(!d || !d.ok) return false;
   if(d.perdu){
-    journal("Ton duel contre la sonde est resté inachevé : il compte comme perdu. Elle a riposté, coque touchée.","alerte");
+    journal("Ton duel contre la sonde est resté inachevé : il compte comme perdu. Elle a riposté, coque touchée.","alerte","combat");
     _sondeTouche(d.perdu);
   }
   if(d.attente){ ouvrirSonde(); return true; }
@@ -207,6 +207,8 @@ async function sondeCombat(){
   if(r.jauges){ etat.jauges = etat.jauges || {}; Object.assign(etat.jauges, r.jauges); }
   lancerTirSonde(_sondeGagne, _sondePerdu, { durci: (typeof enCeres === "function") && enCeres() });   // v1.96 : K65 à Cérès
 }
+/* v3.08 — les messages du DUEL (« Ouvrir le feu ») vont dans « Combats » (catégorie donnée), et plus dans
+   « Vols/hacks » où le mot « sonde » les rangeait (retour de l'autrice, 15/11). */
 async function _sondeGagne(){
   let d = null;
   try{
@@ -218,14 +220,14 @@ async function _sondeGagne(){
      avant : gagnerXp(10) ici, même quand le serveur refusait. */
   if(d && typeof d.xp_total === "number" && typeof adopterXpTotal === "function") adopterXpTotal(d.xp_total);
   if(d && d.err === "pas_de_duel"){   // v2.89 (v291) : duel non engagé au serveur (ou trop vieux)
-    journal("La sonde se disloque. Le duel n'a pas été enregistré : ni crédit ni XP.","alerte");
+    journal("La sonde se disloque. Le duel n'a pas été enregistré : ni crédit ni XP.","alerte","combat");
   } else if(!d || !d.ok){
-    journal("La sonde se disloque. Le serveur n'a pas répondu : ni crédit ni XP.","alerte");
+    journal("La sonde se disloque. Le serveur n'a pas répondu : ni crédit ni XP.","alerte","combat");
   } else if(d.gain > 0){
     journal(`La sonde se disloque. Tu récupères ${d.gain} ₡ de pièces revendables dans les débris, +10 XP.`
-      + (d.rang === 1 ? "" : " La première sonde du jour rapporte davantage."),"gain");
+      + (d.rang === 1 ? "" : " La première sonde du jour rapporte davantage."),"gain","combat");
   } else {
-    journal("La sonde se disloque. Rien de revendable dans les débris aujourd'hui — tu en as déjà trop rapporté. +10 XP.","");
+    journal("La sonde se disloque. Rien de revendable dans les débris aujourd'hui — tu en as déjà trop rapporté. +10 XP.","","combat");
   }
   if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
@@ -234,7 +236,7 @@ async function _sondeGagne(){
 async function _sondePerdu(){
   const d = await _sondeRpc("sonde_defaite");
   if(d && d.ok) _sondeTouche(d);
-  journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte"); if(typeof bulleTenace==="function") bulleTenace();
+  journal("Elle encaisse et riposte. Tu romps le contact, coque touchée.","alerte","combat"); if(typeof bulleTenace==="function") bulleTenace();
   _sondeFin();
 }
 
@@ -472,7 +474,7 @@ function lancerTirSonde(onWin, onLose, opts){
       b.disabled = true;
       const r = (typeof agirServeur === "function") ? await agirServeur({ retirer:{ [TIR_CELLULE]:1 }, motif:"canon_sonde" }) : null;
       if(r){ _tirCanon = canon; _tirRestant = _tirSalves(); }
-      else journal("Le canon ne s'est pas chargé : tu tires sans lui.", "alerte");
+      else journal("Le canon ne s'est pas chargé : tu tires sans lui.", "alerte", "combat");
     }
     _tirRendre();
   });
@@ -503,7 +505,7 @@ function _tirSalve(x, y){
       const pv = pvVaisseau(etat.vaisseau);
       const n = Math.min(_degatsSonde(alea(TIR_ASTEROIDES_PV[0], TIR_ASTEROIDES_PV[1])), Math.max(0, pv - 1));
       if(n > 0) abimerVaisseau(n, "éclats d'astéroïde");
-      journal(`☄ Ta salve éclate contre un astéroïde. Des éclats rayent la coque${n > 0 ? ` (−${n} PV)` : ""}.`, "alerte");
+      journal(`☄ Ta salve éclate contre un astéroïde. Des éclats rayent la coque${n > 0 ? ` (−${n} PV)` : ""}.`, "alerte", "combat");
     }
     _tirManque();
     _tirRendre();

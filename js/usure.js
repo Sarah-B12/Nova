@@ -21,7 +21,7 @@ const DUREE_VIE_ITEM = {
   fab_biogel:8, fab_ration_chaude:5, fab_recharge_d_oxygene:20, fab_kit_de_soin:14, fab_boite_de_soin:10,
   fab_biocarburant:10, fab_biocarburant_raffine:12, fab_stimulant:8, fab_antidote:8,
   fab_tank_a_oxygene:22, fab_combinaison_pressurisee:22, fab_biofil_renforce:20,
-  navette_reserve:10,                // ⚠ SOURCE UNIQUE de la durée du cadeau de Q5 (lue par vaisseau.js)
+  navette_reserve:20,                // ⚠ SOURCE UNIQUE de la durée du cadeau de Q5 (lue par vaisseau.js) — v3.09 (K279) : 10 → 20
   mousse_amie:7,                     // v1.63 : flétrit si elle n'est pas plantée sous 7 jours (B4)
   cape_voleur:15,                    // v1.67 : 15 jours depuis sa récupération (C14, H63)
   selenite:35,                       // v2.47 (K170) : 35 jours (30 pour les autres minerais) — le vaisseau maître en demande 30 jours sans raté
@@ -269,7 +269,7 @@ async function majUsure(){
       etat.vaisseau = null; etat.vaisseauDate = null;
       if(etaitCadeau) etat.navetteFin = 0;   // v0.91 : l'échéance a joué, on la referme
       journal(etaitCadeau
-        ? "La Navette de réserve a rendu l'âme — dix jours, c'était ce qu'elle avait à donner. Soute vidée dans le sac (ce qui tenait)."
+        ? "La Navette de réserve a rendu l'âme — vingt jours, c'était ce qu'elle avait à donner. Soute vidée dans le sac (ce qui tenait)."
         : `Usure : ${it?it.nom:"ton vaisseau"} a rendu l'âme. Soute vidée dans le sac (ce qui tenait).`,"alerte"); perte = true;
       if(typeof secoursOrbite === "function") await secoursOrbite();
     }
@@ -286,7 +286,10 @@ async function majUsure(){
       if(reste > 0 && reste <= 3 && etat.vaisseauPreavis !== jour){
         etat.vaisseauPreavis = jour;
         const nomv = (typeof VAISSEAUX!=="undefined" && VAISSEAUX[etat.vaisseau]) ? VAISSEAUX[etat.vaisseau].nom : "Ton vaisseau";
-        journal(`⚠ ${nomv} n'a plus que ${reste} jour${reste>1?"s":""} avant de rendre l'âme. Vide ta soute pendant qu'il est temps : ce qui ne tiendra pas dans ton sac sera perdu.`,"alerte");
+        /* v3.09 (K279) — pour la Navette de réserve, le préavis dit aussi où trouver le vaisseau suivant. */
+        const suite = etat.vaisseau === "navette_reserve"
+          ? " Pense à ton prochain vaisseau : une Navette légère au marché, ou au comptoir du Perchoir avant qu'elle lâche." : "";
+        journal(`⚠ ${nomv} n'a plus que ${reste} jour${reste>1?"s":""} avant de rendre l'âme. Vide ta soute pendant qu'il est temps : ce qui ne tiendra pas dans ton sac sera perdu.${suite}`,"alerte");
         perte = true;   // force la sauvegarde du préavis
       }
     }

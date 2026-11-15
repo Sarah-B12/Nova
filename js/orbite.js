@@ -640,7 +640,7 @@ function ongletLieuEspace(l){ return !!l && ["base","epave","asteroides","planet
    ⚠ Un joueur sans vaisseau à Triptolème est BLOQUÉ HORS DE LA CARTE PRINCIPALE :
    il ne peut ni descendre, ni miner, ni cultiver, ni même mourir utilement.
    C'est une impasse, pas une difficulté. Le cas devient courant depuis que la
-   Navette de réserve expire au bout de dix jours.
+   Navette de réserve expire au bout de vingt jours (K279).
    Appel de détresse automatique : on redescend dans sa cité, on paie un
    forfait. ⚠ Forfait FIXE et non pourcentage — un pourcentage punit les riches
    et laisse indifférent le joueur sans réserve, qui est justement celui qu'on

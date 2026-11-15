@@ -53,6 +53,8 @@ const DEV_ONGLETS = [
     { id:"calendrier", titre:"📅 À venir", items:[] },
     { id:"debris", titre:"☄️ Chute de débris (test)", items:[ { sel:"#dev-debris-lancer", bloc:true, titre:false } ] },
     { id:"missions", titre:"🎯 Missions", items:[ { sel:"#dev-mis-lancer", bloc:true, titre:false } ] },   // v1.61
+    /* v3.10 (v310, K281) — la photo de l'économie : interrupteur global (config.eco_photo), développeurs seulement. */
+    { id:"eco", titre:"Photo de l'économie", note:"Chaque nuit, les crédits de chaque personnage, des caisses et du marché, gardés 180 jours. Ne change rien au jeu.", items:[ { sel:"#dev-ecophoto", bouton:true } ] },
     { id:"expe", titre:"⚔️ Expédition (test)", items:[ { sel:"#dev-exp-avancer", bloc:true, titre:false } ] },
     { id:"proto", titre:"🤖 Protocole (debug)", items:[ { sel:"#dev-proto", bloc:true, titre:false } ] },
     { id:"tous", titre:"⚠️ Touche TOUS les joueurs", danger:true, note:"Ces boutons agissent sur <b>tous les profils</b>, pas seulement sur toi.", items:[
@@ -307,6 +309,15 @@ async function devFactionBloc(){
   if(typeof chargerFactionEtat==="function") await chargerFactionEtat(1);
   if(typeof majParametres==="function") majParametres(); afficher(); majDev();
 }
+/* v3.10 (v310, K281) — la photo de l'économie : lit l'état au serveur, puis l'inverse. */
+async function devEcoPhoto(){
+  const { data:lu, error:e1 } = await sb.rpc("admin_eco_photo", { p_actif: null });
+  if(e1){ alert("Échec : "+e1.message); return; }
+  if(!lu || !lu.ok){ alert("Refusé : réservé aux développeurs."); return; }
+  const { data, error } = await sb.rpc("admin_eco_photo", { p_actif: !lu.actif });
+  if(error || !data || !data.ok){ alert("Échec : "+((error&&error.message)||(data&&data.err)||"?")); return; }
+  journal(`[DEV→admin] photo de l'économie ${data.actif?"ALLUMÉE":"ÉTEINTE"} — ${data.jours} nuit${data.jours>1?"s":""} enregistrée${data.jours>1?"s":""}${data.depuis?` depuis le ${data.depuis}`:""}.`,"alerte");
+}
 function devPermis(){ etat.permisVaisseau = !etat.permisVaisseau; journal(`[DEV] permis de vaisseau ${etat.permisVaisseau?"accordé":"retiré"}.`,"gain"); sauvegarder(); afficher(); majDev(); }
 /* v0.83 — `espace1` est un drapeau DISTINCT du vaisseau (récompense de Q5) :
    sans lui, le bouton Orbite reste caché même avec un vaisseau équipé. */
@@ -469,6 +480,7 @@ function majDev(){
       <button class="mini" id="dev-coque" title="Retire 30 PV à la coque du vaisseau équipé">Abîmer la coque (−30 PV)</button>
       <button class="mini" id="dev-coque-ok" title="Remet la coque à neuf">Réparer la coque</button>
       <button class="mini" id="dev-sonde" title="Déclenche une interception, sans attendre les 15 %">Croiser une sonde</button>
+      <button class="mini" id="dev-ecophoto" title="Allume ou éteint la photo des crédits prise chaque nuit (K281)">Photo de l'économie : allumer / éteindre</button>
       <button class="mini" id="dev-facbloc">${(etat.factionChangeBloque!==false)?"Débloquer":"Bloquer"} changement de faction</button>
       <button class="mini" id="dev-protocole" title="Interceptions sur le terrain, pour ce personnage seulement">Patrouilles : ${(etat.protocoleActif!==false)?"ON":"OFF"}</button>
       <button class="mini" id="dev-imperso" disabled title="Nécessite le backend multijoueur">Entrer dans le compte</button>
@@ -543,6 +555,7 @@ function majDev(){
       if(typeof sauvegarder==="function") sauvegarder();
     });
     const bfb=av.querySelector("#dev-facbloc"); if(bfb) bfb.addEventListener("click", devFactionBloc);
+    const beco=av.querySelector("#dev-ecophoto"); if(beco) beco.addEventListener("click", devEcoPhoto);   // v3.10 (v310, K281)
     const bpro=av.querySelector("#dev-protocole"); if(bpro) bpro.addEventListener("click", devProtocole);
     /* ⚠ Ces deux boutons existaient dans le HTML et leurs fonctions étaient
        définies (devResetQuete / devResetQuetes), mais RIEN ne les reliait :

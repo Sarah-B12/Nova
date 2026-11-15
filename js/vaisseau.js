@@ -23,7 +23,7 @@ const VAISSEAUX = {
    NAVETTE DE RÉSERVE — cadeau de fin de Q5 (v0.91)
    Celle du quai, vieille de trois cents ans. Elle permet de monter TOUT DE
    SUITE, sans attendre qu'un Constructeur en mette une au marché — mais elle
-   tombe en poussière au bout de dix jours, ce qui laisse le métier vivant.
+   tombe en poussière au bout de vingt jours (dix avant la v3.09, K279), ce qui laisse le métier vivant.
    ⚠ Ni fabricable (pas de préfixe `fab_`, aucune recette) ni vendable
    (aucune entrée dans PRIX_ITEM : le marché ne propose que ce qui a un prix).
    ⚠ Coque plus faible que la Navette légère : ce n'est pas un vaisseau neuf.
@@ -40,7 +40,7 @@ if(typeof TOUS_ITEMS !== "undefined" && !TOUS_ITEMS.some(i => i.id === NAVETTE_C
   if(typeof IMG_ITEM !== "undefined") IMG_ITEM[NAVETTE_CADEAU] = "images/items/navette_legere.png";
 }
 /* Échéance ABSOLUE, posée à la fin de Q5 et jamais remise à zéro.
-   ⚠ Sans elle, déséquiper puis rééquiper relancerait dix jours à chaque fois
+   ⚠ Sans elle, déséquiper puis rééquiper relancerait sa durée à chaque fois
    (`vaisseauDate` repart à maintenant, et le retour au sac crée un lot neuf) :
    le cadeau deviendrait un vaisseau gratuit et éternel. */
 function navetteCadeauPosee(){

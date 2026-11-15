@@ -341,7 +341,7 @@ async function terminerQuete(){
   const gainQ = neuf ? (s.credits|0) : 0;
   const xpQ = neuf ? (s.xp|0) : 0;
   /* v0.91 — la Navette de réserve démarre son compte à rebours À LA REMISE,
-     pas à l'équipement : dix jours, qu'on s'en serve ou non. */
+     pas à l'équipement : vingt jours (K279), qu'on s'en serve ou non. */
   if(neuf && r.objets && r.objets[typeof NAVETTE_CADEAU!=="undefined" ? NAVETTE_CADEAU : "navette_reserve"]
      && typeof navetteCadeauPosee==="function") navetteCadeauPosee();
   const paDonne = (r.pa && !_paDejaRecu(a.id)) ? r.pa : 0;   // v1.03 : jamais deux fois
