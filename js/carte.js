@@ -144,7 +144,7 @@ const SECOURS_SOL = 500;
    repart quoi qu'il arrive, règle d'or de l'orbite. */
 
 // Destination du remorquage : TA cité. Une escorte te ramène chez toi.
-function villeRetour(){ return (typeof posDefaut==="function") ? posDefaut() : null; }
+/* (v2.98 : villeRetour retirée — l'appel de détresse ramène dans SA cité par le serveur, secours_sol.) */
 
 /* ⚠ v0.94b — LA CITÉ LA PLUS PROCHE, PAS LA SIENNE. L'air se refait dans le
    rayon de N'IMPORTE QUELLE cité (`air_respirable` côté serveur) : viser sa
@@ -208,22 +208,33 @@ async function secoursSol(){
      jusqu'à quand — pour un joueur qui est, par définition, déjà à sec. */
   const frais = Math.min(SECOURS_SOL, Math.max(0, etat.credits||0));
   if(!await confirmerJoli("Appel de détresse", `Appel de détresse : une escorte vient te chercher et te ramène chez toi.\n\nCoût : ${frais} ₡${frais<SECOURS_SOL?" — tout ce qu'il te reste":` (tarif : ${SECOURS_SOL} ₡)`}.\n\nContinuer ?`, "Appeler")) return;
-  const v = villeRetour(); if(!v) return;
-  /* ⚠ Les crédits se débitent en mémoire puis se poussent : c'est la file
-     `pousserCredits()` qui les porte au serveur (voir `_creditsEnAttente`).
-     Même geste exact que le secours orbital. */
-  etat.credits = Math.max(0, (etat.credits||0) - frais);
-  if(typeof pousserCredits==="function") pousserCredits();
-  etat.pos = { x:v.x, y:v.y };
-  /* ⚠ LA POSITION PART AVANT TOUT LE RESTE. `agir()` relit `pos_x/pos_y` EN
-     BASE pour décider si tu respires (dans_zone_faction) : appelée avant que la
-     position ne soit écrite, elle te croirait encore au milieu de nulle part et
-     ne te rendrait pas ton O₂. Même piège qu'en v0.58 avec les patrouilles. */
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
-  // Coût nul : le seul but est que le serveur constate qu'on est en ville.
-  if(typeof agirServeur==="function") await agirServeur({ cout:0, motif:"secours_sol" });
+  /* ⚠ v2.98 (v300, K271, anti-triche) — L'APPEL PASSE PAR LE SERVEUR (secours_sol). Avant,
+     ce code débitait les crédits en mémoire, posait le joueur chez lui et sauvegardait la
+     position : la sauvegarde ne déplace plus personne. Le serveur vérifie les mêmes
+     conditions que bloqueSansO2 (sur Silène, hors d'une cité, rien à respirer dans le sac,
+     un trajet refusé faute d'O₂ ou le retour impossible), prend 500 ₡ ou ce qu'il reste,
+     ramène dans SA cité et rend l'air. rpcAvecSolde pousse d'abord les crédits en attente,
+     puis applique le solde renvoyé. */
+  let r = null;
+  try{ r = await rpcAvecSolde("secours_sol", {}, "solde"); }catch(e){ r = null; }
+  const d = r && r.data;
+  if(!d){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return; }
+  if(!d.ok){
+    if(d.err === "pas_bloque") journal("Tu n'es pas bloqué : tu peux encore rejoindre ta cité.","alerte");
+    else if(d.err === "o2_sac") journal("Tu as encore de quoi respirer dans ton sac : utilise-le d'abord.","alerte");
+    else if(d.err === "prison") journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
+    else if(d.err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+    else journal(`Appel de détresse refusé par le serveur (${d.err || "réponse vide"}).`,"alerte");
+    _refusO2 = false; if(typeof majCarte==="function") majCarte();
+    return;
+  }
+  etat.pos = { x:d.x, y:d.y };
+  if(typeof d.energie === "number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
+  if(d.jauges){ etat.jauges = etat.jauges || {};
+    etat.jauges.o2 = d.jauges.o2; etat.jauges.sante = d.jauges.sante; etat.jauges.moral = d.jauges.moral; }
   _refusO2 = false;   // il est rentré : le bouton se referme
-  journal(`Appel de détresse : une escorte te ramène à ta cité. −${frais} ₡. Refais tes réserves d'O₂ avant de repartir.`,"alerte","voyage");
+  if(typeof sauvegarder==="function") sauvegarder();
+  journal(`Appel de détresse : une escorte te ramène à ta cité. −${d.frais|0} ₡. Refais tes réserves d'O₂ avant de repartir.`,"alerte","voyage");
   if(typeof majApresDeplacement==="function") majApresDeplacement();
   if(typeof afficher==="function") afficher();
 }
@@ -442,42 +453,29 @@ async function voyager(x, y){
   //    l'aperçu se mettrait à annoncer un prix différent de celui débité.
   const c = coutTrajet(x, y);
   if(!c) return;                                   // trop court (< 6 u) ou position inconnue
-  const dOpen = c.dOpen, coutE = c.coutE, coutO = c.coutO;
-  /* ⚠ v0.58 — l'aperçu annonçait « insuffisant » mais rien n'arrêtait le trajet :
-     agir() amenait l'O₂ à 0 et le joueur MOURAIT en route, d'un seul clic. */
-  if(coutO > 0 && etat.jauges && coutO >= (etat.jauges.o2|0)){
-    /* v0.94b — le message disait de recharger sans dire OÙ : l'O₂ ne remonte
-       que dans le rayon de TA cité, ou par une Recharge / un Tank. */
-    journal(`Pas assez d'O₂ pour ce trajet (−${coutO}, il t'en reste ${etat.jauges.o2|0}) : tu suffoquerais en route. Avance par étapes, respire une Recharge, ou entre dans une cité, la tienne ou non — c'est là que l'air se refait.`,"alerte");
-    _refusO2 = true;   // v0.94b : un refus suffit à ouvrir l'appel de détresse
-    if(bloqueSansO2()) journal(`Si tu ne peux plus rejoindre aucune cité, lance un appel de détresse depuis la carte (${SECOURS_SOL} ₡, ou ce qu'il te reste).`,"alerte");
-    if(typeof majCarte==="function") majCarte();   // fait apparaître le bouton tout de suite
-    return;
+  /* ⚠⚠ v2.98 (v300, K271, anti-triche) — LE SERVEUR FAIT LE TRAJET. Avant, ce code
+     calculait le prix, le faisait débiter (agir, motif « deplacement »), puis écrivait
+     la nouvelle position dans la sauvegarde : une sauvegarde trafiquée posait le joueur
+     n'importe où, sans rien payer. Désormais `deplacer(x, y)` calcule le prix depuis la
+     position qu'IL connaît (même formule que coutTrajet, copiée et vérifiée sur 600
+     trajets : node outils/o_banc.js . deplsrv), le débite et écrit la position ; la
+     sauvegarde ne la change plus. coutTrajet reste ici pour l'aperçu et les distances.
+     ⚠ Les deux gardes de la v0.58 et de la v0.94b sont maintenant au serveur, qui voit
+     le VRAI niveau d'O₂ : refus « o2 » (le trajet coûterait tout l'O₂ — noté pour
+     l'appel de détresse, comme `_refusO2`), et « non_retour » (rien n'est payé : on
+     demande, puis on rappelle avec confirme). Mêmes phrases qu'avant. */
+  let r = await _deplacerServeur(x, y, false);
+  if(r && r.err === "non_retour"){
+    /* ⚠ v0.94b — LE POINT DE NON-RETOUR. On AVERTIT, on n'interdit pas :
+       interdire reproduirait le blocage un pas plus tôt, et le joueur peut avoir
+       ses raisons (une Recharge dans le sac, un gisement à visiter). */
+    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0, r.reste|0)} d'O₂, et il en faut ${r.retour|0} pour rejoindre ${r.cite?nomCite(r.cite):"une cité"}, la plus proche de là-bas.\n\nTu ne pourras plus respirer sans recharge. Continuer ?`, "Continuer", true)) return;
+    r = await _deplacerServeur(x, y, true);
   }
-  /* ⚠ v0.94b — LE POINT DE NON-RETOUR. On AVERTIT, on n'interdit pas :
-     interdire reproduirait le blocage un pas plus tôt, et le joueur peut avoir
-     ses raisons (une Recharge dans le sac, un gisement à visiter). */
-  const _reste  = (etat.jauges ? (etat.jauges.o2|0) : 0) - coutO;
-  const _retour = coutRetourO2({ x, y });
-  if(_retour != null && _retour > 0 && _retour >= _reste){
-    const pv = citeLaPlusProche({ x, y });
-    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,_reste)} d'O₂, et il en faut ${_retour} pour rejoindre ${pv?nomCite(pv.f):"une cité"}, la plus proche de là-bas.\n\nTu ne pourras plus respirer sans recharge. Continuer ?`, "Continuer", true)) return;
-  }
-  if((coutE>0 || coutO>0) && !await agirServeur({ cout:coutE, jauges:{ o2:-coutO }, motif:"deplacement" })) return;
-  // L'O₂ est une jauge serveur : elle part avec l'énergie, dans le même appel.
-  etat.pos={ x:Math.round(x), y:Math.round(y) };
-  // La position part au serveur : elle décide de la présence au combat.
+  if(!r || !r.ok){ _refusDeplacement(r); return; }
+  const dOpen = Number(r.d_ouverte) || 0, coutE = r.cout_e|0, coutO = r.cout_o|0;
+  etat.pos = { x:r.x, y:r.y };
   if(typeof sauvegarder==="function") sauvegarder();
-  /* ⚠ v0.58 — et elle part TOUT DE SUITE. La sauvegarde attend 2,5 s ; or agir()
-     lit la position en base pour l'O₂ (air respirable en ville). Une patrouille
-     juste à la sortie d'une ville voyait encore l'ancienne position : O₂ remis à 100. */
-  /* v0.61 — mais la quête et le journal ne l'ATTENDENT plus : si le réseau
-     traîne, le joueur restait sans « tu es arrivé ». Seule la patrouille, qui
-     en a besoin pour l'O₂, patiente (4 s au plus). */
-  const posEnvoyee = (typeof sauverSurServeur==="function")
-    ? Promise.race([ sauverSurServeur().catch(e=>{ if(typeof _catchLog==="function") _catchLog(e, "carte.js#pos"); }),
-                     new Promise(r=>setTimeout(r, 4000)) ])
-    : null;
   if(etat.pas) etat.pas.deplace=true;
   // v0.91 : les déplacements ont leur propre catégorie de journal.
   journal((dOpen<=0 ? `Déplacement dans la zone (gratuit).`
@@ -486,7 +484,51 @@ async function voyager(x, y){
   apresAction();
   if(typeof queteArrivee==="function") queteArrivee();
   if(typeof debrisApresDeplacement==="function") debrisApresDeplacement();   // v1.31 : visière (chaud/froid)
-  if(dOpen>0 && typeof tenterPatrouille==="function"){ if(posEnvoyee) await posEnvoyee; tenterPatrouille(); }
+  /* La position est déjà en base (deplacer l'écrit) : la patrouille n'attend plus la
+     sauvegarde (v0.58 : agir lit la position pour l'O₂). */
+  if(dOpen>0 && typeof tenterPatrouille==="function") tenterPatrouille();
+}
+
+/* v2.98 (v300) — l'appel au serveur, et ce qu'il renvoie appliqué comme agirServeur le fait
+   (énergie, jauges, sac, mort). null : pas de réponse (le message est déjà dit). */
+async function _deplacerServeur(x, y, confirme){
+  if(typeof sb === "undefined"){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  const args = { p_x:x, p_y:y, p_confirme:!!confirme };
+  try{
+    let { data, error } = await sb.rpc("deplacer", args);
+    // session perdue : refus AVANT tout effet, on peut reprendre la session et rejouer une fois (comme agirServeur)
+    if(!error && data && data.err === "non_connecte" && typeof reprendreSession === "function" && await reprendreSession()){
+      ({ data, error } = await sb.rpc("deplacer", args));
+    }
+    if(error || !data){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+    if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+    if(typeof data.energie === "number"){ etat.energie = data.energie; etat.energieMaj = Date.now(); }
+    if(data.jauges){ etat.jauges = etat.jauges || {};
+      etat.jauges.o2 = data.jauges.o2; etat.jauges.sante = data.jauges.sante; etat.jauges.moral = data.jauges.moral; }
+    if(data.mort && typeof ouvrirCouloirMort === "function") ouvrirCouloirMort();
+    return data;
+  }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); return null; }
+}
+function _refusDeplacement(r){
+  if(!r) return;
+  const err = r.err;
+  if(err === "o2"){
+    /* v0.94b — le message disait de recharger sans dire OÙ : l'O₂ ne remonte
+       que dans le rayon de TA cité, ou par une Recharge / un Tank. */
+    if(etat.jauges && typeof r.o2 === "number") etat.jauges.o2 = r.o2;
+    journal(`Pas assez d'O₂ pour ce trajet (−${r.cout_o|0}, il t'en reste ${r.o2|0}) : tu suffoquerais en route. Avance par étapes, respire une Recharge, ou entre dans une cité, la tienne ou non — c'est là que l'air se refait.`,"alerte");
+    _refusO2 = true;   // v0.94b : un refus suffit à ouvrir l'appel de détresse (le serveur l'a noté aussi)
+    if(bloqueSansO2()) journal(`Si tu ne peux plus rejoindre aucune cité, lance un appel de détresse depuis la carte (${SECOURS_SOL} ₡, ou ce qu'il te reste).`,"alerte");
+    if(typeof majCarte==="function") majCarte();   // fait apparaître le bouton tout de suite
+  }
+  else if(err === "energie") journal("Pas assez d'énergie. Attends (+10 %/h) ou monte de niveau.","alerte");
+  else if(err === "prison")  journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
+  else if(err === "pause")   journal("Personnage en pause.","alerte");
+  else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+  else if(err === "court") return;                 // trop court (< 6 u) : rien, comme avant
+  else if(err === "secteur") journal("Tu n'es pas sur Silène : cette carte ne te concerne pas pour l'instant.","alerte");
+  else if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); else journal("Session expirée — recharge la page.","alerte"); }
+  else { journal(`Déplacement refusé par le serveur (${err || "réponse vide"}).`,"alerte"); console.warn("[deplacer] refus :", r); }
 }
 
 /* ---------- Inscription ---------- */

@@ -48,8 +48,17 @@
   // Entrer dans la zone de la station refait l'air (appel serveur après la sauvegarde).
   motifs.length = 0; etat.enPause = false; etat.jauges = etat.jauges || {}; etat.jauges.o2 = 90; etat.energie = 100;
   const vqa = queteActive; queteActive = () => null;
+  /* v2.99 (v301) — le pas au sol passe par `deplacer_sol`, qui refait aussi l'air sous l'abri : on rejoue ici ce que
+     fait le serveur et on note les mêmes motifs (« deplacement », puis « air_station »), pour comparer aux versions d'avant. */
+  const vRsol = sb.rpc;
+  sb.rpc = (n, a2) => { if(n !== "deplacer_sol") return vRsol(n, a2);
+    const k = coutBraise(a2.p_x, a2.p_y), x = Math.round(a2.p_x), y = Math.round(a2.p_y), ab = SURFACES.ancolie.abri;
+    const st = !aLaStation() && Math.hypot(x - ab.x, y - ab.y) <= ab.r;
+    motifs.push("deplacement"); if(st) motifs.push("air_station");
+    return Promise.resolve({ data: { ok:true, x, y, d:k.d, cout_e:k.coutE, cout_o:k.coutO, station:st }, error:null }); };
   await voyagerBraise(1031, 880); r.air.motifsEntree = motifs.slice();
   motifs.length = 0; await voyagerBraise(1200, 700); r.air.motifsSortie = motifs.slice();
+  sb.rpc = vRsol;
   queteActive = vqa;
 
   // 4. Le tir (Q21) : gagné en visant juste, perdu à court de coups.

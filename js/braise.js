@@ -320,30 +320,38 @@ async function voyagerBraise(x, y){
   const rq = (typeof repereQueteSousCarte==="function") ? repereQueteSousCarte(etat.secteur, x, y) : null;
   if(rq){ x = rq.x; y = rq.y; }
   const c = coutBraise(x, y); if(!c) return;
-  const o2 = etat.jauges ? (etat.jauges.o2|0) : 0;
-  if(c.coutO >= o2 && !cfg.air){
-    journal(`Pas assez d'O₂ pour ce trajet (−${c.coutO}, il t'en reste ${o2}). Respire une recharge, ou avance moins loin.`,"alerte");
+  /* ⚠⚠ v2.99 (v301, K271, anti-triche) — LE SERVEUR FAIT LE PAS. Avant, ce code
+     calculait le prix, le faisait débiter (agir, motif « deplacement »), puis écrivait
+     `etat.surface` dans la sauvegarde : une sauvegarde trafiquée posait le joueur
+     n'importe où sur la carte (devant le vaisseau, sous l'abri de la station), sans
+     rien payer. Désormais `deplacer_sol(x, y)` part de la position qu'IL connaît (même
+     formule que coutBraise, vérifiée sur 600 pas : node outils/o_banc.js . solsrv), la
+     débite, écrit la position (on quitte le bord) et, sous l'abri d'Ancolie, refait
+     l'air (« station »). La sauvegarde ne change plus la position au sol. Les deux
+     gardes (O₂, point de non-retour) sont au serveur, qui voit le vrai O₂ ; mêmes
+     phrases qu'avant. coutBraise reste ici pour l'aperçu. */
+  let r = await _deplacerSolServeur(x, y, false);
+  if(r && r.err === "non_retour"){
+    // Point de non-retour : on AVERTIT (comme sur Silène), on n'interdit pas.
+    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0, r.reste|0)} d'O₂, et il en faut ${r.retour|0} pour revenir ${r.abri ? "à la station" : "au vaisseau"}.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
+    r = await _deplacerSolServeur(x, y, true);
+  }
+  if(!r) return;
+  if(!r.ok){
+    if(r.err === "o2"){
+      if(etat.jauges && typeof r.o2 === "number") etat.jauges.o2 = r.o2;
+      journal(`Pas assez d'O₂ pour ce trajet (−${r.cout_o|0}, il t'en reste ${r.o2|0}). Respire une recharge, ou avance moins loin.`,"alerte");
+    } else if(r.err === "secteur") journal("Tu n'es plus sur cette planète.","alerte");
+    else if(typeof _refusDeplacement === "function") _refusDeplacement(r);   // mêmes phrases que Silène (carte.js)
     return;
   }
-  // Point de non-retour : on AVERTIT (comme sur Silène), on n'interdit pas.
-  const reste = o2 - c.coutO, retour = cfg.air ? 0 : coutRetourVaisseau({ x, y });
-  if(retour > 0 && retour >= reste){
-    if(!await confirmerJoli("Point de non-retour", `Après ce trajet il te restera ${Math.max(0,reste)} d'O₂, et il en faut ${retour} pour revenir ${cfg.abri ? "à la station" : "au vaisseau"}.\n\nSans recharge dans ton sac, tu ne reviendras pas. Continuer ?`, "Continuer", true)) return;
-  }
-  const dansAbri = cfg.abri ? aLaStation() : false;
-  if(!await agirServeur({ cout:c.coutE, jauges:{ o2:-c.coutO }, motif:"deplacement" })) return;
-  // On quitte le bord APRÈS l'appel : le premier pas se fait avec un plein d'air.
-  etat.surface = { x:Math.round(x), y:Math.round(y), abord:false };
-  if(typeof sauverMaintenant==="function") await sauverMaintenant();
+  etat.surface = { x:r.x, y:r.y, abord:false };
+  if(typeof sauvegarder==="function") sauvegarder();
   const l = lieuBraiseIci();
-  journal(`Déplacement — ${cfg.nom} (${Math.round(c.d)} u). −${c.coutE} % énergie, −${c.coutO} O₂.${l?` Tu es à ${l.nom}.`:""}`,"","voyage");
-  /* v1.87 — K47 : en entrant dans la zone de la station, l'air se refait. Le serveur
-     lit la position SAUVÉE (donnees.surface) : l'appel vient donc après la sauvegarde,
-     comme pour « Monter à bord ». */
-  if(cfg.abri && !dansAbri && aLaStation()){
-    await agirServeur({ motif:"air_station" });
-    journal("Tu passes sous l'auvent de la station. L'air y est épais, tiède, réglementaire : tu respires enfin à fond.","gain","voyage");
-  }
+  journal(`Déplacement — ${cfg.nom} (${Math.round(Number(r.d)||0)} u). −${r.cout_e|0} % énergie, −${r.cout_o|0} O₂.${l?` Tu es à ${l.nom}.`:""}`,"","voyage");
+  /* v1.87 — K47 : en entrant dans la zone de la station, l'air se refait (le serveur
+     l'a fait dans le même appel, v301). */
+  if(r.station) journal("Tu passes sous l'auvent de la station. L'air y est épais, tiède, réglementaire : tu respires enfin à fond.","gain","voyage");
   if(typeof queteArrivee==="function") queteArrivee();
   apresBraise();
   /* v1.31 — au sol, AUCUNE patrouille d'ordinaire. Pendant une chute de débris,
@@ -352,6 +360,26 @@ async function voyagerBraise(x, y){
   if(typeof debrisApresDeplacement==="function") debrisApresDeplacement();
   if(typeof missionsApresPas==="function") missionsApresPas();   // v1.65 : relevé de l'entrepôt (H49)
   if(typeof debrisPatrouilleIci==="function" && debrisPatrouilleIci() && typeof tenterPatrouille==="function") tenterPatrouille();
+}
+
+/* v2.99 (v301) — l'appel au serveur, et ce qu'il renvoie appliqué comme agirServeur le fait
+   (énergie, jauges, sac, mort). null : pas de réponse (le message est déjà dit). */
+async function _deplacerSolServeur(x, y, confirme){
+  if(typeof sb === "undefined"){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+  const args = { p_x:x, p_y:y, p_confirme:!!confirme };
+  try{
+    let { data, error } = await sb.rpc("deplacer_sol", args);
+    if(!error && data && data.err === "non_connecte" && typeof reprendreSession === "function" && await reprendreSession()){
+      ({ data, error } = await sb.rpc("deplacer_sol", args));
+    }
+    if(error || !data){ journal("Le serveur n'a pas répondu — réessaie.","alerte"); return null; }
+    if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
+    if(typeof data.energie === "number"){ etat.energie = data.energie; etat.energieMaj = Date.now(); }
+    if(data.jauges){ etat.jauges = etat.jauges || {};
+      etat.jauges.o2 = data.jauges.o2; etat.jauges.sante = data.jauges.sante; etat.jauges.moral = data.jauges.moral; }
+    if(data.mort && typeof ouvrirCouloirMort === "function") ouvrirCouloirMort();
+    return data;
+  }catch(e){ journal("Connexion au serveur perdue — réessaie.","alerte"); return null; }
 }
 
 /* ---------- Affichage ---------- */

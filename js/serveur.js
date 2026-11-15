@@ -317,6 +317,11 @@ function appliquerColonnesProfil(prof){
   etat.cercles    = prof.cercles || {};
   etat.avatar     = prof.avatar || null;
   if(prof.faction) etat.faction = prof.faction;   // écrite par changer_faction() seule
+  /* v2.98 (v300, K271) — la position au sol (pos_x / pos_y) appartient au SERVEUR : seuls
+     deplacer, secours_sol et les fonctions qui déplacent (résurrection, prison, faction,
+     foyer) l'écrivent ; la sauvegarde ne la change plus. On la relit donc ici, comme la
+     faction : `donnees.pos` n'en est que le reflet (le serveur l'y recopie). */
+  if(typeof prof.pos_x === "number" && typeof prof.pos_y === "number") etat.pos = { x:prof.pos_x, y:prof.pos_y };
   /* v0.94 : le total d'XP fait foi ; niveau et XP affichée en découlent, et les
      points des niveaux non encore crédités sont donnés ici. ⚠ Règle de
      CLES_SERVEUR : toute clé qu'on cesse d'écrire doit être relue. */
@@ -361,6 +366,38 @@ function _appliquerCorrectionFiche(c){
   }
   if(typeof majAptitudes === "function") majAptitudes();
   if(typeof afficher === "function") afficher();
+}
+/* v2.98 (v300, K271, anti-triche) — la sauvegarde n'écrit plus la position : le serveur garde
+   la sienne, et la renvoie (`pos`) quand elle diffère de celle envoyée. Cas réguliers : un
+   prisonnier que le serveur conduit avant que la page ne le sache. Sinon c'est une page
+   désaccordée (ancien onglet, trafic) : on se range à la position du serveur.
+   ⚠ Seulement si rien n'a bougé pendant l'appel : un trajet (deplacer) a déjà la vérité, et
+   un décollage parti entre-temps ne doit pas être défait par une réponse plus ancienne. */
+function _adopterPositionServeur(p, envoye){
+  if(!p || typeof p.x !== "number" || typeof p.y !== "number" || !etat || !envoye) return;
+  let change = false;
+  const posInchangee = !etat.pos || (Math.round(etat.pos.x) === envoye.pos_x && Math.round(etat.pos.y) === envoye.pos_y);
+  if(posInchangee && (!etat.pos || etat.pos.x !== p.x || etat.pos.y !== p.y)){ etat.pos = { x:p.x, y:p.y }; change = true; }
+  const sectActuel = ["ecart","braise","suaire","ancolie","ceres"].includes(etat.secteur) ? etat.secteur : "silene";
+  // On ne quitte Silène que depuis une cité (ou la prison retient) : le serveur a gardé Silène.
+  if(p.secteur === "silene" && envoye.secteur !== "silene" && sectActuel === envoye.secteur){
+    etat.secteur = "silene"; etat.surface = null;
+    if(typeof fermerOrbite === "function" && document.querySelector("#modale-orbite")) fermerOrbite();
+    if(typeof fermerCarteBraise === "function") fermerCarteBraise();
+    change = true;
+  }
+  /* v2.99 (v301) — la position au sol des surfaces (La Braise, Le Suaire, Ancolie) : même règle,
+     adoptée seulement si `etat.surface` est encore l'objet envoyé (un pas, deplacer_sol, le remplace). */
+  const surfEnvoyee = envoye.donnees ? envoye.donnees.surface : undefined;
+  if(p.surface && typeof p.surface === "object" && p.secteur === etat.secteur && surfEnvoyee === etat.surface
+     && (!etat.surface || etat.surface.x !== p.surface.x || etat.surface.y !== p.surface.y || !!etat.surface.abord !== !!p.surface.abord)){
+    etat.surface = { x:p.surface.x, y:p.surface.y, abord:!!p.surface.abord };
+    if(typeof majCarteBraise === "function") majCarteBraise();
+    change = true;
+  }
+  if(!change) return;
+  console.warn("[serveur] position gardée par le serveur :", p, "| envoyée :", envoye.pos_x, envoye.pos_y, envoye.secteur);
+  if(typeof majApresDeplacement === "function") majApresDeplacement(); else if(typeof afficher === "function") afficher();
 }
 async function _premiereFaction(fid){
   if(!SERVEUR_DISPO || !fid) return;
@@ -466,6 +503,9 @@ async function _sauverMaintenantInterne(){
     // ⚠ PHASE 4 : energie / energie_maj NE SONT PLUS POUSSÉES ici.
     // Le serveur en est désormais propriétaire (RPC agir()). Les repousser
     // depuis le client écraserait la dépense serveur — même piège que les crédits.
+    /* v2.98 (v300, K271) : la position n'est PLUS écrite par la sauvegarde (deplacer,
+       secours_sol et les fonctions du serveur la changent). Elle part encore pour que le
+       serveur dise si la page s'est désaccordée (réponse `pos`, _adopterPositionServeur). */
     pos_x: (etat.pos && typeof etat.pos.x==="number") ? Math.round(etat.pos.x) : null,
     pos_y: (etat.pos && typeof etat.pos.y==="number") ? Math.round(etat.pos.y) : null,
     derniere_activite: new Date().toISOString(),
@@ -515,6 +555,7 @@ async function _sauverMaintenantInterne(){
     _majSync = Number(res.maj) || _majSync;   // v0.92 : je suis à jour avec ce que je viens d'écrire
     _presenceDer = Date.now();   // elle écrit derniere_activite : inutile de doubler
     if(res.corrige && typeof res.corrige === "object") _appliquerCorrectionFiche(res.corrige);   // v2.94 (v296, K269)
+    if(res.pos && typeof res.pos === "object") _adopterPositionServeur(res.pos, maj);        // v2.98 (v300, K271)
     return;
   }
   if(res && res.err === "conflit"){

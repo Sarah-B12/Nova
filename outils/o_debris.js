@@ -7,6 +7,10 @@
   const journ = []; journal = (t) => { journ.push(t); };
   sauverMaintenant = async () => {}; sauverSurServeur = async () => {};
   rep.agir = () => ({ ok:true, ajoutes:{}, energie:70, jauges:{ o2:90, sante:80, moral:80 }, etat:null });
+  // v2.99 (v301) : le pas au sol passe par deplacer_sol (même réponse que l'agir d'avant, prix du jeu)
+  rep.deplacer_sol = (a) => { const k = coutBraise(a.p_x, a.p_y);
+    return { ok:true, x:Math.round(a.p_x), y:Math.round(a.p_y), d:k.d, cout_e:k.coutE, cout_o:k.coutO, station:false,
+             energie:70, jauges:{ o2:90, sante:80, moral:80 }, etat:null }; };
 
   // 1. Pas d'événement : rien nulle part
   rep.debris_etat = () => ({ actif:false });
