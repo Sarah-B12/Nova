@@ -288,8 +288,9 @@ async function deconnexion(){
 }
 
 /* ---------- v1.11 — DÉCONNEXION POUR INACTIVITÉ ----------
-   30 minutes sans toucher à rien → sauvegarde, puis déconnexion. Un
-   avertissement tombe à 29 minutes, avec un bouton pour rester.
+   45 minutes sans toucher à rien → sauvegarde, puis déconnexion. Un
+   avertissement tombe à 44 minutes, avec un bouton pour rester.
+   (v3.12, demande d'une testeuse via l'autrice : 30 → 45 minutes.)
    ⚠ ON NE SE FIE PAS À `setTimeout` SEUL : un onglet en arrière-plan voit ses
    minuteries ralenties (et sur mobile, gelées). On compare donc des HORODATAGES
    à chaque réveil — c'est le même piège que `visibilitychange` en v0.91.
@@ -298,8 +299,8 @@ async function deconnexion(){
    ⚠ Rien ne se perd à être déconnecté : l'énergie remonte hors ligne, les
    cultures poussent, la position est gardée. C'est une sécurité (téléphone
    posé, ordinateur partagé), pas une punition. */
-const INACTIF_MS   = 30 * 60 * 1000;
-const INACTIF_AVERT_MS = 29 * 60 * 1000;
+const INACTIF_MS   = 45 * 60 * 1000;
+const INACTIF_AVERT_MS = 44 * 60 * 1000;
 let _derniereAction = Date.now();
 let _avertiInactif  = false;
 function _reveilActivite(){
@@ -316,7 +317,7 @@ function _avertirInactif(){
   d.style.cssText = "position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:9500;"
     + "background:rgba(14,22,42,.98); border:1px solid #ff9a44; border-radius:12px; padding:12px 16px;"
     + "max-width:min(420px, calc(100vw - 24px)); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.6);";
-  d.innerHTML = `<div style="margin-bottom:8px">Tu es inactif depuis 29 minutes — <b>déconnexion dans 1 minute</b>.</div>`;
+  d.innerHTML = `<div style="margin-bottom:8px">Tu es inactif depuis 44 minutes — <b>déconnexion dans 1 minute</b>.</div>`;
   const b = document.createElement("button"); b.className = "mini"; b.textContent = "Je suis là";
   b.addEventListener("click", _reveilActivite);
   d.appendChild(b); document.body.appendChild(d);

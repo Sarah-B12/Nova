@@ -46,6 +46,9 @@
   header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
   .marque { text-align:left; }
   .sous-titre { font-family:"Space Mono",monospace; color:var(--sourdine); font-size:11px; letter-spacing:.30em; text-transform:uppercase; }
+  /* v3.12 (autrice, 17/11) : en haut à gauche, « Secteur Silène » devient le lien vers le forum. */
+  a.sous-titre.lien-forum { display:inline-block; text-decoration:none; }
+  a.sous-titre.lien-forum:hover, a.sous-titre.lien-forum:focus-visible { color:var(--bleu); }
   .statut-haut { display:flex; align-items:center; gap:16px; flex:1; justify-content:flex-end; flex-wrap:wrap; }
   .id-haut { display:flex; flex-direction:column; line-height:1.2; }
   .id-haut b { font-size:16px; }

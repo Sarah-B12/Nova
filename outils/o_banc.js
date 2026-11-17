@@ -51,6 +51,7 @@ const DELAIS = {
   navette20: { profil: 50, sac: 50, jauges: 50 },   // v3.09 : Navette de réserve, 20 jours et avertissements, K279 (o_navette20.js)
   ecophoto: { profil: 50, sac: 50, jauges: 50 },    // v3.10 : la photo de l'économie, bouton de la console, K281 (o_ecophoto.js)
   v311: { profil: 50, sac: 50, jauges: 50 },        // v3.11 : vols vides en bleu, plus de chaînes sur le portrait (o_v311.js)
+  v312: { profil: 50, sac: 50, jauges: 50 },        // v3.12 : forum, 45 min, labyrinthe (K282), protection après un vol vide (K283) (o_v312.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)

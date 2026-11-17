@@ -30,9 +30,10 @@ const VOL_CAP_OBJETS  = 3;
 const XP_VOL_REUSSI = 8, XP_VOL_VIDE = 3, XP_VOL_RATE = 2;
 const IMMUNITE_JOURS  = 20;
 /* v1.97 (K107) — la victime est protégée, contre tout le monde et les deux gestes :
-   après un vol réussi, un hack réussi, une tentative ratée. « Rien pris » ne
-   protège pas. TEXTES seulement : le serveur applique (vol_preparer, v222). */
-const PROTECTION_VOL_H = 48, PROTECTION_HACK_H = 72, PROTECTION_RATE_H = 24;
+   après un vol réussi, un hack réussi, une tentative ratée — et, depuis la v3.12 (v311, K283), après un vol ou un
+   hack réussi mais VIDE (24 h ; avant : rien, et les voleurs retombaient sur elle en boucle).
+   TEXTES seulement : le serveur applique (vol_preparer, v222, v311). */
+const PROTECTION_VOL_H = 48, PROTECTION_HACK_H = 72, PROTECTION_RATE_H = 24, PROTECTION_VIDE_H = 24;
 const ITEM_HACK_VOL   = "fab_ordinateur_de_hacking";
 let _volTimer = null, _hackTimer = null, _hackWin = null, _hackLose = null, _hackCleanup = null;
 
@@ -173,7 +174,7 @@ function _volAppliquer(d){
 }
 const _VOL_REFUS = {
   personne:  ()=>`Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,
-  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j), ou visés récemment (${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée). Rien n'a été dépensé.`,
+  proteges:  ()=>`Ceux qui sont ${_lieuVolNom()} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j), ou visés récemment (${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée, ${PROTECTION_VIDE_H} h après un vol sans butin). Rien n'a été dépensé.`,
   lieu:      ()=>_VOL_LIEU_TXT,
   aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
   chasseur:  ()=>"Un chasseur de primes ne vole pas.",   // v1.72 (H80)
@@ -299,6 +300,29 @@ function _hackChrono(m, temps){
 
 /* labyrinthe à bascule : maze aléatoire (génération), incliner aux flèches ou au pavé */
 const LAB_M = 13;   // taille logique (impair) — plus grand = plus difficile
+/* v3.12 (K282, retour de Vortex sur iPad) — le temps : 25 s (avant 17) + 0,03 s par point d'Intelligence. Mesuré :
+   un joueur parfait met 9 s en moyenne, 12 s au pire (chemin de 55 cases et 17 virages en moyenne). */
+const LAB_TEMPS_MS = 25000, LAB_MS_PAR_INT = 30;
+/* v3.12 (K282) — l'aide aux virages : on pousse vers une ouverture et la bille bute parce qu'elle n'est pas tout à
+   fait en face (il fallait être à 0,2 case près ; au pavé, d'un seul pouce, presque impossible). Si son centre est
+   dans la rangée (ou la colonne) de l'ouverture, elle y glisse, un peu à chaque image. Rend [x, y]. */
+function _labGlisser(g, M, CS, R, px, py, ax, ay, k, collide){
+  if(ax && collide(px + ax * 1.5, py)){
+    const r = Math.floor(py / CS), c = Math.floor((px + ax * (R + 1.5)) / CS);
+    if(r > 0 && r < M - 1 && c > 0 && c < M - 1 && g[r][c] === 0){
+      const d = (r + 0.5) * CS - py, s = Math.sign(d) * Math.min(Math.abs(d), 1.6 * k);
+      if(s && !collide(px, py + s)) py += s;
+    }
+  }
+  if(ay && collide(px, py + ay * 1.5)){
+    const c = Math.floor(px / CS), r = Math.floor((py + ay * (R + 1.5)) / CS);
+    if(r > 0 && r < M - 1 && c > 0 && c < M - 1 && g[r][c] === 0){
+      const d = (c + 0.5) * CS - px, s = Math.sign(d) * Math.min(Math.abs(d), 1.6 * k);
+      if(s && !collide(px + s, py)) px += s;
+    }
+  }
+  return [px, py];
+}
 function _genMaze(M){
   const g=Array.from({length:M},()=>Array(M).fill(1));
   const st=[[1,1]]; g[1][1]=0; const dirs=[[0,2],[0,-2],[2,0],[-2,0]];
@@ -349,6 +373,7 @@ function _miniLabyrinthe(m){
   function frame(now){
     const k=pasImage(now,_pi);
     const ax=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), ay=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0);
+    [px, py] = _labGlisser(g, M, CS, R, px, py, ax, ay, k, collide);   // v3.12 (K282)
     const fr=Math.pow(0.90,k); vx=(vx+ax*0.32*k)*fr; vy=(vy+ay*0.32*k)*fr;
     const sp=Math.hypot(vx,vy), MX=CS*0.42; if(sp>MX){ vx=vx/sp*MX; vy=vy/sp*MX; }
     let nx=px+vx*k; if(!collide(nx,py)) px=nx; else vx*=-0.25;
@@ -360,7 +385,7 @@ function _miniLabyrinthe(m){
   }
   _hackCleanup=()=>{ window.removeEventListener("keydown",kd); window.removeEventListener("keyup",ku); if(raf) cancelAnimationFrame(raf); };
   raf=requestAnimationFrame(frame);
-  _hackChrono(m, 17000 + Math.round((typeof intelligenceEffective==="function"?intelligenceEffective():0)*30));
+  _hackChrono(m, LAB_TEMPS_MS + Math.round((typeof intelligenceEffective==="function"?intelligenceEffective():0)*LAB_MS_PAR_INT));   // v3.12 (K282) : 17 s → 25 s
 }
 /* path finder : 3 manches, cliquer toujours le nœud le plus proche du dernier atteint */
 function _miniCheminement(m){
@@ -610,7 +635,7 @@ function majVoler(){
   const qui = !hors ? `présent <b>dans cette ville</b>`
     : `présent ${ici ? `<b>${_lieuVolNom("vol")}</b> (poches)` : `sur un lieu (poches : <b>tu n'es sur aucun lieu</b>)`}, ou n'importe où <b>${_lieuVolNom("hack")}</b> (hack)`;
   z.innerHTML=`
-    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${_coutVol()}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée.</p>
+    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${_coutVol()}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau équipé sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée ou un vol sans butin.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>Voler <span class="qte">· objets</span></h3>

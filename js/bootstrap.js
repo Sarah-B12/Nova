@@ -85,7 +85,7 @@ try{
   if(sessionStorage.getItem("nova_inactif")){
     sessionStorage.removeItem("nova_inactif");
     const zi = document.querySelector("#auth-info");
-    if(zi) zi.innerHTML = "Tu as été déconnecté après <b>30 minutes d'inactivité</b>. Ta partie est sauvegardée : reconnecte-toi, tu retrouveras tout.";
+    if(zi) zi.innerHTML = "Tu as été déconnecté après <b>45 minutes d'inactivité</b>. Ta partie est sauvegardée : reconnecte-toi, tu retrouveras tout.";
   }
 }catch(e){}
 const _voir=document.querySelector("#auth-voir"); if(_voir) _voir.addEventListener("change", e=>{ const t=e.target.checked?"text":"password"; ["#auth-mdp","#auth-mdp2"].forEach(s=>{ const el=document.querySelector(s); if(el) el.type=t; }); });
