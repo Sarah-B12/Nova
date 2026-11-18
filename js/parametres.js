@@ -205,11 +205,60 @@ async function changerFaction(fid){
 }
 
 /* ---------- Compte / apparence ---------- */
-function sauverEmail(){
-  const el=document.querySelector("#param-email"); if(!el) return;
-  etat.email=(el.value||"").trim();
-  journal("E-mail enregistré.","gain");   // v2.72 : sans la note de développeur
-  if(typeof sauvegarder==="function") sauvegarder();
+/* v3.14 (K286) — L'ADRESSE E-MAIL (B4). Elle est lue au serveur d'authentification (avant, le champ
+   n'écrivait qu'une chaîne locale décorative, `etat.email`, que plus rien ne lit). La changer envoie un
+   lien de confirmation (à la nouvelle adresse, et aussi à l'ancienne si « Secure email change » est
+   allumé dans Supabase) : rien ne change avant le clic. Comme pour le mot de passe, l'actuel est
+   redemandé — une session laissée ouverte ne doit pas suffire à détourner le compte.
+   Quand le changement aboutit, `profils.email` (le filet des restaurations) suit au serveur (SQL v312).
+   `_emailLu` évite la boucle chargerEmailCompte → majParametres → … */
+let _emailCompte = null, _emailNouveau = null, _emailLu = false, _emailOuvert = false;
+async function chargerEmailCompte(force){
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
+  if(_emailLu && !force) return;
+  _emailLu = true;
+  try{
+    const { data } = await sb.auth.getUser();
+    const u = data && data.user;
+    _emailCompte = u ? (u.email || null) : null;
+    _emailNouveau = u ? (u.new_email || null) : null;
+  }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "parametres.js#email"); }
+  majParametres();
+}
+function basculerEmail(){ _emailOuvert = !_emailOuvert; majParametres();
+  if(_emailOuvert){ const f=document.querySelector("#param-email-neuf"); if(f) f.focus(); } }
+async function changerEmail(){
+  if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
+  const z=document.querySelector("#parametres-vue"); if(!z) return;
+  const neuf = ((z.querySelector("#param-email-neuf")||{}).value || "").trim();
+  const mdp  = (z.querySelector("#param-email-mdp")||{}).value || "";
+  if(!neuf || !mdp){ journal("Remplis les deux champs.","alerte"); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(neuf)){ journal("Cette adresse e-mail n'est pas valide.","alerte"); return; }
+  if(_emailCompte && neuf.toLowerCase() === _emailCompte.toLowerCase()){ journal("C'est déjà ton adresse actuelle.","alerte"); return; }
+
+  const btn = z.querySelector("#param-email-valider"); if(btn){ btn.disabled=true; btn.textContent="Vérification…"; }
+  try{
+    const { data:u } = await sb.auth.getUser();
+    const email = u && u.user ? u.user.email : null;
+    if(!email){ journal("Session introuvable — reconnecte-toi.","alerte"); return; }
+
+    const { error:eVerif } = await sb.auth.signInWithPassword({ email, password: mdp });
+    if(eVerif){ journal("Mot de passe actuel incorrect.","alerte"); return; }
+
+    const { error:eMaj } = await sb.auth.updateUser({ email: neuf }, { emailRedirectTo: (typeof _urlRetour==="function") ? _urlRetour() : undefined });
+    if(eMaj){
+      const l=(eMaj.message||"").toLowerCase();
+      journal(l.includes("already") ? "Cette adresse est déjà celle d'un autre compte."
+            : (l.includes("rate limit") || l.includes("security purposes") || eMaj.status===429) ? "Trop d'e-mails demandés d'affilée. Attends une minute, puis réessaie."
+            : "Changement refusé : "+eMaj.message, "alerte");
+      return;
+    }
+    _emailOuvert = false; _emailNouveau = neuf;
+    journal(`Un lien de confirmation vient de partir vers ${neuf}. Ton adresse ne changera qu'après le clic. Si un e-mail arrive aussi sur ton adresse actuelle, clique dans les deux. Pense à regarder dans tes indésirables.`,"gain");
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent="Valider"; }
+    chargerEmailCompte(1);
+  }
 }
 /* Changement de mot de passe.
    ⚠ Supabase n'exige PAS l'ancien mot de passe pour updateUser({password}) :
@@ -317,6 +366,19 @@ function majParametres(){
     appBtn = `<button id="param-apparence">Personnaliser</button>`;
   }
 
+  // E-mail — v3.14 (K286) : l'adresse du compte, lue au serveur d'authentification
+  if(!_emailLu) chargerEmailCompte();
+  const _ech = (typeof echapper==="function") ? echapper : (t=>String(t));
+  let emailP = _emailCompte ? `Adresse actuelle : <b>${_ech(_emailCompte)}</b>.` : "Lecture de l'adresse…";
+  if(_emailNouveau) emailP += ` En attente de confirmation : <b>${_ech(_emailNouveau)}</b>. Clique sur le lien reçu (regarde aussi dans tes indésirables).`;
+  if(_emailOuvert) emailP = "Saisis la nouvelle adresse et ton mot de passe actuel. Un lien de confirmation partira par e-mail.";
+  const emailCtrl = `<button id="param-email"${_emailCompte||_emailOuvert?"":" disabled"}>${_emailOuvert?"Annuler":"Changer"}</button>`;
+  const emailForm = _emailOuvert ? `<div class="reglage param-mdp-form">
+      <input id="param-email-neuf" type="email" autocomplete="email" placeholder="Nouvelle adresse e-mail">
+      <input id="param-email-mdp"  type="password" autocomplete="current-password" placeholder="Mot de passe actuel">
+      <button id="param-email-valider">Valider</button>
+    </div>` : "";
+
   // Mot de passe
   const mdpP = _mdpOuvert ? "Saisis ton mot de passe actuel, puis le nouveau (8 caractères minimum)."
                           : "Modifiable à tout moment. L'ancien mot de passe est redemandé.";
@@ -332,14 +394,17 @@ function majParametres(){
     <div class="reglage"><div><b>Personnage</b><p>${pauseP}</p></div>${pauseBtn}</div>
     <div class="reglage"><div><b>Changer de faction</b><p>${factionP}</p></div>${factionCtrl}</div>
     <div class="reglage"><div><b>Apparence</b><p>${appP}</p></div>${appBtn}</div>
-    <div class="reglage"><div><b>E-mail d'inscription</b><p>Rattaché à ton compte (serveur à venir).</p></div><span class="param-inline"><input id="param-email" type="email" placeholder="ton@email" value="${etat.email||""}"><button id="param-email-btn">Enregistrer</button></span></div>
+    <div class="reglage"><div><b>Adresse e-mail</b><p>${emailP}</p></div>${emailCtrl}</div>
+    ${emailForm}
     <div class="reglage"><div><b>Mot de passe</b><p>${mdpP}</p></div>${mdpCtrl}</div>
     ${mdpForm}${(typeof estAdmin==="function" && estAdmin()) ? `<div class="reglage"><div><b>Console d'administration</b><p>Sur ordinateur : Ctrl + Maj + D. Ici, d'un toucher.</p></div><button id="param-dev">Ouvrir</button></div>` : ""}`;   // v1.90 : la console au doigt (admins et devs)
 
   const bp=z.querySelector("#param-pause"); if(bp) bp.addEventListener("click", basculerPause);
   const bd=z.querySelector("#param-dev"); if(bd) bd.addEventListener("click", ()=>{ if(typeof ouvrirDev==="function") ouvrirDev(); });   // v1.90
   const bf=z.querySelector("#param-faction-btn"); if(bf) bf.addEventListener("click", ()=>{ const s=z.querySelector("#param-faction-sel"); if(s) changerFaction(s.value); });
-  const be=z.querySelector("#param-email-btn"); if(be) be.addEventListener("click", sauverEmail);
+  const be=z.querySelector("#param-email"); if(be) be.addEventListener("click", basculerEmail);   // v3.14 (K286)
+  const bev=z.querySelector("#param-email-valider"); if(bev) bev.addEventListener("click", changerEmail);
+  const em=z.querySelector("#param-email-mdp"); if(em) em.addEventListener("keydown", e=>{ if(e.key==="Enter") changerEmail(); });
   const ba=z.querySelector("#param-apparence"); if(ba) ba.addEventListener("click", modifierApparence);
   const bm=z.querySelector("#param-mdp"); if(bm) bm.addEventListener("click", basculerMdp);
   const bmv=z.querySelector("#param-mdp-valider"); if(bmv) bmv.addEventListener("click", changerMotDePasse);

@@ -52,6 +52,8 @@ const DELAIS = {
   ecophoto: { profil: 50, sac: 50, jauges: 50 },    // v3.10 : la photo de l'économie, bouton de la console, K281 (o_ecophoto.js)
   v311: { profil: 50, sac: 50, jauges: 50 },        // v3.11 : vols vides en bleu, plus de chaînes sur le portrait (o_v311.js)
   v312: { profil: 50, sac: 50, jauges: 50 },        // v3.12 : forum, 45 min, labyrinthe (K282), protection après un vol vide (K283) (o_v312.js)
+  v313: { profil: 50, sac: 50, jauges: 50 },        // v3.13 : texte de la page d'accueil, K285 (o_v313.js)
+  v314: { profil: 50, sac: 50, jauges: 50 },        // v3.14 : les e-mails du compte, K286 (o_v314.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)

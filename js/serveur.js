@@ -51,7 +51,25 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
    joueur. ⚠ Sa connexion vit dans le sessionStorage DE CET ONGLET (clé à part) : la session de
    l'admin, dans ses autres onglets, n'est jamais touchée — et celle-ci meurt avec l'onglet. */
 const NOVA_CONTROLE = (function(){ try{ return new URLSearchParams(location.search).has("controle"); }catch(e){ return false; } })();
-const sb = (typeof supabase !== "undefined" && supabase.createClient)
+/* v3.14 (K286) — LES LIENS DES E-MAILS. Un lien de confirmation, de mot de passe oublié ou de changement
+   d'adresse ramène ici avec, derrière le #, ce qui s'est passé : type=signup | recovery | email_change,
+   un message (premier des deux clics d'un changement d'adresse) ou une erreur (lien expiré, déjà servi).
+   ⚠ supabase-js lit ce # et l'EFFACE dès la création du client : on le relève donc AVANT, ici.
+   Lu par bootstrap.js et navigation.js (_annoncerLien, ouvrirNouveauMdp). */
+const NOVA_LIEN = (function(){
+  const vide = { type:null, message:null, erreur:null };
+  try{
+    const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+    const q = new URLSearchParams(location.search || "");
+    return { type: h.get("type") || null, message: h.get("message") || null,
+             erreur: h.get("error_code") || h.get("error") || q.get("error_code") || q.get("error") || null };
+  }catch(e){ return vide; }
+})();
+let _lienRecuperation = false;    // v3.14 : posé par l'événement PASSWORD_RECOVERY (filet si le # a échappé à NOVA_LIEN)
+/* Adresse où les liens des e-mails ramènent : la page du jeu elle-même (doit figurer dans les
+   « Redirect URLs » de Supabase : https://nova-epic.pages.dev/**). */
+function _urlRetour(){ return location.origin + location.pathname; }
+const sb =(typeof supabase !== "undefined" && supabase.createClient)
   ? (NOVA_CONTROLE
       ? supabase.createClient(SB_URL, SB_KEY, { auth:{ storage:window.sessionStorage, storageKey:"nova-controle-auth", persistSession:true, autoRefreshToken:true, detectSessionInUrl:false } })
       : supabase.createClient(SB_URL, SB_KEY))
@@ -63,7 +81,16 @@ if(!SERVEUR_DISPO) console.warn("[serveur] Librairie Supabase absente — mode l
 
 /* ---------- Auth ---------- */
 async function sInscrire(email, mdp, pseudo){
-  return await sb.auth.signUp({ email, password: mdp, options: { data: { nom: pseudo } } });
+  return await sb.auth.signUp({ email, password: mdp, options: { data: { nom: pseudo }, emailRedirectTo: _urlRetour() } });
+}
+/* v3.14 (K286) — les e-mails du compte. Supabase les envoie par la boîte Gmail du jeu (SMTP réglé dans
+   Authentication → Emails). Aucune ne dit si l'adresse existe : c'est voulu (personne ne peut sonder
+   la liste des comptes). */
+async function renvoyerConfirmation(email){
+  return await sb.auth.resend({ type: "signup", email, options: { emailRedirectTo: _urlRetour() } });
+}
+async function demanderNouveauMdp(email){
+  return await sb.auth.resetPasswordForEmail(email, { redirectTo: _urlRetour() });
 }
 async function seConnecter(email, mdp){
   return await sb.auth.signInWithPassword({ email, password: mdp });
@@ -92,6 +119,7 @@ function alerteSessionPerdue(){
 }
 if(SERVEUR_DISPO){
   sb.auth.onAuthStateChange((ev)=>{
+    if(ev==="PASSWORD_RECOVERY"){ _lienRecuperation = true; _sessionAlertee = false; return; }   // v3.14 : bootstrap.js ouvre la fenêtre
     if(ev==="SIGNED_IN" || ev==="TOKEN_REFRESHED"){ _sessionAlertee = false; return; }
     if(ev==="SIGNED_OUT" && typeof etat!=="undefined" && etat && etat.inscrit) alerteSessionPerdue();
   });

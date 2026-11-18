@@ -90,6 +90,9 @@ try{
 }catch(e){}
 const _voir=document.querySelector("#auth-voir"); if(_voir) _voir.addEventListener("change", e=>{ const t=e.target.checked?"text":"password"; ["#auth-mdp","#auth-mdp2"].forEach(s=>{ const el=document.querySelector(s); if(el) el.type=t; }); });
 document.querySelector("#bienvenue-ok").addEventListener("click", fermerBienvenue);
+// v3.14 (K286) : les deux liens de l'écran de connexion (navigation.js)
+{ const lo=document.querySelector("#auth-oubli"); if(lo) lo.addEventListener("click", motDePasseOublie);
+  const lr=document.querySelector("#auth-renvoi"); if(lr) lr.addEventListener("click", renvoyerEmailConfirmation); }
 document.querySelectorAll(".comm-lien").forEach(b => b.addEventListener("click", () => changerComm(b.dataset.comm)));
 document.querySelector("#auth-mdp").addEventListener("keydown", e => { if(e.key==="Enter") validerAuth(); });
 
@@ -111,8 +114,22 @@ construireCompetences(); construireCarte();
         await syncApresConnexion();
         if(!etat.avatar && typeof ouvrirAvatar==="function") ouvrirAvatar({obligatoire:true}); /* rattrapage : inscription interrompue avant le choix */
       }
+      else if(prof && typeof _terminerInscription==="function"){
+        /* v3.14 (K286) — ARRIVÉE PAR LE LIEN DE CONFIRMATION : la session existe, le personnage pas encore.
+           Même fin d'inscription qu'à la première Connexion (navigation.js). */
+        const f = await _terminerInscription(prof);
+        if(prof.avatar) etat.avatar = prof.avatar;
+        _etatPret = true; afficher();
+        journal(`Bienvenue, ${etat.nom}. Faction attribuée : ${f.nom}.`,"gain");
+        await syncApresConnexion();
+        if(!etat.avatar && typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});
+        if(typeof montrerBienvenue==="function") montrerBienvenue();
+      }
       else { etat = nouvelEtat(); _etatPret = true; afficher(); ouvrirEntree(); }
     } else { etat = nouvelEtat(); _etatPret = true; afficher(); ouvrirEntree(); }
+    // v3.14 (K286) : arrivée par le lien « mot de passe oublié » → la fenêtre du nouveau mot de passe
+    if(etat && etat.inscrit && ((typeof NOVA_LIEN!=="undefined" && NOVA_LIEN.type==="recovery") || (typeof _lienRecuperation!=="undefined" && _lienRecuperation)) && typeof ouvrirNouveauMdp==="function") ouvrirNouveauMdp();
+    if(typeof _annoncerLien==="function") _annoncerLien();   // v3.14 : changement d'adresse, lien expiré
   } else {
     _etatPret = true;
     afficher();

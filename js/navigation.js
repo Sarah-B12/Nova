@@ -155,7 +155,9 @@ function ouvrirEntree(){
     m.innerHTML=`<div class="ent-wrap">
       <h1 class="ent-titre">Nova Epic</h1>
       <p class="ent-sous">Survivre ensemble sous l'œil du Protocole</p>
-      <p class="ent-pitch">Maar, planète hostile née d'un ancien cratère. Cinq factions s'y partagent des terres rudes, entre mines, dômes et machines rafistolées. Mais quelque chose veille au-dessus de Maar — et le Protocole n'oublie jamais.</p>
+      <!-- v3.13 (K285, autrice, 18/11) : le texte d'accueil suit le LORE (plus de cratère ; « Maar » n'est connu qu'en Q1 ;
+           le joueur est d'ici et ne choisit pas sa faction ; rien de dévoilé). -->
+      <p class="ent-pitch">Tu as grandi sur Silène, dans des cités bâties sur ce que d'autres ont laissé derrière eux. Cinq factions y tiennent bon, et la tienne compte sur toi : enrôle-toi pour ses expéditions, ou brigue une place à son gouvernement. Apprends un métier, cultive, commerce, vole s'il le faut, construis ton vaisseau… et découvre ce qui s'est vraiment passé ici. Mais méfie-toi : quelque chose veille sur Silène — et le Protocole n'oublie jamais.</p>
       <div class="ent-boutons"><button class="valider" id="ent-connexion">Connexion</button><button class="valider" id="ent-inscription">Inscription</button></div>
     </div>`;
     m.querySelector("#ent-connexion").addEventListener("click",()=>{ _authMode="connexion"; ouvrirAuth(); });
@@ -181,16 +183,51 @@ function basculerAuth(mode){
   authInfo(mode==="inscription"
     ? "Crée ton compte pour rejoindre Silène. Ton pseudo sera définitif ; ta faction est attribuée au hasard."
     : "Reconnecte-toi à ton personnage.");
+  // v3.14 (K286) : « Mot de passe oublié ? » seulement à la connexion ; le renvoi n'apparaît qu'après un besoin.
+  const lo=document.querySelector("#auth-oubli"); if(lo) lo.hidden=(mode!=="connexion");
+  const lr=document.querySelector("#auth-renvoi"); if(lr) lr.hidden=true;
 }
 function validerAuth(){ if(_authMode==="inscription") inscrire(); else connecter(); }
 function _authMsg(e){ const m=(e&&e.message)||"", l=m.toLowerCase();
   if(l.includes("already registered")||l.includes("already been")) return "Cet e-mail a déjà un compte — connecte-toi.";
+  // v3.14 (K286) : la confirmation par e-mail et la limite d'envoi (avant « email », qui les avalerait)
+  if(_nonConfirme(e)) return "Ton adresse n'est pas encore confirmée. Clique sur le lien de l'e-mail reçu à l'inscription (pense à regarder dans tes indésirables), ou demande un nouvel e-mail ci-dessous.";
+  if(l.includes("rate limit") || l.includes("security purposes") || (e && e.status===429)) return "Trop d'e-mails demandés d'affilée. Attends une minute, puis réessaie.";
   if(l.includes("banned") || l.includes("user_banned")) return "Ton compte est suspendu pour le moment.";   // v2.22 (K139)
   if(l.includes("invalid login")) return "E-mail ou mot de passe incorrect.";
   if(l.includes("database error")) return "Ce pseudo est peut-être déjà pris. Essaies-en un autre.";
   if(l.includes("password")) return "Mot de passe trop court (6 caractères minimum).";
   if(l.includes("email")) return "E-mail invalide.";
   return m || "Une erreur est survenue.";
+}
+function _nonConfirme(e){ const l=((e&&e.message)||"").toLowerCase(); return l.includes("not confirmed") || !!(e && e.code==="email_not_confirmed"); }
+/* v3.14 (K286) — LE COMPTE ATTEND SA CONFIRMATION. L'e-mail est parti ; la joueuse entrera en cliquant
+   sur son lien (bootstrap.js termine alors l'inscription), ou par Connexion une fois confirmé. */
+let _emailAttente = "";
+function _attenteConfirmation(email){
+  _emailAttente = email || _emailAttente;
+  basculerAuth("connexion");
+  const lr=document.querySelector("#auth-renvoi"); if(lr) lr.hidden=false;
+  authInfo(`Presque fini : un e-mail vient de partir vers ${_emailAttente}. Clique sur le lien qu'il contient pour entrer sur Silène. Il peut mettre quelques minutes à arriver : pense à regarder dans tes indésirables.`);
+}
+async function renvoyerEmailConfirmation(){
+  if(!SERVEUR_DISPO){ authErreur("Serveur indisponible."); return; }
+  const email=((document.querySelector("#auth-email")||{}).value||"").trim() || _emailAttente;
+  if(!email){ authErreur("Écris d'abord ton adresse e-mail dans le champ ci-dessus."); return; }
+  authErreur(""); authInfo("Envoi…");
+  const { error } = await renvoyerConfirmation(email);
+  if(error){ authInfo(""); authErreur(_authMsg(error)); return; }
+  _emailAttente = email;
+  authInfo(`Un nouvel e-mail de confirmation vient de partir vers ${email}. Pense à regarder dans tes indésirables.`);
+}
+async function motDePasseOublie(){
+  if(!SERVEUR_DISPO){ authErreur("Serveur indisponible."); return; }
+  const email=((document.querySelector("#auth-email")||{}).value||"").trim();
+  if(!email){ authErreur("Écris d'abord ton adresse e-mail dans le champ ci-dessus, puis clique de nouveau sur « Mot de passe oublié ? »."); return; }
+  authErreur(""); authInfo("Envoi…");
+  const { error } = await demanderNouveauMdp(email);
+  if(error){ authInfo(""); authErreur(_authMsg(error)); return; }
+  authInfo(`Si un compte existe pour ${email}, un e-mail vient de partir avec un lien pour choisir un nouveau mot de passe. Pense à regarder dans tes indésirables.`);
 }
 async function _attribuerFaction(){
   const ids = FACTIONS.map(f=>f.id);
@@ -219,7 +256,12 @@ async function inscrire(){
   authInfo("Création du compte…"); authErreur("");
   const { data, error } = await sInscrire(email, mdp, pseudo);
   if(error){ authErreur(_authMsg(error)); return; }
-  if(!data || !data.session){ const r = await seConnecter(email, mdp); if(r && r.error){ authErreur(_authMsg(r.error)); return; } }   // signUp n'établit pas toujours la session → on se connecte
+  /* v3.14 (K286) — CONFIRMATION PAR E-MAIL. Supabase ne dit plus « déjà inscrit » : il rend un compte SANS
+     identité (pour que personne ne puisse sonder les adresses). Et un compte neuf n'a pas de session tant
+     que l'adresse n'est pas confirmée : on n'essaie pas d'entrer, on dit d'aller lire l'e-mail. */
+  if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){ authInfo(""); authErreur("Cet e-mail a déjà un compte — connecte-toi."); return; }
+  if(data && data.user && !data.session && !data.user.email_confirmed_at){ _attenteConfirmation(email); return; }
+  if(!data || !data.session){ const r = await seConnecter(email, mdp); if(r && r.error){ if(_nonConfirme(r.error)){ _attenteConfirmation(email); return; } authErreur(_authMsg(r.error)); return; } }   // signUp n'établit pas toujours la session → on se connecte
   etat = nouvelEtat();
   const f=await _attribuerFaction();
   etat.nom=pseudo; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut();
@@ -243,12 +285,13 @@ async function inscrire(){
 }
 async function connecter(){
   if(!SERVEUR_DISPO){ authErreur("Serveur indisponible."); return; }
+  let premiere = null;   // v3.14 : la faction, si c'est la première entrée (fin d'inscription)
   const email=(document.querySelector("#auth-email").value||"").trim();
   const mdp=document.querySelector("#auth-mdp").value||"";
   if(!email || !mdp){ authErreur("E-mail et mot de passe requis."); return; }
   authInfo("Connexion…"); authErreur("");
   const { error } = await seConnecter(email, mdp);
-  if(error){ authErreur(_authMsg(error)); return; }
+  if(error){ authInfo(""); authErreur(_authMsg(error)); if(_nonConfirme(error)){ _emailAttente=email; const lr=document.querySelector("#auth-renvoi"); if(lr) lr.hidden=false; } return; }
   const prof = await chargerDepuisServeur();
   /* ⚠⚠ v0.94b — CETTE LIGNE RELISAIT LES COLONNES À LA MAIN. Le correctif n°6
      de la v0.92 avait créé `appliquerColonnesProfil()` pour qu'il n'y ait
@@ -264,10 +307,10 @@ async function connecter(){
     etat = hydraterEtat(prof.donnees);
     if(typeof appliquerColonnesProfil==="function") appliquerColonnesProfil(prof);
   }
-  else { etat = nouvelEtat(); const f=await _attribuerFaction(); etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut(); if(typeof _premiereFaction==="function") await _premiereFaction(f.id); await sauverSurServeur(); }
+  else premiere = await _terminerInscription(prof);   // v3.14 : première entrée après la confirmation par e-mail
   if(prof && prof.avatar) etat.avatar = prof.avatar;   /* l'avatar vient de la COLONNE, plus de donnees */
   fermerAuth(); fermerEntree(); afficher();
-  journal(`Bon retour, ${etat.nom}.`,"gain");
+  journal(premiere ? `Bienvenue, ${etat.nom}. Faction attribuée : ${premiere.nom}.` : `Bon retour, ${etat.nom}.`,"gain");
   /* ⚠ Sans ceci, le sac restait vide et les jauges aux défauts client jusqu'au
      prochain rechargement de page : la synchronisation Phase 4 ne tournait
      qu'au démarrage (bootstrap.js), pas après une connexion. */
@@ -275,6 +318,81 @@ async function connecter(){
   // Rattrapage : compte créé avant cette règle, ou inscription interrompue
   // avant la validation de l'avatar (rechargement de page, onglet fermé).
   if(!etat.avatar && typeof ouvrirAvatar==="function") await ouvrirAvatar({obligatoire:true});
+  if(premiere) montrerBienvenue();
+}
+/* v3.14 (K286) — LA FIN DE L'INSCRIPTION, À LA PREMIÈRE ENTRÉE. Avec la confirmation par e-mail, le compte
+   (et sa ligne profils, avec le pseudo) existe avant que la joueuse puisse entrer : l'état de départ et la
+   faction se font donc à sa première entrée — par le lien de l'e-mail (bootstrap.js) ou par Connexion.
+   Une faction déjà posée au serveur (inscription interrompue) est GARDÉE : en tirer une autre ici
+   l'aurait mise en désaccord avec la colonne, que _premiereFaction ne réécrit jamais.
+   Rend la faction (pour le message de bienvenue). */
+async function _terminerInscription(prof){
+  const deja = prof && prof.faction && FACTIONS.find(x=>x.id===prof.faction);
+  const f = deja || await _attribuerFaction();
+  etat = nouvelEtat();
+  etat.nom=(prof&&prof.nom)||etat.nom||"Opérateur"; etat.faction=f.id; etat.inscrit=true; etat.creeLe=Date.now(); etat.pos=posDefaut();
+  if(!deja && typeof _premiereFaction==="function") await _premiereFaction(f.id);
+  if(typeof marquerProfilLu==="function") marquerProfilLu();
+  await sauverSurServeur();
+  return f;
+}
+/* v3.14 (K286) — NOUVEAU MOT DE PASSE, après le lien « mot de passe oublié ». Le lien a ouvert une session :
+   il prouve que la joueuse lit cette boîte, l'ancien mot de passe n'est donc pas redemandé (contrairement
+   aux Paramètres). Même règle de longueur que les Paramètres : 8 caractères. */
+function ouvrirNouveauMdp(){
+  let m=document.querySelector("#modale-nouveau-mdp");
+  if(!m){
+    m=document.createElement("div"); m.className="modale"; m.id="modale-nouveau-mdp"; m.hidden=true;
+    m.innerHTML=`<div class="membrane modale-boite">
+      <h2>Nouveau mot de passe</h2>
+      <p style="margin:0">Choisis ton nouveau mot de passe (8 caractères minimum).</p>
+      <input type="password" id="nmdp-1" placeholder="Nouveau mot de passe" autocomplete="new-password">
+      <input type="password" id="nmdp-2" placeholder="Confirme le mot de passe" autocomplete="new-password">
+      <p id="nmdp-erreur" style="color:#ff5257;margin:0 0 8px" hidden></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="valider" id="nmdp-ok">Enregistrer</button><button id="nmdp-plus-tard">Plus tard</button></div>
+    </div>`;
+    document.body.appendChild(m);
+    m.querySelector("#nmdp-ok").addEventListener("click", enregistrerNouveauMdp);
+    m.querySelector("#nmdp-2").addEventListener("keydown", e=>{ if(e.key==="Enter") enregistrerNouveauMdp(); });
+    m.querySelector("#nmdp-plus-tard").addEventListener("click", ()=>{ m.hidden=true;
+      journal("Ton mot de passe n'a pas changé. Pour en choisir un autre plus tard, redemande un e-mail depuis l'écran de connexion (Mot de passe oublié ?).","alerte"); });
+  }
+  if(!m.hidden) return;
+  m.hidden=false;
+  const e1=m.querySelector("#nmdp-1"); if(e1){ e1.value=""; e1.focus(); }
+  const e2=m.querySelector("#nmdp-2"); if(e2) e2.value="";
+}
+async function enregistrerNouveauMdp(){
+  const m=document.querySelector("#modale-nouveau-mdp"); if(!m) return;
+  const err=m.querySelector("#nmdp-erreur"), dire=t=>{ err.textContent=t; err.hidden=!t; };
+  const a=(m.querySelector("#nmdp-1")||{}).value||"", b=(m.querySelector("#nmdp-2")||{}).value||"";
+  if(a.length<8){ dire("Le mot de passe doit faire au moins 8 caractères."); return; }
+  if(a!==b){ dire("Les deux mots de passe ne correspondent pas."); return; }
+  dire(""); const bt=m.querySelector("#nmdp-ok"); if(bt){ bt.disabled=true; bt.textContent="Enregistrement…"; }
+  try{
+    const { error } = await sb.auth.updateUser({ password: a });
+    if(error){
+      const l=(error.message||"").toLowerCase();
+      dire(l.includes("different") ? "C'est déjà ton mot de passe actuel : choisis-en un autre."
+         : (l.includes("session") || l.includes("jwt")) ? "Le lien a expiré. Redemande un e-mail depuis l'écran de connexion (Mot de passe oublié ?)."
+         : "Changement refusé : "+error.message);
+      return;
+    }
+    m.hidden=true;
+    journal("Mot de passe changé. Utilise-le désormais pour te connecter.","gain");
+  } finally { if(bt){ bt.disabled=false; bt.textContent="Enregistrer"; } }
+}
+/* v3.14 (K286) — CE QUE DIT LE LIEN D'UN E-MAIL, une fois la page prête (bootstrap.js). La confirmation
+   d'inscription se raconte d'elle-même (message de bienvenue) ; le mot de passe oublié ouvre sa fenêtre
+   (bootstrap.js). Restent le changement d'adresse et les liens morts. Le # est ensuite retiré de
+   l'adresse, pour qu'un rechargement ne répète rien. */
+function _annoncerLien(){
+  if(typeof NOVA_LIEN==="undefined" || !NOVA_LIEN) return;
+  const dire=(t,x)=>{ if(typeof alerterJoli==="function") alerterJoli(t,x); else alert(x); };
+  if(NOVA_LIEN.erreur) dire("Lien expiré", "Ce lien a expiré ou a déjà servi. Si besoin, redemande un e-mail : depuis l'écran de connexion (mot de passe oublié, confirmation de l'inscription) ou depuis les Paramètres (changement d'adresse).");
+  else if(NOVA_LIEN.message && /other email/i.test(NOVA_LIEN.message)) dire("Changement d'adresse", "Premier lien accepté. Clique maintenant sur le lien envoyé à ton autre adresse : le changement se fera après ce second clic. Pense à regarder dans tes indésirables.");
+  else if(NOVA_LIEN.type==="email_change") dire("Adresse changée", "Ta nouvelle adresse e-mail est confirmée. Utilise-la désormais pour te connecter.");
+  if((location.hash||"").length>1){ try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "navigation.js#lien"); } }
 }
 async function deconnexion(){
   if(typeof _pauseConfirm === "function"){
