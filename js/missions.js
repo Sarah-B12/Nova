@@ -118,7 +118,7 @@ const MISSION_ERREURS = {
   loin:"Une caisse d'AREPO s'ouvre chez soi : rentre dans ta cité de faction.", objet:"Objet inconnu."
 };
 
-let _missions = null;           // dernier missions_lire() : { ok, jour, missions[], gains[] }
+let _missions = null;           // dernier missions_lire() : { ok, jour, missions[], gains[], chat{} }
 let _missionsEnVol = false;
 let _missionsAffaire = false;   // dernière valeur connue de missionsAffaireEnCours()
 
@@ -134,6 +134,12 @@ async function missionsCharger(){
         try{ const q = await sb.rpc("mission_coffre_qui", { p_mission:m.id });
              if(!q.error && q.data && q.data.ok) m.coffre_qui = q.data.qui; }catch(e){}
       }));
+      /* v3.16 (K289) — les messages non lus de la discussion de chacun de mes groupes (la pastille).
+         Rangés DANS _missions : la signature du lieu Quêtes change donc avec eux (redessin). */
+      if((data.missions || []).some(m => m.mon_groupe && m.mon_statut === "actif")){
+        try{ const c = await sb.rpc("mission_chat_nouveaux");
+             if(!c.error && c.data && c.data.ok) data.chat = c.data.groupes || {}; }catch(e){}
+      }
       _missions = data;
     }
   }catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#lire"); }
@@ -267,6 +273,82 @@ function _mTitre(m){
   return echapper(m.nom || "Mission");
 }
 
+/* ---------- v3.16 (K289) — La discussion du groupe ----------
+   Serveur : mission_chat_lire (marque lu) / mission_chat_ecrire / mission_chat_nouveaux (v314), qui
+   revérifient à chaque appel que l'on est membre ACTIF du groupe. On écrit pendant la formation et la
+   mission ; finie, elle reste lisible tant que la mission s'affiche, puis s'efface avec le fil (7 jours).
+   Mise à jour toutes les 20 s tant qu'elle est à l'écran ; le brouillon survit aux redessins. */
+let _mOnglet = {};          // id de mission → "discussion" quand on y est
+let _mChatCache = {};       // id de groupe → dernière liste lue (affichage immédiat au redessin)
+let _mChatBrouillon = {};   // id de groupe → texte en cours de saisie
+let _mChatTimer = null;
+function _mChatHtml(g){
+  const fini = !(g.statut === "formation" || g.statut === "lance");
+  return `<p class="vide" style="margin:0 0 8px">Visible des seuls membres de ton groupe. ${fini
+      ? "La mission est finie : la discussion reste lisible tant qu'elle s'affiche."
+      : "Elle s'efface 7 jours après la fin de la mission."}</p>
+    <div class="conc-fil mi-chat-fil" data-mi-chat="${g.id}">${_mChatListe(g.id)}</div>
+    ${fini ? "" : `<div class="conc-saisie"><textarea data-mi-chat-txt="${g.id}" rows="2" maxlength="800" placeholder="Écrire au groupe…"></textarea><button class="mini" data-mi-chat-envoi="${g.id}">Envoyer</button></div>
+    <p class="vide" style="margin:4px 0 0;font-size:12px">Ctrl+Entrée pour envoyer.</p>`}`;
+}
+function _mChatListe(gid){
+  const L = _mChatCache[gid];
+  if(!L) return `<p class="vide">Chargement…</p>`;
+  if(!L.length) return `<p class="vide">Aucun message. Ouvre la discussion.</p>`;
+  return L.map(x => `<div class="conc-msg${x.moi ? " moi" : ""}">
+      <div class="conc-tete">${echapper(x.nom || "?")} <span class="itip-gris">${echapper(_mFilQuand(x.cree_le))}</span></div>
+      <div class="conc-txt">${echapper(x.texte || "")}</div></div>`).join("");
+}
+async function _mChatCharger(gid, forcerBas){
+  let r = null;
+  try{ r = await sb.rpc("mission_chat_lire", { p_groupe: gid, p_limite: 60 }); }
+  catch(e){ if(typeof _catchLog === "function") _catchLog(e, "missions.js#chat"); return; }
+  const d = r && r.data;
+  const fil = document.querySelector(`[data-mi-chat="${gid}"]`);
+  if(!d || !d.ok){
+    if(fil) fil.innerHTML = `<p class="vide">${d && d.err === "pas_membre" ? "Réservée aux membres du groupe." : "Lecture impossible."}</p>`;
+    return;
+  }
+  _mChatCache[gid] = d.liste || [];
+  if(_missions && _missions.chat) _missions.chat[gid] = 0;   // lu (le serveur l'a noté)
+  if(!fil) return;
+  // Ne recoller en bas que si l'on y était déjà : sinon on arrache la lecture.
+  const enBas = forcerBas || (fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40);
+  fil.innerHTML = _mChatListe(gid);
+  if(enBas) fil.scrollTop = fil.scrollHeight;
+}
+async function _mChatEnvoyer(gid){
+  const c = document.querySelector(`[data-mi-chat-txt="${gid}"]`); if(!c) return;
+  const t = (c.value || "").trim(); if(!t) return;
+  const b = document.querySelector(`[data-mi-chat-envoi="${gid}"]`); if(b) b.disabled = true;
+  let r = null;
+  try{ r = await sb.rpc("mission_chat_ecrire", { p_groupe: gid, p_texte: t }); }catch(e){ r = null; }
+  if(b) b.disabled = false;
+  const d = r && r.data;
+  if(!d || !d.ok){
+    const e = d && d.err;
+    journal(e === "pas_membre" ? "Tu ne fais plus partie de ce groupe."
+          : e === "finie"      ? "La mission est finie : on ne peut plus écrire dans sa discussion."
+          : e === "trop_vite"  ? "Trop de messages coup sur coup — laisse passer un moment."
+          : e === "trop_long"  ? "Message trop long (800 caractères)."
+          : "Envoi impossible.", "alerte");
+    return;
+  }
+  c.value = ""; delete _mChatBrouillon[gid];
+  await _mChatCharger(gid, true);
+}
+function _mChatMinuter(){
+  clearInterval(_mChatTimer); _mChatTimer = null;
+  if(!document.querySelector("[data-mi-chat]")) return;
+  _mChatTimer = setInterval(() => {
+    const fils = document.querySelectorAll("[data-mi-chat]");
+    if(!fils.length){ clearInterval(_mChatTimer); _mChatTimer = null; return; }
+    const h = document.querySelector("#hub-quete");
+    if(document.hidden || (h && h.hidden)) return;   // onglet du navigateur caché, ou lieu quitté
+    fils.forEach(f => _mChatCharger(+f.dataset.miChat, false));
+  }, 20000);
+}
+
 /* ---------- Rendu du sous-onglet ---------- */
 function majMissions(z){
   if(!z) return;
@@ -308,6 +390,15 @@ function _mCarte(m){
     h += `</p>`;
     // v2.67 (K226) : combien de chaque poste, dès la fiche.
     if(Object.keys(m.postes || {}).length) h += `<p class="vide" style="margin:-4px 0 8px">Postes : ${_mPostesFiche(m)}. On ne part pas tant que chaque poste n'a pas son nombre ; les membres en plus partent sans poste.</p>`;
+  }
+  /* v3.16 (K289) — deux onglets pour qui est dans un groupe : « Mission » (la carte, telle quelle) et
+     « Discussion » (le chat du groupe, avec la pastille des non-lus). Le serveur revérifie l'accès. */
+  const chatOk = !!(g && m.mon_statut === "actif" && ["formation", "lance", "reussi", "rate"].includes(g.statut));
+  if(chatOk){
+    const surChat = _mOnglet[m.id] === "discussion";
+    const nl = (_missions && _missions.chat && +_missions.chat[g.id]) || 0;
+    h += `<div class="sous-menu mi-onglets"><button class="sous-lien${surChat ? "" : " actif"}" data-mi-onglet="mission" data-mi-m="${m.id}">Mission</button><button class="sous-lien${surChat ? " actif" : ""}" data-mi-onglet="discussion" data-mi-m="${m.id}">Discussion${nl && !surChat ? ` <span class="mi-pastille">${nl > 99 ? "99+" : nl}</span>` : ""}</button></div>`;
+    if(surChat) return h + _mChatHtml(g) + `</div>`;
   }
   if(m.intro) h += `<p class="quete-indice" style="margin:0 0 10px">${echapper(m.intro)}</p>`;   // v1.63
   // Casse : les mots de C20, tant qu'il n'est pas révélé.
@@ -1418,6 +1509,20 @@ function _mSasBrancher(z){
 
 /* ---------- Branchements ---------- */
 function _mBrancher(z){
+  // v3.16 (K289) — les onglets Mission / Discussion, et la discussion elle-même.
+  z.querySelectorAll("[data-mi-onglet]").forEach(b => b.addEventListener("click", () => {
+    if(b.dataset.miOnglet === "discussion") _mOnglet[b.dataset.miM] = "discussion"; else delete _mOnglet[b.dataset.miM];
+    if(typeof majQueteHub === "function") majQueteHub();
+  }));
+  z.querySelectorAll("[data-mi-chat]").forEach(f => { f.scrollTop = f.scrollHeight; _mChatCharger(+f.dataset.miChat, true); });
+  z.querySelectorAll("[data-mi-chat-envoi]").forEach(b => b.addEventListener("click", () => _mChatEnvoyer(+b.dataset.miChatEnvoi)));
+  z.querySelectorAll("[data-mi-chat-txt]").forEach(c => {
+    const gid = +c.dataset.miChatTxt;
+    if(_mChatBrouillon[gid]) c.value = _mChatBrouillon[gid];
+    c.addEventListener("input", () => { _mChatBrouillon[gid] = c.value; });
+    c.addEventListener("keydown", e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); _mChatEnvoyer(gid); } });   // Ctrl+Entrée
+  });
+  _mChatMinuter();
   // v2.14 — le fil : il reste ouvert d'un redessin à l'autre.
   z.querySelectorAll("[data-mi-fil]").forEach(d => d.addEventListener("toggle", () => { _mFilOuvert[d.dataset.miFil] = d.open; }));
   const q = (sel, fn) => z.querySelectorAll(sel).forEach(b => b.addEventListener("click", () => { if(b.disabled) return; b.disabled = true; fn(b); }));
@@ -1545,6 +1650,8 @@ function _mBrancher(z){
   const st = document.createElement("style");
   st.textContent = `
     .mi-carte{ border:1px solid var(--line); border-radius:var(--r-s,8px); padding:10px 12px; margin:0 0 12px; background:rgba(16,40,37,.25); }
+    .mi-onglets{ padding-left:0; margin:4px 0 10px; }
+    .mi-pastille{ background:var(--orange,#ff8a3d); color:#0a1020; border-radius:9px; padding:0 6px; font-size:11px; font-weight:700; margin-left:3px; }
     .mi-test{ font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.1em; color:var(--orange-hi,#ffb060); border:1px solid currentColor; border-radius:4px; padding:1px 5px; vertical-align:middle; }
     .mi-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:6px 0; }
     .mi-ligne input, .mi-ligne select{ background:#0f1830; border:1px solid var(--line); border-radius:8px; color:var(--texte); padding:6px 8px; font-family:inherit; }
