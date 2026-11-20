@@ -262,7 +262,7 @@ function majAptitudes(){
     const info = document.createElement("p"); info.className = "vide"; info.style.margin = "0 0 10px";
     info.textContent = `Réservées à ta faction (${br.nom}). Les autres factions n'y ont pas accès — l'info se partage en jeu.`;
     spe.appendChild(info);
-    spe.appendChild(aptColonne(br));   // v3.19 : une seule chaîne, sur toute la largeur, ses nœuds côte à côte (CSS)
+    spe.appendChild(aptColonne(br));   // v3.19 : une seule chaîne, sur toute la largeur, paliers l'un sous l'autre (CSS)
   } else {
     spe.innerHTML = `<p class="vide">Rejoins une faction pour débloquer tes aptitudes spéciales.</p>`;
   }

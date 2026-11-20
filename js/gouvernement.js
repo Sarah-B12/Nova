@@ -1431,7 +1431,9 @@ async function _retirerCandidature(){
    d'information, cf. alerterJoli). La console de développement garde les
    fenêtres natives. */
 function alerterJoli(titre, texte, libelleOk){ return confirmerJoli(titre, texte, libelleOk || "OK", false, true); }
-function confirmerJoli(titre, texte, libelleOk, danger, seul){
+/* v3.22 — `rouge` (facultatif) : une ligne d'avertissement, en rouge, sous le texte (le sens imposé du
+   déménagement au mariage, K293 : « en rouge, pour que les gens ne le ratent pas »). */
+function confirmerJoli(titre, texte, libelleOk, danger, seul, rouge){
   return new Promise(resolve => {
     if(!document.querySelector("#cj-style")){
       const st=document.createElement("style"); st.id="cj-style";
@@ -1445,6 +1447,7 @@ function confirmerJoli(titre, texte, libelleOk, danger, seul){
         .cj-boite h4{ margin:0 0 8px; font-size:14px; letter-spacing:.05em; text-transform:uppercase;
           color:var(--orange-hi,#ffb060); }
         .cj-boite p{ margin:0 0 16px; font-size:14px; line-height:1.5; color:var(--texte,#dfe8f2); white-space:pre-line; }
+        .cj-rouge{ color:#ff5257 !important; font-weight:600; }
         .cj-actions{ display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap; }
         .cj-actions button{ padding:8px 15px; border-radius:9px 3px 9px 3px; cursor:pointer;
           font-family:inherit; font-size:13px; background:transparent;
@@ -1461,7 +1464,7 @@ function confirmerJoli(titre, texte, libelleOk, danger, seul){
     const fond=document.createElement("div"); fond.id="cj-fond";
     fond.innerHTML = `<div class="cj-boite" role="dialog" aria-modal="true">
         <h4>${echapper(titre)}</h4>
-        <p>${echapper(texte)}</p>
+        <p>${echapper(texte)}</p>${rouge ? `<p class="cj-rouge">${echapper(rouge)}</p>` : ""}
         <div class="cj-actions">
           ${seul ? "" : `<button class="cj-non">Annuler</button>`}
           <button class="cj-ok${danger?" danger":""}">${echapper(libelleOk||"Confirmer")}</button>

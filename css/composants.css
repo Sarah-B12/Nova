@@ -437,6 +437,7 @@ button.mini.q-ordre-el { width:100%; white-space:normal; text-align:center; line
 
 /* v1.36 — Unions et Couple (couple.js) */
 .u-form{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
+.u-rouge{ color:#ff5257; font-weight:600; margin:6px 0 8px; line-height:1.45; }   /* v3.22 (K293) : le sens imposé du déménagement */
 .u-form select{ min-width:10em; }
 .u-demande, .u-choix{ border-left:3px solid var(--accent, #7ab); padding:4px 10px; margin:8px 0; }
 /* v1.82 — les textes de mariage en cartes séparées ; le divorce, discret. */

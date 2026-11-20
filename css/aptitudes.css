@@ -30,7 +30,6 @@
   .apt-sous-menu { margin-bottom:14px; }
   .apt-vue[hidden] { display:none; }
   /* Branche de faction = une seule chaîne : on borne sa largeur pour ne pas l'étirer */
-  /* v3.19 — retour de l'autrice : la voie de faction prend toute la largeur, comme les communes ; ses
-     nœuds se rangent côte à côte (dans l'ordre de la chaîne), le titre au-dessus sur toute la ligne. */
-  #apt-vue-speciales .apt-voie { max-width:none; display:grid; grid-template-columns:repeat(auto-fit, minmax(172px,1fr)); gap:8px 16px; align-items:start; }
-  #apt-vue-speciales .apt-voie-tete { grid-column:1 / -1; margin-bottom:0; }
+  /* v3.19 — retour de l'autrice : la voie de faction prend toute la largeur (elle était bornée à 280 px),
+     et, comme les voies communes, ses paliers restent l'un sous l'autre (second retour, même jour). */
+  #apt-vue-speciales .apt-voie { max-width:none; }

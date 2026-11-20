@@ -245,11 +245,11 @@ function _uBlocChoixFaction(c){
 function _uBlocRecues(recues){
   if(!recues.length) return "";
   return `<h4 class="gsec">Demandes reçues</h4>` + recues.map(r =>
-    `<div class="u-demande"><p><b>${echapper(r.nom || "?")}</b> te demande en mariage — ${r.il_vient ? "il ou elle viendrait s'installer dans ta maison" : "tu t'installerais dans sa maison"}${r.il_vient ? "" : " (et dans sa faction)"}.</p>
+    `<div class="u-demande"><p><b>${echapper(r.nom || "?")}</b> te demande en mariage — ${r.il_vient ? `${echapper(r.nom || "?")} viendrait s'installer dans ta maison` : "tu t'installerais dans sa maison"}${r.il_vient ? "" : " (et dans sa faction)"}. <span class="itip-gris">Le sens sera revu au moment du oui, selon le nombre de joueurs actifs des deux factions.</span></p>
       <div class="actions"><button class="mini" data-u="accepter" data-id="${r.id}">Accepter</button><button class="mini danger" data-u="refuser" data-id="${r.id}">Décliner</button></div></div>`).join("");
 }
 function _uBlocEnvoyee(e){
-  return `<p>Ta demande à <b>${echapper(e.nom || "?")}</b> attend sa réponse (${e.je_viens ? "tu viendrais t'installer dans sa maison" : "il ou elle viendrait s'installer dans la tienne"}).</p>
+  return `<p>Ta demande à <b>${echapper(e.nom || "?")}</b> attend sa réponse (${e.je_viens ? "tu viendrais t'installer dans sa maison" : `${echapper(e.nom || "?")} viendrait s'installer dans la tienne`}).</p>
     <div class="actions"><button class="mini" data-u="annuler">Annuler ma demande</button></div>`;
 }
 /* v2.60 (K197) — le « oui » est dit ; celui qui déménage n'a pas encore emménagé.
@@ -316,11 +316,36 @@ async function _uBlocDemander(){
   return `<h4 class="gsec">Demander en mariage</h4>
     <div class="u-form">
       <select id="u-cible">${amis.map(a => `<option value="${a.id}">${echapper(a.nom)}</option>`).join("")}</select>
-      <label><input type="radio" name="u-ou" value="viens" checked> Viens chez moi</label>
-      <label><input type="radio" name="u-ou" value="je"> Je viens chez toi</label>
+      <span id="u-ou-choix"><label><input type="radio" name="u-ou" value="viens" checked> Viens chez moi</label>
+      <label><input type="radio" name="u-ou" value="je"> Je viens chez toi</label></span>
       <button class="mini" data-u="demander">Demander</button>
     </div>
-    <p class="itip-gris">Celui qui vient s'installer rejoint la faction de l'autre et garde son terrain ; sa maison est remplacée par la maison commune, à la même place que chez l'autre (son palier est perdu).</p>`;   // v2.60 (K194, K195)
+    <p id="u-sens" class="u-rouge" hidden></p>
+    <p class="itip-gris">Si vos deux factions n'ont pas le même nombre de joueurs actifs, c'est celui de la faction la plus peuplée qui vient vivre chez l'autre : ce n'est pas un choix. À égalité, ou dans la même faction, vous choisissez. Celui qui vient s'installer rejoint la faction de l'autre et garde son terrain ; sa maison est remplacée par la maison commune, à la même place que chez l'autre (son palier est perdu).</p>`;   // v2.60 (K194, K195) ; v3.22 (K293)
+}
+/* v3.22 (K293, K294) — LE SENS DU DÉMÉNAGEMENT, demandé au serveur (union_sens, v319) : factions différentes
+   et pas autant de joueurs actifs → imposé (celui de la plus peuplée déménage) ; sinon, au choix.
+   Le serveur le REVOIT au « oui » : c'est lui qui décide, l'écran ne fait que prévenir. */
+const _uSensCache = {};
+async function _uSens(cible){
+  try{ const { data } = await sb.rpc("union_sens", { p_cible: cible }); if(data && data.ok){ _uSensCache[cible] = data; return data; } }catch(e){}
+  return null;
+}
+function _uSensTexte(s, nom, enReponse){
+  if(!s || !s.impose) return "";
+  return s.je_demenage
+    ? `Vos factions n'ont pas le même nombre de joueurs actifs : c'est toi qui ${enReponse ? "iras" : "viendras"} vivre chez ${nom} et qui rejoindras sa faction, la moins peuplée. Ce n'est pas un choix.`
+    : `Vos factions n'ont pas le même nombre de joueurs actifs : c'est ${nom} qui viendra vivre chez toi et qui rejoindra ta faction, la moins peuplée. Ce n'est pas un choix.`;
+}
+async function _uMajSens(el){
+  const sel = el.querySelector("#u-cible"), zone = el.querySelector("#u-sens"), choix = el.querySelector("#u-ou-choix");
+  if(!sel || !zone || !sel.value) return;
+  const nom = (sel.options[sel.selectedIndex] || {}).text || "?", v = sel.value;
+  const s = await _uSens(v);
+  if(sel.value !== v) return;   // un autre ami a été choisi entre-temps
+  const t = _uSensTexte(s, nom, false);
+  zone.textContent = t; zone.hidden = !t;
+  if(choix) choix.hidden = !!t;
 }
 async function _uChargerTextes(z){
   if(!z) return;
@@ -338,20 +363,26 @@ async function _uChargerTextes(z){
   }catch(e){ z.innerHTML = `<p class="vide">Indisponible.</p>`; }
 }
 function _uBrancher(el){
+  // v3.22 (K293) : le sens du déménagement, à chaque choix d'ami
+  { const sel = el.querySelector("#u-cible"); if(sel){ sel.addEventListener("change", () => _uMajSens(el)); _uMajSens(el); } }
   el.querySelectorAll("[data-u]").forEach(b => b.addEventListener("click", async () => {
     const a = b.dataset.u; let r = null;
     if(a === "demander"){
       const cible = el.querySelector("#u-cible"); const ou = el.querySelector('input[name="u-ou"]:checked');
       if(!cible || !cible.value) return;
-      r = await _uRpc("union_demander", { p_cible:cible.value, p_je_viens:(ou && ou.value === "je") });
+      const s = _uSensCache[cible.value];
+      r = await _uRpc("union_demander", { p_cible:cible.value, p_je_viens:(s && s.impose) ? !!s.je_demenage : (ou && ou.value === "je") });   // v3.22 (K293)
       if(r) _jc("Demande envoyée.", "gain");
     } else if(a === "annuler"){ r = await _uRpc("union_annuler"); if(r) _jc("Demande annulée.", "alerte"); }
     else if(a === "refuser"){ r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:false }); if(r) _jc("Demande déclinée.", "alerte"); }
     else if(a === "accepter"){
-      if(!await confirmerJoli("Dire oui", "Dire oui ? Ensuite, celui qui s'installe chez l'autre devra emménager : il garde son terrain, sa maison est remplacée par la maison commune (son palier est perdu) et il rejoint la faction de l'autre. D'ici là, chacun peut encore annuler.", "Oui")) return;
+      /* v3.22 (K293) — le sens, revu au serveur au moment du oui : en rouge s'il est imposé. */
+      const dem = (_union.recues || []).find(x => String(x.id) === String(b.dataset.id)) || {};
+      const sv = dem.de ? await _uSens(dem.de) : null;
+      if(!await confirmerJoli("Dire oui", "Dire oui ? Ensuite, celui qui s'installe chez l'autre devra emménager : il garde son terrain, sa maison est remplacée par la maison commune (son palier est perdu) et il rejoint la faction de l'autre. D'ici là, chacun peut encore annuler.", "Oui", false, false, _uSensTexte(sv, dem.nom || "?", true))) return;
       r = await _uRpc("union_repondre", { p_id:Number(b.dataset.id), p_accepte:true });
       /* v2.60 (K197) : le oui ne marie plus, rien ne déménage encore. */
-      if(r) _jc(r.je_demenage ? "Tu as dit oui ! Il te reste à emménager : bouton « Emménager », ici même." : "Tu as dit oui ! Il ou elle doit maintenant emménager.", "gain");
+      if(r) _jc(r.je_demenage ? "Tu as dit oui ! Il te reste à emménager : bouton « Emménager », ici même." : `Tu as dit oui ! C'est maintenant à ${dem.nom || "l'autre"} d'emménager.`, "gain");
     }
     else if(a === "emmenager"){ if(!await _uEmmenager()) return; r = { ok:true }; }
     else if(a === "annuler-emm"){
