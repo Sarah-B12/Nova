@@ -50,7 +50,7 @@ function afficher(){
   const _port=document.querySelector("#portrait"); if(_port) _port.classList.toggle("enprison", _enPr);
   if(typeof majAvatar==="function") majAvatar();
   const _pb=document.querySelector("#prison-banniere");
-  if(_pb){ if(_enPr){ _pb.hidden=false; _pb.innerHTML=`⛓️ <b>En prison</b> — ${(typeof _factionNom==="function")?_factionNom(etat.prisonFaction):etat.prisonFaction}. Libération dans <b>${(typeof _vfmt==="function")?_vfmt((etat.prisonJusqua||0)-Date.now()):"…"}</b>. Aucune action possible.`; } else _pb.hidden=true; }
+  if(_pb){ if(_enPr){ _pb.hidden=false; _pb.innerHTML=`<b>En prison</b> — ${(typeof _factionNom==="function")?_factionNom(etat.prisonFaction):etat.prisonFaction}. Libération dans <b>${(typeof _vfmt==="function")?_vfmt((etat.prisonJusqua||0)-Date.now()):"…"}</b>. Aucune action possible.`; } else _pb.hidden=true; }
 
   const pts = etat.pointsCompetence;
   document.querySelector("#pts-libres").textContent = pts>0 ? `${pts} pts` : "";

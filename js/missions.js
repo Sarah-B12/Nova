@@ -1182,7 +1182,11 @@ function _mCasse(m, g){
   return h;
 }
 
-/* ---------- « La ronde » (H64) : observer, puis prédire 3 pas plus tard ---------- */
+/* ---------- « La ronde » (H64) : observer, puis prédire 3 pas plus tard ----------
+   v3.18 — RETOUR DE L'AUTRICE (« ça semble être 4 pas plus tard ») : juste. Le serveur (_ronde_ok) attend
+   la position au pas `observe + avance` ; l'écran montrait les pas 0 à observe − 1 et passait à la réponse
+   au moment d'afficher le pas `observe`. Vu de l'écran, il fallait donc compter 4. L'écran montre
+   désormais aussi le pas `observe` (le dernier vu) : « 3 pas plus tard » est vrai. Serveur inchangé. */
 const RONDE_COUL = ["#f59e0b","#5ab0e6","#7bc47f","#ff5257"];
 let _ronde = { cle:null, t:0, phase:"pret", rep:[], timer:null };
 function _mRondeHtml(m){
@@ -1214,8 +1218,8 @@ function _mRondeBrancher(z){
   if(go) go.addEventListener("click", () => {
     _ronde.phase = "observer"; _ronde.t = 0; _mRondeMaj(z);
     _ronde.timer = setInterval(() => {
-      _ronde.t++;
-      if(_ronde.t >= R.observe){ clearInterval(_ronde.timer); _ronde.timer = null; _ronde.phase = "repondre"; }
+      if(_ronde.t >= R.observe){ clearInterval(_ronde.timer); _ronde.timer = null; _ronde.phase = "repondre"; }   // le pas `observe` a été montré
+      else _ronde.t++;
       _mRondeMaj(z);
     }, 450);
   });

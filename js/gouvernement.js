@@ -650,17 +650,23 @@ async function _rendreBureauStratege(el, fac){
        la réputation du Stratège qui compte, mais la MEILLEURE du gouvernement
        — Régent, Architecte, Stratège ou Ombre (RPC cercle_actif, v1.05).
        ⚠ Barème DUPLIQUÉ de mercenaires_engager() (seuils 50/70/90 → 1/2/3,
-       prix 1500 × (n+1)) : changer l'un, c'est changer l'autre. */
+       prix 1500 × (n+1)) : changer l'un, c'est changer l'autre.
+       ⚠ v3.18 (K290) — et de nova_mercenaires() (v316) : SOLDE de MERC_SOLDE ₡ par mercenaire tous les
+       MERC_JOURS jours, prise dans la caisse ; non payés ou plus assez de réputation au gouvernement
+       → ils partent (vérifié chaque heure). */
     const CERCLE_MERC = "langues";
     const cMerc = (typeof CERCLES!=="undefined" ? CERCLES : []).find(c=>c.id===CERCLE_MERC) || { nom:"Les Langues-violacées", ic:"👅" };
     h+=`<div id="bureau-guet"></div>`;   // v1.12 : le guet, rempli juste après (RPC)
     h+=`<h4 class="gsec">Mercenaires</h4>`;
-    h+=`<p class="itip-gris" style="font-size:12px"><b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Rompable à tout moment, sans remboursement.</p>`;
-    let mercs={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>mercs[mm.cercle]=mm.nombre); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
+    h+=`<p class="itip-gris" style="font-size:12px"><b>${cMerc.nom}</b> louent des bras. Dès <b>50</b> de réputation chez elles pour <b>un membre du gouvernement</b> (n'importe lequel), le Stratège peut en engager, payés par la <b>caisse</b>. Ils renforcent l'attaque ET la défense de la faction (+5 puissance chacun). Ils touchent une <b>solde de ${MERC_SOLDE} ₡ chacun tous les ${MERC_JOURS} jours</b>, prise dans la caisse : ceux qu'elle ne peut pas payer partent, comme ceux que la réputation du gouvernement ne retient plus (1 à 50, 2 à 70, 3 à 90). Rompable à tout moment, sans remboursement.</p>`;
+    let mercs={}, mercPaye={}; try{ const { data } = await sb.from("mercenaires").select("*").eq("faction",fac); (data||[]).forEach(mm=>{ mercs[mm.cercle]=mm.nombre; mercPaye[mm.cercle]=mm.paye_jusqua||null; }); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9"); }
     let rp=0; try{ const { data } = await sb.rpc("cercle_actif",{ p_faction:fac, p_cercle:CERCLE_MERC }); rp=data|0; }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#9b"); }
     if(rp>=50){
       const mx=rp>=90?3:rp>=70?2:1, cur=mercs[CERCLE_MERC]||0, prix=1500*(cur+1);
       h+=`<div class="gouv-role"><span>${cMerc.ic} <b>${cMerc.nom}</b> <span class="itip-gris">${cur}/${mx} engagé(s) · réputation ${rp}</span></span><span class="comm-btns">${cur<mx?`<button class="mini" data-merc="${CERCLE_MERC}">Engager (${prix} ₡)</button>`:""}${cur>0?`<button class="mini danger" data-mercr="${CERCLE_MERC}">Rompre</button>`:""}</span></div>`;
+      // v3.18 (K290) : la prochaine solde
+      if(cur>0){ const pj=mercPaye[CERCLE_MERC];
+        h+=`<p class="itip-gris" style="font-size:12px;margin:2px 0 8px">Prochaine solde : ${pj ? `le <b>${new Date(pj).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</b>` : "fixée dans l'heure (dans 7 jours)"}, <b>${cur*MERC_SOLDE} ₡</b> pour ${cur} mercenaire${cur>1?"s":""}.</p>`; }
     } else {
       h+=`<p class="vide">Personne au gouvernement n'a 50 de réputation chez ${cMerc.nom}. Ça se gagne par les choix de quêtes.</p>`;
     }
@@ -695,6 +701,8 @@ async function _rendreBureauStratege(el, fac){
   if(sc){ const maj=()=>{ const l=el.querySelector("#exp-obj-lbl"); if(l) l.style.display=(sc.value==="protocole")?"none":""; };
           sc.addEventListener("change", maj); maj(); }
 }
+/* v3.18 (K290) — la solde des mercenaires (DUPLIQUÉE de nova_mercenaires, v316 : changer l'un, c'est changer l'autre). */
+const MERC_SOLDE = 1500, MERC_JOURS = 7;
 async function _mercEngager(cercle){
   const { data:res, error } = await sb.rpc("mercenaires_engager",{ p_cercle:cercle });
   if(error || !res || !res.ok){ const e=res&&res.err;
@@ -1004,7 +1012,7 @@ function _legendeDefense(ouvert){
    ⚠ Les textes ci-dessous DÉCRIVENT des règles serveur (BACKEND_PLAN §23 à §26).
    Changer une règle, c'est changer la phrase. */
 const CERCLE_EFFETS = {
-  langues:     "Le Stratège peut engager des mercenaires (1 à 50, 2 à 70, 3 à 90), payés par la caisse. +5 en attaque et en défense chacun.",
+  langues:     "Le Stratège peut engager des mercenaires (1 à 50, 2 à 70, 3 à 90), payés par la caisse, puis une solde de 1 500 ₡ chacun tous les 7 jours. +5 en attaque et en défense chacun.",
   assembleurs: "Quand notre défense est abîmée, le coffre récupère 1 pièce, parfois 2, dans les débris.",
   veilleurs:   "L'Ombre a 2 tentatives de hack du Protocole par 24 h au lieu d'une.",
   eclats:      "La caisse touche 25 % de plus sur chaque taxe du marché — sans que le vendeur paie davantage.",

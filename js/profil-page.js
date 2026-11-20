@@ -221,7 +221,7 @@ async function ouvrirPageProfil(nom){
       <div class="pp-info">
         <div class="pp-nom">${echapper(p.nom)}${moi?" (toi)":(estAmi?` <span class="pp-ami">Ami(e) ✓</span>`:"")}</div>
         <p class="itip-gris"><span class="comm-dot ${enLigne?"on":"off"}"></span> ${enLigne?"En ligne":"Hors ligne"} · dernière activité le ${_dateHeure(p.derniere_activite)}</p>
-        ${enPr?`<p class="pp-prison">⛓️ <b>En prison.</b></p>`:""}
+        ${enPr?`<p class="pp-prison"><b>En prison.</b></p>`:""}
         <p>Faction : <b>${_facNomComm(p.faction)}</b></p>
         <p>Formation : <b>${p.formation||"—"}</b></p>
         <p>Niveau : <b>${p.niveau}</b></p>

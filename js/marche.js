@@ -193,7 +193,9 @@ async function renderMarche(){
          vend QU'UNE unité : on croyait devoir prendre tout le lot. Le stock
          disponible reste ici, le bouton dit « Acheter 1 », et le prix est à
          l'unité. */
-      ? `${total} en vente · ${lots.length} offres de ${o.prix} à ${pmax} ₡ l'unité · moy ${p.moy||"?"} ₡`
+      /* v3.18 — retour de l'autrice : avec plusieurs offres, on ne voyait plus QUI vend (avec une seule,
+         si). Les vendeurs sont nommés, le moins cher d'abord (c'est lui que le bouton achète), trois au plus. */
+      ? `${total} en vente par ${_marcheVendeurs(lots)} · ${lots.length} offres de ${o.prix} à ${pmax} ₡ l'unité · moy ${p.moy||"?"} ₡`
       : `${o.quantite} en vente par ${echapper(o.vendeurNom||"?")} · ${o.prix} ₡ l'unité · moy ${p.moy||"?"} ₡`;
     // v0.94 : `data-jours` porte l'échéance de CETTE offre — sans lui,
     // l'infobulle affichait la durée de vie à neuf (l'objet n'est pas au sac).
@@ -215,6 +217,14 @@ async function renderMarche(){
 }
 
 /* --- Acheter (atomique serveur) --- */
+/* v3.18 — les vendeurs d'un groupe de lots (déjà triés : le moins cher d'abord), sans doublon, trois au plus. */
+function _marcheVendeurs(lots){
+  const noms = [];
+  for(const x of lots){ const n = x.vendeurNom || "?"; if(!noms.includes(n)) noms.push(n); }
+  const vus = noms.slice(0, 3).map(n => echapper(n));
+  const tete = vus.length > 1 ? vus.slice(0, -1).join(", ") + " et " + vus[vus.length - 1] : vus[0];
+  return noms.length > 3 ? `${vus.join(", ")} et ${noms.length - 3} autre${noms.length - 3 > 1 ? "s" : ""}` : tete;
+}
 async function acheterOffre(offreId){
   if(refusPrison("acheter")) return;
   const o = _offresCache.find(x=>String(x.id)===String(offreId)); if(!o) return;

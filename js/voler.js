@@ -624,7 +624,7 @@ function majVoler(){
   if(_volTimer){ clearInterval(_volTimer); _volTimer=null; }
   if(!_enVille()){ z.innerHTML=`<p class="vide">Le vol et le hacking visent les <b>joueurs présents là où tu te trouves</b> : sur Silène, <b>dans une cité</b>. Ailleurs, on fait les poches <b>sur un lieu</b> (le Perchoir, Le Nid, la station…) et on hacke <b>n'importe où sur la carte</b>.</p>`; return; }
   if(enPrison()){
-    z.innerHTML=`<div class="vol-prison">⛓️ <b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.<div style="margin-top:10px"><button class="mini" id="vol-evasion">Tenter une évasion (−10% énergie)</button></div><p class="itip-gris" style="margin-top:6px">Chance selon Agilité + Intelligence. Échec → tu restes en prison.</p></div>`;
+    z.innerHTML=`<div class="vol-prison"><b>Tu es en prison.</b><br>Libération dans <b id="vol-ptemps">${_vfmt(prisonRestant())}</b>. Impossible de voler ou hacker d'ici là.<div style="margin-top:10px"><button class="mini" id="vol-evasion">Tenter une évasion (−10% énergie)</button></div><p class="itip-gris" style="margin-top:6px">Chance selon Agilité + Intelligence. Échec → tu restes en prison.</p></div>`;
     const _be=z.querySelector("#vol-evasion"); if(_be) _be.addEventListener("click", tenterEvasion);
     _volTimer=setInterval(()=>{ const el=z.querySelector("#vol-ptemps"); if(!el){ clearInterval(_volTimer); return; } if(enPrison()) el.textContent=_vfmt(prisonRestant()); else { clearInterval(_volTimer); majVoler(); } },500);
     return;

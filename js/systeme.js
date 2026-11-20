@@ -87,6 +87,10 @@ function _categoriser(t){
   // lettres vont dans Couple, AVANT la règle des quêtes (« étape ») ; sans « (Couple > Famille) ».
   if(/l'histoire d|petite histoire|une lettre d/.test(s)) return "couple";
   if(/quête|quete|vieux sorn|glyphe|relais|étape|défi/.test(s)) return "quete";
+  /* v3.18 — les APTITUDES vont toutes dans Système (retour de l'autrice : « Aptitude acquise : Intrusion »
+     partait dans Vols/hacks à cause du mot « intrusion », une autre aptitude ailleurs). Avant les vols, la
+     faction, le combat… ; après les quêtes (une quête qui parle d'aptitude reste une quête). */
+  if(/\baptitudes?\b|r[ée]attribution/.test(s)) return "systeme";
   /* v1.36e — le couple, AVANT la faction (« rester dans ta faction » après un
      divorce) et le social. Les lignes écrites par couple.js portent déjà la
      catégorie ; cette règle range celles qui viennent du serveur. */

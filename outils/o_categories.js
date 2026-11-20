@@ -17,6 +17,9 @@
     ["Un chasseur de primes t'a retrouvé.", "vol"], ["Attaque du Protocole REPOUSSÉE ! Notre défense a tenu.", "combat"]
   ];
   cas.push(["Casque léger bradé — +34 ₡.", "eco"]);                     // v2.31 : allait dans « economie », un onglet qui n'existe pas
+  // v3.18 — les aptitudes vont toutes dans Système (« Intrusion » les envoyait dans Vols/hacks)
+  cas.push(["Aptitude acquise : Intrusion.", "systeme"], ["Aptitude acquise : Main légère.", "systeme"], ["Aptitude acquise : Robustesse.", "systeme"],
+           ["Pas assez de points d'Aptitude.", "systeme"], ["Réattribution : 500 ₡ nécessaires.", "systeme"]);
   const ecarts = cas.map(([t, att]) => [t.slice(0, 50), att, _categoriser(t)]).filter(x => x[1] !== x[2]);
   // v2.31 — aucune catégorie fantôme : à l'écriture (une catégorie inconnue est rangée) et dans le journal déjà gardé
   const ids = JOURNAL_CATS.map(c => c.id);
