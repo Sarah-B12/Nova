@@ -25,10 +25,12 @@
   .apt-boutons { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
 
   /* Sous-onglets Communes / Spéciales */
-  .apt-sous-menu { display:flex; gap:6px; margin-bottom:14px; border-bottom:1px solid var(--line); }
-  .apt-sous-lien { font-family:"Exo 2",sans-serif; font-weight:600; font-size:14px; color:var(--sourdine); background:none; border:none; border-bottom:2px solid transparent; padding:6px 10px; cursor:pointer; }
-  .apt-sous-lien:hover { color:var(--texte); }
-  .apt-sous-lien.actif { color:var(--orange-hi); border-bottom-color:var(--orange); }
+  /* v3.19 — ils prennent le visuel commun des sous-onglets (.sous-menu / .sous-lien, terrain.css) :
+     avant, une police et un soulignement orange à eux seuls (retour de l'autrice : « tout raccord »). */
+  .apt-sous-menu { margin-bottom:14px; }
   .apt-vue[hidden] { display:none; }
   /* Branche de faction = une seule chaîne : on borne sa largeur pour ne pas l'étirer */
-  #apt-vue-speciales .apt-voie { max-width:280px; }
+  /* v3.19 — retour de l'autrice : la voie de faction prend toute la largeur, comme les communes ; ses
+     nœuds se rangent côte à côte (dans l'ordre de la chaîne), le titre au-dessus sur toute la ligne. */
+  #apt-vue-speciales .apt-voie { max-width:none; display:grid; grid-template-columns:repeat(auto-fit, minmax(172px,1fr)); gap:8px 16px; align-items:start; }
+  #apt-vue-speciales .apt-voie-tete { grid-column:1 / -1; margin-bottom:0; }

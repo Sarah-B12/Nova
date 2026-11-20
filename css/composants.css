@@ -284,9 +284,18 @@
   /* --- Marché --- */
   .marche-tete { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px; }
   .marche-tabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
-  .marche-tab { font-family:"Space Mono",monospace; font-size:12px; padding:5px 10px; background:var(--surface-2); color:var(--sourdine); border:1px solid var(--edge); border-radius:8px; cursor:pointer; }
-  .marche-tab:hover { color:var(--texte); border-color:var(--bleu); }
-  .marche-tab.actif { color:var(--orange-hi); border-color:var(--orange); background:rgba(255,158,84,.08); }
+  /* v3.19 — UN SEUL VISUEL PAR NIVEAU D'ONGLETS (retour de l'autrice, 20/11) :
+       niveau 1 : .hub-lien (les lieux) et .onglet (les panneaux) ;
+       niveau 2 : .sous-lien (souligné, Space Mono — terrain.css) ;
+       niveau 3 et filtres : la PASTILLE ci-dessous (.ss-lien, .marche-tab, et .bur-lien du Bureau,
+       .jf-b du journal en plus petit, qui ont les mêmes valeurs). */
+  .ss-menu { display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 12px; }
+  .ss-lien { padding:5px 12px; border-radius:8px 3px 8px 3px; background:rgba(16,40,37,.7); color:var(--sourdine); border:1px solid var(--line); cursor:pointer; }
+  .ss-lien:hover { color:var(--texte); }
+  .ss-lien.actif { color:var(--orange-hi,#ffb060); border-color:var(--orange,#ff8a3d); }
+  .marche-tab { padding:5px 12px; background:rgba(16,40,37,.7); color:var(--sourdine); border:1px solid var(--line); border-radius:8px 3px 8px 3px; cursor:pointer; }
+  .marche-tab:hover { color:var(--texte); }
+  .marche-tab.actif { color:var(--orange-hi); border-color:var(--orange); }
   .marche-liste { display:flex; flex-direction:column; gap:8px; }
   .marche-ligne { display:flex; align-items:center; gap:12px; padding:9px 12px; border:1px solid var(--edge); border-radius:10px; background:rgba(90,168,230,.04); }
   .marche-ic { width:48px; height:48px; flex:0 0 auto; display:grid; place-items:center; }

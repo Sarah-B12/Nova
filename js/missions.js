@@ -381,8 +381,10 @@ function _mCarte(m){
   // v1.74 — bannière de la mission (images/missions/<type>.png ; le casse non
   // révélé montre le pli). Absente → rien (pas de cadre vide).
   const ban = (m.secrete && !m.revele) ? "casse_pli" : m.type;
+  /* v3.19 — retour de l'autrice (« quand on a plusieurs missions, c'est un peu collé ; mettre un titre assez
+     visible au milieu ») : le titre ouvre la carte, centré, dans un bandeau (comme les voies d'Aptitudes). */
+  h += `<h3 class="mi-titre">${_mTitre(m)}${m.test ? ` <span class="mi-test">TEST</span>` : ""}</h3>`;
   h += `<div class="lieu-banniere mi-banniere"><img src="images/missions/${ban}.png" alt="" onerror="this.parentElement.remove()"></div>`;
-  h += `<h3 style="margin:2px 0">${_mTitre(m)}${m.test ? ` <span class="mi-test">TEST</span>` : ""}</h3>`;
   if(m.difficulte){
     h += `<p class="vide" style="margin:0 0 8px">${MISSION_RANGS[m.difficulte] || m.difficulte} · niveau ${m.niveau_min} · groupe de ${m.taille_min}${m.taille_max > m.taille_min ? " à " + m.taille_max : ""}`;
     // v1.73b : plus de date de recrutement une fois MON groupe parti (il n'en a plus besoin).
@@ -397,7 +399,8 @@ function _mCarte(m){
   if(chatOk){
     const surChat = _mOnglet[m.id] === "discussion";
     const nl = (_missions && _missions.chat && +_missions.chat[g.id]) || 0;
-    h += `<div class="sous-menu mi-onglets"><button class="sous-lien${surChat ? "" : " actif"}" data-mi-onglet="mission" data-mi-m="${m.id}">Mission</button><button class="sous-lien${surChat ? " actif" : ""}" data-mi-onglet="discussion" data-mi-m="${m.id}">Discussion${nl && !surChat ? ` <span class="mi-pastille">${nl > 99 ? "99+" : nl}</span>` : ""}</button></div>`;
+    // v3.19 : des onglets de niveau 3 → la pastille commune (.ss-lien), comme le Bureau (retour de l'autrice)
+    h += `<div class="ss-menu mi-onglets"><button class="ss-lien${surChat ? "" : " actif"}" data-mi-onglet="mission" data-mi-m="${m.id}">Mission</button><button class="ss-lien${surChat ? " actif" : ""}" data-mi-onglet="discussion" data-mi-m="${m.id}">Discussion${nl && !surChat ? ` <span class="mi-pastille">${nl > 99 ? "99+" : nl}</span>` : ""}</button></div>`;
     if(surChat) return h + _mChatHtml(g) + `</div>`;
   }
   if(m.intro) h += `<p class="quete-indice" style="margin:0 0 10px">${echapper(m.intro)}</p>`;   // v1.63
@@ -1653,8 +1656,9 @@ function _mBrancher(z){
 (function(){
   const st = document.createElement("style");
   st.textContent = `
-    .mi-carte{ border:1px solid var(--line); border-radius:var(--r-s,8px); padding:10px 12px; margin:0 0 12px; background:rgba(16,40,37,.25); }
-    .mi-onglets{ padding-left:0; margin:4px 0 10px; }
+    .mi-carte{ border:1px solid var(--line); border-radius:var(--r-s,8px); padding:10px 12px; margin:0 0 24px; background:rgba(16,40,37,.25); }
+    .mi-titre{ margin:-10px -12px 10px; padding:10px 12px; text-align:center; font-family:"Space Mono",monospace; font-size:15px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--orange-hi,#ffb060); border-bottom:1px solid var(--line); background:linear-gradient(rgba(255,138,61,.14), rgba(255,138,61,0)); border-radius:var(--r-s,8px) var(--r-s,8px) 0 0; }
+    .mi-onglets{ margin:4px 0 12px; }
     .mi-pastille{ background:var(--orange,#ff8a3d); color:#0a1020; border-radius:9px; padding:0 6px; font-size:11px; font-weight:700; margin-left:3px; }
     .mi-test{ font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.1em; color:var(--orange-hi,#ffb060); border:1px solid currentColor; border-radius:4px; padding:1px 5px; vertical-align:middle; }
     .mi-ligne{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:6px 0; }

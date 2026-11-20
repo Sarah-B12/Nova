@@ -188,9 +188,9 @@ function monterAptitudes(){
   panneau.innerHTML =
     `<h2>Aptitudes <span class="pts" id="apt-pa"></span></h2>
      <p class="vide" style="margin:0 0 12px">Les points d'Aptitude se gagnent en accomplissant des quêtes ; certaines en donnent plus que d'autres. Chaîne stricte : chaque nœud exige le précédent. Réattribution : ${respecGratuit() ? "<b>la première est offerte</b>, puis " : ""}${APT_RESPEC.toLocaleString("fr-FR")} ₡.</p>
-     <div class="apt-sous-menu">
-       <button class="apt-sous-lien actif" data-apt="communes">Aptitudes communes</button>
-       <button class="apt-sous-lien" data-apt="speciales">Aptitudes spéciales</button>
+     <div class="apt-sous-menu sous-menu">   <!-- v3.19 : le visuel commun des sous-onglets (niveau 2) -->
+       <button class="apt-sous-lien sous-lien actif" data-apt="communes">Aptitudes communes</button>
+       <button class="apt-sous-lien sous-lien" data-apt="speciales">Aptitudes spéciales</button>
      </div>
      <div class="apt-vue" id="apt-vue-communes"></div>
      <div class="apt-vue" id="apt-vue-speciales" hidden></div>
@@ -262,7 +262,7 @@ function majAptitudes(){
     const info = document.createElement("p"); info.className = "vide"; info.style.margin = "0 0 10px";
     info.textContent = `Réservées à ta faction (${br.nom}). Les autres factions n'y ont pas accès — l'info se partage en jeu.`;
     spe.appendChild(info);
-    spe.appendChild(aptColonne(br));   // une seule chaîne, en colonne (largeur bornée par le CSS)
+    spe.appendChild(aptColonne(br));   // v3.19 : une seule chaîne, sur toute la largeur, ses nœuds côte à côte (CSS)
   } else {
     spe.innerHTML = `<p class="vide">Rejoins une faction pour débloquer tes aptitudes spéciales.</p>`;
   }
