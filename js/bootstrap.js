@@ -53,7 +53,10 @@ document.querySelector("#carte-fermer").addEventListener("click", fermerCarte);
 document.querySelector("#carte-distances").addEventListener("click", ouvrirDistances);
 document.querySelector("#distances-fermer").addEventListener("click", fermerDistances);
 document.querySelector("#modale-distances").addEventListener("click", e => { if(e.target.id === "modale-distances") fermerDistances(); });
-document.querySelectorAll(".hub-lien").forEach(b => b.addEventListener("click", ()=>changerHub(b.dataset.hub)));
+/* v3.23 — un clic du joueur sur l'onglet Quêtes relit aussi les missions (quetes.js, queteMissionsRelire).
+   Seulement au clic : quand le jeu ouvre l'onglet de lui-même, une lecture de plus croiserait les autres. */
+document.querySelectorAll(".hub-lien").forEach(b => b.addEventListener("click", ()=>{ changerHub(b.dataset.hub);
+  if(b.dataset.hub==="quete" && typeof queteMissionsRelire==="function") queteMissionsRelire(); }));
 document.querySelectorAll("#hub-centre .sous-lien").forEach(b => b.addEventListener("click", ()=>changerCentre(b.dataset.centre)));
 document.querySelectorAll(".sous-lien").forEach(b => b.addEventListener("click", ()=>{
   document.querySelectorAll(".sous-lien").forEach(x=>x.classList.toggle("actif", x===b));

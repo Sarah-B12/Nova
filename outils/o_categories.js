@@ -20,6 +20,12 @@
   // v3.18 — les aptitudes vont toutes dans Système (« Intrusion » les envoyait dans Vols/hacks)
   cas.push(["Aptitude acquise : Intrusion.", "systeme"], ["Aptitude acquise : Main légère.", "systeme"], ["Aptitude acquise : Robustesse.", "systeme"],
            ["Pas assez de points d'Aptitude.", "systeme"], ["Réattribution : 500 ₡ nécessaires.", "systeme"]);
+  // v3.24 — le cambriolage va dans Vols/hacks, même quand le message parle de la réserve du couple
+  cas.push(["Voleuse a cambriolé ta maison : 2× cuir ; et, dans la réserve du couple, ce qu'y avait déposé Brun : 2× sylve.", "vol"],
+           ["On a cambriolé votre maison sans que tu saches qui, et pris dans la réserve du couple ce que tu y avais déposé : 2× ferr.", "vol"],
+           ["Voleuse a tenté de cambrioler ta maison — on l'a repéré à temps.", "vol"],
+           ["Quelqu'un a voulu cambrioler ta maison : il s'est pris dans ta pique noire et il est reparti les mains vides.", "vol"],
+           ["Cambriolage réussi chez Ana : 2 × Cuir.", "vol"]);   // les lignes du voleur portent déjà leur catégorie (voler.js)
   const ecarts = cas.map(([t, att]) => [t.slice(0, 50), att, _categoriser(t)]).filter(x => x[1] !== x[2]);
   // v2.31 — aucune catégorie fantôme : à l'écriture (une catégorie inconnue est rangée) et dans le journal déjà gardé
   const ids = JOURNAL_CATS.map(c => c.id);

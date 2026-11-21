@@ -2119,8 +2119,26 @@ function _queteSignature(){
     return JSON.stringify([_queteSous || null, queteActive() || null, qp ? qp.id : null, queteVerrou() > 0,
       _priseIci(qp), surSiteQuete(), (typeof surCarcasse === "function") && surCarcasse(), _enFaction(),
       queteAttendLendemain(qp), etat.secteur || null, (typeof villeActuelle === "function") ? villeActuelle() : null,
-      (typeof _missions !== "undefined") ? _missions : null]);
+      (typeof _missions !== "undefined") ? _missions : null, _queteLieuxSig()]);
   }catch(e){ return "?" + Date.now(); }    // en cas de doute, on redessine
+}
+/* v3.23 — les lieux de mission où l'on se trouve (missions.js). Arriver sur l'un d'eux, ou le
+   quitter, redessine l'onglet Missions même s'il a été touché dans les 90 secondes : la partie
+   d'un mini-jeu se joue sur place, on ne la quitte pas en restant au même endroit. */
+let _queteLieux = null;
+function _queteLieuxSig(){ return (typeof missionsLieux === "function") ? missionsLieux() : ""; }
+/* v3.23 — revenir sur l'onglet Quêtes (un clic sur l'onglet) relit les missions : avant, il
+   montrait la dernière lecture, vieille de deux minutes au plus, et il fallait recharger la page
+   pour voir une étape franchie entre-temps. Redessin seulement si quelque chose a changé, et si
+   le joueur n'a pas commencé à jouer pendant la lecture. */
+function queteMissionsRelire(){
+  const hub = document.querySelector("#hub-quete");
+  if(!hub || typeof missionsCharger !== "function" || !hub.querySelector('[data-qsous="missions"].actif')) return;
+  const t0 = Date.now();
+  missionsCharger().then(() => {
+    if(hub.hidden || !hub.querySelector('[data-qsous="missions"].actif') || _queteTouche >= t0) return;
+    if(_queteSignature() !== _queteSig) majQueteHub();
+  });
 }
 function majQueteHub(rafraichir){
   const hub=document.querySelector("#hub-quete"); if(!hub) return;
@@ -2129,10 +2147,11 @@ function majQueteHub(rafraichir){
      reconstruirait le DOM en perdant la séquence mémorisée. Voir `_seqEnCours`. */
   if(_seqEnCours()) return;
   if(rafraichir && hub.querySelector("#hub-quete-corps")){
-    if(Date.now() - _queteTouche < 90000) return;            // le joueur est en train de jouer
+    const bouge = _queteLieuxSig() !== _queteLieux && !!hub.querySelector('[data-qsous="missions"].actif');   // v3.23
+    if(!bouge && Date.now() - _queteTouche < 90000) return;  // le joueur est en train de jouer
     if(_queteSignature() === _queteSig) return;              // rien n'a changé
   }
-  _queteSig = _queteSignature();
+  _queteSig = _queteSignature(); _queteLieux = _queteLieuxSig();
   _queteStyle();
   _clearQ();
   let z=hub.querySelector("#hub-quete-corps");

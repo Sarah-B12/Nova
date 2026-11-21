@@ -57,6 +57,8 @@ const DELAIS = {
   v316: { profil: 50, sac: 50, jauges: 50 },        // v3.16 : la discussion de groupe des missions, K289 (o_v316.js)
   v318: { profil: 50, sac: 50, jauges: 50 },        // v3.18 : ronde, marché, aptitudes, mercenaires (o_v318.js)
   v322: { profil: 50, sac: 50, jauges: 50 },        // v3.22 : au mariage, le sens imposé (o_v322.js)
+  v323: { profil: 50, sac: 50, jauges: 50 },        // v3.23 : l'onglet Missions suit le joueur (o_v323.js)
+  v324: { profil: 50, sac: 50, jauges: 50 },        // v3.24 : le cambriolage (o_v324.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)

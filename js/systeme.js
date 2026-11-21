@@ -94,6 +94,7 @@ function _categoriser(t){
   /* v1.36e — le couple, AVANT la faction (« rester dans ta faction » après un
      divorce) et le social. Les lignes écrites par couple.js portent déjà la
      catégorie ; cette règle range celles qui viennent du serveur. */
+  if(/cambriol/.test(s)) return "vol";   // v3.24 (v320) : le cambriolage (« réserve du couple » ne doit pas l'envoyer dans Couple)
   if(/mariage|mari[ée]s?\b|divorc|complicit|r[ée]serve commune|conjoint|veuf|veuve|ton foyer|b[ée]b[ée]|dit oui|enfant|adopt|tout-petit|adolescence|quitt[ée] la maison|la famille|couple > famille|chambre de|l'appeler|pr[ée]nom|cachette|tra[îi]ne des pieds|ration maison|pris soin de vous|installation du terrain de|sur vos vaisseaux|l'histoire d|petite histoire/.test(s)) return "couple";   // v1.37-39 : enfants
   /* v2.16 — les podiums du mois (serveur, catégorie « gain ») : Arène et Fléau → Combats ; tables de
      jeu → Économie (comme les autres messages du bar). Avant les vols : le Fléau parle d'un « voleur ». */

@@ -697,6 +697,18 @@ function missionsMarqueursCarte(secteur){
     <circle cx="${b.x}" cy="${b.y}" r="9" fill="#7dd3fc"><animate attributeName="r" values="7;12;7" dur="2s" repeatCount="indefinite"/></circle>
     <text x="${b.x}" y="${b.y + BALISE_RAYON + 34}" text-anchor="middle" class="vlabel" style="fill:#f5e9d3">La balise</text></g>`;
 }
+/* v3.23 — OÙ L'ON EST, POUR L'ONGLET MISSIONS. Retour de l'autrice : arrivée sur Mousseron,
+   l'onglet ne montrait pas « Faire fuir les drones » avant un rechargement de la page. Le
+   rafraîchissement de l'onglet (majQueteHub(true), quetes.js) ne redessine que si sa signature
+   change, et celle-ci ne savait pas qu'on était arrivé sur un lieu de mission : le secteur
+   (l'Écart) restait le même. Chaque lieu où une mission se joue figure donc ici ; un nouveau
+   lieu de mission doit y être ajouté. */
+function missionsLieux(){
+  try{
+    const b = _mBaliseMienne(), mi = _mInfilMienne();
+    return [!!_mSurMousseron(), !!_mABardane(), !!(b && _mSurBalise(b.vue)), !!(mi && _mALEntree(mi.vue))].join("");
+  }catch(e){ return "?"; }
+}
 function missionsLieuIci(){
   const mi = _mInfilMienne(); if(mi && mi.vue.entree && _mALEntree(mi.vue)) return `<b>L'entrepôt d'AREPO</b> — <span class="itip-gris">Une porte de cendre et de métal, à demi enfouie.</span>`;   // v1.65
   const m = _mBaliseMienne(); if(!m || !_mSurBalise(m.vue)) return "";
