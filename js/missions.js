@@ -113,8 +113,8 @@ const MISSION_ERREURS = {
   // v1.65 — l'infiltration
   tient:"La paroi tient. Une autre paroi, une autre chance.", charges:"Place au moins une charge.",
   // v1.67 — le casse
-  cible_figee:"Le repérage est fait : la cible ne change plus.", cite:"Cité inconnue.", pas_de_cible:"Choisissez d'abord la cité visée.",
-  pas_de_reperage:"Il faut d'abord faire le repérage.", equipe:"Toute l'équipe doit être dans la cité visée.", evente:"Le casse est éventé.",
+  cible_figee:"Le repérage est fait : la cible ne change plus.", cite:"Cible inconnue.", pas_de_cible:"Choisissez d'abord la cible.",
+  pas_de_reperage:"Il faut d'abord faire le repérage.", equipe:"Toute l'équipe doit être sur place.", evente:"Le casse est éventé.",
   loin:"Une caisse d'AREPO s'ouvre chez soi : rentre dans ta cité de faction.", objet:"Objet inconnu."
 };
 
@@ -475,7 +475,7 @@ function _mMonGroupe(m, g){
   }
   if(g.statut === "formation" && m.type === "casse" && m.revele){   // v1.67 (H58) ; v2.10 : la cité choisie reste affichée
     if(g.moi_fondateur) h += _mCasseCibleHtml(m, m.cible);
-    else h += `<p style="margin:6px 0">Cité visée : <b>${m.cible ? echapper(_mFacNom(m.cible)) : "pas encore choisie par le meneur"}</b></p>`;
+    else h += `<p style="margin:6px 0">Cible : <b>${m.cible ? _mCibleNom(m.cible) : "pas encore choisie par le meneur"}</b></p>`;   // v3.29 : ou la Poste
   }
   if(g.statut === "formation" && g.moi_fondateur){
     h += `<div class="mi-ligne"><input id="mi-inv-nom" placeholder="Nom du joueur à inviter" maxlength="40">
@@ -706,7 +706,8 @@ function missionsMarqueursCarte(secteur){
 function missionsLieux(){
   try{
     const b = _mBaliseMienne(), mi = _mInfilMienne();
-    return [!!_mSurMousseron(), !!_mABardane(), !!(b && _mSurBalise(b.vue)), !!(mi && _mALEntree(mi.vue))].join("");
+    return [!!_mSurMousseron(), !!_mABardane(), !!(b && _mSurBalise(b.vue)), !!(mi && _mALEntree(mi.vue)),
+            !!(typeof surBase === "function" && surBase())].join("");   // v3.29 : le casse de la Poste (Perchoir)
   }catch(e){ return "?"; }
 }
 function missionsLieuIci(){
@@ -1125,6 +1126,7 @@ const CASSE_NIVEAUX = ["Sans gardien","Sous un œil","Bien gardé","Sous haute s
    CASSE, et la surveillance est celle de ce jour-là (casse_vider). Retour de l'autrice :
    « 0 vendeur » restait affiché alors que d'autres avaient mis en vente depuis. */
 function _mReperageHtml(rp){
+  if(rp.poste) return _mReperagePosteHtml(rp);   // v3.29 (v325)
   const d = rp.quand ? new Date(rp.quand) : null;
   const quand = d && !isNaN(d) ? `${d.toLocaleDateString("fr-FR", { day:"numeric", month:"numeric" })}, ${d.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}`
               : String(rp.jour || "").slice(0, 10).split("-").reverse().slice(0, 2).join("/");
@@ -1134,11 +1136,33 @@ function _mReperageHtml(rp){
     <p class="vide" style="margin:0 0 8px">Une vitrine vit sa vie : le butin se prendra dans celle du jour du casse, et la surveillance sera celle de ce jour-là.</p>`;
 }
 function _mFacNom(f){ const x = (typeof FACTIONS !== "undefined" ? FACTIONS : []).find(y => y.id === f); return x ? x.nom : f; }
-function _mDansCite(f){ return typeof villeActuelle === "function" && villeActuelle() === f; }
+/* v3.29 (v325, K310 à K315) — LE CASSE DE LA POSTE. Le meneur peut viser la Poste au lieu d'un marché : tout le
+   réseau, au centre de tri du Perchoir. On y prend les colis d'objets pas encore récupérés (ni crédits, ni colis des
+   membres), un par destinataire, 6 à 8 par membre ; surveillance fixe de 2 drones ; 400 XP. Le serveur vérifie
+   la présence au Perchoir (vol_spot = ecart:base) : surBase() lit le même cercle (685, 728, rayon 176). */
+function _mPoste(c){ return c === "poste"; }
+function _mCibleNom(c){ return _mPoste(c) ? "la Poste, au centre de tri du Perchoir" : `le marché de ${echapper(_mFacNom(c))}`; }
+function _mLieuNom(c){ return _mPoste(c) ? "le Perchoir" : "la cité"; }
+function _mReperagePosteHtml(rp){
+  const d = rp.quand ? new Date(rp.quand) : null;
+  const quand = d && !isNaN(d) ? `${d.toLocaleDateString("fr-FR", { day:"numeric", month:"numeric" })}, ${d.toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}`
+              : String(rp.jour || "").slice(0, 10).split("-").reverse().slice(0, 2).join("/");
+  const niv = (CASSE_NIVEAUX[rp.niveau] || "").replace(/^./, c => c.toLowerCase());
+  const n = rp.vendeurs || 0, dn = rp.destinataires || 0;
+  const colis = n > 0 ? `${n} colis attendai${n > 1 ? "ent" : "t"} au tri, pour ${dn} destinataire${dn > 1 ? "s" : ""}` : "aucun colis n'attendait au tri";
+  return `<p style="margin:2px 0 6px">Au repérage${rp.par ? ` de ${echapper(rp.par)}` : ""} (${quand}) : ${colis}, ${niv}.</p>
+    <p class="vide" style="margin:0 0 8px">Les colis vont et viennent : le butin se prendra dans ceux du jour du casse, un par destinataire.</p>`;
+}
+function _mDansCite(f){
+  if(_mPoste(f)) return typeof surBase === "function" && surBase();   // v3.29 : le centre de tri du Perchoir
+  return typeof villeActuelle === "function" && villeActuelle() === f;
+}
 function _mCasseCibleHtml(m, actuelle){
-  const opts = (typeof FACTIONS !== "undefined" ? FACTIONS : []).map(f => `<option value="${f.id}"${f.id === actuelle ? " selected" : ""}>${echapper(f.nom)}</option>`).join("");
-  return `<div class="mi-ligne"><span>Cité visée :</span><select id="mi-cible"><option value="">—</option>${opts}</select>
-          <button class="mini" data-mi-viser="${m.id}">Viser cette cité</button></div>`;
+  const opts = (typeof FACTIONS !== "undefined" ? FACTIONS : []).map(f => `<option value="${f.id}"${f.id === actuelle ? " selected" : ""}>Le marché de ${echapper(f.nom)}</option>`).join("")
+             + `<option value="poste"${actuelle === "poste" ? " selected" : ""}>La Poste (centre de tri du Perchoir)</option>`;   // v3.29
+  return `<div class="mi-ligne"><span>Cible :</span><select id="mi-cible"><option value="">—</option>${opts}</select>
+          <button class="mini" data-mi-viser="${m.id}">Viser cette cible</button></div>
+          <p class="vide" style="margin:0 0 6px">La Poste est mieux gardée qu'un marché, mais on y prend des colis dans tout le réseau : plus de butin, et plus d'XP.</p>`;
 }
 function _mCasse(m, g){
   const v = m.vue || {};
@@ -1146,11 +1170,14 @@ function _mCasse(m, g){
   const pt = v.postes_tenus || {};
   h += `<p class="vide" style="margin:2px 0">Crocheteur : ${echapper(pt.crocheteur || "—")}${v.casse && v.casse.faits && v.casse.faits.crocheteur ? " ✓" : ""} · Guetteur : ${echapper(pt.guetteur || "—")}${v.casse && v.casse.faits && v.casse.faits.guetteur ? " ✓" : ""}</p>`;
   const f0 = (v.casse && v.casse.faits) || {};
-  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Un marché, ses vitrines, et toute une nuit devant vous. Mais un casse se prépare : choisir la cité, savoir combien de vendeurs exposent et comment veillent les drones, et ne rien oublier.", "Le meneur choisit la cité visée. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est dans la cité.");   // v2.69 (K233)
-  if(v.phase === "repousse") h += _mEtape("Seconde tentative", "La nuit a mal tourné, et le marché est sur ses gardes. Le matériel du coffre, lui, est resté.", `Le casse peut se retenter, ${_mQuandRetenter(v)}. C'est le meneur qui le relance.`);
-  if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", "La nuit est tombée, le marché dort. Toute l'équipe est entrée, et personne ne ressort avant la fin : une serrure à forcer, des drones à aveugler.", "Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
-  if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += _mEtape("Étape 3 sur 3 — Les vitrines", "La serrure a cédé, les drones tournent à vide. Les vitrines sont là, à portée de main — mais le jour finira par se lever.", "Videz les vitrines, vite et sans bruit.");
-  if(v.cible) h += `<p style="margin:4px 0">Cible : <b>le marché de ${echapper(_mFacNom(v.cible))}</b>.</p>`;
+  const po = _mPoste(v.cible), lieu = _mLieuNom(v.cible);   // v3.29 : la Poste
+  if(v.phase === "preparation") h += _mEtape("Étape 1 sur 3 — La préparation", "Un marché ou le centre de tri de la Poste, et toute une nuit devant vous. Mais un casse se prépare : choisir la cible, savoir ce qu'il y a à prendre et comment veillent les drones, et ne rien oublier.", `Le meneur choisit la cible : le marché d'une cité, ou la Poste. Ensuite, dans l'ordre que vous voulez : remplissez le coffre commun (capes, crochets, brouilleurs) et faites le repérage sur place. Le casse se tente au plus tôt le lendemain du repérage, quand toute l'équipe est ${po ? "au Perchoir" : "sur place"}.`);   // v2.69 (K233)
+  if(v.phase === "repousse") h += _mEtape("Seconde tentative", `La nuit a mal tourné, et ${po ? "le centre de tri" : "le marché"} est sur ses gardes. Le matériel du coffre, lui, est resté.`, `Le casse peut se retenter, ${_mQuandRetenter(v)}. C'est le meneur qui le relance.`);
+  if(v.phase === "casse" && !(f0.crocheteur && f0.guetteur)) h += _mEtape("Étape 2 sur 3 — Le casse", `La nuit est tombée, ${po ? "le centre de tri dort" : "le marché dort"}. Toute l'équipe est entrée, et personne ne ressort avant la fin : une serrure à forcer, des drones à aveugler.`, "Le crocheteur ouvre la serrure, le guetteur brouille les drones ; les autres veillent.");
+  if(v.phase === "casse" && f0.crocheteur && f0.guetteur) h += po
+    ? _mEtape("Étape 3 sur 3 — Les casiers", "La serrure a cédé, les drones tournent à vide. Les casiers du tri sont là, pleins de colis du réseau — mais le jour finira par se lever.", "Videz les casiers, vite et sans bruit.")
+    : _mEtape("Étape 3 sur 3 — Les vitrines", "La serrure a cédé, les drones tournent à vide. Les vitrines sont là, à portée de main — mais le jour finira par se lever.", "Videz les vitrines, vite et sans bruit.");
+  if(v.cible) h += `<p style="margin:4px 0">Cible : <b>${_mCibleNom(v.cible)}</b>.</p>`;
   if(v.cible && v.reperage) h += _mReperageHtml(v.reperage);   // v2.15 (K133) : une photo datée
   if(v.tentatives === 1 && v.phase === "repousse") h += `<p>Seconde tentative : du ${_mJourTxt(v.epreuve_jour, 1)} au ${_mJourTxt(v.epreuve_jour, 2)}.</p>`;
   if(v.phase === "preparation" || v.phase === "repousse"){
@@ -1158,8 +1185,10 @@ function _mCasse(m, g){
     h += _mCoffre(m);
     if(!v.reperage){
       if(!v.cible) return h;
-      h += `<h4 class="gsec">Le repérage</h4><p class="vide" style="margin:2px 0 6px">Un seul d'entre vous suffit, dans la cité visée. Il en rapporte le nombre de vendeurs en vitrine et le niveau de surveillance.</p>`;   // v2.10
-      if(!_mDansCite(v.cible)){ h += `<p>Rends-toi dans la cité visée pour le faire.</p>`; return h; }
+      h += po   // v3.29
+        ? `<h4 class="gsec">Le repérage</h4><p class="vide" style="margin:2px 0 6px">Un seul d'entre vous suffit, au centre de tri du Perchoir. Il en rapporte le nombre de colis qui attendent et le niveau de surveillance.</p>`
+        : `<h4 class="gsec">Le repérage</h4><p class="vide" style="margin:2px 0 6px">Un seul d'entre vous suffit, dans la cité visée. Il en rapporte le nombre de vendeurs en vitrine et le niveau de surveillance.</p>`;   // v2.10
+      if(!_mDansCite(v.cible)){ h += `<p>${po ? "Rends-toi au Perchoir pour le faire." : "Rends-toi dans la cité visée pour le faire."}</p>`; return h; }
       if(v.ronde) h += `<div id="mi-ronde" data-mi-mission="${m.id}">${_mRondeHtml(m)}</div>`;
       return h;
     }
@@ -1168,18 +1197,21 @@ function _mCasse(m, g){
     if(tot){ h += `<p class="vide">Le casse peut se tenter dès demain.</p>`; return h; }
     if(v.phase === "preparation") h += `<p class="vide">Premier casse au plus tard le ${_mJourTxt(v.limite)}.</p>`;
     if(v.meneur){
-      if(v.absent) h += `<p class="vide">Toute l'équipe doit être dans la cité visée (il manque ${echapper(v.absent)}).</p>`;
-      h += `<div class="mi-btns"><button class="mini" data-mi-commencer="${m.id}"${v.absent ? " disabled" : ""}>Commencer le casse</button></div>`;
+      if(v.absent) h += `<p class="vide">Toute l'équipe doit être ${po ? "au Perchoir" : "dans la cité visée"} (il manque ${echapper(v.absent)}).</p>`;
+      h += `<div class="mi-btns"><button class="mini" data-mi-commencer="${m.id}" data-mi-lieu="${lieu}"${v.absent ? " disabled" : ""}>Commencer le casse</button></div>`;
     } else {   // v2.21 : on nomme le meneur (une testeuse cherchait le bouton : il n'est que chez lui)
       const qui = g && g.fondateur ? `Seul le meneur, ${echapper(g.fondateur)},` : "Seul le meneur";
-      h += `<p class="vide">${qui} peut ${v.phase === "repousse" ? "relancer" : "commencer"} le casse. Il le fera quand toute l'équipe sera dans la cité${v.absent ? ` (il manque ${echapper(v.absent)})` : ""}.</p>`;
+      h += `<p class="vide">${qui} peut ${v.phase === "repousse" ? "relancer" : "commencer"} le casse. Il le fera quand toute l'équipe sera ${po ? "au Perchoir" : "dans la cité"}${v.absent ? ` (il manque ${echapper(v.absent)})` : ""}.</p>`;
     }
     return h;
   }
   if(v.phase !== "casse") return h;
   const f = (v.casse && v.casse.faits) || {};
   if(f.crocheteur && f.guetteur){
-    h += `<p class="quete-indice">Les vitrines sont là. Il faut faire vite, et sans bruit.</p>
+    h += po   // v3.29
+      ? `<p class="quete-indice">Les casiers du tri sont là. Il faut faire vite, et sans bruit.</p>
+          <div class="mi-btns"><button class="mini" data-mi-vider="${m.id}">Vider les casiers du tri</button></div>`
+      : `<p class="quete-indice">Les vitrines sont là. Il faut faire vite, et sans bruit.</p>
           <div class="mi-btns"><button class="mini" data-mi-vider="${m.id}">Vider les vitrines</button></div>`;
     return h;
   }
@@ -1192,7 +1224,7 @@ function _mCasse(m, g){
     const reste = [!f.crocheteur ? `la serrure — le crocheteur${qui("crocheteur")}` : null,
                    !f.guetteur ? `le brouillage — le guetteur${qui("guetteur")}` : null].filter(Boolean);
     const fait = [f.crocheteur ? "La serrure est ouverte." : null, f.guetteur ? "Les drones sont brouillés." : null].filter(Boolean).join(" ");
-    h += `<p class="vide">${fait ? fait + " " : ""}Il reste ${reste.join(" et ")}. Ensuite, chacun pourra vider les vitrines. Personne ne quitte la cité.</p>`;
+    h += `<p class="vide">${fait ? fait + " " : ""}Il reste ${reste.join(" et ")}. Ensuite, chacun pourra vider ${po ? "les casiers" : "les vitrines"}. Personne ne quitte ${lieu}.</p>`;
   }
   return h;
 }
@@ -1626,7 +1658,7 @@ function _mBrancher(z){
   });
   q("[data-mi-commencer]", async b => {
     const ok = (typeof confirmerJoli === "function")
-      ? await confirmerJoli("Commencer le casse", "Commencer le casse ? Le coffre sera scellé. Personne ne doit quitter la cité avant la fin, et tout doit être joué avant minuit.", "Commencer")
+      ? await confirmerJoli("Commencer le casse", `Commencer le casse ? Le coffre sera scellé. Personne ne doit quitter ${b.dataset.miLieu || "la cité"} avant la fin, et tout doit être joué avant minuit.`, "Commencer")
       : confirm("Commencer le casse ?");
     if(!ok){ b.disabled = false; return; }
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
@@ -1635,7 +1667,8 @@ function _mBrancher(z){
   q("[data-mi-vider]", async b => {
     if(typeof sauverMaintenant === "function") await sauverMaintenant();
     _missionAppel("casse_vider", { p_mission:+b.dataset.miVider },
-      d => d.reussi ? `Le casse a réussi : ${d.offres} offre${d.offres > 1 ? "s" : ""} emportée${d.offres > 1 ? "s" : ""}.` : (d.definitif ? "Le brouillage a lâché une seconde fois, et les drones vous ont repérés." : "Le brouillage a lâché pendant que vous vidiez les vitrines : les drones vous ont repérés."));   // v2.21
+      d => d.reussi ? (d.poste ? `Le casse a réussi : ${d.offres} colis emporté${d.offres > 1 ? "s" : ""}.` : `Le casse a réussi : ${d.offres} offre${d.offres > 1 ? "s" : ""} emportée${d.offres > 1 ? "s" : ""}.`)   // v3.29
+        : (d.definitif ? "Le brouillage a lâché une seconde fois, et les drones vous ont repérés." : `Le brouillage a lâché pendant que vous vidiez ${d.poste ? "les casiers" : "les vitrines"} : les drones vous ont repérés.`));   // v2.21
   });
   _mCasseBrancher(z);
   // v1.68 — le satellite

@@ -62,6 +62,7 @@ const DELAIS = {
   v325: { profil: 50, sac: 50, jauges: 50 },        // v3.25 : Fournaise, réputation du marché, Ancolie (o_v325.js)
   v326: { profil: 50, sac: 50, jauges: 50 },        // v3.26 : XP des quêtes −33 %, gardiens Q16 et Q30 (o_v326.js)
   v328: { profil: 50, sac: 50, jauges: 50 },        // v3.28 : fouiller une soute (o_v328.js)
+  v329: { profil: 50, sac: 50, jauges: 50 },        // v3.29 : le casse de la Poste (o_v329.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)
