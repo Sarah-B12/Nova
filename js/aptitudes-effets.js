@@ -134,8 +134,11 @@ function aptBonusRare(base){ return base; }                                     
 function aptMoinsCendrite(){ return _apt("pr3") ? 16 : 0; }                                                            // Œil du mineur (v1.86) : Cendrite 40 → 24
 
 /* ---------- Minage en zone thermique (v0.59) ---------- */
-function aptMineLot(n){ const m=(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? 1.25 : 1;
-  return Math.max(1, Math.round(n * m * _boi("mine"))); }                                                          // Fournaise +25 % · boisson
+/* v3.25 (v321, K301) — Fournaise : minage +15 % (était +25 %). Le serveur borne le lot à l'identique
+   (terrain_miner : 1.15). La mine est toujours chez soi : pour Ignis, la Forge, en pleine zone chaude. */
+const APT_FOURNAISE_MINE = 1.15;
+function aptMineLot(n){ const m=(_apt("ig2") && typeof enZoneChaude==="function" && enZoneChaude()) ? APT_FOURNAISE_MINE : 1;
+  return Math.max(1, Math.round(n * m * _boi("mine"))); }                                                          // Fournaise +15 % · boisson
 function aptGivriteForcee(){ return _apt("to1") && typeof enZoneFroide==="function" && enZoneFroide() && Math.random() < 0.15; }    // Isolation : +Givrite
 /* v2.52 (K184) — la Veine de cristal donne un Cristal de SÉLÉNITE (la Sélénite vient du froid ; était : Cristal de
    Nyx), à 2,5 % (était 5 %) : même valeur en crédits qu'avant. ⚠ Le serveur (terrain_miner, v271) n'accepte plus

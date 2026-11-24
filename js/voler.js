@@ -88,6 +88,11 @@ let _volModeCourant = "vol";
    de tout (vol_preparer, vol_conclure, vol_echec) ; ici, le choix et les textes. */
 let _volGesteCourant = "poches";
 function _maisonIci(){ return !((typeof horsSilene === "function") && horsSilene()) && _volIci("vol"); }
+/* v3.28 (v324, K307 à K309) — FOUILLER UNE SOUTE. Hors de Silène, sur un lieu (comme les poches), le second
+   geste devient « fouiller une soute » : chez quelqu'un du même lieu qui a un vaisseau équipé, jusqu'à 3 objets de
+   sa soute, JAMAIS le carburant (K308). Les bidons du sac restent volables aux poches (K309 : C). Sur Silène, la
+   soute reste à l'abri et c'est la maison qu'on cambriole. */
+function _souteIci(){ return (typeof horsSilene === "function") && horsSilene() && _volIci("vol"); }
 function _lieuVolNom(mode){
   mode = mode || _volModeCourant;
   if(typeof horsSilene !== "function" || !horsSilene()) return "dans cette ville";
@@ -181,10 +186,12 @@ function _volAppliquer(d){
 }
 const _VOL_REFUS = {
   personne:  ()=>_volGesteCourant === "maison" ? "Personne n'a sa maison dans cette cité : rien à cambrioler. Rien n'a été dépensé."   // v3.24
+               : _volGesteCourant === "soute" ? `Personne n'a de vaisseau ${_lieuVolNom()} : aucune soute à fouiller. Rien n'a été dépensé.`   // v3.28
                  : `Personne ${_lieuVolNom()} en ce moment : tu n'as personne à cibler. Rien n'a été dépensé.`,
-  proteges:  ()=>`${_volGesteCourant === "maison" ? "Ceux qui ont leur maison dans cette cité" : `Ceux qui sont ${_lieuVolNom()}`} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j), ou visés récemment (${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée, ${PROTECTION_VIDE_H} h après un vol sans butin). Rien n'a été dépensé.`,
-  lieu:      ()=>_volGesteCourant === "maison" ? _VOL_MAISON_TXT : _VOL_LIEU_TXT,
+  proteges:  ()=>`${_volGesteCourant === "maison" ? "Ceux qui ont leur maison dans cette cité" : _volGesteCourant === "soute" ? `Ceux qui ont un vaisseau ${_lieuVolNom()}` : `Ceux qui sont ${_lieuVolNom()}`} sont protégés — nouveaux venus (< ${IMMUNITE_JOURS} j), ou visés récemment (${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée, ${PROTECTION_VIDE_H} h après un vol sans butin). Rien n'a été dépensé.`,
+  lieu:      ()=>_volGesteCourant === "maison" ? _VOL_MAISON_TXT : _volGesteCourant === "soute" ? _VOL_SOUTE_TXT : _VOL_LIEU_TXT,
   lieu_maison:()=>_VOL_MAISON_TXT,   // v3.24
+  lieu_soute: ()=>_VOL_SOUTE_TXT,    // v3.28
   geste:     ()=>"On ne cambriole qu'en volant, pas en hackant.",
   aptitude:  ()=>"Il te manque l'aptitude requise (Discrétion pour voler, Intrusion pour hacker).",
   chasseur:  ()=>"Un chasseur de primes ne vole pas.",   // v1.72 (H80)
@@ -195,9 +202,10 @@ const _VOL_REFUS = {
 };
 const _VOL_LIEU_TXT = "Pour faire les poches : dans une cité sur Silène ; ailleurs, sur un lieu (le Perchoir, Le Nid, la station, une aire d'atterrissage…).";
 const _VOL_MAISON_TXT = "Pour cambrioler une maison : dans une cité, sur Silène.";   // v3.24
+const _VOL_SOUTE_TXT = "Pour fouiller une soute : hors de Silène, sur un lieu (le Perchoir, Le Nid, la station, une aire d'atterrissage…).";   // v3.28
 async function _volPreparer(mode, geste){
   _volModeCourant = mode;   // v1.97 : les refus parlent du bon endroit
-  _volGesteCourant = (mode === "vol" && geste === "maison") ? "maison" : "poches";   // v3.24
+  _volGesteCourant = (mode === "vol" && (geste === "maison" || geste === "soute")) ? geste : "poches";   // v3.24 · v3.28 : la soute
   const d = await _volRpc(()=>sb.rpc("vol_preparer", { p_mode:mode, p_cout:_coutVol(), p_geste:_volGesteCourant }), "preparer");
   if(!d){ journal("Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol"); return null; }
   if(!d.ok){
@@ -213,6 +221,7 @@ async function _volPreparer(mode, geste){
 }
 async function _volConclure(mode, prep, reussi, geste){
   const maison = mode === "vol" && geste === "maison";   // v3.24 : le cambriolage
+  const soute  = mode === "vol" && geste === "soute";    // v3.28 : la soute
   const score = mode==="vol" ? agiliteEffective() : intelligenceEffective();
   const d = await _volRpc(()=>sb.rpc("vol_conclure", { p_id:prep.id, p_reussi:!!reussi, p_score:Math.round(score) }), "conclure");
   const nom = (d && d.cible) || prep.cible || "ta cible";
@@ -228,11 +237,16 @@ async function _volConclure(mode, prep, reussi, geste){
       /* v2.86 (testeuse Vortex, 11/11) : une réussite sans butin s'écrivait en ROUGE, comme un échec, et « tu fouilles…
          mais repars les mains vides » ne disait pas si le vol avait réussi. Désormais : « réussi » écrit.
          v3.11 (autrice, 15/11) : en BLEU comme les autres réussites (« gain ») — la couleur neutre était le gris de Système. */
-      if(maison) journal((d.sac_plein ? `Cambriolage réussi chez ${nom}, mais ton sac est plein : tu repars les mains vides.`
+      if(soute) journal((d.sac_plein ? `Tu as ouvert la soute de ${nom}, mais ton sac est plein : tu repars les mains vides.`
+                                     : `Tu as ouvert la soute de ${nom}… mais il n'y avait rien à prendre (le carburant ne se vole pas).`)+xpTxt,"gain","vol");
+      else if(maison) journal((d.sac_plein ? `Cambriolage réussi chez ${nom}, mais ton sac est plein : tu repars les mains vides.`
                                       : `Cambriolage réussi chez ${nom}… mais il n'y avait rien à prendre.`)+xpTxt,"gain","vol");
       else if(mode==="vol") journal((d.sac_plein ? `Vol réussi sur ${nom}, mais ton sac est plein : tu repars les mains vides.`
                                            : `Vol réussi sur ${nom}… mais ses poches étaient vides.`)+xpTxt,"gain","vol");
       else journal(`Hack réussi, mais le compte de ${nom} est vide.`+xpTxt,"gain","vol");
+    } else if(soute){
+      journal(`Soute fouillée, chez ${nom} : ${_nomsButin(d.butin)}.`+(d.sac_plein?" (sac plein : tu as dû en laisser)":"")+" "
+        + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui.") + xpTxt, "gain","vol");
     } else if(maison){
       journal(`Cambriolage réussi chez ${nom} : ${_nomsButin(d.butin)}.`+(d.sac_plein?" (sac plein : tu as dû en laisser)":"")+" "
         + (d.signe ? "Mais on t'a vu : son journal porte TON NOM." : "Personne ne t'a vu : son journal ne dira pas qui.") + xpTxt, "gain","vol");
@@ -246,13 +260,15 @@ async function _volConclure(mode, prep, reussi, geste){
   } else if(d.pique){
     /* v2.06 (K122) : la cible porte une pique du Fléau. Le mini-jeu était gagné ; la
        tentative échoue quand même. Son journal ne dit pas qui (jamais de plainte). */
-    journal((maison ? `Tu forçais la porte, chez ${nom}… et tu t'es pris dans une pique noire plantée devant. Tu repars les mains vides.`
+    journal((soute ? `Tu ouvrais la soute, chez ${nom}… et tu t'es pris dans une pique noire plantée à côté. Tu repars les mains vides.`
+           : maison ? `Tu forçais la porte, chez ${nom}… et tu t'es pris dans une pique noire plantée devant. Tu repars les mains vides.`
            : mode==="vol" ? `Tu tenais les poches de ${nom}… et tu t'es pris dans une pique noire plantée devant chez ${nom}. Tu repars les mains vides.`
                           : `Ton intrusion chez ${nom} s'est prise dans une pique noire. Tu repars les mains vides.`)
       + " Son journal ne dira pas qui." + xpTxt, "alerte", "vol");
     if(d.prison) journal(mode==="vol" ? "Pris la main dans le sac : direction la prison." : "Ta trace a été remontée : prison.","alerte","vol");
   } else {
-    if(maison) journal(`Échec ! On t'a repéré chez ${nom} — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");   // v3.24
+    if(soute) journal(`Échec ! On t'a repéré près du vaisseau de ${nom} — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");   // v3.28
+    else if(maison) journal(`Échec ! On t'a repéré chez ${nom} — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");   // v3.24
     else if(mode==="vol") journal(`Échec ! ${nom} t'a repéré — ton nom apparaît dans son journal.`+xpTxt,"alerte","vol");
     else journal(`Hack échoué sur ${nom}. `+(d.signe ? "Ta signature est passée : il sait QUI a essayé." : "Son journal : « un anonyme a tenté de me pirater ».")+xpTxt,"alerte","vol");
     if(d.prison) journal(mode==="vol" ? "Pris la main dans le sac : direction la prison." : "Ta trace a été remontée : prison.","alerte","vol");
@@ -263,14 +279,16 @@ async function _volConclure(mode, prep, reussi, geste){
 /* ---------- Actions ---------- */
 async function tenterVoler(geste){
   const maison = geste === "maison";   // v3.24 : sans argument, faire les poches (comme avant)
+  const soute  = geste === "soute";    // v3.28
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
-  if(maison ? !_maisonIci() : !_volIci("vol")){ journal(maison ? _VOL_MAISON_TXT : _VOL_LIEU_TXT,"alerte"); return; }
+  if(maison ? !_maisonIci() : soute ? !_souteIci() : !_volIci("vol")){ journal(maison ? _VOL_MAISON_TXT : soute ? _VOL_SOUTE_TXT : _VOL_LIEU_TXT,"alerte"); return; }
   if(!aDiscretion()){ journal("Il te faut l'aptitude Discrétion pour voler.","alerte"); return; }
-  const g = maison ? "maison" : "poches";
+  const g = maison ? "maison" : soute ? "soute" : "poches";
   const prep = await _volPreparer("vol", g); if(!prep) return;
   lancerMiniVol(()=>_volConclure("vol", prep, true, g), ()=>_volConclure("vol", prep, false, g));
 }
 function tenterCambrioler(){ return tenterVoler("maison"); }   // v3.24
+function tenterFouillerSoute(){ return tenterVoler("soute"); }   // v3.28
 async function tenterHacker(){
   if(enPrison()){ journal("Tu es en prison.","alerte"); return; }
   if(!_volIci("hack")){ journal("Pour hacker : dans une cité sur Silène ; ailleurs, n'importe où sur la carte.","alerte"); return; }
@@ -656,16 +674,17 @@ function majVoler(){
   const dV=aDiscretion()&&ici, dH=_ordiEquipe()&&aIntrusion(), e=Math.floor(etat.energie);
   /* v1.97 — hors de Silène, les deux gestes ne visent pas les mêmes gens (K103, K106). */
   const qui = !hors ? `présent <b>dans cette ville</b> (poches), ou qui <b>y a sa maison</b> (cambriolage)`   // v3.24
-    : `présent ${ici ? `<b>${_lieuVolNom("vol")}</b> (poches)` : `sur un lieu (poches : <b>tu n'es sur aucun lieu</b>)`}, ou n'importe où <b>${_lieuVolNom("hack")}</b> (hack)`;
+    : `présent ${ici ? `<b>${_lieuVolNom("vol")}</b> (poches, ou sa soute s'il a un vaisseau)` : `sur un lieu (poches et soutes : <b>tu n'es sur aucun lieu</b>)`}, ou n'importe où <b>${_lieuVolNom("hack")}</b> (hack)`;   // v3.28
   z.innerHTML=`
-    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${_coutVol()}%</b> d'énergie (tu as ${e}%). L'équipement porté, le vaisseau équipé et sa soute sont intouchables ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée ou un vol sans butin.</p>
+    <p class="vide">Cible un <b>vrai joueur, au hasard,</b> ${qui}. S'il n'y a personne, rien n'est dépensé. Coûte <b>${_coutVol()}%</b> d'énergie (tu as ${e}%). L'équipement porté et le vaisseau lui-même sont intouchables, ainsi que le carburant d'une soute ; les nouveaux venus (< ${IMMUNITE_JOURS} j) sont protégés, et une victime l'est ${PROTECTION_VOL_H} h après un vol, ${PROTECTION_HACK_H} h après un hack, ${PROTECTION_RATE_H} h après une tentative ratée ou un vol sans butin.</p>
     <div class="vol-cartes">
       <div class="vol-carte">
         <h3>Voler <span class="qte">· objets</span></h3>
-        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets, au choix : <b>dans un sac</b> (faire les poches d'un présent), ou <b>dans une maison</b> (cambrioler : le coffre et la réserve du couple, chez quelqu'un qui a sa maison dans cette cité, même absent ; sur Silène seulement). Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
+        <p>Moins payant, mais sans matériel. Vole jusqu'à ${VOL_CAP_OBJETS} objets, au choix : <b>dans un sac</b> (faire les poches d'un présent), <b>dans une maison</b> (cambrioler : le coffre et la réserve du couple, chez quelqu'un qui a sa maison dans cette cité, même absent ; sur Silène seulement), ou <b>dans une soute</b> (hors de Silène, sur un lieu : chez quelqu'un qui a un vaisseau, jamais le carburant). Même réussi, on te reconnaît <b>${Math.round(CHANCE_SIGNATURE_VOL*100)} % du temps</b> (ton nom dans son journal). Échec → <b>démasqué</b>, et <b>${Math.round(RISQUE_PRISON_VOL*100)} % de risque de prison</b>.</p>
         <p class="itip-gris">Réussite : réussir le mini-jeu (Agilité = plus de temps). Prérequis : Discrétion ${aDiscretion()?"✅":"❌"}${hors?` · sur un lieu ${ici?"✅":"❌"}`:""}.</p>
         <div class="vol-gestes"><button class="mini" id="vol-voler" ${dV&&e>=_coutVol()?"":"disabled"}>Faire les poches</button>
-        <button class="mini" id="vol-cambrioler" ${aDiscretion()&&_maisonIci()&&e>=_coutVol()?"":"disabled"}>Cambrioler une maison</button></div>
+        ${hors ? `<button class="mini" id="vol-soute" ${aDiscretion()&&_souteIci()&&e>=_coutVol()?"":"disabled"}>Fouiller une soute</button>`
+               : `<button class="mini" id="vol-cambrioler" ${aDiscretion()&&_maisonIci()&&e>=_coutVol()?"":"disabled"}>Cambrioler une maison</button>`}</div>
       </div>
       <div class="vol-carte">
         <h3>Hacker <span class="qte">· crédits</span></h3>
@@ -676,6 +695,7 @@ function majVoler(){
     </div>`;
   const bv=z.querySelector("#vol-voler"); if(bv) bv.addEventListener("click",()=>tenterVoler());
   const bc=z.querySelector("#vol-cambrioler"); if(bc) bc.addEventListener("click",tenterCambrioler);   // v3.24
+  const bs=z.querySelector("#vol-soute"); if(bs) bs.addEventListener("click",tenterFouillerSoute);   // v3.28
   const bh=z.querySelector("#vol-hacker"); if(bh) bh.addEventListener("click",tenterHacker);
 }
 
@@ -889,7 +909,7 @@ function _hackStyle(){
     .vol-cartes{ display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; }
     .vol-carte{ flex:1 1 260px; border:1px solid var(--line); border-radius:var(--r-s); padding:12px 14px; background:rgba(16,40,37,.35); }
     .vol-carte h3{ margin:0 0 6px; } .vol-carte p{ margin:4px 0; font-size:13px; }
-    .vol-gestes{ display:flex; gap:8px; flex-wrap:wrap; }   /* v3.24 : poches ou maison */
+    .vol-gestes{ display:flex; gap:8px; flex-wrap:wrap; }   /* v3.24 : poches ou maison · v3.28 : ou soute */
     .vol-prison{ border:1px solid rgba(255,82,87,.5); background:rgba(255,82,87,.10); color:#ff8f92; border-radius:var(--r-s); padding:14px; line-height:1.5; }
     #hack-modale{ position:fixed; inset:0; z-index:300; background:rgba(4,8,20,.78); display:grid; place-items:center; padding:20px; }
     #hack-modale[hidden]{ display:none; }

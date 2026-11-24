@@ -66,7 +66,7 @@ const APT_TRONC = [
 const APT_FACTIONS = {
   ignis: { nom:"Ignis — Forge & Feu", noeuds:[
     { id:"ig1", nom:"Sang de magma", effet:"Coûts d'énergie (actions et déplacements) et d'O₂ −15 % en zone chaude (autour de la Forge). Les coûts sont arrondis : la baisse se voit sur ce qui coûte 4 ou plus." },   // v2.53 (K187)
-    { id:"ig2", nom:"Fournaise",     effet:"En zone chaude : minage +25 % et butin de patrouille +25 %." },
+    { id:"ig2", nom:"Fournaise",     effet:"Minage +15 % sur ta mine, et butin de patrouille +25 % en zone chaude (autour de la Forge et sur La Braise)." },   // v3.25 (K301) : minage +15 % (était +25 %)
     { id:"ig3", nom:"Combustion",    effet:"+6 points de chance de victoire contre les patrouilles.", deblocage:true },
     { id:"ig4", nom:"Cœur de forge", effet:"+15 de Force tant qu'une arme est équipée : patrouilles, expéditions et défense (pas l'Arène ni les combats de quête).", deblocage:true }   // v2.52 (K183) : +5 → +15
   ]},

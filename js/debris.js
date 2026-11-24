@@ -30,6 +30,7 @@ function _debrisCarteIci(){
   if(etat.secteur === "braise" || etat.secteur === "suaire") return etat.secteur;
   if(etat.secteur === "ecart") return "espace";
   if(etat.secteur === "ceres") return "ceres";   // v1.96 : aucune chute à Cérès (elle n'était pas Silène non plus)
+  if(etat.secteur === "ancolie") return "ancolie"; // v3.25 : ni chute ni patrouille en Ancolie (avant : comptée comme Silène)
   return "silene";
 }
 function _debrisPosIci(){

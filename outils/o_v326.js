@@ -1,0 +1,13 @@
+// v3.26 — l'XP des quêtes baisse de 33 % (K303), gardiens Q16 et Q30 remontés (K305) (node outils/o_banc.js . v326)
+(async function(){
+  const r = {}; await new Promise(x => setTimeout(x, 800));
+  const SERVEUR = {"q1":{"n":1,"c":120,"x":15},"q2":{"n":2,"c":250,"x":25},"q3":{"n":3,"c":350,"x":35,"o":{"bouture":1}},"q4":{"n":4,"c":500,"x":45},"q5":{"n":5,"c":800,"x":55,"o":{"navette_reserve":1}},"q6":{"n":6,"c":900,"x":70,"l":1},"q7":{"n":7,"c":1000,"x":80,"l":1},"q8":{"n":8,"c":1100,"x":90,"l":1},"q9":{"n":9,"c":1200,"x":100,"l":1},"q10":{"n":10,"c":1300,"x":115,"l":1},"q11":{"n":11,"c":1400,"x":125,"l":1},"q12":{"n":12,"c":1500,"x":135,"l":1},"q13":{"n":13,"c":1600,"x":145,"l":1},"q14":{"n":14,"c":1700,"x":155,"l":1},"q15":{"n":15,"c":1800,"x":170,"l":1},"q16":{"n":16,"c":1900,"x":180,"l":1},"q17":{"n":17,"c":2000,"x":190,"l":1},"q18":{"n":18,"c":2100,"x":200,"l":1},"q19":{"n":19,"c":2200,"x":210,"l":1},"q20":{"n":20,"c":2300,"x":225,"l":1},"q21":{"n":21,"c":2400,"x":235,"l":1},"q22":{"n":22,"c":2500,"x":245,"l":1},"q23":{"n":23,"c":2600,"x":260,"l":1},"q24":{"n":24,"c":2700,"x":270,"l":1},"q25":{"n":25,"c":2800,"x":280,"l":1},"q26":{"n":26,"c":2900,"x":290,"l":1},"q27":{"n":27,"c":3000,"x":300,"l":1},"q28":{"n":28,"c":3100,"x":310,"l":1},"q29":{"n":29,"c":3200,"x":320,"l":1},"q30":{"n":30,"c":3300,"x":335,"l":1},"q31":{"n":31,"c":2400,"x":345,"l":1},"q32":{"n":32,"c":2500,"x":355,"l":1},"q33":{"n":33,"c":2600,"x":370,"l":1},"q34":{"n":34,"c":2700,"x":380,"l":1},"q35":{"n":35,"c":2800,"x":390,"o":{"transat":1},"l":1},"q36":{"n":36,"c":2900,"x":400,"l":1},"q37":{"n":37,"c":3000,"x":410,"l":1},"q38":{"n":38,"c":3100,"x":420,"l":1},"q39":{"n":39,"c":3200,"x":430,"l":1},"q40":{"n":40,"c":3300,"x":445,"l":1},"q41":{"n":41,"c":3400,"x":455,"l":1},"q42":{"n":42,"c":3500,"x":465,"l":1},"q43":{"n":43,"c":3600,"x":480,"l":1},"q44":{"n":44,"c":3700,"x":490,"l":1},"q45":{"n":45,"c":4000,"x":500,"l":1}};   // _quete_recompenses() de v322_xp_quetes.sql
+  r.total = QUETES.reduce((s, q) => s + (q.recompense.xp || 0), 0);
+  r.exemples = ["q1","q15","q30","q45"].map(id => id + " " + queteData(id).recompense.xp);
+  r.identiqueAuServeur = QUETES.every((q, i) => SERVEUR[q.id] && SERVEUR[q.id].x === q.recompense.xp && SERVEUR[q.id].n === i + 1
+                                         && (SERVEUR[q.id].c || 0) === (q.recompense.credits || 0));
+  r.ecarts = QUETES.filter(q => !SERVEUR[q.id] || SERVEUR[q.id].x !== q.recompense.xp).map(q => q.id);
+  const g = id => { const q = queteData(id); const e = q.etapes.find(e => e.defi && e.defi.type === "combat" && e.image && e.image.src); return e && e.defi.puissance; };
+  r.gardiens = ["q11","q16","q19","q27","q30"].map(id => id + " " + g(id));
+  return r;
+})();

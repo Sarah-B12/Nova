@@ -44,7 +44,7 @@ const niveauDe = xp => { let n = 1; while(n < (NIVEAU_MAX || 199) && xp >= _SEUI
 
 /* ---------- Copies documentées ---------- */
 const { CHOIX_XP } = require("./o_baremes_quetes.js");   // XP des options de choix (copie du serveur, voir ce fichier)
-const GARDIENS = { q11:14, q16:17, q19:21, q27:27, q30:28 };   // niveau du joueur « moyen » (K70 ; recalés en v2.50, K177 ; voir o_gardiens.js)
+const GARDIENS = { q11:14, q16:19, q19:21, q27:27, q30:29 };   // v3.26 (K305) : Q16 17 → 19, Q30 28 → 29   // niveau du joueur « moyen » (K70 ; recalés en v2.50, K177 ; voir o_gardiens.js)
 { const g = (process.argv.find(x => x.startsWith("--gardiens=")) || "").split("=")[1];   // --gardiens=14,17,21,27,28 : essayer d'autres seuils
   if(g) g.split(",").map(Number).forEach((v, i) => { GARDIENS[["q11","q16","q19","q27","q30"][i]] = v; }); }
 const GAINS = {
