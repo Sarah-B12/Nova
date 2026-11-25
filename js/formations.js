@@ -98,7 +98,6 @@ const FORMATIONS = {
     ]
   }
 };
-const PALIERS = [[0,"Apprenti"],[100,"Confirmé"],[200,"Maître"]];
 /* v2.03 (K116) — le rang de MAÎTRE était à 200 points pour tous, alors qu'aucune formation
    n'y monte (150 à 190 au plus) : personne ne pouvait l'être. Maître = avoir FINI sa
    formation, toutes ses recettes au plafond : 10 × nombre de recettes (Fabricant d'armes

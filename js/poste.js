@@ -142,7 +142,7 @@ function _ligneRecu(o){
   let desc;
   if(o.type==="credits") desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${o.montant} ₡</b>`;
   else if(o.type==="cadeau") desc = `🎁 Un <b>cadeau</b> de <b>${echapper(o.deNom||"?")}</b> (contenu caché)`;
-  else desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite}` + (o.montant>0?` <span class="itip-gris">contre ${o.montant} ₡</span>`:` <span class="itip-gris">(gratuit)</span>`);
+  else desc = `<b>${echapper(o.deNom||"?")}</b> t'envoie <b>${item(o.item_id)?item(o.item_id).nom:o.item_id}</b> ×${o.quantite}` + (o.montant>0?` <span class="itip-gris">contre ${o.montant} ₡ · se récupère d'un seul coup</span>`:` <span class="itip-gris">(gratuit)</span>`);   // v3.31 (K317)
   return `<div class="poste-ligne"><span class="poste-txt">${desc}<span class="itip-gris" style="display:block;font-size:11px">à récupérer avant le ${quand}</span></span><span class="comm-btns"><button class="mini" data-recup="${o.id}">${o.type==="objet"&&o.montant>0?`Récupérer (${o.montant} ₡)`:"Récupérer"}</button><button class="mini danger" data-refus="${o.id}">Refuser</button></span></div>`;
 }
 function _ligneRetour(o){
@@ -293,8 +293,11 @@ async function posteEnvoyer(){
   if(typeof pousserCredits==="function") await pousserCredits();
   const { data:res, error } = await sb.rpc("poste_envoyer", { p_a:aId, p_type:type, p_item:p_item, p_qte:p_qte, p_montant:p_montant, p_taxe:p_taxe });
   if(error || !res || !res.ok){
+    if(res && res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);   // v3.31 : lots périmés retirés
     if(res && res.err==="fonds") journal(`Fonds insuffisants (coût ${res.cout} ₡).`,"alerte");
     else if(res && res.err==="manque") journal(`Tu ne possèdes que ${res.possede}× cet objet.`,"alerte");
+    else if(res && res.err==="perime") journal(`Cet objet a périmé : il ne t'en reste que ${res.possede}.`,"alerte");
+    else if(typeof ecoRefusTexte==="function" && ecoRefusTexte(res)) journal(ecoRefusTexte(res),"alerte");   // v3.31 : pause, mort, prison
     else journal("Envoi impossible.","alerte");
     return;
   }
@@ -310,11 +313,18 @@ async function posteRecuperer(id){
   if(typeof refusPrison==="function" && refusPrison("récupérer un colis")) return;   // v2.00 : comme l'envoi (retour d'une bêta-testeuse)
   const o=_posteCache.find(x=>String(x.id)===String(id)); if(!o) return;
   if(o.statut==="attente" && o.type==="objet" && o.montant>0 && etat.credits < o.montant){ journal(`Il faut ${o.montant} ₡ pour récupérer cet objet.`,"alerte"); return; }
+  /* v3.31 (v327, K317) — un contre paiement se récupère d'un seul coup : on paie une fois, pour le lot
+     entier (avant : le prix entier à chaque retrait partiel quand le sac était trop petit). */
+  if(o.statut==="attente" && o.type==="objet" && o.montant>0 && typeof placesLibres==="function" && placesLibres() < o.quantite){
+    journal(`Il te faut ${o.quantite} places libres pour récupérer ce colis (contre paiement).`,"alerte"); return;
+  }
   if(typeof pousserCredits==="function") await pousserCredits();
   const { data:res, error } = await sb.rpc("poste_recuperer", { p_id: Number(id) });
   if(res && res.err==="en_transit"){ journal(`Ce colis est encore en route (réseau perturbé) : disponible dans ${_resteAvant(res.dispo_le)}.`,"alerte"); return; }   // v1.11
   if(error || !res || !res.ok){
+    const eco = (typeof ecoRefusTexte==="function") ? ecoRefusTexte(res) : null;   // v3.31 (v327) : contre paiement, pause, mort
     if(res && res.err==="fonds") journal(`Crédits insuffisants (${res.cout} ₡).`,"alerte");
+    else if(eco) journal(eco,"alerte");
     else if(res && res.err==="sac_plein") journal("Sac plein — fais de la place avant de récupérer.","alerte");
     else journal("Récupération impossible.","alerte");
     majPoste(); return;
@@ -332,7 +342,7 @@ async function posteRecuperer(id){
 async function posteRefuser(id){
   const o=_posteCache.find(x=>String(x.id)===String(id));
   const { data:res, error } = await sb.rpc("poste_refuser", { p_id: Number(id) });
-  if(error || !res || !res.ok){ journal("Refus impossible.","alerte"); }
+  if(error || !res || !res.ok){ journal(((typeof ecoRefusTexte==="function") && ecoRefusTexte(res)) || "Refus impossible.","alerte"); }   // v3.31 : pause, mort
   else journal(`Envoi${o?` de ${o.deNom}`:""} refusé — il retourne à l'expéditeur.`,"poste","poste");
   majPoste();
 }

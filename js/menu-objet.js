@@ -18,6 +18,17 @@ function valeurBrade(id){
   return b ? b.prix : null;
 }
 
+/* v3.31 — ce que la brade PAIE vraiment, calculé comme le serveur (`brader`) : la moitié du prix de
+   référence (table `prix_brade`), × 1,15 avec Négociant (no3), × la boisson « crédits », arrondi une fois
+   sur le total, au moins 1 ₡. Avant, l'écran annonçait le prix sans Négociant ni boisson. */
+function bradeTotal(id, n){
+  const v = valeurBrade(id); if(v==null) return null;
+  const u = Math.max(1, Math.round(v/2));
+  const nego = (typeof _apt==="function" && _apt("no3")) ? 1.15 : 1;
+  const mult = (typeof boissonMod==="function") ? boissonMod("credits", 1) : 1;
+  return Math.max(1, Math.round(u * Math.max(1, n|0) * nego * mult));
+}
+
 let _menuMonte=false;
 function monterMenuObjet(){
   if(_menuMonte) return;
@@ -58,7 +69,7 @@ function ouvrirMenuObjet(id){
      (inv_retirer), donc ce sont TOUJOURS les lots les plus anciens — donc les
      plus proches de la péremption — qui partent en premier. */
   if(brade!=null){
-    const u = Math.max(1, Math.round(brade/2));
+    const u = bradeTotal(id, 1);   // v3.31 : Négociant et boisson compris
     const dispo = etat.sac[id]||0;
     /* ⚠ La quantité est ENCADRÉE avec le bouton Brader. Posée seule entre
        « Vendre au marché… » et « Brader », elle se lisait comme un réglage de
@@ -86,13 +97,13 @@ function ouvrirMenuObjet(id){
 
   const champ = m.querySelector("#brade-q");
   if(champ){
-    const dispo = etat.sac[id]||0, u = Math.max(1, Math.round(valeurBrade(id)/2));
+    const dispo = etat.sac[id]||0;
     const maj = ()=>{
       let n = parseInt(champ.value,10); if(!Number.isFinite(n)) n = 1;
       n = Math.max(1, Math.min(dispo, n));
       champ.value = n;
       m.querySelector("#brade-n").textContent = n;
-      m.querySelector("#brade-t").textContent = n * u;
+      m.querySelector("#brade-t").textContent = bradeTotal(id, n);   // v3.31 : arrondi sur le total, comme le serveur
     };
     champ.addEventListener("input", maj);
     m.querySelectorAll("[data-q]").forEach(b=>b.addEventListener("click", ()=>{
@@ -132,7 +143,11 @@ async function braderObjet(id, qte){
   const { data:res, error } = await rpcAvecSolde("brader", { p_item:id, p_qte:n });
   if(error || !res || !res.ok){
     const e = res && res.err;
+    if(res && res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);   // v3.31 : lots périmés retirés
+    if(e==="mort" && typeof ouvrirCouloirMort==="function"){ ouvrirCouloirMort(); return; }
     if(e==="manque")          journal("Tu n'as plus assez de cet objet dans le sac.","alerte");
+    else if(e==="perime")     journal(`Cet objet a périmé : il ne t'en reste que ${res.possede}.`,"alerte");   // v3.31 (K320)
+    else if(e==="pause")      journal("Tu es en pause : sors de pause pour commercer.","alerte");               // v3.31 (K321)
     else if(e==="invendable") journal("Cet objet ne se brade pas.","alerte");
     else if(e==="prison")     journal("Tu es en prison — impossible d'agir jusqu'à ta libération.","alerte");
     else                      journal("Brade refusée par le serveur.","alerte");

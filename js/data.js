@@ -435,7 +435,6 @@ function villeActuelle(){
 function enZoneFaction(){ return villeActuelle(); }
 // Vrai si le joueur est sur l'anneau du Protocole (à TOL près) — servira au hack/espionnage.
 function surAnneauProtocole(){ if(!etat.pos) return false; return Math.abs(dist(etat.pos.x,etat.pos.y,ZONE_PROTOCOLE.x,ZONE_PROTOCOLE.y) - ZONE_PROTOCOLE.r) <= TOL_PROTOCOLE; }
-function materiauMaison(){ return "cendrite"; }
 
 // Tirage d'un minerai selon sa rareté ; bonus augmente la chance des rares.
 /* Zones thermiques (v0.59) — aptitudes Ignis (ig1, ig2) et Toundra (to1, to4).

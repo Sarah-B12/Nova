@@ -75,7 +75,15 @@ function _boutiqueDehors(){
    La boisson en dix-millièmes (nombres ENTIERS), pour arrondir exactement comme lui (+10 % :
    vérifié identique jusqu'à 20 000 ₡) : en virgule flottante, 165 × 0,7 donnait 115 au lieu de 116 (115,4999…). */
 function _prixBoutique(a){
-  const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(a.prix) : a.prix;   // boutique mobile (no1) : +10 %
+  /* v3.31 (v327, K322) — boutique mobile HORS DE SILÈNE : la base est le prix du Perchoir quand il est plus
+     élevé (Recharge 520, Kit de soin 260), puis + 10 %. Avant, on payait moins loin du Perchoir qu'à son
+     comptoir. Même règle au serveur (`boutique_acheter`). Mêmes articles qu'avant. */
+  let prix = a.prix;
+  if(_boutiqueDehors() && typeof horsSilene==="function" && horsSilene()){
+    const p = (typeof BASE_BOUTIQUE!=="undefined") ? BASE_BOUTIQUE.find(x => x.id === a.id && !x.nidSeul) : null;
+    if(p && p.prix > prix) prix = p.prix;
+  }
+  const base = (_boutiqueDehors() && typeof aptBoutiqueSurcout==="function") ? aptBoutiqueSurcout(prix) : prix;   // boutique mobile (no1) : +10 %
   const m = (typeof boissonMod==="function") ? boissonMod("boutique", 1) : 1;   // v0.79 : « Mémoire courte » −20 %
   return Math.max(1, Math.round(base * Math.round(m * 10000) / 10000));
 }
@@ -147,7 +155,8 @@ const BOUTIQUE_REFUS = {
   credits:    "Crédits insuffisants.",
   sac_plein:  "Sac plein — fais de la place avant d'acheter.",
   quantite:   "Quantité invalide.",
-  prison:     "Tu es en prison — impossible d'acheter jusqu'à ta libération."
+  prison:     "Tu es en prison — impossible d'acheter jusqu'à ta libération.",
+  pause:      "Tu es en pause : sors de pause pour commercer."   // v3.31 (v327, K321)
 };
 /* Achat par lots. ⚠ La quantité est bornée par ce qu'on peut PAYER et par la
    place restante dans le sac : mieux vaut acheter moins que refuser tout, et

@@ -224,6 +224,25 @@ function appliquerSoldeServeur(v){
   const attente = _creditsEnAttente();
   _creditsServeur = v; etat.credits = v + attente;
 }
+/* v3.31 (v327, K317 → K322) — les refus communs de l'économie (marché, Poste, brade, dons, boutique),
+   dits au joueur de la même façon partout. Renvoie null si l'erreur n'est pas l'une d'elles. */
+const ECO_REFUS = {
+  non_connecte: "Session expirée — recharge la page.",
+  mort:         "Tu es au Couloir de la mort : il faut d'abord revenir.",
+  pause:        "Tu es en pause : sors de pause pour commercer.",
+  prison:       "Tu es en prison — impossible jusqu'à ta libération.",
+  lieu:         "Il faut être dans la cité de ce marché.",
+  permis:       "Il te faut un permis de vaisseau.",
+  perime:       "Cet objet a périmé.",
+  trop_cher:    "Ce lot est vendu trop cher pour la caisse (plus de 2 fois le prix moyen).",
+  soi:          "C'est ta propre offre."
+};
+function ecoRefusTexte(res){
+  const e = res && res.err;
+  if(e === "sac_plein" && res.contre_paiement)
+    return `Il te faut ${res.requis} places libres pour récupérer ce colis (contre paiement).`;
+  return ECO_REFUS[e] || null;
+}
 /* RPC qui touche aux crédits ET renvoie le solde (clé `cle`, « solde » par défaut) :
    exécutée DANS la file, pour qu'aucun pousserCredits() ne s'intercale entre
    l'appel et l'application du solde (sinon l'écart en attente partirait deux fois). */

@@ -1305,6 +1305,7 @@ async function faireDon(){
   if(error || !res || !res.ok){
     if(res && res.err==="plafond") journal(`Plafond de dons atteint. Reste aujourd'hui : ${res.reste} ₡.`,"alerte");
     else if(res && res.err==="fonds") journal("Crédits insuffisants.","alerte");
+    else if(typeof ecoRefusTexte==="function" && ecoRefusTexte(res)) journal(ecoRefusTexte(res),"alerte");   // v3.31 (v327, K321) : pause, mort
     else journal("Don impossible.","alerte");
     return;
   }

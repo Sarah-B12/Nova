@@ -237,10 +237,13 @@ async function acheterOffre(offreId){
   const { data:res, error } = await rpcAvecSolde("acheter_offre", { offre: Number(offreId) });
   if(error || !res || !res.ok){
     const err=res&&res.err;
-    if(err==="fonds") journal("Crédits insuffisants.","alerte");
+    const eco=(typeof ecoRefusTexte==="function") ? ecoRefusTexte(res) : null;   // v3.31 (v327) : lieu, pause, mort, permis…
+    if(err==="mort" && typeof ouvrirCouloirMort==="function") ouvrirCouloirMort();
+    else if(err==="fonds") journal("Crédits insuffisants.","alerte");
     else if(err==="introuvable") journal("Cette offre n'est plus disponible.","alerte");
     else if(err==="soi") journal("C'est ta propre offre.","alerte");
     else if(err==="sac_plein") journal("Sac plein — fais de la place avant d'acheter.","alerte");
+    else if(eco) journal(eco,"alerte");
     else journal("Achat impossible.","alerte");
     renderMarche(); return;
   }
@@ -261,6 +264,8 @@ async function acheterOffreFaction(offreId){
     else if(e==="pas_architecte") journal("Réservé à l'Architecte.","alerte");
     else if(e==="pas_defense") journal("La caisse ne paie que les composants qui entrent dans un objet de défense.","alerte");
     else if(e==="introuvable") journal("Offre indisponible.","alerte");
+    else if(e==="soi") journal("La caisse ne paie pas tes propres offres.","alerte");   // v3.31 (v327, K318)
+    else if(typeof ecoRefusTexte==="function" && ecoRefusTexte(res)) journal(ecoRefusTexte(res),"alerte");   // trop cher, périmé, lieu, pause…
     else journal("Achat faction impossible.","alerte");
     renderMarche(); return;
   }
@@ -277,7 +282,11 @@ async function mettreEnVente(id, prix, qte){
   qte  = Math.max(1, Math.min(dispo, Math.floor(qte||1)));
   prix = Math.max(p.min, Math.min(p.max, Math.round(prix||p.moy)));
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO){ journal("Serveur indisponible.","alerte"); return; }
-  /* ⚠ v0.94 — c'est le CLIENT qui calcule l'échéance, et lui seul : `usure.js`
+  /* ⚠ v3.31 (v327, K320) — C'EST MAINTENANT LE SERVEUR QUI CALCULE L'ÉCHÉANCE (date du lot le plus ancien
+     + `duree_vie_de`, Entretien compris) : `p_expire_le` est encore envoyé mais IGNORÉ. Un jeu modifié ne
+     peut plus vendre un lot mort avec une fausse date. Le calcul ci-dessous ne sert plus qu'au journal local.
+     Ancien commentaire :
+     ⚠ v0.94 — c'est le CLIENT qui calcule l'échéance, et lui seul : `usure.js`
      reste la source unique des durées de vie. Le serveur ne reçoit qu'une date,
      qu'il range dans `offres.expire_le` pour pouvoir purger.
      On part du temps restant du LOT LE PLUS ANCIEN, pas de `dureeVie()` à
@@ -291,8 +300,11 @@ async function mettreEnVente(id, prix, qte){
   if(_exp==null) console.warn("[marche] lots non synchronisés : offre déposée sans échéance.", id);
   const { data:res, error } = await rpcAvecSolde("deposer_offre", { p_faction:faction, p_item:id, p_qte:qte, p_prix:prix, p_expire_le:_exp });
   if(error || !res || !res.ok){
+    if(res && res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);   // v3.31 : lots périmés retirés
     if(res && res.err==="taxe") journal(`Taxe de ${res.taxe} ₡ — crédits insuffisants.`,"alerte");
     else if(res && res.err==="manque") journal(`Tu ne possèdes que ${res.possede}× cet objet.`,"alerte");
+    else if(res && res.err==="perime") journal(`Cet objet a périmé : il ne t'en reste que ${res.possede}.`,"alerte");
+    else if(typeof ecoRefusTexte==="function" && ecoRefusTexte(res)) journal(ecoRefusTexte(res),"alerte");
     else journal("Mise en vente impossible.","alerte");
     return;
   }
@@ -314,6 +326,7 @@ async function retirerOffre(offreId, qte){
   if(error || !res || !res.ok){
     if(res && res.err==="sac_plein") journal("Sac plein — libère de la place pour récupérer ce lot.","alerte");
     else if(res && res.err==="qte") journal("Quantité invalide.","alerte");
+    else if(typeof ecoRefusTexte==="function" && ecoRefusTexte(res)) journal(ecoRefusTexte(res),"alerte");   // v3.31 : pause, mort
     else journal("Retrait impossible.","alerte");
     renderMarche(); return;
   }

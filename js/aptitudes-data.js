@@ -94,7 +94,7 @@ const APT_FACTIONS = {
     { id:"ro4", nom:"Surrégime",  effet:"Toutes tes structures produisent +50 % (mines, bio-dôme, enclos)." }
   ]},
   nomades: { nom:"Les Nomades — Route & Négoce", noeuds:[
-    { id:"no1", nom:"Boutique mobile",effet:"Achat à la boutique depuis n'importe où (+10 % de surcoût).", deblocage:true },
+    { id:"no1", nom:"Boutique mobile",effet:"Achat à la boutique depuis n'importe où (+10 % de surcoût ; hors de Silène, au moins le prix du Perchoir).", deblocage:true },
     { id:"no2", nom:"Marchand",       effet:"Taxe de mise en vente au marché réduite de moitié : 5 % au lieu de 10 % (4 % avec le Fragment du négoce)." },
     { id:"no3", nom:"Négociant",      effet:"+15 % de crédits sur les butins, les récompenses de quête et la brade." },
     { id:"no4", nom:"Voyageur",       effet:"Vaisseau : −20 % de carburant pour les vols et les sauts." }

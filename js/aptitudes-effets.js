@@ -130,7 +130,6 @@ function aptCombatDegats(d){ let m = 1; if(_apt("sv3")) m *= 0.75; return Math.m
 // (Discrétion agit désormais sur le taux de patrouille dans patrouille.js — voir chancePatrouille().)
 
 /* ---------- Minerai / rareté ---------- */
-function aptBonusRare(base){ return base; }                                                                           // v1.86 : plus utilisé (voir aptMoinsCendrite)
 function aptMoinsCendrite(){ return _apt("pr3") ? 16 : 0; }                                                            // Œil du mineur (v1.86) : Cendrite 40 → 24
 
 /* ---------- Minage en zone thermique (v0.59) ---------- */
