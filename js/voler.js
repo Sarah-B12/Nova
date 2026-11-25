@@ -3,13 +3,15 @@
    (vol_preparer / vol_conclure — voir plus bas et BACKEND_PLAN §38).
      • Voler  : objets. Plus risqué, moins payant. Réussite signée 70 % ;
                 échec → démasqué (TON NOM), prison 45 %. Agilité. Prérequis : Discrétion.
-     • Hacker : crédits (≤20%, v1.21). Anonyme 70 % (« un anonyme » chez la victime).
+     • Hacker : crédits (6 % + 0,02 % par point d'Intelligence, 10 % et 2 000 ₡ au plus — v2.51, K181).
+                Anonyme 70 % (« un anonyme » chez la victime).
                 Réussite = MINI-JEU (Intelligence = plus de temps). Prérequis : Ordinateur de hacking
                 équipé + Intrusion. Risque de prison plus faible.
      • Coûte 15% d'énergie. Cible = un joueur AU HASARD présent dans la ville.
      • Intouchables : équipement porté (armes/armures) + vaisseau équipé.
-     • Immunité des nouveaux (<20 j) ; une victime volée est protégée le jour
-       du vol et le lendemain (v1.36j, v153 : remise à minuit, heure de Paris).
+     • Immunité des nouveaux (<20 j) ; une victime est protégée 48 h après un vol
+       réussi, 72 h après un hack réussi, 24 h après un raté ou un vol vide (v222, v311).
+     • v3.32 (v328) : en pause, ni vol, ni hack, ni évasion (le serveur refuse : « pause »).
    =========================================================== */
 const VOL_ENERGIE     = 15;
 /* v1.21 — 30 % → 20 % (décision de l'autrice, 27/09) : le plafond absolu de
@@ -198,6 +200,7 @@ const _VOL_REFUS = {
   ordinateur:()=>"Équipe un Ordinateur de hacking pour hacker.",
   energie:   ()=>"Pas assez d'énergie.",
   mort:      ()=>"Tu es mort : impossible d'agir.",
+  pause:     ()=>"Tu es en pause : ni vol ni hack tant qu'elle dure.",   // v3.32 (v328)
   prison:    ()=>"Tu es en prison."
 };
 const _VOL_LIEU_TXT = "Pour faire les poches : dans une cité sur Silène ; ailleurs, sur un lieu (le Perchoir, Le Nid, la station, une aire d'atterrissage…).";
@@ -738,6 +741,7 @@ async function tenterEvasion(){
   if(!data || !data.ok){
     const err=data && data.err;
     if(err==="energie") journal("Il te faut au moins 10% d'énergie pour tenter une évasion.","alerte");
+    else if(err==="pause") journal("Tu es en pause : pas d'évasion tant qu'elle dure.","alerte");   // v3.32 (v328)
     else if(err==="libre"){ etat.prisonJusqua=0; etat.prisonFaction=null; etat.prisonFinConnue=0; journal("Tu n'es plus en prison.","gain"); }
     else journal("Le serveur n'a pas répondu — réessaie.","alerte");
     if(typeof afficher==="function") afficher(); majVoler(); return;

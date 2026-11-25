@@ -245,7 +245,7 @@ async function _tqPister(cible, nom, apres){
     journal({ aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas.", essais:"Plus d'essai sur cette cible aujourd'hui.",
               energie:"Pas assez d'énergie.", en_prison:"Ta cible est déjà en prison.", indisponible:"Ta cible est hors d'atteinte (morte ou absente).",
               pas_recherche:"Plus aucune prime sur cette tête.", soi_meme:"Tu ne peux pas te traquer toi-même.",
-              prison:"Tu es en prison.", mort:"Tu es mort." }[d && d.err] || "Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol");
+              prison:"Tu es en prison.", mort:"Tu es mort.", pause:"Tu es en pause : pas de traque tant qu'elle dure." }[d && d.err] || "Le serveur n'a pas répondu — rien n'a été dépensé.","alerte","vol");
     if(apres) apres(); return;
   }
   if(typeof d.energie==="number"){ etat.energie = d.energie; etat.energieMaj = Date.now(); }
@@ -452,7 +452,7 @@ async function _tqTraquer(cible, nom){
               pas_sur_place:"Tu n'es pas exactement sur le point de la piste.", delai:"Tu as déjà traqué cette cible il y a moins de 24 h.",
               pas_de_piste:"Tu n'as pas (ou plus) de piste sur cette cible.", energie:"Pas assez d'énergie.",
               en_prison:"Ta cible est déjà en prison.", indisponible:"Ta cible est hors d'atteinte.", pas_recherche:"Plus aucune prime sur cette tête.",
-              aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas." }[r && r.err] || "Le serveur n'a pas répondu.","alerte","vol");
+              aptitude:"Il te faut l'aptitude Traque.", voleur:"Un voleur ne traque pas.", pause:"Tu es en pause : pas de traque tant qu'elle dure." }[r && r.err] || "Le serveur n'a pas répondu.","alerte","vol");
   }
   await _tqRafraichir(true);
   if(typeof afficher==="function") afficher();
