@@ -284,6 +284,16 @@ async function majGouvernement(el){
   bloc.querySelectorAll("[data-transmettre]").forEach(b=>b.addEventListener("click", _regentTransmettre));
   bloc.querySelectorAll("[data-demrole]").forEach(b=>b.addEventListener("click",()=>_regentDemettre(b.dataset.demrole)));
   bloc.querySelectorAll("[data-demission]").forEach(b=>b.addEventListener("click",()=>_demissionner(b.dataset.demission)));
+  /* v3.34 (v330, K330) — « Dernières batailles » : les 5 dernières batailles terminées de SA faction (menées, subies,
+     Protocole), pour tous les membres. Avant, seul le bureau du Stratège montrait UNE bataille : la dernière expédition
+     menée ; les attaques subies n'apparaissaient nulle part hors du journal. */
+  if(chezMoi){
+    try{
+      const { data:bt } = await sb.rpc("faction_batailles", { p_limite:5 });
+      if(_perime()) return;
+      const b3 = document.createElement("div"); b3.innerHTML = _bataillesHtml(bt); el.appendChild(b3);
+    }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#batailles"); }
+  }
   try{
     const { data:frags } = await sb.from("fragments").select("*");
     if(_perime()) return;
@@ -738,6 +748,54 @@ async function _expCreer(el){
   _expForm={ cible:"", obj:"", jours:"1", desc:"" };
   journal("Expédition créée.","gain"); if(typeof majCentre==="function") majCentre();
 }
+/* v3.34 (v330, K330) — la rubrique « Dernières batailles » (faction_batailles). Vu de SA faction. Jamais la force
+   des assaillants d'une attaque subie (le serveur ne la donne pas : c'est le travail de l'Ombre). */
+const _BATAILLE_OBJ = { pillage:"pillage", sabotage:"sabotage", raid:"raid éclair", assaut:"assaut" };
+function _batailleLigneHtml(b){
+  const quand = b.quand ? new Date(b.quand).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—";
+  const vert = t => `<b style="color:var(--vert,#4caf50)">${t}</b>`, orange = t => `<b style="color:var(--orange,#ff8a3d)">${t}</b>`;
+  const obj = _BATAILLE_OBJ[b.objectif] || "expédition";
+  const n = v => (+v || 0).toLocaleString("fr-FR");
+  const suites = [];
+  if(+b.objets_touches) suites.push(`${b.objets_touches} objet(s) de défense touché(s)`);
+  if(+b.objets_detruits) suites.push(`${b.objets_detruits} détruit(s)`);
+  if(+b.absents_touches) suites.push(`terrain abîmé chez ${b.absents_touches} absent(s)`);
+  if(+b.pieces) suites.push(`${b.pieces} pièce(s) récupérée(s) par les Assembleurs`);
+  let titre, verdict, detail = [];
+  if(b.type === "menee"){
+    const contre = b.adversaire === "protocole" ? "le Protocole" : echapper(_gouvFacNom(b.adversaire));
+    titre = `Notre ${b.adversaire === "protocole" ? "assaut" : obj} contre <b>${contre}</b>`;
+    if(b.annulee) return `<li class="itip-gris">${quand} · ${titre} : annulée, aucun participant.</li>`;
+    verdict = b.gagne ? vert("succès") : orange("échec");
+    detail.push(`${b.p_att} contre ${b.p_def}, ${b.nb_att} participant(s)${b.forteresse ? ", quai barricadé" : ""}`);
+    if(+b.butin) detail.push(`butin ${n(b.butin)} ₡ (dont ${n(b.part_coffre)} ₡ pour la caisse)`);
+    if(+b.credits_par) detail.push(`${n(b.credits_par)} ₡ par participant`);
+    if(b.fragment) detail.push(`Fragment récupéré : ${echapper(b.fragment)}`);
+    if(b.gagne) detail = detail.concat(suites);
+  } else if(b.type === "subie"){
+    titre = `<b>${echapper(_gouvFacNom(b.adversaire))}</b> a mené un ${obj} contre nous`;
+    if(b.annulee) return `<li class="itip-gris">${quand} · ${titre} : annulé, personne n'est venu.</li>`;
+    verdict = b.gagne ? vert("défense tenue") : orange("la défense a cédé");
+    detail.push(`${+b.nb_def || 0} défenseur(s) présent(s)`);
+    if(+b.caisse_pillee) detail.push(`caisse pillée : −${n(b.caisse_pillee)} ₡`);
+    detail = detail.concat(suites);
+  } else {
+    titre = `Attaque du Protocole${b.puissance ? ` (${echapper(b.puissance)})` : ""}`;
+    verdict = b.gagne ? vert("repoussée") : orange("la défense a cédé");
+    detail.push(`${+b.nb_def || 0} défenseur(s) présent(s)`);
+    if(b.fragment_perdu) detail.push(`Fragment repris : ${echapper(b.fragment_perdu)}`);
+    detail = detail.concat(suites);
+  }
+  return `<li class="itip-gris">${quand} · ${titre} : ${verdict}${detail.length ? ` <span class="itip-gris">(${detail.join(" · ")})</span>` : ""}</li>`;
+}
+function _bataillesHtml(data){
+  let h = `<h4 class="gsec" style="margin-top:16px">Dernières batailles</h4>`;
+  if(!data || !data.ok) return h + `<p class="vide">Indisponible pour l'instant — réessaie dans un instant.</p>`;
+  const l = Array.isArray(data.batailles) ? data.batailles : [];
+  if(!l.length) return h + `<p class="vide">Aucune bataille terminée pour l'instant.</p>`;
+  return h + `<ul class="gouv-batailles" style="margin:0;padding-left:18px;font-size:12px">${l.map(_batailleLigneHtml).join("")}</ul>`
+           + `<p class="itip-gris" style="font-size:12px;margin-top:4px">Expéditions menées, attaques subies et attaques du Protocole. Une attaque qui se prépare contre la faction n'y figure pas : seule l'Ombre peut la découvrir.</p>`;
+}
 function _expRapportHtml(row){
   const r=row.rapport||{}; const barricade = r.forteresse ? " · quai barricadé" : "";   // v1.46 : jour de forteresse (v171)
   const noms={pillage:"Pillage",sabotage:"Sabotage",raid:"Raid éclair",assaut:"Assaut",protocole:"Assaut"};   // v1.44b : « Assaut contre le Protocole » (le « contre » est ajouté plus bas)
@@ -842,7 +900,9 @@ async function _effetsAppliquerFond(data){
       /* v2.47 — tue si un compte rendu de duel dit déjà exactement cette XP (voir syncEffetsCombat). */
       const dejaDit = _xpDejaDit > 0 && _xpDejaDit === data.xp;
       if(_duelLocal && !dejaDit && !_duelLocal.xp) _duelLocal.xp = data.xp;   // le duel que le joueur vient d'accepter : son XP va dans SA ligne
-      else if(!dejaDit) journal(`Expérience de campagne : +${data.xp} XP.`,"gain","combat");
+      /* v3.34 (v330, K329) — plus de ligne « Expérience de campagne » : chaque compte rendu dit désormais l'XP gagnée
+         (expédition, défense, Protocole, duel). Une testeuse lisait « +46 XP » sans savoir d'où il venait (ses trois
+         duels, déjà annoncés : la veille, qui relit le serveur chaque minute, ne taisait pas le doublon). */
       // L'XP est en base ; ce qui doit être écrit ici, ce sont les POINTS
       // crédités par la montée de niveau, qui vivent dans donnees.
       if(typeof sauverMaintenant==="function") await sauverMaintenant();

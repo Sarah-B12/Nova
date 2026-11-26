@@ -66,6 +66,7 @@ const DELAIS = {
   v331: { profil: 50, sac: 50, jauges: 50 },        // v3.31 : vérification de l'économie, K317 → K322 (o_v331.js)
   v332: { profil: 50, sac: 50, jauges: 50 },        // v3.32 : vol, hack et prison — refus « pause » dits au joueur (o_v332.js)
   v333: { profil: 50, sac: 50, jauges: 50 },        // v3.33 : vérification des quêtes — combat au serveur, refus dits (o_v333.js)
+  v334: { profil: 50, sac: 50, jauges: 50 },        // v3.34 : journal des combats — XP dans les comptes rendus, dernières batailles (o_v334.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)
