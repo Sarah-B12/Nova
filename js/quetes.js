@@ -258,7 +258,7 @@ function accepterQuete(id){
 async function abandonnerQuete(){
   if(!queteActive()) return;
   // v0.91 : le message ne promet plus une remise à zéro complète — les verrous restent.
-  if(!await confirmerJoli("Abandonner la quête", "Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué jusqu'à minuit.", "Abandonner", true)) return;
+  if(!await confirmerJoli("Abandonner la quête", `Abandonner la quête en cours ? Tu pourras la reprendre depuis le début, mais un échec récent reste bloqué ${VERROU_DEFI_H} h.`, "Abandonner", true)) return;
   // v1.17 : trace, pour distinguer dans `diag_sync` un abandon voulu d'une quête perdue.
   if(typeof _diagSync==="function") _diagSync("quete_abandonnee", { id:queteActive().id, etape:queteActive().etape }, true);
   queteEtat().active=null; journal("Quête abandonnée.","alerte");
@@ -310,8 +310,27 @@ const QUETE_REFUS = {
   lendemain: "Cette quête ne peut s'achever qu'à partir de demain (jour de jeu). Reviens demain valider la dernière étape.",
   prison:    "Tu es en prison — impossible de recevoir ta récompense avant ta libération. Valide à nouveau la dernière étape ensuite.",
   paiement:  "L'étape payante de cette quête n'est pas enregistrée au serveur. Demande au staff de remettre la quête à zéro.",   // v2.95 (v297)
-  quete:     "Quête inconnue du serveur."
+  quete:     "Quête inconnue du serveur.",
+  // v3.33 (v329, K328) : le serveur vérifie aussi la pause, les combats, l'affût et la bête.
+  pause:     "Tu es en pause : ta récompense t'attend. Valide à nouveau la dernière étape à ton retour.",
+  combat:    "Un combat de cette quête n'est pas enregistré au serveur. Demande au staff de remettre la quête à zéro.",
+  affut:     "Il manque des jours d'affût à cette quête au serveur. Demande au staff de remettre la quête à zéro.",
+  bete:      "La bête de cette quête n'est pas enregistrée au serveur. Demande au staff de remettre la quête à zéro."
 };
+/* v3.33 (v329, K327, K328) — les refus communs aux gestes de quête (combat, saut, paiement, affût, bête, rendre).
+   « tot » : la quête d'avant s'est achevée aujourd'hui pour le serveur (horloge de l'appareil en avance). */
+const QUETE_REFUS_GESTE = {
+  pause:      "Tu es en pause : les quêtes attendent ton retour.",
+  prison:     "Tu es en prison : impossible avant ta libération.",
+  tot:        "Pour le serveur, la quête d'avant s'est achevée aujourd'hui : reviens après minuit (heure de Paris).",
+  hors_quete: "Ta progression n'est pas encore enregistrée. Réessaie dans un instant."
+};
+function _queteRefusGeste(err){
+  if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); return true; }
+  if(err === "non_connecte"){ if(typeof alerteSessionPerdue === "function") alerteSessionPerdue(); return true; }
+  const t = QUETE_REFUS_GESTE[err]; if(!t) return false;
+  journal(t, "alerte"); return true;
+}
 async function queteTerminerServeur(id, q){
   let d = null;
   try{
@@ -456,7 +475,7 @@ function _wireScene(z, d){
       let data=null, error=null;
       try{ ({ data, error } = await sb.rpc(RENDRE.rpc)); }catch(e){ error=e; }
       if(error || !data || !data.ok){
-        journal((data && data.err==="hors_quete") ? "Ta progression n'est pas encore enregistrée. Réessaie dans un instant." : "Le serveur ne répond pas. Réessaie dans un instant.","alerte");
+        if(!_queteRefusGeste(data && data.err)) journal("Le serveur ne répond pas. Réessaie dans un instant.","alerte");   // v3.33
         b.disabled=false; return;
       }
       if(typeof chargerStocksServeur==="function") await chargerStocksServeur();
@@ -563,7 +582,7 @@ function _wireAffut(z, d){
     let data=null, error=null;
     try{ ({ data, error } = await sb.rpc("affut_tenir", { p_quete:a.id })); }catch(e){ error=e; }
     if(error || !data || !data.ok){
-      journal((data && data.err==="hors_quete") ? "Ta progression n'est pas encore enregistrée. Réessaie dans un instant." : "Le serveur ne répond pas. Réessaie dans un instant.","alerte");
+      if(!_queteRefusGeste(data && data.err)) journal("Le serveur ne répond pas. Réessaie dans un instant.","alerte");   // v3.33
       b.disabled=false; return;
     }
     a._affut={ n:data.n|0, dernier:data.dernier||null };
@@ -832,7 +851,7 @@ function _wirePaiement(z,d){ const b=z.querySelector("#q-pay-btn"); if(!b) retur
       b.disabled=false;
       const err = r && r.err;
       if(err === "credits") journal(`Crédits insuffisants (le serveur compte ${r.solde} ₡ pour ${r.cout} ₡).`,"alerte");
-      else if(err === "mort"){ if(typeof ouvrirCouloirMort === "function") ouvrirCouloirMort(); }
+      else if(_queteRefusGeste(err)){ /* v3.33 : mort, pause, prison, tot… dits */ }
       else journal(err ? `Paiement refusé par le serveur (${err}).` : "Le serveur n'a pas répondu — réessaie.","alerte");
       return;
     }
@@ -915,6 +934,9 @@ async function _envoyerCercles(cle, cercles){
      VOULUE : c'est ce qui empêche de farmer un Cercle en boucle. */
   if(data.ok && data.deja){ if(data.cercles) etat.cercles = data.cercles; return "deja"; }
   if(data.ok){ if(data.cercles) etat.cercles = data.cercles; return "ok"; }
+  /* v3.33 (v329, K327) — « tot » : pour le serveur, la quête d'avant s'est achevée aujourd'hui (horloge de l'appareil en
+     avance, autour de minuit). Le gain n'est pas refusé : il attend, comme hors ligne, et repart à la connexion. */
+  if(data.err === "tot") return "echec";
   console.warn("[cercles] refusé :", data.err); return "refuse";
 }
 /* ---------- v1.79 — LE GAIN DE CHAQUE CHOIX (H86, v195) ----------
@@ -1077,7 +1099,8 @@ function _wireNommer(z, d, o){
     let opt=o;
     if(!data.ok){
       if(data.err==="deja"){ opt = d.options.find(x=>x.bete===data.espece) || o; }
-      else if(data.err==="hors_quete"){ reprendre("Ta progression n'est pas encore enregistrée. Réessaie dans un instant."); return; }
+      else if(QUETE_REFUS_GESTE[data.err]){ reprendre(QUETE_REFUS_GESTE[data.err]); return; }   // v3.33 : hors_quete, tot, pause, prison
+      else if(data.err==="mort"){ _queteRefusGeste("mort"); reprendre(""); return; }
       else if(data.err==="nom_invalide"){ reprendre("Ce nom n'est pas accepté."); return; }
       else { reprendre("Refusé ("+data.err+")."); return; }
     }
@@ -1165,19 +1188,27 @@ function _wireCombat(z,d){
   const b=z.querySelector("#q-cbt-btn"); if(!b) return;
   b.addEventListener("click", async ()=>{
     if(b.disabled) return; b.disabled=true;     // ⚠ double clic = deux combats, Cercle crédité deux fois
-    const st=_combatStats(); const p=d.puissance||30;
-    if(typeof consommerMunitions==="function") await consommerMunitions();   // la force est lue AVANT
-    if(st.val < p*0.7){
-      const perte=Math.round(8+Math.random()*10);
-      await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
+    /* v3.33 (v329, K328) — L'ISSUE EST DÉCIDÉE PAR LE SERVEUR (quete_combat) : même atout (_quete_atout = _combatStats :
+       compétence + équipement porté + boisson, × moral), mêmes seuils, même santé perdue ; il note la victoire, et
+       quete_terminer l'exige. Le serveur lit les munitions AVANT qu'on les consomme. */
+    const a=queteActive(); if(!a){ b.disabled=false; return; }
+    let r=null;
+    try{ const rep = await sb.rpc("quete_combat", { p_quete:a.id, p_etape:a.etape|0 }); r = rep && rep.data; }
+    catch(e){ if(typeof _catchLog==="function") _catchLog(e, "quetes.js#combat"); r=null; }
+    if(!r || !r.ok){
+      b.disabled=false;
+      if(!_queteRefusGeste(r && r.err)) journal(r && r.err ? `Combat refusé par le serveur (${r.err}).` : "Le serveur ne répond pas. Réessaie dans un instant.","alerte");
+      return;
+    }
+    if(r.jauges){ etat.jauges = etat.jauges || {}; etat.jauges.o2 = r.jauges.o2; etat.jauges.sante = r.jauges.sante; etat.jauges.moral = r.jauges.moral; }
+    if(r.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(r.etat);
+    if(typeof consommerMunitions==="function") await consommerMunitions();
+    if(r.mort){ if(typeof afficher==="function") afficher(); if(typeof ouvrirCouloirMort==="function") ouvrirCouloirMort(); return; }
+    const st = r.atout || _combatStats(); const perte = r.perte|0;
+    if(r.issue === "echec"){
       if(typeof afficher==="function") afficher();
       echouerDefi(`${d.nom||"L'adversaire"} te domine (−${perte} santé). Entraîne-toi — le mécanisme se rouvre dans ${VERROU_DEFI_H} h.`);
       return;
-    }
-    let perte=0;
-    if(st.val < p){
-      perte=Math.round((p-st.val)/p*40)+5;
-      await agirServeur({ jauges:{ sante:-perte }, motif:"quete_combat" });
     }
     /* ⚠ v1.13 — LE GAIN DU COMBAT EST MAINTENANT ANNONCÉ. Il l'était pour les
        choix, pas ici : un testeur a vu son blason bouger sans comprendre

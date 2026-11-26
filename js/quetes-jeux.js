@@ -326,7 +326,8 @@ QUETES_JEUX.saut = {
           if(rq && rq.err === "sonde"){   // v3.03 (v305, K273) : une rencontre de sonde attend
             journal("Une sonde te tient en joue : règle d'abord la rencontre.", "alerte");
             if(typeof ouvrirSonde === "function") ouvrirSonde();
-          } else journal(rq && rq.err === "lieu" ? "La Gorge est plus loin : entres-y d'abord." : `Le saut n'a pas pu se faire (${(rq && rq.err) || "pas de réponse"}).`, "alerte");
+          } else if(typeof _queteRefusGeste === "function" && _queteRefusGeste(rq && rq.err)){ /* v3.33 (v329) : pause, tot, hors_quete… */ }
+          else journal(rq && rq.err === "lieu" ? "La Gorge est plus loin : entres-y d'abord." : `Le saut n'a pas pu se faire (${(rq && rq.err) || "pas de réponse"}).`, "alerte");
           b.disabled = false; return;
         }
       }
