@@ -1188,7 +1188,7 @@ function _devAfficherFiche(p){
     if(error || !data || !data.ok){
       zj.innerHTML = `<p class="dev-note">Impossible — ${(data&&data.err)||(error&&error.message)||"?"}</p>`; return;
     }
-    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff" };
+    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff", bataille:"#b48cff", message:"#8bd450", annonce:"#ffb060" };   // v3.35 (K331), v3.37 (K333, K334)
     const lignes = (data.journal||[]).slice().sort((a,b)=>(b&&b.d||0)-(a&&a.d||0)).map(e=>{
       if(typeof e === "string") return `<div>${e.replace(/</g,"&lt;")}</div>`;
       const q = e && e.d ? new Date(e.d).toLocaleString("fr-FR") : "—";

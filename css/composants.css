@@ -191,6 +191,8 @@
   #journal .msg::before { content:"◈"; position:absolute; left:0; color:var(--orange); font-size:9px; top:3px; }
   #journal .msg.alerte { color:var(--coral); } #journal .msg.alerte::before { color:var(--coral); }
   #journal .msg.gain { color:var(--bleu); } #journal .msg.gain::before { color:var(--bleu); }
+  #journal .msg.bataille { color:var(--bataille,#b48cff); } #journal .msg.bataille::before { color:var(--bataille,#b48cff); }   /* v3.35 (K331) */
+  #journal .msg.message::before { color:var(--vert,#8bd450); } #journal .msg.annonce::before { color:var(--orange-hi,#ffb060); }   /* v3.37 (K333, K334) */
 
   footer { margin-top:16px; display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center; font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine); }
   footer .boutons { display:flex; gap:10px; }

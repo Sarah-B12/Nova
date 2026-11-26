@@ -335,7 +335,7 @@ async function _areneRepondre(id, accepte, bouton){
       } finally {
         const xp = _duelLocal ? _duelLocal.xp : 0; _duelLocal = null;
         journal(`⚔️ ${issue} contre ${data.adversaire}.${xp > 0 ? ` +${xp} XP.` : ""}${rep}${bis}`,   // v1.99 : plus de « ta force : N »
-                data.gagne ? "gain" : "alerte", "combat");
+                "bataille", "combat");   // v3.35 (K331) : un duel s'écrit en violet, victoire ou défaite (le texte dit l'issue)
       }
     }
   }catch(e){

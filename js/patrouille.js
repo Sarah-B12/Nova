@@ -124,7 +124,7 @@ async function registreSignaler(type){
     if(data && data.ok && data.compte === false){
       const j = (typeof jourDeJeu === "function") ? jourDeJeu() : new Date().toDateString();
       if(etat._registrePlafond !== j){ etat._registrePlafond = j;
-        journal("Registre du Protocole : 5 patrouilles comptées aujourd'hui. Les suivantes rapportent toujours leur butin, mais ne font plus monter ton palier avant demain.", "poste"); }
+        journal("Registre du Protocole : 5 patrouilles comptées aujourd'hui. Les suivantes rapportent toujours leur butin, mais ne font plus monter ton palier avant demain.", "gain"); }   // v3.37 (K333) : en bleu
     }
     if(data && data.ok && REGISTRE_PALIERS[data.palier]){
       const avant = _registrePalier; _registrePalier = data.palier; _majFicheRegistre();

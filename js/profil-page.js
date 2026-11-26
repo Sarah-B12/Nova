@@ -383,7 +383,7 @@ async function _ppJournalStaff(profilId){
       return;
     }
     // Format réel d'une entrée : { d: horodatage, t: texte, cat: catégorie, type: gain|alerte|… }
-    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff" };
+    const cls = { alerte:"#ff8a3d", gain:"#8bd450", poste:"#6cc8ff", bataille:"#b48cff", message:"#8bd450", annonce:"#ffb060" };   // v3.35 (K331), v3.37 (K333, K334)
     const lignes = (data.journal||[])
       .slice()
       .sort((a,b)=>(b&&b.d||0)-(a&&a.d||0))          // plus récentes d'abord

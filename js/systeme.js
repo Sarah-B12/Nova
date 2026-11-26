@@ -203,9 +203,14 @@ function _bulleStyle(){
       pointer-events:auto; cursor:pointer; }
     .bulle:hover{ border-color:var(--orange,#ff8a3d); }
     .bulle::after{ content:"×"; float:right; margin-left:10px; color:var(--sourdine,#8b95a8); font-weight:700; }
-    .bulle.gain{ border-left-color:#8bd450; }
-    .bulle.alerte{ border-left-color:#ff8a3d; }
-    .bulle.poste{ border-left-color:#6cc8ff; }
+    /* v3.38 (K335) — la barre suit la couleur du journal : bleu = nouvelle, rouge = ce qui tourne mal (avant : vert et
+       orange ; une nouvelle bleue avait la même barre qu'un message reçu, vert depuis la v3.37). */
+    .bulle.gain{ border-left-color:#5aa8e6; }
+    .bulle.alerte{ border-left-color:#ff5257; }
+    .bulle.poste{ border-left-color:#ffb060; }
+    .bulle.bataille{ border-left-color:#b48cff; }   /* v3.35 (K331) */
+    .bulle.message{ border-left-color:#8bd450; }   /* v3.37 (K334) */
+    .bulle.annonce{ border-left-color:#ffb060; }   /* v3.37 (K333) */
     .bulle .bn{ font-family:"Space Mono",monospace; font-size:11px; color:var(--sourdine,#8b95a8); margin-left:6px; }
     .bulle.part{ animation:bulle-out .45s ease-in forwards; }
     @keyframes bulle-in{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
@@ -319,6 +324,11 @@ function _journalStyle(){
     .j-faction{ background:#6a4a8a; color:#ecd9ff; }
     .j-couple{ background:#8a3a5e; color:#ffd6e8; }   /* v1.36e */
     .msg.poste{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
+    /* v3.37 (K333, K334) — « poste » servait à tout ce qui n'était ni combat ni économie. Désormais : « annonce » (jaune
+       brillant) = un événement apparaît (débris, mission) ; « message » (vert, gras, sans brillance) = quelqu'un s'adresse
+       à toi. « poste » reste pour les lignes déjà au journal. */
+    .msg.annonce{ font-weight:700; color:var(--orange-hi,#ffb060); text-shadow:0 0 8px rgba(255,138,61,.55); }
+    .msg.message{ font-weight:700; color:var(--vert,#8bd450); }
   `;
   document.head.appendChild(st);
 }

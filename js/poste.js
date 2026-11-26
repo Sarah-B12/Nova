@@ -305,7 +305,7 @@ async function posteEnvoyer(){
   if(res.etat && typeof _appliquerEtatStocks==="function") _appliquerEtatStocks(res.etat);
   if(typeof rechargerCredits==="function") await rechargerCredits();
   const quoi = type==="credits" ? `${p_montant} ₡` : `${p_qte}× ${item(p_item)?item(p_item).nom:p_item}`;
-  journal(`Envoyé à ${dest} : ${quoi}${type==="cadeau"?" (cadeau)":""}.`,"poste","poste");
+  journal(`Envoyé à ${dest} : ${quoi}${type==="cadeau"?" (cadeau)":""}.`,"gain","poste");   // v3.37 (K333) : ton propre geste, en bleu
   apresAction(); majPoste();
 }
 
@@ -333,9 +333,9 @@ async function posteRecuperer(id){
   if(typeof rechargerCredits==="function") await rechargerCredits();
   // v0.59 : on garde une trace de QUI (expéditeur, ou destinataire pour un retour).
   const deQui = (o.statut==="retour") ? ` (retour de ton envoi à ${o.aNom})` : ` de ${o.deNom}`;
-  if(res.type==="credits") journal(`Récupéré${deQui} : ${res.montant} ₡.`,"poste","poste");
+  if(res.type==="credits") journal(`Récupéré${deQui} : ${res.montant} ₡.`,"gain","poste");   // v3.37 (K333)
   else journal(`Récupéré${deQui} : ${res.quantite}× ${item(res.item)?item(res.item).nom:res.item}`
-    + (res.paye?` (payé ${res.paye} ₡)`:"") + (res.partiel?" — le reste attend, sac plein":"") + ".","poste","poste");
+    + (res.paye?` (payé ${res.paye} ₡)`:"") + (res.partiel?" — le reste attend, sac plein":"") + ".","gain","poste");   // v3.37 (K333)
   apresAction(); majPoste();
 }
 
@@ -343,7 +343,7 @@ async function posteRefuser(id){
   const o=_posteCache.find(x=>String(x.id)===String(id));
   const { data:res, error } = await sb.rpc("poste_refuser", { p_id: Number(id) });
   if(error || !res || !res.ok){ journal(((typeof ecoRefusTexte==="function") && ecoRefusTexte(res)) || "Refus impossible.","alerte"); }   // v3.31 : pause, mort
-  else journal(`Envoi${o?` de ${o.deNom}`:""} refusé — il retourne à l'expéditeur.`,"poste","poste");
+  else journal(`Envoi${o?` de ${o.deNom}`:""} refusé — il retourne à l'expéditeur.`,"gain","poste");   // v3.37 (K333)
   majPoste();
 }
 
@@ -365,7 +365,7 @@ function _posteAppliquer(n){
      pendant l'absence n'était JAMAIS annoncé. Et le message ne disait ni de qui
      ni quoi. Le détail vient maintenant des événements serveur (déclencheur
      poste_evenement) ; ici on ne garde qu'un rappel s'il reste du courrier. */
-  if(_postePrec < 0){ if(n > 0) journal(`${n} envoi(s) t'attendent à La Poste.`,"poste","poste"); }
-  else if(n > _postePrec) journal("Tu as du courrier à La Poste !","poste","poste");
+  if(_postePrec < 0){ if(n > 0) journal(`${n} envoi(s) t'attendent à La Poste.`,"message","poste"); }   // v3.37 (K334) : en vert
+  else if(n > _postePrec) journal("Tu as du courrier à La Poste !","message","poste");
   _postePrec=n;
 }

@@ -860,7 +860,20 @@ async function _expResoudre(){
      et son XP rendue à arene.js, qui écrit une seule phrase. */
 let _xpDejaDit = 0;
 var _duelLocal = (typeof _duelLocal !== "undefined") ? _duelLocal : null;
-function _xpDuDuel(texte){ const m = /^Duel contre .*?\+(\d+) XP/.exec(String(texte || "")); return m ? +m[1] : 0; }
+/* v3.36 (K332, A) — le serveur écrit « ⚔️ Duel contre … » : le pictogramme de tête faisait rater ces deux recherches
+   (celui qui acceptait un duel lisait deux lignes). On l'ignore. (B, pour plus tard : le serveur n'écrit plus de
+   pictogramme — FEUILLE_DE_ROUTE.) */
+function _sansPicto(t){ return String(t || "").replace(/^[^\p{L}\p{N}{]+/u, ""); }
+function _xpDuDuel(texte){ const m = /^Duel contre .*?\+(\d+) XP/.exec(_sansPicto(texte)); return m ? +m[1] : 0; }
+/* Le duel que le joueur vient d'accepter (`_duelLocal`, arene.js) : son compte rendu serveur est retiré, son XP rendue à
+   arene.js, qui écrit une seule phrase. v3.36 : aussi sur le chemin de la veille (`_evenementsAppliquer`), qui peut lire le
+   compte rendu avant syncEffetsCombat ; `max` et non `+=` : la veille a pu déjà rendre l'XP par les effets. */
+function _taireDuelLocal(evs){
+  if(!Array.isArray(evs) || !_duelLocal || !_duelLocal.adv) return evs;
+  const debut = `Duel contre ${_duelLocal.adv} :`;
+  return evs.filter(ev => { const t = _sansPicto(ev && ev.texte);
+    if(t.startsWith(debut)){ _duelLocal.xp = Math.max(_duelLocal.xp || 0, _xpDuDuel(t)); return false; } return true; });
+}
 async function syncEffetsCombat(){
   if(typeof SERVEUR_DISPO==="undefined" || !SERVEUR_DISPO) return;
   let data = null, evs = null;
@@ -869,11 +882,7 @@ async function syncEffetsCombat(){
   try{ ({ data:evs } = await sb.rpc("consommer_evenements")); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#13"); }
   if(Array.isArray(evs)){
     _xpDejaDit = evs.reduce((s, ev) => s + _xpDuDuel(ev && ev.texte), 0);
-    if(_duelLocal && _duelLocal.adv){
-      const debut = `Duel contre ${_duelLocal.adv} :`;
-      evs = evs.filter(ev => { const t = String((ev && ev.texte) || "");
-        if(t.startsWith(debut)){ _duelLocal.xp += _xpDuDuel(t); return false; } return true; });
-    }
+    evs = _taireDuelLocal(evs);
   }
   try{ await _effetsAppliquer(data); }catch(e){ if(typeof _catchLog==="function") _catchLog(e, "gouvernement.js#12"); }
   finally{ _xpDejaDit = 0; }
@@ -938,17 +947,74 @@ async function _effetsAppliquerFond(data){
     if(data && (data.cristaux_perdus|0) > 0) journal(`${data.cristaux_perdus} Cristal de Nyx perdu (sac plein).`,"alerte");
 }
 async function _evenementsAppliquer(evs){
+  evs = _taireDuelLocal(evs);   // v3.36 (K332) : idem pour la veille
   _journalServeur++; try{ return await _evenementsAppliquerFond(evs); } finally { _journalServeur--; }   // v2.21c (K138)
+}
+/* v3.35 (K331) — les comptes rendus de bataille ont leur couleur (violet clair) dans le journal : expéditions
+   (participants, membres restés en arrière, faction visée), attaques du Protocole, duels de l'Arène. Le serveur
+   les dépose tous en catégorie `combat`, comme les pertes personnelles (« Pendant ton absence… », terrain abîmé),
+   qui restent en rouge : on les reconnaît donc à leur forme, sur le texte BRUT (marqueurs {fac:…} / {obj:…}). */
+const _BATAILLE_MOTIFS = [
+  /^\{obj:[^}]+\} contre \{fac:[^}]+\} : /,                              // participants d'une expédition
+  /^Notre \{obj:[^}]+\} contre \{fac:[^}]+\} a /,                         // membres restés en arrière
+  /^\{fac:[^}]+\} a (?:mené|tenté) un \{obj:[^}]+\} contre notre faction/, // faction visée
+  /^Expédition contre .+ annulée/,
+  /^Le Stratège a annulé l'expédition/,
+  /^Assaut (?:victorieux contre|repoussé par) le Protocole/,
+  /^Notre assaut contre le Protocole/,
+  /^LE PROTOCOLE A FRAPPÉ/,
+  /^Attaque du Protocole REPOUSSÉE/,
+  /^Duel contre /,
+  / te défie à l'arène/,
+  / a décliné ton défi à l'arène/
+];
+function _estBataille(t){
+  const s = _sansPicto(t);   // le serveur fait précéder les duels d'un pictogramme
+  return _BATAILLE_MOTIFS.some(r => r.test(s));
+}
+/* v3.37 (K333 A, K334 A) — le ton de chaque nouvelle du serveur. Avant : `combat`/`alerte` en rouge, `economie` en
+   bleu, TOUT le reste en jaune brillant (gain, quete, poste, social, voyage, couple, agri, faction). Désormais :
+   jaune brillant (`annonce`) = un événement apparaît ; vert (`message`) = quelqu'un s'adresse à toi ; rouge = une
+   perte ; bleu (`gain`) = le reste. Relevé des 117 textes du serveur (27/11). Textes BRUTS, pictogramme de tête ignoré. */
+const _ANNONCE_MOTIFS = [
+  /^Des débris ont été vus tomber sur /,
+  /^(?:\[?TEST\] )?Une mission a surgi/,   // « [TEST] » : le crochet tombe avec le pictogramme (_sansPicto)
+  /^Un pli sans signature/
+];
+const _MESSAGE_MOTIFS = [
+  /^Message de /,
+  / a écrit sur ton mur/,
+  / t'a envoyé .+ à La Poste/,
+  / t'a laissé un cadeau à La Poste/,
+  / t'invite dans son groupe/,
+  / t'a fait passer un mot/,
+  / te demande en mariage/,
+  /^Une lettre de .+ est arrivée/
+];
+const _PERTE_MOTIFS = [
+  /^Ta pique du Fléau s'est effritée/, /^Ton éclat de lentille s'est terni/, /^La pupille du Fléau s'est éteinte/,
+  /^Ton (?:régulateur|module) d'AREPO s'est usé/, /^Un module de ton vaisseau s'est usé/,
+  /^Ta Mousse-amie a fané/,
+  /mercenaire\(s\) (?:non payé\(s\) )?ont quitté la faction/
+];
+function _tonServeur(texte, cat){
+  const s = _sansPicto(texte);
+  if(_estBataille(s)) return "bataille";
+  if(_ANNONCE_MOTIFS.some(r => r.test(s))) return "annonce";
+  if(cat === "combat" || cat === "alerte" || cat === "couple") return "alerte";   // couple : le sort des enfants au divorce, au veuvage
+  if(_PERTE_MOTIFS.some(r => r.test(s))) return "alerte";
+  if(_MESSAGE_MOTIFS.some(r => r.test(s))) return "message";
+  return "gain";
 }
 async function _evenementsAppliquerFond(evs){
     if(Array.isArray(evs) && evs.length){
       /* v0.63 — tout arrivait en rouge « alerte », y compris « colis reçu » ou
          « ta vente est partie ». Le ton suit la catégorie déposée par le serveur. */
       evs.forEach(ev=>{ if(!ev || !ev.texte) return;
+        const cat = ev.cat || "combat";
+        const ton = _tonServeur(ev.texte, cat);   // v3.35 (K331), v3.37 (K333, K334) : AVANT rendreLibelles, qui remplace les marqueurs
         // v0.92 : le serveur dépose `{fac:id}`, les libellés vivent dans FACTIONS.
         if(typeof rendreLibelles==="function") ev.texte = rendreLibelles(ev.texte);
-        const cat = ev.cat || "combat";
-        const ton = (cat==="combat" || cat==="alerte") ? "alerte" : (cat==="economie" ? "gain" : "poste");
         // v0.69 : la Poste a son propre onglet ; « economie » s'appelle « eco » côté client.
         let onglet = { alerte:"combat", economie:"eco" }[cat] || cat;
         /* v1.36f — le serveur ne connaît que quelques catégories (combat,
