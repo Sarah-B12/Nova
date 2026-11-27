@@ -52,12 +52,20 @@ function _notifsAppliquer(c){
 /* v1.94 — Ta messagerie se remplit : une alerte quand il reste 5 places ou moins, une autre
    quand elle est pleine. Une seule fois par palier et par session (le compteur tourne en
    boucle) ; elle revient si la boîte se vide puis se remplit de nouveau. */
-let _boiteAlertee = null;   // null = pas encore lue ; "ok" | "presque" | "pleine"
+/* v3.39 (K336 A) — le palier était gardé dans la PAGE seulement : chaque rechargement, chaque onglet, chaque
+   appareil, chaque mise à jour du jeu (qui recharge la page) redonnait l'alerte (26/30 répété chez Asulf, 26/11).
+   Il est désormais gardé dans la sauvegarde du personnage (`etat._boitePalier`). En contrôle (K136), on garde
+   l'ancienne mémoire de page : regarder à la place du joueur ne doit pas lui retirer son alerte. */
+let _boiteAlertee = null;   // null = pas encore lue ; "ok" | "presque" | "pleine" (contrôle seulement depuis v3.39)
 function _alerteBoite(n){
   if(n === null) return;
   const palier = n >= MSG_BOITE ? "pleine" : (n >= MSG_BOITE - 5 ? "presque" : "ok");
-  if(palier === _boiteAlertee) return;
-  const avant = _boiteAlertee; _boiteAlertee = palier;
+  const enControle = typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE;
+  if(!enControle && (typeof etat === "undefined" || !etat)) return;
+  const avant = enControle ? _boiteAlertee : (etat._boitePalier || null);
+  if(palier === avant) return;
+  if(enControle) _boiteAlertee = palier;
+  else { etat._boitePalier = palier; if(typeof sauvegarder === "function") sauvegarder(); }
   if(palier === "ok") return;
   if(palier === "presque" && avant === "pleine") return;   // on vient de faire du tri : pas d'alerte
   if(palier === "pleine") journal(`Ta messagerie est pleine (${n}/${MSG_BOITE}) : plus personne ne peut t'écrire. Supprime des messages lus pour faire de la place.`,"alerte","social");

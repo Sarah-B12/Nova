@@ -71,6 +71,7 @@ const DELAIS = {
   v336: { profil: 50, sac: 50, jauges: 50 },        // v3.36 : le duel accepté ne s'écrit plus deux fois, K332 (o_v336.js)
   v337: { profil: 50, sac: 50, jauges: 50 },        // v3.37 : les couleurs du journal — événements, messages, pertes, K333 et K334 (o_v337.js)
   v338: { profil: 50, sac: 50, jauges: 50 },        // v3.38 : les bulles suivent les couleurs du journal, K335 (o_v338.js)
+  v339: { profil: 50, sac: 50, jauges: 50 },        // v3.39 : messagerie presque pleine, une fois par palier dans la sauvegarde, K336 (o_v339.js)
   espace: { profil: 50, sac: 50, jauges: 50 },      // v3.01 : vols, sauts, plein et carburant par le serveur, v303 (o_espace.js)
   volvide: { profil: 50, sac: 50, jauges: 50 },   // v2.86 : vol/hack réussi mais vide, en couleur normale (o_volvide.js)
   missions: { profil: 50, sac: 50, jauges: 50 },  // v1.61 : client des missions (o_missions.js)
