@@ -285,7 +285,7 @@ async function patrouilleHacker(){
     const R = registreEffets();                                           // v1.45 : Registre
     const xpH = Math.round(XP_PATROUILLE_HACK * R.xp);
     gagnerXp(xpH); await patrouilleNeutraliseeServeur("piratage");   // v2.89 : comptée au serveur (sans butin)
-    journal(`Patrouille piratée : ses capteurs te perdent et elle passe son chemin. Aucun dégât, rien à prendre. +${xpH} XP.`, "gain");
+    journal(`Patrouille piratée : ses capteurs te perdent et elle passe son chemin. Aucun dégât. +${xpH} XP.`, "gain");   // v3.42 : sans « rien à prendre » (Vortex : laissait croire qu'il y a parfois un butin)
     registreSignaler("piratee");
     apresAction();
   } else { journal("Le piratage échoue — repéré ! La patrouille te tombe dessus.","alerte"); await resoudreCombat({ embuscade:true }); }   // v2.61 (K202)

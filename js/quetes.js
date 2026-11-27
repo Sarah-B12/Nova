@@ -245,12 +245,25 @@ function texteLendemain(q){
   const L = _queteLendemain(q);
   return (L && L.texte) || LENDEMAIN_VOIX[q.donneur] || "Reviens demain : la suite ne commence pas aujourd'hui.";
 }
+/* v3.43 — demande de l'autrice (27/11) : à l'acceptation de la première quête (Q1), une fenêtre lui demande de ne pas
+   partager les réponses. Une seule fois par personnage (`etat._avisQuetes`, sauvegardé) ; jamais en contrôle (K136),
+   pour ne pas la retirer au joueur. */
+const AVIS_QUETES_TITRE = "Un mot de la développeuse";
+const AVIS_QUETES_TEXTE = "Je sais qu'on a très envie de partager ce qu'on a trouvé. Pourtant, je te le demande, s'il te plaît : ne partage pas les réponses des quêtes.\n\nLes quêtes sont faites pour chercher, se tromper, recommencer… et savourer le moment où tout s'éclaire enfin. Ce serait dommage d'en priver les autres joueurs.\n\nCe n'est pas une règle de la charte, seulement une demande de ma part.\n\nMerci infiniment de jouer le jeu.";
+function _avisQuetesMontrer(id){
+  if(id !== "q1" || etat._avisQuetes) return;
+  if(typeof NOVA_CONTROLE !== "undefined" && NOVA_CONTROLE) return;
+  if(typeof confirmerJoli !== "function") return;
+  etat._avisQuetes = Date.now();
+  confirmerJoli(AVIS_QUETES_TITRE, AVIS_QUETES_TEXTE, "C'est promis", false, true);
+}
 function accepterQuete(id){
   if(queteActive()){ journal("Termine ta quête en cours d'abord.","alerte"); return; }
   const q=queteData(id); if(!q || queteEtat().done.includes(id)) return;
   if(queteAttendLendemain(q)){ journal("Cette quête ne commence que demain (jour de jeu suivant).","alerte"); return; }   // v1.93l
   queteEtat().active={ id, etape:0, _sur:false, _resolu:false, _echecLe:0, _attenteLe:0, _memVue:false };
   journal(`Quête acceptée : ${q.nom}. Onglet Quêtes → suis l'objectif.`,"gain");
+  _avisQuetesMontrer(id);   // v3.43 : le mot de la développeuse, à la première quête
   /* v1.17 — part TOUT DE SUITE au serveur, comme une étape franchie : avec la
      minuterie de 2,5 s, un changement d'appli dans l'intervalle pouvait la perdre. */
   sauvegarder(); if(typeof sauverMaintenant==="function") sauverMaintenant(); rafraichirQuetes();

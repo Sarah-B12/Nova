@@ -27,12 +27,20 @@
     let ouvertures = 0; window.open = () => { ouvertures++; return faux; };
     const corps = []; window.fetch = async (url, o) => { const b = JSON.parse(o.body); corps.push(b);
       return { status:200, json: async () => (b.forcer ? { ok:true, jeton:"hash-456", cid:8, nom:"Joueur" } : { ok:false, err:"en_ligne", actif_s:40 }) }; };
-    const questions = []; let reponses = [true, false]; confirm = m => { questions.push(m); return reponses.shift(); };
+    // v3.40 (K337) : la 2e question n'est plus un confirm() (supprimé par Chrome quand l'onglet vide est devant) mais
+    // une fenêtre du jeu (confirmerJoli), posée APRÈS avoir refermé l'onglet vide ; « oui » ouvre un nouvel onglet.
+    const questions = []; let reponses = [true, false]; let natifs = 0;
+    confirm = m => { natifs++; questions.push(m); return reponses.shift(); };
+    const cjS = confirmerJoli; confirmerJoli = async (titre, m) => { questions.push(m); return reponses.shift(); };
+    let fermeeAvantQuestion = null; const cjQ = confirmerJoli; confirmerJoli = async (titre, m) => { fermeeAvantQuestion = fermee; return cjQ(titre, m); };
     fermee = false; await controlePrendre(FICHE); await att(40);
-    r.enLigneNon = { question: /est en ligne \(actif il y a 40 s\)/.test(questions[1] || ""), ongletFerme: fermee, rienDePose: !localStorage.getItem("nova-controle-jeton"), unSeulAppel: corps.length === 1 };
-    corps.length = 0; questions.length = 0; reponses = [true, true]; ouvertures = 0; fermee = false; faux.location.href = "";
+    r.enLigneNon = { question: /est en ligne \(actif il y a 40 s\)/.test(questions[1] || ""), ongletFerme: fermee, rienDePose: !localStorage.getItem("nova-controle-jeton"), unSeulAppel: corps.length === 1,
+                     questionDansLaPage: natifs === 1, ongletVideFermeAvant: fermeeAvantQuestion === true, aucunNouvelOnglet: ouvertures === 1 };
+    corps.length = 0; questions.length = 0; reponses = [true, true]; ouvertures = 0; fermee = false; faux.location.href = ""; natifs = 0; fermeeAvantQuestion = null;
     await controlePrendre(FICHE); await att(40);
-    r.enLigneOui = { forcer: corps.map(b => !!b.forcer).join(","), jetonPose: !!localStorage.getItem("nova-controle-jeton"), unSeulOnglet: ouvertures === 1, onglet: faux.location.href };
+    r.enLigneOui = { forcer: corps.map(b => !!b.forcer).join(","), jetonPose: !!localStorage.getItem("nova-controle-jeton"), onglet: faux.location.href,
+                     ongletVideFermeAvant: fermeeAvantQuestion === true, deuxOuvertures: ouvertures === 2, questionDansLaPage: natifs === 1 };
+    confirmerJoli = cjS;
     localStorage.removeItem("nova-controle-jeton");
     confirm = () => true; window.open = () => faux;
     window.fetch = async (url, o) => ({ status:200, json: async () => reponse });

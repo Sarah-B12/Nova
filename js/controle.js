@@ -40,12 +40,21 @@ async function controlePrendre(p, forcer){
       headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + s.access_token, "apikey":SB_KEY },
       body:JSON.stringify({ cible:p.id, forcer:!!forcer }) });
     const d = await r.json().catch(() => null);
-    /* v2.25 — en ligne : on demande (un bot qui reste connecté rendait la prise de main impossible). */
+    /* v2.25 — en ligne : on demande (un bot qui reste connecté rendait la prise de main impossible).
+       v3.40 (K337 A) — la question était un confirm() posé pendant que l'onglet vide, ouvert au clic, était
+       DEVANT : Chrome supprime alors la question et la compte comme « non » (« A window.confirm() dialog …
+       was suppressed because this page is not the active tab »), et l'onglet se refermait aussitôt (27/11).
+       Désormais : on referme l'onglet vide, on pose la question DANS la page de la console (confirmerJoli),
+       et le clic sur « Prendre la main » ouvre le nouvel onglet (geste de l'admin : pas de blocage). */
     if(d && !d.ok && d.err === "en_ligne" && !forcer){
+      if(onglet) onglet.close();
       const s2 = d.actif_s != null ? ` (actif il y a ${d.actif_s < 60 ? d.actif_s + " s" : Math.round(d.actif_s / 60) + " min"})` : "";
-      if(confirm(`${p.nom} est en ligne${s2}.\n\nSi tu prends la main, vous jouerez à deux : la page qui sauvegarde en second se fige avec « ta partie a avancé ailleurs, recharge-la ». Rien n'est perdu ni écrasé.\n\nPrendre la main quand même ?`))
-        return controlePrendre(p, { onglet });
-      if(onglet) onglet.close(); return;
+      const texte = `${p.nom} est en ligne${s2}.\n\nSi tu prends la main, vous jouerez à deux : la page qui sauvegarde en second se fige avec « ta partie a avancé ailleurs, recharge-la ». Rien n'est perdu ni écrasé.\n\nPrendre la main quand même ?`;
+      const oui = (typeof confirmerJoli === "function") ? await confirmerJoli("Joueur en ligne", texte, "Prendre la main", true) : confirm(texte);
+      if(!oui) return;
+      const onglet2 = window.open("", "_blank");   // ouvert dans le clic sur « Prendre la main »
+      if(!onglet2){ alert("Le navigateur a bloqué le nouvel onglet : autorise les fenêtres de ce site, puis recommence."); return; }
+      return controlePrendre(p, { onglet:onglet2 });
     }
     if(!d || !d.ok){ if(onglet) onglet.close();
       const msg = CONTROLE_ERREURS[d && d.err] || ((d && d.err) || ("erreur " + r.status));

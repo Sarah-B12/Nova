@@ -613,9 +613,10 @@ async function majExpeditions(el){
   } else {
     /* v1.89 — K56 : l'énergie se paie à l'enrôlement ; plus besoin d'être chez soi le jour venu. */
     /* v2.62 (K210, K214) : le palier 65 allège l'enrôlement ; hors de sa cité, −10 % (−5 % au palier 95). */
+    /* v3.41 (K338) : se désinscrire ne rend plus l'énergie (v331) ; le jeu n'en parle plus (choix de l'autrice). */
     const allege = repPalier(REP_PALIER_ENROLEMENT);
-    h+=`<p class="itip-gris" style="margin-top:6px">S'enrôler coûte <b>${allege?12:15} % d'énergie</b> (${allege?9:12} % avec le Fragment de l'Élan${allege?" ; 3 de moins grâce à ta réputation":""}), payés <b>tout de suite</b> — rendus si tu te désinscris ou si le Stratège annule. Le jour venu, tu combats <b>où que tu sois</b> ; mais hors de la zone de ta cité, à <b>−${repPalier(REP_PALIER_MALUS)?5:10} %</b> de ta force.</p>`;
-    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire (énergie rendue)":`M'enrôler (−${allege?12:15} % d'énergie)`}</button></div>`;
+    h+=`<p class="itip-gris" style="margin-top:6px">S'enrôler coûte <b>${allege?12:15} % d'énergie</b> (${allege?9:12} % avec le Fragment de l'Élan${allege?" ; 3 de moins grâce à ta réputation":""}), payés <b>tout de suite</b>. Le jour venu, tu combats <b>où que tu sois</b> ; mais hors de la zone de ta cité, à <b>−${repPalier(REP_PALIER_MALUS)?5:10} %</b> de ta force.</p>`;
+    h+=`<div style="margin-top:8px"><button class="mini${moiEnrole?" danger":""}" id="exp-enrole">${moiEnrole?"Me désinscrire":`M'enrôler (−${allege?12:15} % d'énergie)`}</button></div>`;
   }
   h+=_htmlObjectifsExplication();
   el.innerHTML=h;
@@ -629,7 +630,7 @@ async function _expEnroler(v){
   // v1.89 — K56 : l'énergie part (ou revient) tout de suite ; le serveur donne le nouveau niveau.
   if(typeof res.energie==="number"){ etat.energie = res.energie; if(typeof afficher==="function") afficher(); }
   journal(v ? (res.deja ? "Tu es déjà enrôlé." : `Tu es enrôlé pour l'expédition (−${res.cout} % d'énergie).`)
-            : (res.rendu ? `Tu t'es désinscrit : ${res.rendu} % d'énergie te sont rendus.` : "Tu t'es désinscrit."), "gain");
+            : "Tu t'es désinscrit.", "gain");   // v3.41 (K338) : le serveur (v331) ne rend plus l'énergie
   if(typeof majCentre==="function") majCentre();
 }
 async function _rendreBureauStratege(el, fac){
@@ -767,7 +768,7 @@ function _batailleLigneHtml(b){
     titre = `Notre ${b.adversaire === "protocole" ? "assaut" : obj} contre <b>${contre}</b>`;
     if(b.annulee) return `<li class="itip-gris">${quand} · ${titre} : annulée, aucun participant.</li>`;
     verdict = b.gagne ? vert("succès") : orange("échec");
-    detail.push(`${b.p_att} contre ${b.p_def}, ${b.nb_att} participant(s)${b.forteresse ? ", quai barricadé" : ""}`);
+    detail.push(`${b.nb_att} participant(s)${b.forteresse ? ", quai barricadé" : ""}`);   // v3.42 : plus les forces (choix de l'autrice)
     if(+b.butin) detail.push(`butin ${n(b.butin)} ₡ (dont ${n(b.part_coffre)} ₡ pour la caisse)`);
     if(+b.credits_par) detail.push(`${n(b.credits_par)} ₡ par participant`);
     if(b.fragment) detail.push(`Fragment récupéré : ${echapper(b.fragment)}`);
@@ -812,7 +813,8 @@ function _expRapportHtml(row){
   const vs = contre ? ` contre <b>${contre}</b>` : "";
   if(r.raison==="aucun_participant") return `<p class="vide">${on}${vs} du ${quand} : <b>annulée</b>, aucun participant.</p>`;
   const verdict=r.succes?`<b style="color:var(--vert,#4caf50)">SUCCÈS</b>`:`<b style="color:var(--orange,#ff8a3d)">ÉCHEC</b>`;
-  let d=`<p class="itip-gris" style="font-size:12px">${on}${vs} · ${quand} · ${verdict} <span class="itip-gris">(${r.p_att} vs ${r.p_def}, ${r.nb_att} participant(s))${barricade}</span></p>`;
+  // v3.42 : les forces (« 64 vs 136 ») ne s'affichent plus (choix de l'autrice, 27/11) ; reste le nombre de participants.
+  let d=`<p class="itip-gris" style="font-size:12px">${on}${vs} · ${quand} · ${verdict} <span class="itip-gris">(${r.nb_att} participant(s))${barricade}</span></p>`;
   if(r.objectif==="protocole"){
     if(r.succes){ d+=`<p class="itip-gris" style="font-size:12px">Butin : <b>${r.credits_par} ₡</b> par participant.${r.fragment_nom?` 🧩 Fragment récupéré : <b>${r.fragment_nom}</b> !`:""}</p>`; }
   } else if(r.succes){
@@ -837,16 +839,16 @@ async function _expResoudre(){
   const on=noms[res.objectif]||"Assaut";
   if(res.raison==="aucun_participant"){ journal("Personne n'a participé : l'expédition échoue.","alerte"); }
   else if(res.objectif==="protocole"){
-    if(res.succes){ journal(`Assaut contre le Protocole RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
-    else journal(`Assaut contre le Protocole ÉCHOUÉ (${res.p_att} vs ${res.p_def}). Le Protocole a résisté.`,"alerte");
+    if(res.succes){ journal(`Assaut contre le Protocole RÉUSSI ! — ${res.credits_par} ₡ par participant. Cristaux distribués à la synchro.`,"gain"); if(res.fragment) journal(`Fragment récupéré sur le Protocole : ${res.fragment_nom} !`,"gain"); }
+    else journal(`Assaut contre le Protocole ÉCHOUÉ. Le Protocole a résisté.`,"alerte");
   }
   else if(res.succes){
-    if(res.objectif==="sabotage") journal(`${on} RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.objets_touches} objet(s) endommagé(s)${res.objets_detruits?`, ${res.objets_detruits} détruit(s)`:""}.`,"gain");
-    else journal(`${on} RÉUSSI ! (${res.p_att} vs ${res.p_def}) — ${res.butin} ₡ (${res.part_coffre} coffre, ${res.part_joueurs} partagés)${res.objets_touches?` · ${res.objets_touches} objet(s) sabotés`:""}.`,"gain");
+    if(res.objectif==="sabotage") journal(`${on} RÉUSSI ! — ${res.objets_touches} objet(s) endommagé(s)${res.objets_detruits?`, ${res.objets_detruits} détruit(s)`:""}.`,"gain");
+    else journal(`${on} RÉUSSI ! — ${res.butin} ₡ (${res.part_coffre} coffre, ${res.part_joueurs} partagés)${res.objets_touches?` · ${res.objets_touches} objet(s) sabotés`:""}.`,"gain");
     // v1.18 : le terrain des absents adverses.
     if(res.absents_touches) journal(`${res.absents_touches} absent(s) de la faction adverse ont vu leur terrain abîmé (−${res.perte_integrite} % d'intégrité).`,"gain");
   }
-  else{ journal(`${on} ÉCHOUÉ (${res.p_att} vs ${res.p_def}). La défense a tenu.`,"alerte"); }
+  else{ journal(`${on} ÉCHOUÉ. La défense a tenu.`,"alerte"); }   // v3.42 : sans les forces
   if(typeof rechargerCredits==="function") await rechargerCredits();
   if(typeof syncEffetsCombat==="function") await syncEffetsCombat();
   if(typeof syncPrison==="function") await syncPrison();

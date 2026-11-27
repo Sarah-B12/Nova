@@ -21,7 +21,8 @@
   const h = _bataillesHtml(data);
   const div = document.createElement("div"); div.innerHTML = h; const txt = div.textContent;
   r.titre = txt.includes("Dernières batailles");
-  r.menee = /Notre pillage contre .+ : succès \(61 contre 26, 1 participant\(s\) · butin 2\s?402 ₡ \(dont 480 ₡ pour la caisse\)\)/.test(txt);
+  // v3.42 : les forces (61 contre 26) ne s'affichent plus.
+  r.menee = /Notre pillage contre .+ : succès \(1 participant\(s\) · butin 2\s?402 ₡ \(dont 480 ₡ pour la caisse\)\)/.test(txt);
   r.subie = /a mené un assaut contre nous : défense tenue \(2 défenseur\(s\) présent\(s\)\)/.test(txt);
   r.subieSansForce = !/contre 2[0-9]\b/.test(txt.split("a mené un assaut")[1].split("·")[0]);
   r.protocole = txt.includes("Attaque du Protocole (très forte) : repoussée");
