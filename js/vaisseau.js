@@ -241,13 +241,19 @@ function regulateurActif(){ const e = _modulesVaisseau.regulateur; return !!e &&
    SERVEUR, soute_capacite v190) et +20 % de coque (ici, pvMax). Usé : la coque
    se plafonne d'elle-même (pvVaisseau borne à pvMax). */
 const MODULE_COQUE = 1.2;
+/* v3.44 (v332, K340) — mort, en pause ou en prison, on n'installe rien : le serveur le dit, la page aussi. */
+function _installRefus(d){
+  const e = d && d.err;
+  return e === "pause" ? "Impossible pendant une pause." : e === "prison" ? "Impossible depuis la prison."
+       : e === "mort" ? "Impossible pour l'instant." : "Installation impossible.";
+}
 function moduleActif(){ const e = (typeof _modulesVaisseau !== "undefined") && _modulesVaisseau.module; return !!e && new Date(e).getTime() > Date.now(); }
 async function installerModule(){
   if(!(etat.sac.module_arepo > 0)) return;
   if(moduleActif() && !await confirmerJoli("Module d'AREPO",
       `Un module est déjà installé (encore ${moduleJoursRestants("module")} jours). Le remplacer ? L'ancien sera perdu.`, "Remplacer", true)) return;
   const { data, error } = await sb.rpc("vaisseau_installer", { p_item:"module_arepo" });
-  if(error || !data || !data.ok){ journal("Installation impossible.", "alerte"); return; }
+  if(error || !data || !data.ok){ journal(_installRefus(data), "alerte"); return; }
   if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
   _modulesVaisseau.module = data.expire_le;
   if(typeof chargerStocksServeur === "function") await chargerStocksServeur();   // la soute grandit côté serveur
@@ -259,7 +265,7 @@ async function installerRegulateur(){
   if(regulateurActif() && !await confirmerJoli("Régulateur d'AREPO",
       `Un régulateur est déjà installé (encore ${moduleJoursRestants("regulateur")} jours). Le remplacer ? L'ancien sera perdu.`, "Remplacer", true)) return;
   const { data, error } = await sb.rpc("vaisseau_installer", { p_item:"regulateur_arepo" });
-  if(error || !data || !data.ok){ journal("Installation impossible.", "alerte"); return; }
+  if(error || !data || !data.ok){ journal(_installRefus(data), "alerte"); return; }
   if(data.etat && typeof _appliquerEtatStocks === "function") _appliquerEtatStocks(data.etat);
   _modulesVaisseau.regulateur = data.expire_le;
   journal("Régulateur d'AREPO installé : −20 % de carburant pendant 15 jours.", "gain", "voyage");

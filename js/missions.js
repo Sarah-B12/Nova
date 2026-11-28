@@ -107,7 +107,7 @@ const MISSION_ERREURS = {
   postes:"Tous les postes de la mission ne sont pas tenus.", minimum:"Le minimum de matériel n'est pas réuni.",
   // v2.10 — les postes se figent au départ (K130)
   poste_fige:"Ton poste est fixé depuis le départ du groupe.", postes_vides:"Chaque poste doit avoir quelqu'un avant de partir.",
-  deja_fait:"Ton poste est déjà fait pour cette descente.", perdu:"Tu t'es perdu dans le noir : un autre passage s'ouvre.",
+  deja_fait:"Ton poste est déjà fait pour cette descente.",   // v3.44 : « perdu » (crevasse) est dans MISSION_ERREURS_FN
   faux:"Ce n'est pas ça : la balise répète un autre message.", postes_pas_faits:"Les trois postes ne sont pas encore faits.",
   demain:"La seconde descente se fera demain.", mur:"Un mur de glace.",
   // v1.65 — l'infiltration
@@ -115,8 +115,26 @@ const MISSION_ERREURS = {
   // v1.67 — le casse
   cible_figee:"Le repérage est fait : la cible ne change plus.", cite:"Cible inconnue.", pas_de_cible:"Choisissez d'abord la cible.",
   pas_de_reperage:"Il faut d'abord faire le repérage.", equipe:"Toute l'équipe doit être sur place.", evente:"Le casse est éventé.",
-  loin:"Une caisse d'AREPO s'ouvre chez soi : rentre dans ta cité de faction.", objet:"Objet inconnu."
+  loin:"Une caisse d'AREPO s'ouvre chez soi : rentre dans ta cité de faction.", objet:"Objet inconnu.",
+  // v3.44 (v332) — la vérification des missions
+  perime:"Cet objet est périmé : il a quitté ton sac.", deja_reussie:"L'épreuve est déjà réussie.",
+  plus_de_tentative:"Il ne reste plus de tentative.", invitation:"Cette invitation n'est plus valable.",
+  profil:"Personnage introuvable.", type:"Mission inconnue.", cible_profil:"Ce joueur ne peut pas venir.", cible_type:"Ce joueur ne peut pas venir."
 };
+/* v3.44 (v332) — les refus qui changent selon le geste : « pas sur place » ne voulait dire que Mousseron
+   (retour de la vérification des missions), et « perdu » servait à la fois à la crevasse et au gain perdu. */
+const MISSION_ERREURS_FN = {
+  bouture:     { pas_sur_place:"Il faut être sur Mousseron." },
+  balise:      { pas_sur_place:"Il faut être à la balise, sur Le Suaire." },
+  balise_crevasse: { perdu:"Tu t'es perdu dans le noir : un autre passage s'ouvre." },
+  infiltration:{ pas_sur_place:"Il faut être à l'entrée de l'entrepôt, sur La Braise." },
+  casse:       { pas_sur_place:"Il faut être sur le lieu du casse : dans la cité visée, ou au Perchoir pour la Poste." },
+  satellite:   { pas_sur_place:"Il faut être auprès de Bardane, dans Triptolème." }
+};
+function _mErreurTexte(nom, err){
+  const n = String(nom || ""), famille = n.split("_")[0];   // « balise_crevasse » → la crevasse, puis la balise, puis le texte commun
+  return (MISSION_ERREURS_FN[n] || {})[err] || (MISSION_ERREURS_FN[famille] || {})[err] || MISSION_ERREURS[err];
+}
 
 let _missions = null;           // dernier missions_lire() : { ok, jour, missions[], gains[], chat{} }
 let _missionsEnVol = false;
@@ -180,12 +198,13 @@ async function _missionAppel(nom, args, okTexte){
     if(error){ journal("Échec : " + error.message, "alerte", "quete"); return null; }
     if(!data || data.ok === false){
       const err = data && data.err;
-      let t = MISSION_ERREURS[err] || ("Impossible (" + (err || "?") + ").");
+      let t = _mErreurTexte(nom, err) || ("Impossible (" + (err || "?") + ").");   // v3.44 : selon le geste
       if(err === "trop_peu") t = `Pas encore assez de membres : il en faut ${data.min} (vous êtes ${data.nb}).`;
       if(err === "demain") t = "La seconde tentative s'ouvre demain.";
       if(err === "postes") t = _mPostesManquants(args);
       if(err === "postes_vides" && data.manques) t = `Il manque encore ${_mManquesTexte(data.manques)} avant de partir.`;   // v2.67 (K227)   // v2.66 : la phrase de la balise s'affichait pour toutes les missions
       journal(t, "alerte", "quete");
+      if(data && data.etat && typeof _appliquerEtatStocks === "function"){ _appliquerEtatStocks(data.etat); if(typeof afficher === "function") afficher(); }   // v3.44 : un lot périmé a quitté le sac
       return data;
     }
     if(data.etat && typeof _appliquerEtatStocks === "function"){ _appliquerEtatStocks(data.etat); if(typeof afficher === "function") afficher(); }
